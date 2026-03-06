@@ -15,18 +15,18 @@ class MySqli_DB {
 /*--------------------------------------------------------------*/
 public function db_connect()
 {
-  //$this->con =mysqli_connect("127.0.0.1", "root", "", "inventory_system", 3307); //this port is for XAMPP
-  $this->con =mysqli_connect("127.0.0.1", "root", "Mysql123@", "inventory_system", 3306); //this port is for XAMPP
+  $host = getenv('MYSQLHOST') ?: '127.0.0.1';
+  $user = getenv('MYSQLUSER') ?: 'root';
+  $pass = getenv('MYSQLPASSWORD') ?: 'Mysql123@';
+  $db   = getenv('MYSQLDATABASE') ?: 'inventory_system';
+  $port = getenv('MYSQLPORT') ?: '3306';
+
+  $this->con = mysqli_connect($host, $user, $pass, $db, $port);
+
   if(!$this->con)
-         {
-           die(" Database connection failed:". mysqli_connect_error());
-         } else {
-           $select_db = $this->con->select_db(DB_NAME);
-             if(!$select_db)
-             {
-               die("Failed to Select Database". mysqli_connect_error());
-             }
-         }
+  {
+    die("Database connection failed: " . mysqli_connect_error());
+  }
 }
 /*--------------------------------------------------------------*/
 /* Function for Close database connection
