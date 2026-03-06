@@ -15,13 +15,13 @@ class MySqli_DB {
 /*--------------------------------------------------------------*/
 public function db_connect()
 {
-  $host = getenv('MYSQLHOST') ?: '127.0.0.1';
-  $user = getenv('MYSQLUSER') ?: 'root';
-  $pass = getenv('MYSQLPASSWORD') ?: 'Mysql123@';
-  $db   = getenv('MYSQLDATABASE') ?: 'inventory_system';
-  $port = getenv('MYSQLPORT') ?: '3306';
+$host = getenv('MYSQLHOST');
+$user = getenv('MYSQLUSER');
+$pass = getenv('MYSQLPASSWORD');
+$db   = getenv('MYSQLDATABASE');
+$port = getenv('MYSQLPORT');
 
-  $this->con = mysqli_connect($host, $user, $pass, $db, $port);
+$this->con = mysqli_connect($host, $user, $pass, $db, $port);
 
   if(!$this->con)
   {
