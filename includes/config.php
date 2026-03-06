@@ -1,9 +1,12 @@
 <?php
 
-define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
-define('DB_USER', getenv('MYSQLUSER') ?: 'root');
-define('DB_PASS', getenv('MYSQLPASSWORD') ?: 'Mysql123@');
-define('DB_NAME', getenv('MYSQLDATABASE') ?: 'inventory_system');
-define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
+define('DB_HOST', getenv('MYSQLHOST'));
+define('DB_USER', getenv('MYSQLUSER'));
+define('DB_PASS', getenv('MYSQLPASSWORD'));
+define('DB_NAME', getenv('MYSQLDATABASE'));
+define('DB_PORT', getenv('MYSQLPORT'));
+
+error_reporting(0);
+ini_set('display_errors', 0);
 
 ?>
