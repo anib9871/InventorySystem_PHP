@@ -1,8 +1,9 @@
 <?php
 
-  define( 'DB_HOST', 'localhost' );          // Set database host
-  define( 'DB_USER', 'root' );             // Set database user
-  define( 'DB_PASS', 'Mysql123@' );             // Set database password
-  define( 'DB_NAME', 'inventory_system' );        // Set database name
+define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
+define('DB_USER', getenv('MYSQLUSER') ?: 'root');
+define('DB_PASS', getenv('MYSQLPASSWORD') ?: 'Mysql123@');
+define('DB_NAME', getenv('MYSQLDATABASE') ?: 'inventory_system');
+define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 
 ?>
