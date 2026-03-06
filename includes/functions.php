@@ -95,7 +95,7 @@ function read_date($str){
 /* Function for  Readable Make date time
 /*--------------------------------------------------------------*/
 function make_date(){
-  return strftime("%Y-%m-%d %H:%M:%S", time());
+  return date("Y-m-d H:i:s");
 }
 /*--------------------------------------------------------------*/
 /* Function for  Readable date time
