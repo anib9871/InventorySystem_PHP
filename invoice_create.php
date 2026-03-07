@@ -11,7 +11,20 @@ $orgs = find_all('organization_master');
 if(isset($_POST['save_invoice'])){
   global $db;
 
-  $inv_no = "INV".time();
+/* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
+
+$seq = find_by_sql("SELECT last_no FROM sequence_master WHERE sequence_category='invoice'");
+
+$next = $seq[0]['last_no'] + 1;
+
+/* Invoice number generate */
+$inv_no = "INV".str_pad($next,5,"0",STR_PAD_LEFT);
+
+/* Update sequence table */
+$db->query("UPDATE sequence_master 
+SET last_no = $next 
+WHERE sequence_category='invoice'");
+
   $cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
   $org_id = isset($_POST['organization_id']) ? (int)$_POST['organization_id'] : 0;
 
@@ -82,24 +95,60 @@ VALUES
   ================================*/
   $itemInserted = false;
 
-  foreach($_POST['product_id'] as $i => $pid){
+foreach($_POST['product_id'] as $i => $pid){
 
-      $pid = (int)$pid;
+$pid = (int)$pid;
 
-      if($pid <= 0){
-          continue;
-      }
+if($pid <= 0){
+    continue;
+}
 
-      $qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
-      $base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
-      $gst  = isset($_POST['gst'][$i]) ? (float)$_POST['gst'][$i] : 0;
-      $disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
+$qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
+$base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
+$gst  = isset($_POST['gst'][$i]) ? (float)$_POST['gst'][$i] : 0;
+$disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
 
-      if($qty <= 0 || $base <= 0){
-          continue;
-      }
+/* ===== CHECK AVAILABLE STOCK ===== */
+// | type | meaning         |
+// | ---- | --------------- |
+// | 1    | GRN             |
+// | 2    | SALE            |
+// | 3    | PURCHASE RETURN |
+// | 4    | SALE RETURN     |
 
-      $itemInserted = true;
+
+$stock_row = find_by_sql("
+SELECT 
+COALESCE(SUM(
+CASE
+WHEN transaction_type = 1 THEN quantity
+WHEN transaction_type = 2 THEN -quantity
+WHEN transaction_type = 3 THEN -quantity
+WHEN transaction_type = 4 THEN quantity
+END
+),0) AS stock
+FROM transaction_master
+WHERE product_id = {$pid}
+");
+
+$current_stock = $stock_row[0]['stock'] ?? 0;
+
+if($qty > $current_stock){
+
+$db->query("DELETE FROM invoice WHERE id = $qid");
+
+echo "<script>
+alert('Stock not available. Available stock: ".$current_stock."');
+window.history.back();
+</script>";
+
+exit;
+}
+if($qty <= 0 || $base <= 0){
+    continue;
+}
+
+$itemInserted = true;
 
 $line_base = $qty * $base;
 
@@ -163,76 +212,91 @@ $total_gst += $gst_amount;
           die("Item Insert Error");
       }
 
-      /* ================= STOCK DEDUCT ================= */
+      /* ================= TRANSACTION MASTER ENTRY ================= */
 
-// Product fetch
-$product = find_by_id('products', $pid);
-
-
-if($product){
-
-    // Step 1: Finished Goods minus
-    $db->query("
-        UPDATE products
-        SET quantity = quantity - {$qty}
-        WHERE id = {$pid}
-    ");
-  
-    /* ===== STOCK LEDGER ENTRY (FINISHED PRODUCT SALE) ===== */
-
-$db->query("
-INSERT INTO stock_ledger
-(product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
+$trans = $db->query("
+INSERT INTO transaction_master
+(
+product_id,
+supplier_id,
+bill_indent_no,
+entry_date,
+bill_indent_date,
+quantity,
+free_qty,
+unit,
+rate_id,
+gst_id,
+unit_price,
+gst_amount,
+discount_amount,
+net_price,
+mrp,
+misc_amount,
+sale_amount,
+sale_gst,
+sale_net,
+transaction_type,
+status,
+payment_status,
+payment_mode,
+amount_received,
+balance_amount,
+from_dept,
+to_dept,
+comments,
+created_at
+)
 VALUES
-({$pid}, '{$inv_no}', 'SALE', NOW(), 0, {$qty}, NOW())
+(
+'$pid',
+NULL,
+'$inv_no',
+NOW(),
+NOW(),
+'$qty',
+0,
+'PCS',
+0,
+0,
+'$base',
+'$gst_amount',
+'$disc',
+'$line_total',
+0,
+0,
+'$line_total',
+'$gst_amount',
+'$line_total',
+2,
+1,
+0,
+NULL,
+0,
+0,
+'STORE',
+'CUSTOMER',
+'Sale Invoice',
+NOW()
+)
 ");
 
-    // Step 2: If BOM → Raw materials minus
-    if($product['is_bom'] == 1){
-
-        $bom_items = find_by_sql("
-            SELECT raw_product_id, quantity
-            FROM bom
-            WHERE product_id = {$pid}
-        ");
-
-       foreach($bom_items as $b){
-
-    $raw_id  = (int)$b['raw_product_id'];
-    $bom_qty = (float)$b['quantity'];
-
-    $total_raw_deduct = $bom_qty * $qty;
-
-    $db->query("
-        UPDATE products
-        SET quantity = quantity - {$total_raw_deduct}
-        WHERE id = {$raw_id}
-    ");
-
-    /* STOCK LEDGER ENTRY (RAW MATERIAL) */
-    $db->query("
-        INSERT INTO stock_ledger
-        (product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-        VALUES
-        ({$raw_id}, '{$inv_no}', 'SALE-BOM', NOW(), 0, {$total_raw_deduct}, NOW())
-    ");
+if(!$trans){
+    die("Transaction Insert Error: ".$db->error);
 }
-    }
 }
-  }
+
 
   if(!$itemInserted){
       $db->query("DELETE FROM invoice WHERE id = $qid");
       die("Please select at least one valid product");
   }
 
-  $gst_total = $total_gst;
-
-  
-
   /* ===============================
      UPDATE TOTALS
   ================================*/
+  $gst_total = $total_gst;
+
   $db->query("
     UPDATE invoice SET
     subtotal = '$subtotal',
@@ -473,7 +537,7 @@ document.addEventListener("change", e=>{
     let r = e.target.closest("tr");
     let o = e.target.selectedOptions[0];
 
-    let isBom = o.dataset.bom;
+    let isBom = parseInt(o.dataset.bom || 0);
     let bomBtn = r.querySelector(".bomBtn");
 
     if(isBom == "1"){
@@ -590,5 +654,47 @@ document.querySelector("form").addEventListener("submit", function(e){
         alert("Please select at least one product");
         e.preventDefault();
     }
+});
+
+document.addEventListener("click", function(e){
+
+if(e.target.classList.contains("bomBtn")){
+
+    let row = e.target.closest("tr");
+    let product_id = row.querySelector(".prod").value;
+
+    if(!product_id){
+        alert("Select product first");
+        return;
+    }
+
+    fetch("get_bom.php?product_id="+product_id)
+    .then(res => res.text())
+    .then(data => {
+
+        let old = row.nextElementSibling;
+
+        if(old && old.classList.contains("bomRow")){
+            old.remove();
+        }else{
+
+            let tr = document.createElement("tr");
+            tr.className = "bomRow";
+
+            tr.innerHTML = `
+            <td colspan="10">
+            <div style="background:#f8f9fa;padding:10px;border:1px solid #ddd">
+            <b>BOM Details</b>
+            ${data}
+            </div>
+            </td>`;
+
+            row.after(tr);
+        }
+
+    });
+
+}
+
 });
 </script>
