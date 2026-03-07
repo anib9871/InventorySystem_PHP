@@ -10,8 +10,25 @@ $orgs = find_all('organization_master');
 /* SAVE QUOTATION */
 if(isset($_POST['save_quotation'])){
   global $db;
+/* ===== GET NEXT QUOTATION NUMBER FROM SEQUENCE ===== */
 
-  $qno   = "QT".time();
+$seq = find_by_sql("
+SELECT last_no 
+FROM sequence_master 
+WHERE sequence_category='quotation'
+");
+
+$next = $seq[0]['last_no'] + 1;
+
+/* Generate quotation number */
+$qno = "Q".str_pad($next,5,"0",STR_PAD_LEFT);
+
+/* Update sequence table */
+$db->query("
+UPDATE sequence_master 
+SET last_no = $next
+WHERE sequence_category='quotation'
+");
   $cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
   $org_id = isset($_POST['organization_id']) ? (int)$_POST['organization_id'] : 0;
 
