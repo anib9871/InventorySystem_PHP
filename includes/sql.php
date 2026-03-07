@@ -231,6 +231,7 @@ function join_product_table(){
               p.hsn_code,
               p.media_id,
               p.date,
+			  p.is_bom,
               c.name AS categorie,
               m.file_name AS image,
               g.gst_percent,
