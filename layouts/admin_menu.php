@@ -31,6 +31,7 @@
         <li><a href="shipping_type_master.php">Shipping Type Master</a></li>
          <li><a href="payment_mode_master.php">Payment Mode Master</a></li>
           <li><a href="bank_master.php">Bank Master</a></li>
+          <li><a href="master_sequence.php">Sequence Master</a></li>
 
 
       </ul>
@@ -72,7 +73,7 @@
         <!-- <li><a href="sales_report.php">Sales by Dates</a></li>
         <li><a href="monthly_sales.php">Monthly Sales</a></li>
         <li><a href="daily_sales.php">Daily Sales</a></li> -->
-        <li><a href="stock_book.php">Stock Report</a></li>
+        <!-- <li><a href="stock_book.php">Stock Report</a></li> -->
       </ul>
     </li>
 
