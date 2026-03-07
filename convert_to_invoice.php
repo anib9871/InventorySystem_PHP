@@ -92,14 +92,21 @@ $product = find_by_id('products', $product_id);
 
 if($product){
 
-$stock_data = find_by_sql("
-    SELECT 
-    IFNULL(SUM(qty_in),0) - IFNULL(SUM(qty_out),0) as current_stock
-    FROM stock_ledger
-    WHERE product_id = {$product_id}
+$stock_row = find_by_sql("
+SELECT 
+COALESCE(SUM(
+CASE
+WHEN transaction_type = 1 THEN quantity
+WHEN transaction_type = 2 THEN -quantity
+WHEN transaction_type = 3 THEN -quantity
+WHEN transaction_type = 4 THEN quantity
+END
+),0) AS stock
+FROM transaction_master
+WHERE product_id = {$product_id}
 ");
 
-$current_stock = (float)$stock_data[0]['current_stock'];
+$current_stock = $stock_row[0]['stock'] ?? 0;
 
 if($current_stock < $qty){
     $db->query("ROLLBACK");
@@ -112,14 +119,73 @@ if($current_stock < $qty){
         SET quantity = quantity - {$qty}
         WHERE id = {$product_id}
     ");
-
-    /* Stock Ledger Entry (Finished Product) */
+    
     $db->query("
-        INSERT INTO stock_ledger
-        (product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-        VALUES
-        ({$product_id}, '{$invoice_no}', 'SALE-CONVERT', NOW(), 0, {$qty}, NOW())
-    ");
+INSERT INTO transaction_master
+(
+product_id,
+supplier_id,
+bill_indent_no,
+entry_date,
+bill_indent_date,
+quantity,
+free_qty,
+unit,
+rate_id,
+gst_id,
+unit_price,
+gst_amount,
+discount_amount,
+net_price,
+mrp,
+misc_amount,
+sale_amount,
+sale_gst,
+sale_net,
+transaction_type,
+status,
+payment_status,
+payment_mode,
+amount_received,
+balance_amount,
+from_dept,
+to_dept,
+comments,
+created_at
+)
+VALUES
+(
+'$product_id',
+NULL,
+'$invoice_no',
+NOW(),
+NOW(),
+'$qty',
+0,
+'PCS',
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+2,
+1,
+0,
+NULL,
+0,
+0,
+'STORE',
+'CUSTOMER',
+'Quotation Convert Sale',
+NOW()
+)
+");
 
     /* Step 2: If BOM → Raw Materials minus */
     if($product['is_bom'] == 1){
