@@ -135,23 +135,6 @@ if (isset($_POST['save_grn'])) {
 
       update_product_qty($qty + $free, $it['product_id']);
 
-      /* ===== STOCK LEDGER ENTRY (GRN PURCHASE) ===== */
-
-$db->query("
-INSERT INTO stock_ledger
-(product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-VALUES
-(
-  '{$it['product_id']}',
-  '$bill_no',
-  'GRN',
-  '$entry_date',
-  '".($qty + $free)."',
-  0,
-  NOW()
-)
-");
-
         /* ===== UPDATE PRODUCT MASTER (LATEST BUY PRICE) ===== */
 
 $db->query("
