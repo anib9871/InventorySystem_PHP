@@ -15,8 +15,14 @@ if(!$bom){
     exit;
 }
 
-echo "<strong>Raw Materials:</strong><br><br>";
+echo "<table class='table table-sm table-bordered'>";
+echo "<tr><th>Raw Material</th><th>Qty</th></tr>";
 
 foreach($bom as $b){
-    echo $b['name']." — Qty: ".$b['quantity']."<br>";
+    echo "<tr>
+            <td>".$b['name']."</td>
+            <td>".$b['quantity']."</td>
+          </tr>";
 }
+
+echo "</table>";
