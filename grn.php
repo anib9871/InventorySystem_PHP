@@ -38,7 +38,8 @@ if (isset($_POST['save_grn'])) {
   $bill_no      = $_POST['bill_no'];
   $bill_date    = $_POST['bill_date'];
   $payment_mode = $_POST['payment_mode'] ?? '';
-  $amount_paid  = (float)($_POST['amount_paid'] ?? 0);
+  $payments = json_decode($_POST['payments_json'], true);
+  $total_paid = 0;
   $comments     = $_POST['comments'] ?? '';
 
   $entry_date  = date('Y-m-d H:i:s');
@@ -191,8 +192,8 @@ if (is_array($charges)) {
         '$bill_no',
         '$bill_date',
         '$grand_total',
-        '$amount_paid',
-        '".($grand_total - $amount_paid)."',
+        '$total_paid',
+        '".($grand_total - $total_paid)."',
         '".($amount_paid > 0 ? 1 : 0)."',
         NOW()
       )
@@ -200,16 +201,28 @@ if (is_array($charges)) {
     $ledger_id = $db->insert_id();
 
     /* ===== SUPPLIER PAYMENT ===== */
-    if ($amount_paid > 0) {
-      $db->query("
-        INSERT INTO supplier_payment
-        (ledger_id, supplier_id, payment_date,
-         payment_amount, payment_mode, created_at)
-        VALUES
-        ('$ledger_id', '$supplier_id', CURDATE(),
-         '$amount_paid', '$payment_mode', NOW())
-      ");
-    }
+if (is_array($payments)) {
+
+foreach ($payments as $p){
+
+$mode = $p['mode'];
+$amount = $p['amount'];
+
+$total_paid += $amount;
+
+$db->query("
+INSERT INTO supplier_payment
+(ledger_id, supplier_id, payment_date,
+payment_amount, payment_mode, created_at)
+
+VALUES
+('$ledger_id','$supplier_id',CURDATE(),
+'$amount','$mode',NOW())
+");
+
+}
+
+}
 
     $db->query("COMMIT");
     $session->msg("s", "GRN Created Successfully");
@@ -408,28 +421,51 @@ Grand Total ₹ <span id="grandTotal">0.00</span>
 
 <hr>
 
-<div class="row" style="margin-top:15px;">
+<h4><strong>Payments</strong></h4>
 
-<div class="col-md-6">
-<label><strong>Payment Mode</strong></label>
-<select name="payment_mode" class="form-control">
-<option value="">-- None --</option>
+<div class="row">
+
+<div class="col-md-4">
+<select id="pay_mode" class="form-control">
+<option value="">Select Mode</option>
 
 <?php foreach($payment_modes as $pm){ ?>
 <option value="<?= $pm['mode_name']; ?>">
-  <?= $pm['mode_name']; ?>
+<?= $pm['mode_name']; ?>
 </option>
 <?php } ?>
 
 </select>
 </div>
 
-<div class="col-md-6">
-<label><strong>Amount Paid</strong></label>
-<input type="number" name="amount_paid" class="form-control">
+<div class="col-md-3">
+<input type="number" id="pay_amount" class="form-control" placeholder="Amount">
+</div>
+
+<div class="col-md-2">
+<button type="button" onclick="addPayment()" class="btn btn-primary">
+Add
+</button>
 </div>
 
 </div>
+
+<br>
+
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>Payment Mode</th>
+<th>Amount</th>
+<th>X</th>
+</tr>
+</thead>
+
+<tbody id="paymentBody"></tbody>
+
+</table>
+
+<input type="hidden" name="payments_json" id="payments_json">
 
 <br>
 
@@ -457,6 +493,52 @@ let items = [];
 let sno = 1;
 let charges = [];
 
+let payments = [];
+
+function addPayment(){
+
+let mode = document.getElementById("pay_mode").value;
+let amount = parseFloat(document.getElementById("pay_amount").value) || 0;
+
+if(!mode || amount<=0){
+alert("Enter payment details");
+return;
+}
+
+payments.push({
+mode:mode,
+amount:amount
+});
+
+renderPayments();
+}
+
+function renderPayments(){
+
+let body=document.getElementById("paymentBody");
+body.innerHTML="";
+
+payments.forEach((p,i)=>{
+
+body.innerHTML+=`
+<tr>
+<td>${p.mode}</td>
+<td>${p.amount}</td>
+<td>
+<button type="button"
+onclick="payments.splice(${i},1);renderPayments()">
+X
+</button>
+</td>
+</tr>
+`;
+
+});
+
+document.getElementById("payments_json").value=JSON.stringify(payments);
+
+}
+
 function addItem() {
 
   let pid = document.getElementById("product").value;
@@ -481,25 +563,41 @@ function addItem() {
   let base  = (qty * rate) - disc + misc;
   let gst   = (base * gstp) / 100;
   let total = base + gst;
+items.push({
+  sno: sno++,
+  product_id: pid,
+  name: pname,
+  hsn_code: document.getElementById("hsn_code").value,
+  qty: qty,
+  free_qty: free,
+  rate: rate,
+  gst_id: gst_id,
+  gst_percent: gstp,
+  gst_amount: gst,
+  discount: disc,
+  misc: misc,
+  mrp: mrp,
+  total: total
+});
 
-  items.push({
-    sno: sno++,
-    product_id: pid,
-    name: pname,
-    hsn_code: document.getElementById("hsn_code").value,
-    qty: qty,
-    free_qty: free,
-    rate: rate,
-    gst_id: gst_id,
-    gst_percent: gstp,
-    gst_amount: gst,
-    discount: disc,
-    misc: misc,
-    mrp: mrp,
-    total: total
-  });
+renderItems();
 
-  renderItems();
+// CLEAR LEFT PANEL
+document.getElementById("product").value = "";
+document.getElementById("product_name").value = "";
+document.getElementById("hsn_code").value = "";
+
+document.getElementById("qty").value = "";
+document.getElementById("free_qty").value = "";
+document.getElementById("rate").value = "";
+document.getElementById("discount").value = "";
+document.getElementById("misc").value = "";
+document.getElementById("mrp").value = "";
+
+document.getElementById("gst").value = "";
+
+document.getElementById("previousRateBox").style.display = "none";
+document.getElementById("previousRateBox").innerHTML = "";
 }
 
 function renderItems() {
