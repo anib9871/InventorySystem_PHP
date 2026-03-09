@@ -624,7 +624,11 @@ function calculateGrand(){
 /* ADD ROW */
 document.getElementById("addRow").onclick = ()=>{
  let r = document.querySelector(".rowItem").cloneNode(true);
- r.querySelectorAll("input").forEach(i=>i.value=0);
+r.querySelectorAll("input").forEach(i=>{
+ if(i.type !== "button"){
+   i.value = "";
+ }
+});
  r.querySelector(".base").value='';
  r.querySelector(".gst").value='';
  r.querySelector(".gstAmt").value='';
@@ -632,12 +636,32 @@ document.getElementById("addRow").onclick = ()=>{
  document.querySelector("#itemTable tbody").appendChild(r);
 };
 
-/* REMOVE */
-document.addEventListener("click",e=>{
- if(e.target.classList.contains("remove")){
-  e.target.closest("tr").remove();
-  calculateGrand();
- }
+
+/* REMOVE ROW */
+document.addEventListener("click", function(e){
+
+if(e.target.classList.contains("remove")){
+
+    let rows = document.querySelectorAll(".rowItem");
+
+    if(rows.length <= 1){
+        alert("At least one item required");
+        return;
+    }
+
+    let row = e.target.closest("tr");
+
+    /* BOM row bhi remove kare */
+    let next = row.nextElementSibling;
+    if(next && next.classList.contains("bomRow")){
+        next.remove();
+    }
+
+    row.remove();
+
+    calculateGrand();
+}
+
 });
 
 document.querySelector("form").addEventListener("submit", function(e){
