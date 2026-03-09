@@ -106,17 +106,6 @@ include_once('layouts/header.php');
        placeholder="Enter SAC Code (if applicable)">
 <br>
 
-<label>Default GST</label>
-<select name="default_gst_id" class="form-control">
-<option value="0">-- None --</option>
-<?php foreach($gst_list as $gst){ ?>
-<option value="<?= $gst['id']; ?>"
-<?= ($edit && $edit['default_gst_id']==$gst['id'])?'selected':''; ?>>
-<?= $gst['gst_name']; ?> (<?= $gst['gst_percent']; ?>%)
-</option>
-<?php } ?>
-</select><br>
-
 <label>GST Applicable</label>
 <select name="is_gst_applicable" class="form-control">
 <option value="1"
@@ -127,6 +116,17 @@ Yes
 <?= ($edit && $edit['is_gst_applicable']==0)?'selected':''; ?>>
 No
 </option>
+</select><br>
+
+<label>Default GST</label>
+<select name="default_gst_id" class="form-control">
+<option value="0">-- None --</option>
+<?php foreach($gst_list as $gst){ ?>
+<option value="<?= $gst['id']; ?>"
+<?= ($edit && $edit['default_gst_id']==$gst['id'])?'selected':''; ?>>
+<?= $gst['gst_name']; ?> (<?= $gst['gst_percent']; ?>%)
+</option>
+<?php } ?>
 </select><br>
 
 <?php if($edit){ ?>
@@ -167,8 +167,8 @@ Add
 <tr>
 <th>#</th>
 <th>Type Name</th>
-<th>Default GST</th>
 <th>GST Applicable</th>
+<th>Default GST</th>
 <th>SAC</th>
 <th width="18%">Action</th>
 </tr>
@@ -179,8 +179,8 @@ Add
 <tr>
 <td><?= $i+1; ?></td>
 <td><?= $type['type_name']; ?></td>
-<td><?= $type['gst_percent'] ? $type['gst_percent'].'%' : 'N/A'; ?></td>
 <td><?= $type['is_gst_applicable'] ? 'Yes' : 'No'; ?></td>
+<td><?= $type['gst_percent'] ? $type['gst_percent'].'%' : 'N/A'; ?></td>
 
 <!-- SAC FIRST -->
 <td><?= $type['sac_code'] ?: 'N/A'; ?></td>
