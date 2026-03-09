@@ -459,4 +459,48 @@ document.querySelector("form").addEventListener("submit", function(e){
         e.preventDefault();
     }
 });
+
+/* ADD NEW ROW */
+document.getElementById("addRow").addEventListener("click", function(){
+
+    let table = document.querySelector("#itemTable tbody");
+    let firstRow = document.querySelector(".rowItem");
+
+    let newRow = firstRow.cloneNode(true);
+
+    /* Reset values */
+    newRow.querySelectorAll("input").forEach(function(input){
+        if(input.type !== "button"){
+            input.value = 0;
+        }
+    });
+
+    newRow.querySelector(".base").value = "";
+    newRow.querySelector(".gst").value = "";
+    newRow.querySelector(".gstAmt").value = "";
+    newRow.querySelector(".totalRow").value = "";
+
+    newRow.querySelector(".prod").value = "";
+
+    table.appendChild(newRow);
+
+});
+
+/* REMOVE ROW */
+document.addEventListener("click", function(e){
+
+if(e.target.classList.contains("remove")){
+
+    let row = e.target.closest("tr");
+
+    if(document.querySelectorAll(".rowItem").length > 1){
+        row.remove();
+    } else {
+        alert("At least one item required");
+    }
+
+    calculateGrand();
+}
+
+});
 </script>
