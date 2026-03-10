@@ -17,9 +17,16 @@ function find_all($table) {
 function find_by_sql($sql)
 {
   global $db;
+
   $result = $db->query($sql);
+
+  // query fail ho gayi
+  if(!$result){
+    return array();
+  }
+
   $result_set = $db->while_loop($result);
- return $result_set;
+  return $result_set;
 }
 /*--------------------------------------------------------------*/
 /*  Function for Find data from table by id
@@ -29,13 +36,20 @@ function find_by_id($table,$id)
   global $db;
   $id = (int)$id;
     if(tableExists($table)){
-          $sql = $db->query("SELECT * FROM {$db->escape($table)} WHERE id='{$db->escape($id)}' LIMIT 1");
-          if($result = $db->fetch_assoc($sql))
-            return $result;
-          else
-            return null;
-     }
+       $sql = $db->query("SELECT * FROM {$db->escape($table)} WHERE id='{$db->escape($id)}' LIMIT 1");
+
+if(!$sql){
+   return null;
 }
+
+$result = $db->fetch_assoc($sql);
+
+if($result){
+   return $result;
+}else{
+   return null;
+}
+    }}
 /*--------------------------------------------------------------*/
 /* Function for Delete data from table by id
 /*--------------------------------------------------------------*/
@@ -173,13 +187,18 @@ function tableExists($table){
   /*--------------------------------------------------------------*/
   /* Find group level
   /*--------------------------------------------------------------*/
-  function find_by_groupLevel($level)
-  {
-    global $db;
-    $sql = "SELECT group_level FROM user_groups WHERE group_level = '{$db->escape($level)}' LIMIT 1 ";
-    $result = $db->query($sql);
-    return($db->num_rows($result) === 0 ? true : false);
+function find_by_groupLevel($level)
+{
+  global $db;
+
+  $sql = "SELECT * FROM user_groups WHERE group_level = '{$db->escape($level)}' LIMIT 1";
+  $result = $db->query($sql);
+
+  if(!$result){
+     return null;
   }
+
+  return $db->fetch_assoc($result);
   /*--------------------------------------------------------------*/
   /* Function for cheaking which user level has access to page
   /*--------------------------------------------------------------*/
