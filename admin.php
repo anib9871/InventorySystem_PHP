@@ -15,11 +15,11 @@
 ?>
 <?php include_once('layouts/header.php'); ?>
 
-<div class="row">
+<!-- <div class="row">
    <div class="col-md-6">
      <?php echo display_msg($msg); ?>
    </div>
-</div>
+</div> -->
   <div class="row">
     <a href="users.php" style="color:black;">
 		<div class="col-md-3">
