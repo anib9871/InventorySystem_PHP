@@ -199,6 +199,7 @@ function find_by_groupLevel($level)
   }
 
   return $db->fetch_assoc($result);
+}
   /*--------------------------------------------------------------*/
   /* Function for cheaking which user level has access to page
   /*--------------------------------------------------------------*/
