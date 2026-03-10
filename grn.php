@@ -59,9 +59,12 @@ if (isset($_POST['save_grn'])) {
       $misc  = (float)$it['misc'];
       $mrp   = (float)$it['mrp'];
 
-      $base_amount = ($qty * $rate) - $disc + $misc;
-      $gst_amount  = ($base_amount * $gstp) / 100;
-      $net_amount  = $base_amount + $gst_amount;
+      $total_amount = ($qty * $rate) - $disc + $misc;
+
+      $base_amount = $total_amount / (1 + ($gstp / 100));
+      $gst_amount  = $total_amount - $base_amount;
+
+      $net_amount  = $total_amount;
 
       $grand_total += $net_amount;
 
@@ -143,7 +146,7 @@ $db->query("
   SET 
     buy_price = '$rate',
     gst_id    = '{$it['gst_id']}',
-    buy_type  = 'exclusive'
+    buy_type  = 'inclusive'
   WHERE id = '{$it['product_id']}'
 ");
     }
@@ -194,7 +197,7 @@ if (is_array($charges)) {
         '$grand_total',
         '$total_paid',
         '".($grand_total - $total_paid)."',
-        '".($amount_paid > 0 ? 1 : 0)."',
+        '".($total_paid > 0 ? 1 : 0)."',
         NOW()
       )
     ");
@@ -560,9 +563,10 @@ function addItem() {
     return;
   }
 
-  let base  = (qty * rate) - disc + misc;
-  let gst   = (base * gstp) / 100;
-  let total = base + gst;
+    let total = (qty * rate) - disc + misc;
+
+    let base = total / (1 + (gstp/100));
+    let gst  = total - base;
 items.push({
   sno: sno++,
   product_id: pid,
@@ -573,6 +577,7 @@ items.push({
   rate: rate,
   gst_id: gst_id,
   gst_percent: gstp,
+  base_amount: base,
   gst_amount: gst,
   discount: disc,
   misc: misc,
@@ -609,25 +614,27 @@ function renderItems() {
   items.forEach((it, i) => {
 
     grand += it.total;
-    let amount = it.qty * it.rate;
-    let gst_amt = (amount * it.gst_percent) / 100;
+    let total = (it.qty * it.rate) - it.discount + it.misc;
+
+    let base = total / (1 + (it.gst_percent/100));
+    let gst_amt = total - base;
 
 
-    tb.innerHTML += `
-      <tr>
-        <td>${it.sno}</td>
-        <td>${it.name}</td>
-        <td>${it.hsn_code || '-'}</td>
-        <td>${it.qty} (+${it.free_qty})</td>
-        <td>${it.rate}</td>
-        <td>${amount.toFixed(2)}</td> 
-        <td>${it.gst_percent}%</td>
-        <td>${it.gst_amount.toFixed(2)}</td>
-        <td>${it.total.toFixed(2)}</td>
-        <td>
-          <button type="button" onclick="items.splice(${i},1);renderItems()">X</button>
-        </td>
-      </tr>`;
+tb.innerHTML += `
+<tr>
+<td>${it.sno}</td>
+<td>${it.name}</td>
+<td>${it.hsn_code || '-'}</td>
+<td>${it.qty} (+${it.free_qty})</td>
+<td>${it.rate}</td>
+<td>${it.base_amount.toFixed(2)}</td>
+<td>${it.gst_percent}%</td>
+<td>${it.gst_amount.toFixed(2)}</td>
+<td>${it.total.toFixed(2)}</td>
+<td>
+<button type="button" onclick="items.splice(${i},1);renderItems()">X</button>
+</td>
+</tr>`;
   });
 
     updateGrandTotal();
