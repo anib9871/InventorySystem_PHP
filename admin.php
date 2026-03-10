@@ -137,7 +137,7 @@
            </a>
            </td>
            <td><?php echo remove_junk(ucfirst($recent_sale['date'])); ?></td>
-           <td>$<?php echo remove_junk(first_character($recent_sale['price'])); ?></td>
+           ₹<?php echo (int)$recent_product['sale_price']; ?>
         </tr>
 
        <?php endforeach; ?>
