@@ -99,12 +99,14 @@ function tableExists($table){
     global $db;
     $username = $db->escape($username);
     $password = $db->escape($password);
-    $sql  = sprintf("SELECT id,username,password,user_level FROM users WHERE username ='%s' LIMIT 1", $username);
+    
+	  $sql  = sprintf("SELECT id,username,password,user_level FROM users WHERE username ='%s' LIMIT 1", $username);
     $result = $db->query($sql);
-    if($db->num_rows($result)){
+    
+	  if($db->num_rows($result)){
       $user = $db->fetch_assoc($result);
-      $password_request = sha1($password);
-      if($password_request === $user['password'] ){
+      // $password_request = sha1($password);
+      if($password === $user['password'] ){
         return $user['id'];
       }
     }
