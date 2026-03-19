@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Customer Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* FETCH CUSTOMER LIST */
 $customers = find_by_sql("SELECT cm.*, gsm.state_name 
