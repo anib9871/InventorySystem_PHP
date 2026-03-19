@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if($id <= 0) die("Invalid ID");
