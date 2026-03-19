@@ -7,7 +7,7 @@ $password = trim($_POST['password']);
 
 /* CONNECT MASTER DATABASE */
 
-// $conn = mysqli_connect("127.0.0.1","root","Mysql123@","master_inventory",3306);
+$result = $db->query($sql);
 
 if(!$conn){
 die("Database connection failed");
