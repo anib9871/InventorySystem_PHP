@@ -1,7 +1,7 @@
 <?php
 $page_title = 'GST Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* ---------- FETCH ALL ---------- */
 $all_gst = find_by_sql("SELECT * FROM gst_master ORDER BY gst_percent ASC");
