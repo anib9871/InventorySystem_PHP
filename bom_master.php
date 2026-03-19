@@ -1,7 +1,7 @@
 <?php
 $page_title = 'BOM Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* FETCH PRODUCTS WITH PRICE + GST + BUY TYPE */
 $products = find_by_sql("
