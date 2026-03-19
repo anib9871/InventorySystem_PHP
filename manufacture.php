@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $products = find_by_sql("SELECT id, name FROM products WHERE is_bom = 1");
