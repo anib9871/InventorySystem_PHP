@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Shipping Type Master';
 require_once('includes/load.php');
-page_require_level(1);
+//page_require_level(1);
 
 $gst_list = find_all('gst_master');
 
