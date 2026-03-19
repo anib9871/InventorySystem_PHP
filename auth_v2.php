@@ -2,16 +2,8 @@
 session_start();
 require_once('includes/load.php');
 
-$username = trim($_POST['username']);
+$username = $db->escape(trim($_POST['username']));
 $password = trim($_POST['password']);
-
-/* CONNECT MASTER DATABASE */
-
-$result = $db->query($sql);
-
-if(!$conn){
-die("Database connection failed");
-}
 
 /* FETCH USER + ORGANIZATION DATABASE */
 
@@ -19,20 +11,22 @@ $sql = "SELECT u.*, o.db_name
 FROM master_inventory.user_credentials u
 LEFT JOIN master_inventory.master_organization o
 ON u.org_id = o.org_id
-WHERE u.username='$username'
-AND u.password='$password'
+WHERE u.username='{$username}'
 LIMIT 1";
 
-$result = mysqli_query($conn,$sql);
+$result = $db->query($sql);
 
-if(mysqli_num_rows($result) == 1){
+if($db->num_rows($result) == 1){
 
-$user = mysqli_fetch_assoc($result);
+$user = $db->fetch_assoc($result);
+
+/* PASSWORD CHECK */
+if($password !== $user['password']){
+    $session->msg("d","Invalid Password");
+    redirect('login_v2.php');
+}
 
 /* LOGIN SESSION */
-
-$session->login($user['id']);
-
 $_SESSION['user_id'] = $user['id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['role_id'] = $user['role_id'];
@@ -40,45 +34,30 @@ $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
 $_SESSION['db_name'] = $user['db_name'];
 
-/* 🔥 MOST IMPORTANT — TENANT DATABASE */
-
-$_SESSION['db_name'] = $user['db_name'];
-
-/* RECONNECT DATABASE WITH TENANT DB */
-
+/* 🔥 SWITCH DATABASE */
 $db->db_disconnect();
 $db->db_connect();
 
 /* ROLE BASED LOGIN */
-
 if($user['role_id'] == 1){
 
-$_SESSION['superadmin_login'] = true;
+    $_SESSION['superadmin_login'] = true;
+    redirect('superadmin_dashboard.php');
 
-header("Location: superadmin_dashboard.php");
-exit();
+}elseif($user['role_id'] == 2){
 
-}
+    redirect('admin.php');
 
-elseif($user['role_id'] == 2){
+}elseif($user['role_id'] == 3){
 
-header("Location: admin.php");
-exit();
-
-}
-
-elseif($user['role_id'] == 3){
-
-header("Location: home.php");
-exit();
+    redirect('home.php');
 
 }
 
 }else{
 
 $session->msg("d","Invalid Username or Password");
-header("Location: login_v2.php");
-exit();
+redirect('login_v2.php');
 
 }
 ?>
