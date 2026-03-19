@@ -1,40 +1,84 @@
-<?php include_once('includes/load.php'); ?>
 <?php
-$req_fields = array('username','password' );
-validate_fields($req_fields);
-$username = remove_junk($_POST['username']);
-$password = remove_junk($_POST['password']);
+session_start();
+require_once('includes/load.php');
 
-  if(empty($errors)){
+$username = trim($_POST['username']);
+$password = trim($_POST['password']);
 
-    $user = authenticate_v2($username, $password);
+/* CONNECT MASTER DATABASE */
 
-        if($user):
-           //create session with id
-           $session->login($user['id']);
-           //Update Sign in time
-           updateLastLogIn($user['id']);
-           // redirect user to group home page by user level
-           if($user['user_level'] === '1'):
-             $session->msg("s", "Hello ".$user['username'].", Welcome.");
-             redirect('admin.php',false);
-           elseif ($user['user_level'] === '2'):
-              $session->msg("s", "Hello ".$user['username'].", Welcome.");
-             redirect('special.php',false);
-           else:
-              $session->msg("s", "Hello ".$user['username'].", Welcome.");
-             redirect('home.php',false);
-           endif;
+// $conn = mysqli_connect("127.0.0.1","root","Mysql123@","master_inventory",3306);
 
-        else:
-          $session->msg("d", "Sorry Username/Password incorrect.");
-          redirect('index.php',false);
-        endif;
+if(!$conn){
+die("Database connection failed");
+}
 
-  } else {
+/* FETCH USER + ORGANIZATION DATABASE */
 
-     $session->msg("d", $errors);
-     redirect('login_v2.php',false);
-  }
+$sql = "SELECT u.*, o.db_name
+FROM master_inventory.user_credentials u
+LEFT JOIN master_inventory.master_organization o
+ON u.org_id = o.org_id
+WHERE u.username='$username'
+AND u.password='$password'
+LIMIT 1";
 
+$result = mysqli_query($conn,$sql);
+
+if(mysqli_num_rows($result) == 1){
+
+$user = mysqli_fetch_assoc($result);
+
+/* LOGIN SESSION */
+
+$session->login($user['id']);
+
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['username'] = $user['username'];
+$_SESSION['role_id'] = $user['role_id'];
+$_SESSION['org_id'] = $user['org_id'];
+$_SESSION['center_id'] = $user['center_id'];
+$_SESSION['db_name'] = $user['db_name'];
+
+/* 🔥 MOST IMPORTANT — TENANT DATABASE */
+
+$_SESSION['db_name'] = $user['db_name'];
+
+/* RECONNECT DATABASE WITH TENANT DB */
+
+$db->db_disconnect();
+$db->db_connect();
+
+/* ROLE BASED LOGIN */
+
+if($user['role_id'] == 1){
+
+$_SESSION['superadmin_login'] = true;
+
+header("Location: superadmin_dashboard.php");
+exit();
+
+}
+
+elseif($user['role_id'] == 2){
+
+header("Location: admin.php");
+exit();
+
+}
+
+elseif($user['role_id'] == 3){
+
+header("Location: home.php");
+exit();
+
+}
+
+}else{
+
+$session->msg("d","Invalid Username or Password");
+header("Location: login_v2.php");
+exit();
+
+}
 ?>
