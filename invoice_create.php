@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $customers = find_all('customer_master');
