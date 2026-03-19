@@ -1,7 +1,7 @@
 <?php
 $page_title = 'GST State Code Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* FETCH */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
