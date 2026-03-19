@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Products';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 
 
