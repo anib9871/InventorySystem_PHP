@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Edit User';
 require_once('includes/load.php');
-page_require_level(1);
+// page_require_level(1);
 
 $e_user = find_by_id('users',(int)$_GET['id']);
 $groups  = find_all('user_groups');
