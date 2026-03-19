@@ -10,7 +10,7 @@
        <h4>Inventory Management System</h4>
      </div>
      <?php echo display_msg($msg); ?>
-      <form method="post" action="auth.php" class="clearfix">
+      <form method="post" action="auth_v2.php" class="clearfix">
         <div class="form-group">
               <label for="username" class="control-label">Username</label>
               <input type="name" class="form-control" name="username" placeholder="Username">
