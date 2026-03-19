@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Rate Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* PRODUCT LIST */
 $products = find_by_sql("SELECT id, name FROM products ORDER BY name");
