@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Invoice List';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* Fetch invoice list */
 $invoices = find_by_sql("
