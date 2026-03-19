@@ -1,7 +1,7 @@
 <?php
 $page_title = 'GRN';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 $products   = find_all('products');
 $suppliers  = find_all('supplier_master');
