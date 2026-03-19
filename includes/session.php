@@ -1,5 +1,8 @@
 <?php
- session_start();
+
+if(session_status() === PHP_SESSION_NONE){
+    session_start();
+}
 
 class Session {
 
@@ -11,49 +14,44 @@ class Session {
    $this->userLoginSetup();
  }
 
-  public function isUserLoggedIn(){
+ public function isUserLoggedIn(){
     return $this->user_is_logged_in;
-  }
-  public function login($user_id){
+ }
+
+ public function login($user_id){
     $_SESSION['user_id'] = $user_id;
-  }
-  private function userLoginSetup()
-  {
-    if(isset($_SESSION['user_id']))
-    {
-      $this->user_is_logged_in = true;
-    } else {
-      $this->user_is_logged_in = false;
-    }
+ }
 
-  }
-  public function logout(){
+ private function userLoginSetup(){
+    $this->user_is_logged_in = isset($_SESSION['user_id']);
+ }
+
+ public function logout(){
     unset($_SESSION['user_id']);
-  }
+ }
 
-  public function msg($type ='', $msg =''){
+ public function msg($type ='', $msg =''){
     if(!empty($msg)){
        if(strlen(trim($type)) == 1){
-         $type = str_replace( array('d', 'i', 'w','s'), array('danger', 'info', 'warning','success'), $type );
+         $type = str_replace(
+           array('d','i','w','s'),
+           array('danger','info','warning','success'),
+           $type
+         );
        }
        $_SESSION['msg'][$type] = $msg;
     } else {
       return $this->msg;
     }
-  }
+ }
 
-  private function flash_msg(){
-
-    if(isset($_SESSION['msg'])) {
+ private function flash_msg(){
+    if(isset($_SESSION['msg'])){
       $this->msg = $_SESSION['msg'];
       unset($_SESSION['msg']);
-    } else {
-      $this->msg;
     }
-  }
+ }
 }
 
 $session = new Session();
 $msg = $session->msg();
-
-?>
