@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 $sequences = find_all('sequence_master');
 
