@@ -1,7 +1,18 @@
 <?php
-  ob_start();
-  require_once('includes/load.php');
-  if($session->isUserLoggedIn(true)) { redirect('home.php', false);}
+require_once('includes/load.php');
+
+/* SUPERADMIN ALREADY LOGIN */
+
+if(isset($_SESSION['superadmin_login'])){
+header("Location: superadmin_dashboard.php");
+exit();
+}
+
+/* NORMAL USER ALREADY LOGIN */
+
+if($session->isUserLoggedIn(true)){
+redirect('home.php', false);
+}
 ?>
 
 <?php include_once('layouts/header.php'); ?>
@@ -10,27 +21,27 @@
     <div class="text-center">
        <h1>Welcome</h1>
        <p>Sign in to start your session</p>
-     </div>
+    </div>
 
-     <?php echo display_msg($msg); ?>
+    <?php echo display_msg($msg); ?>
 
-      <form method="post" action="auth_v2.php" class="clearfix">
+    <form method="post" action="auth_v2.php">
 
         <div class="form-group">
-              <label class="control-label">Username</label>
-              <input type="text" class="form-control" name="username" placeholder="Username">
+            <label>Username</label>
+            <input type="text" class="form-control" name="username" required>
         </div>
 
         <div class="form-group">
-            <label class="control-label">Password</label>
-            <input type="password" name="password" class="form-control" placeholder="Password">
+            <label>Password</label>
+            <input type="password" class="form-control" name="password" required>
         </div>
 
         <div class="form-group">
-                <button type="submit" class="btn btn-info pull-right">Login</button>
+            <button type="submit" class="btn btn-info pull-right">Login</button>
         </div>
 
-      </form>
+    </form>
 </div>
 
 <?php include_once('layouts/footer.php'); ?>
