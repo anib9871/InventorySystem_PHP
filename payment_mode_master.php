@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Payment Mode Master';
 require_once('includes/load.php');
-page_require_level(1);
+//page_require_level(1);
 
 /* ================= ADD ================= */
 
