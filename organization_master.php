@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Organization Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* FETCH ORGANIZATION LIST */
 $orgs = find_by_sql("SELECT om.*, gsm.state_name 
