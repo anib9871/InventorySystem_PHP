@@ -1,15 +1,22 @@
 <?php
-  require_once('includes/load.php');
+require_once('load.php');
+
+global $db;
+$db->db_disconnect();
+$db->db_connect();
 
 /*--------------------------------------------------------------*/
 /* Function for find all database table rows by table name
 /*--------------------------------------------------------------*/
 function find_all($table) {
+
    global $db;
-   if(tableExists($table))
-   {
-     return find_by_sql("SELECT * FROM ".$db->escape($table));
+
+   if(tableExists($table)){
+       return find_by_sql("SELECT * FROM ".$db->escape($table));
    }
+
+   return array();   // important fix
 }
 /*--------------------------------------------------------------*/
 /* Function for Perform queries
@@ -20,12 +27,16 @@ function find_by_sql($sql)
 
   $result = $db->query($sql);
 
-  // query fail ho gayi
   if(!$result){
-    return array();
+    return array();   // return empty array
   }
 
   $result_set = $db->while_loop($result);
+
+  if(!$result_set){
+    return array();
+  }
+
   return $result_set;
 }
 /*--------------------------------------------------------------*/
@@ -83,71 +94,129 @@ function count_by_id($table){
 /*--------------------------------------------------------------*/
 function tableExists($table){
   global $db;
-  $table_exit = $db->query('SHOW TABLES FROM '.DB_NAME.' LIKE "'.$db->escape($table).'"');
-      if($table_exit) {
-        if($db->num_rows($table_exit) > 0)
-              return true;
-         else
-              return false;
-      }
+
+  $dbname = $_SESSION['db_name'] ?? DB_NAME;
+
+  if(empty($dbname)){
+    return false;
   }
+
+  $sql = "SHOW TABLES FROM `$dbname` LIKE '".$db->escape($table)."'";
+
+  $result = $db->query($sql);
+
+  if(!$result){
+    return false;
+  }
+
+  return ($db->num_rows($result) > 0);
+}
  /*--------------------------------------------------------------*/
  /* Login with the data provided in $_POST,
  /* coming from the login form.
 /*--------------------------------------------------------------*/
-  function authenticate($username='', $password='') {
-    global $db;
-    $username = $db->escape($username);
-    $password = $db->escape($password);
-    
-	  $sql  = sprintf("SELECT id,username,password,user_level FROM users WHERE username ='%s' LIMIT 1", $username);
-    $result = $db->query($sql);
-    
-	  if($db->num_rows($result)){
+function authenticate($username='', $password='') {
+
+  global $db;
+
+  $username = $db->escape($username);
+  $password = $db->escape($password);
+
+  $sql  = sprintf("SELECT id,username,password,user_level 
+                   FROM users 
+                   WHERE username ='%s' LIMIT 1", $username);
+
+  $result = $db->query($sql);
+
+  if($db->num_rows($result)){
       $user = $db->fetch_assoc($result);
-      // $password_request = sha1($password);
-      if($password === $user['password'] ){
-        return $user['id'];
+
+      if($password === $user['password']){
+          return $user;   // RETURN FULL USER ARRAY
       }
-    }
-   return false;
   }
+
+  return false;
+}
   /*--------------------------------------------------------------*/
   /* Login with the data provided in $_POST,
   /* coming from the login_v2.php form.
   /* If you used this method then remove authenticate function.
  /*--------------------------------------------------------------*/
-   function authenticate_v2($username='', $password='') {
-     global $db;
-     $username = $db->escape($username);
-     $password = $db->escape($password);
-     $sql  = sprintf("SELECT id,username,password,user_level FROM users WHERE username ='%s' LIMIT 1", $username);
-     $result = $db->query($sql);
-     if($db->num_rows($result)){
-       $user = $db->fetch_assoc($result);
-       $password_request = sha1($password);
-       if($password_request === $user['password'] ){
-         return $user;
-       }
-     }
-    return false;
-   }
+// function authenticate_v2($username='', $password='') {
 
+//   global $db;
+
+//   $username = $db->escape($username);
+//   $password = $db->escape($password);
+
+//   /* MASTER DB CONNECTION */
+//   $master = mysqli_connect("127.0.0.1","root","Mysql123@","inventory_master",3306);
+
+//   /* CHECK USER IN MASTER TABLE */
+//   $sql = "SELECT * FROM user_credentials 
+//           WHERE username='{$username}' 
+//           AND password='{$password}' 
+//           LIMIT 1";
+
+//   $result = mysqli_query($master,$sql);
+
+//   if(mysqli_num_rows($result) > 0){
+
+//     $user_master = mysqli_fetch_assoc($result);
+
+//     /* STORE ORG INFO IN SESSION */
+//     $_SESSION['org_id'] = $user_master['org_id'];
+//     $_SESSION['center_id'] = $user_master['center_id'];
+
+//     $org_id = $user_master['org_id'];
+
+//     /* GET ORGANIZATION DATABASE */
+//     $org_sql = "SELECT db_name FROM organization_master WHERE org_id='{$org_id}' LIMIT 1";
+//     $org_result = mysqli_query($master,$org_sql);
+
+//     if(mysqli_num_rows($org_result)){
+
+//       $org = mysqli_fetch_assoc($org_result);
+
+//       /* SAVE DATABASE NAME */
+//       $_SESSION['db_name'] = $org['db_name'];
+
+//     }
+
+//     /* NOW CHECK USER IN CLIENT DATABASE */
+//     $sql  = sprintf("SELECT id,username,password,user_level FROM users WHERE username ='%s' LIMIT 1", $username);
+//     $result = $db->query($sql);
+
+//     if($db->num_rows($result)){
+//       $user = $db->fetch_assoc($result);
+
+//       if($password === $user['password']){
+//         return $user;
+//       }
+//     }
+
+//   }
+
+//   return false;
+// }
 
   /*--------------------------------------------------------------*/
   /* Find current log in user by session id
   /*--------------------------------------------------------------*/
-  function current_user(){
-      static $current_user;
-      global $db;
-      if(!$current_user){
-         if(isset($_SESSION['user_id'])):
-             $user_id = intval($_SESSION['user_id']);
-             $current_user = find_by_id('users',$user_id);
-        endif;
-      }
-    return $current_user;
+function current_user(){
+  static $current_user;
+  global $db;
+
+  if(!$current_user){
+    if(isset($_SESSION['user_id'])){
+      $user_id = intval($_SESSION['user_id']);
+      $current_user = find_by_id('users',$user_id);
+    }
   }
+
+  return $current_user ?? null;
+}
   /*--------------------------------------------------------------*/
   /* Find all user by
   /* Joining users table and user gropus table
@@ -196,7 +265,7 @@ function find_by_groupLevel($level)
   $sql = "SELECT * FROM user_groups WHERE group_level = '{$db->escape($level)}' LIMIT 1";
   $result = $db->query($sql);
 
-  if(!$result){
+  if(!$result || $db->num_rows($result) == 0){
      return null;
   }
 
@@ -205,27 +274,40 @@ function find_by_groupLevel($level)
   /*--------------------------------------------------------------*/
   /* Function for cheaking which user level has access to page
   /*--------------------------------------------------------------*/
-   function page_require_level($require_level){
-     global $session;
-     $current_user = current_user();
-     $login_level = find_by_groupLevel($current_user['user_level']);
-     //if user not login
-     if (!$session->isUserLoggedIn(true)):
-            $session->msg('d','Please login...');
-            redirect('index.php', false);
-      //if Group status Deactive
-     elseif($login_level['group_status'] === '0'):
-           $session->msg('d','This level user has been band!');
-           redirect('home.php',false);
-      //cheackin log in User level and Require level is Less than or equal to
-     elseif($current_user['user_level'] <= (int)$require_level):
-              return true;
-      else:
-            $session->msg("d", "Sorry! you dont have permission to view the page.");
-            redirect('home.php', false);
-        endif;
+function page_require_level($require_level){
+  global $session;
 
-     }
+  $current_user = current_user();
+
+  if(!$current_user){
+    $session->msg('d','User not found!');
+    redirect('index.php', false);
+  }
+
+  $login_level = find_by_groupLevel($current_user['user_level']);
+
+  if (!$session->isUserLoggedIn(true)){
+    $session->msg('d','Please login...');
+    redirect('index.php', false);
+  }
+
+  if(!$login_level){
+    $session->msg('d','User group not found!');
+    redirect('home.php', false);
+  }
+
+  if($login_level['group_status'] === '0'){
+    $session->msg('d','This level user has been banned!');
+    redirect('home.php',false);
+  }
+
+  if($current_user['user_level'] <= (int)$require_level){
+    return true;
+  } else {
+    $session->msg("d", "No permission.");
+    redirect('home.php', false);
+  }
+}
    /*--------------------------------------------------------------*/
    /* Function for Finding all product name
    /* JOIN with categorie  and media database table
@@ -253,7 +335,7 @@ function join_product_table(){
               p.hsn_code,
               p.media_id,
               p.date,
-			  p.is_bom,
+              p.is_bom,
               c.name AS categorie,
               m.file_name AS image,
               g.gst_percent,
@@ -319,15 +401,37 @@ function join_product_table(){
  /*--------------------------------------------------------------*/
  /* Function for Find Highest saleing Product
  /*--------------------------------------------------------------*/
- function find_higest_saleing_product($limit){
+// function find_by_sql($sql)
+// {
+//   global $db;
+
+//   $result = $db->query($sql);
+
+//   if(!$result){
+//     return array();   // return empty array
+//   }
+
+//   $result_set = $db->while_loop($result);
+
+//   if(!$result_set){
+//     return array();
+//   }
+
+//   return $result_set;
+// }
+
+function find_higest_saleing_product($limit){
    global $db;
-   $sql  = "SELECT p.name, COUNT(s.product_id) AS totalSold, SUM(s.qty) AS totalQty";
-   $sql .= " FROM sales s";
-   $sql .= " LEFT JOIN products p ON p.id = s.product_id ";
-   $sql .= " GROUP BY s.product_id";
-   $sql .= " ORDER BY SUM(s.qty) DESC LIMIT ".$db->escape((int)$limit);
-   return $db->query($sql);
- }
+
+   $sql  = "SELECT p.name, COUNT(s.product_id) AS totalSold, SUM(s.qty) AS totalQty ";
+   $sql .= "FROM sales s ";
+   $sql .= "LEFT JOIN products p ON p.id = s.product_id ";
+   $sql .= "GROUP BY s.product_id ";
+   $sql .= "ORDER BY SUM(s.qty) DESC ";
+   $sql .= "LIMIT ".$db->escape((int)$limit);
+
+   return find_by_sql($sql);
+}
  /*--------------------------------------------------------------*/
  /* Function for find all sales
  /*--------------------------------------------------------------*/
