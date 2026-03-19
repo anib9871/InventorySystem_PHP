@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Supplier Master';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* FETCH SUPPLIERS LIST */
 $suppliers = find_by_sql("SELECT sm.*, gsm.state_name 
