@@ -1,189 +1,31 @@
 <?php
-require_once('includes/load.php');
-page_require_level(2);
-
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if($id <= 0) die("Invalid ID");
-
-/* Fetch quotation */
-$qdata = find_by_sql("SELECT * FROM quotation_master WHERE id = $id");
-if(!$qdata) die("Quotation not found");
-$quote = $qdata[0];
-
-/* Fetch items */
-$items = find_by_sql("
-SELECT *
-FROM quotation_items
-WHERE quotation_id = $id
-");
-
-$customers = find_all('customer_master');
-$products  = join_product_table();
-
-/* ================= UPDATE ================= */
-if(isset($_POST['update_quotation'])){
-
-    $cust = (int)$_POST['customer_id'];
-    $gst_type = $_POST['gst_type'] ?? 'exclusive';
-
-    $subtotal = 0;
-    $net_total = 0;
-
-    $db->query("DELETE FROM quotation_items WHERE quotation_id = $id");
-
-    foreach($_POST['product_id'] as $i => $pid){
-
-        $pid  = (int)$pid;
-        $qty  = (float)$_POST['qty'][$i];
-        $base = (float)$_POST['rate'][$i];
-        $gst  = (float)$_POST['gst'][$i];
-        $disc = (float)$_POST['discount'][$i];
-
-        if($pid <= 0 || $qty <= 0) continue;
-
-        $line_base = $qty * $base;
-        $discounted_base = $line_base - $disc;
-
-        if($gst_type == "exclusive"){
-            $gst_amount = $discounted_base * $gst / 100;
-            $rate_incl  = $base + ($base * $gst / 100);
-            $line_total = $discounted_base + $gst_amount;
-        } else {
-            $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
-            $rate_incl  = $base;
-            $line_total = $discounted_base;
-        }
-
-        $subtotal  += $discounted_base;
-        $net_total += $line_total;
-
-        $db->query("
-        INSERT INTO quotation_items
-        (quotation_id, product_id, qty, rate_excl_gst,
-         discount_amount, gst_percent, rate_incl_gst, line_total)
-        VALUES
-        ($id, $pid, $qty, $base,
-         $disc, $gst, $rate_incl, $line_total)
-        ");
-    }
-
-    $gst_total = $net_total - $subtotal;
-
-    $db->query("
-    UPDATE quotation_master SET
-    customer_id = '$cust',
-    gst_type = '$gst_type',
-    subtotal = '$subtotal',
-    gst_total = '$gst_total',
-    net_total = '$net_total'
-    WHERE id = '$id'
-    ");
-
-    echo "<script>
-    window.location='quotation_list.php?print_id=".$id."';
-    </script>";
-}
+  $page_title = 'My profile';
+  require_once('includes/load.php');
+  // Checkin What level user has permission to view this page
+   //page_require_level(3);
 ?>
-
+  <?php
+  $user_id = (int)$_GET['id'];
+  if(empty($user_id)):
+    redirect('home.php',false);
+  else:
+    $user_p = find_by_id('users',$user_id);
+  endif;
+?>
 <?php include_once('layouts/header.php'); ?>
-
-<div class="card shadow-sm">
-<div class="card-header bg-white">
-<h4>Edit Quotation</h4>
+<div class="row">
+   <div class="col-md-4">
+       <div class="panel profile">
+         <div class="jumbotron text-center bg-red">
+            <img class="img-circle img-size-2" src="uploads/users/<?php echo $user_p['image'];?>" alt="">
+           <h3><?php echo first_character($user_p['name']); ?></h3>
+         </div>
+        <?php if( $user_p['id'] === $user['id']):?>
+         <ul class="nav nav-pills nav-stacked">
+          <li><a href="edit_account.php"> <i class="glyphicon glyphicon-edit"></i> Edit profile</a></li>
+         </ul>
+       <?php endif;?>
+       </div>
+   </div>
 </div>
-
-<div class="card-body">
-<form method="post">
-
-<!-- CUSTOMER -->
-<label>Customer</label>
-<select name="customer_id" class="form-control mb-3" required>
-<?php foreach($customers as $c){ ?>
-<option value="<?=$c['id'];?>"
-<?php if($c['id']==$quote['customer_id']) echo "selected"; ?>>
-<?=$c['customer_name'];?>
-</option>
-<?php } ?>
-</select>
-
-<!-- GST TYPE -->
-<div class="mb-3">
-<label>
-<input type="radio" name="gst_type" value="exclusive"
-<?php if($quote['gst_type']=="exclusive") echo "checked"; ?>>
-Exclusive
-</label>
-
-<label class="ms-3">
-<input type="radio" name="gst_type" value="inclusive"
-<?php if($quote['gst_type']=="inclusive") echo "checked"; ?>>
-Inclusive
-</label>
-</div>
-
-<table class="table table-bordered">
-<thead>
-<tr>
-<th>Product</th>
-<th>Qty</th>
-<th>Rate</th>
-<th>GST%</th>
-<th>Discount</th>
-<th>Total</th>
-</tr>
-</thead>
-
-<tbody>
-<?php foreach($items as $it){ ?>
-<tr>
-<td>
-<select name="product_id[]" class="form-control">
-<?php foreach($products as $p){ ?>
-<option value="<?=$p['id'];?>"
-<?php if($p['id']==$it['product_id']) echo "selected"; ?>>
-<?=$p['name'];?>
-</option>
-<?php } ?>
-</select>
-</td>
-
-<td>
-<input type="number" name="qty[]" class="form-control"
-value="<?=$it['qty'];?>">
-</td>
-
-<td>
-<input type="number" name="rate[]" class="form-control"
-value="<?=$it['rate_excl_gst'];?>">
-</td>
-
-<td>
-<input type="number" name="gst[]" class="form-control"
-value="<?=$it['gst_percent'];?>">
-</td>
-
-<td>
-<input type="number" name="discount[]" class="form-control"
-value="<?=$it['discount_amount'];?>">
-</td>
-
-<td>
-₹ <?=number_format($it['line_total'],2);?>
-</td>
-</tr>
-<?php } ?>
-</tbody>
-</table>
-
-<div class="text-end mt-3">
-<button type="submit" name="update_quotation"
-class="btn btn-success">
-Update Quotation
-</button>
-</div>
-
-</form>
-</div>
-</div>
-
 <?php include_once('layouts/footer.php'); ?>
