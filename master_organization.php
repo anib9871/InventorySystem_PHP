@@ -88,6 +88,7 @@ if($db->query($sql)){
     redirect('master_organization.php', false);
     exit();
 }
+}
 
 /* DELETE ORGANIZATION */
 
