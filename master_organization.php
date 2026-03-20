@@ -49,7 +49,14 @@ if($db->query($sql)){
 
 /* CONNECT MYSQL SERVER */
 
-$conn = mysqli_connect("127.0.0.1","root","Mysql123@");
+//$conn = mysqli_connect("127.0.0.1","root","Mysql123@");
+  $conn = mysqli_connect(
+    getenv('MYSQLHOST'),
+    getenv('MYSQLUSER'),
+    getenv('MYSQLPASSWORD'),
+    '',
+    getenv('MYSQLPORT')
+);
 
 if(!$conn){
 die("Connection Failed: " . mysqli_connect_error());
