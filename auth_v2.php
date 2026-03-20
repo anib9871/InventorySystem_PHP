@@ -33,25 +33,38 @@ $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
 $_SESSION['db_name'] = $user['db_name'];
-
-/* 🔥 SWITCH DATABASE */
-$db->db_disconnect();
-$db->db_connect();
-
 /* ROLE BASED LOGIN */
+
+// 🔥 SUPERADMIN (NO DB SWITCH)
 if($user['role_id'] == 1){
 
     $_SESSION['superadmin_login'] = true;
+
+    // ❌ DB SWITCH MAT KAR
     redirect('superadmin_dashboard.php');
 
-}elseif($user['role_id'] == 2){
+}
+
+// 🔥 ADMIN
+elseif($user['role_id'] == 2){
+
+    $_SESSION['db_name'] = $user['db_name'];
+
+    $db->db_disconnect();
+    $db->db_connect();
 
     redirect('admin.php');
+}
 
-}elseif($user['role_id'] == 3){
+// 🔥 USER
+elseif($user['role_id'] == 3){
+
+    $_SESSION['db_name'] = $user['db_name'];
+
+    $db->db_disconnect();
+    $db->db_connect();
 
     redirect('home.php');
-
 }
 
 }else{
