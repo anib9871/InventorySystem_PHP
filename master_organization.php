@@ -125,8 +125,6 @@ redirect('master_organization.php', false);
 
 }
 
-}
-
 /* DELETE ORGANIZATION */
 
 if(isset($_GET['delete'])){
