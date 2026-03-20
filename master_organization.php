@@ -55,21 +55,30 @@ if(!$conn){
 die("Connection Failed: " . mysqli_connect_error());
 }
 
-/* CREATE DATABASE */
+// /* CREATE DATABASE */
 
+// mysqli_query($conn,"CREATE DATABASE IF NOT EXISTS `$db_name`");
+
+// /* SELECT NEW DATABASE */
+
+// mysqli_select_db($conn,$db_name);
+
+// /* TEMPLATE DATABASE */
+
+// $template_db = "inventory_system";
+
+// /* GET TABLES */
+
+// $result = mysqli_query($conn,"SHOW TABLES FROM `$template_db`");
+
+  /* DATABASE CREATE TRY */
 mysqli_query($conn,"CREATE DATABASE IF NOT EXISTS `$db_name`");
 
-/* SELECT NEW DATABASE */
+/* IMPORT SQL FILE */
 
-mysqli_select_db($conn,$db_name);
+$command = "mysql -h ".getenv('MYSQLHOST')." -u ".getenv('MYSQLUSER')." -p".getenv('MYSQLPASSWORD')." $db_name < inventory_template.sql";
 
-/* TEMPLATE DATABASE */
-
-$template_db = "inventory_system";
-
-/* GET TABLES */
-
-$result = mysqli_query($conn,"SHOW TABLES FROM `$template_db`");
+exec($command);
 
 while($row = mysqli_fetch_row($result)){
 
