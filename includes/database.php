@@ -24,9 +24,9 @@ public function db_connect()
     $dbname = getenv('MYSQLDATABASE');
 
     /* 🔥 SWITCH DATABASE (MULTI ORG SUPPORT) */
-    // if(isset($_SESSION['db_name']) && !empty($_SESSION['db_name'])){
-    //     $dbname = $_SESSION['db_name'];
-    // }
+    if(isset($_SESSION['db_name']) && !empty($_SESSION['db_name'])){
+        $dbname = $_SESSION['db_name'];
+    }
 
     /* CONNECT */
     $this->con = mysqli_connect($host, $user, $pass, $dbname, $port);
