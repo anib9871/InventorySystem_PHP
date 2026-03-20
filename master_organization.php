@@ -78,25 +78,33 @@ die("Connection Failed: " . mysqli_connect_error());
 
 // $result = mysqli_query($conn,"SHOW TABLES FROM `$template_db`");
 
-  /* DATABASE CREATE TRY */
+/* CREATE DATABASE */
 mysqli_query($conn,"CREATE DATABASE IF NOT EXISTS `$db_name`");
 
-/* IMPORT SQL FILE */
+/* SELECT NEW DATABASE */
+mysqli_select_db($conn,$db_name);
 
-$command = "mysql -h ".getenv('MYSQLHOST')." -u ".getenv('MYSQLUSER')." -p".getenv('MYSQLPASSWORD')." $db_name < inventory_template.sql";
+/* TEMPLATE DATABASE */
+$template_db = getenv('MYSQLDATABASE'); // Railway main DB
 
-exec($command);
+/* GET TABLES */
+$result = mysqli_query($conn,"SHOW TABLES FROM `$template_db`");
+
+if(!$result){
+    die("Error fetching tables: " . mysqli_error($conn));
+}
 
 while($row = mysqli_fetch_row($result)){
 
-$table = $row[0];
+    $table = $row[0];
 
-/* CREATE TABLE */
+    /* CREATE TABLE STRUCTURE */
+    mysqli_query($conn,"
+    CREATE TABLE `$db_name`.`$table`
+    LIKE `$template_db`.`$table`
+    ");
 
-mysqli_query($conn,"
-CREATE TABLE `$db_name`.`$table`
-LIKE `$template_db`.`$table`
-");
+}
 
 /* COPY DATA (OPTIONAL BUT GOOD) */
 
