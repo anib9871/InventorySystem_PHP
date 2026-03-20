@@ -1,5 +1,5 @@
 <?php
-session_start();
+//session_start();
 require_once('includes/load.php');
 
 $username = $db->escape(trim($_POST['username']));
