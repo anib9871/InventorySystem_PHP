@@ -187,7 +187,7 @@ placeholder="DB Password">
 name="db_link"
 class="form-control"
 placeholder="DB Link (127.0.0.1)"
-value="127.0.0.1">
+value="inventorysystemphp-production.up.railway.app">
 </div>
 
 <div class="form-group">
