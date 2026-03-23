@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+// page_require_level(2);
 
 $products = find_all('products');
 
@@ -53,42 +53,43 @@ value="<?= $to_date ?>">
 <?php
 if($product_id > 0){
 
-    /* ===== DATE CONDITION ===== */
+    /* =========================
+       DATE CONDITION
+    ========================== */
     $date_condition = "";
 
     if(!empty($from_date) && !empty($to_date)){
-        $date_condition = "AND DATE(trans_date) BETWEEN '$from_date' AND '$to_date'";
+        $date_condition = "AND DATE(entry_date) BETWEEN '$from_date' AND '$to_date'";
     }
 
-    /* ===== FETCH LEDGER ===== */
+    /* =========================
+       FETCH TRANSACTIONS
+    ========================== */
     $movements = find_by_sql("
     SELECT 
-        trans_date,
-        reference_no,
-        reference_type,
-        qty_in,
-        qty_out
-    FROM stock_ledger
+        entry_date,
+        bill_indent_no,
+        transaction_type,
+        quantity
+    FROM transaction_master
     WHERE product_id = $product_id
     $date_condition
-    ORDER BY trans_date ASC
+    ORDER BY entry_date ASC
     ");
 
-    /* ===== OPENING LOGIC ===== */
+    /* =========================
+       OPENING BALANCE
+    ========================== */
     $opening_qty = 0;
 
-    if(empty($from_date)){
-        // if no date filter, start from 0 (ledger based)
-        $opening_qty = 0;
-    } else {
-        // calculate opening before from_date
+    if(!empty($from_date)){
         $opening_data = find_by_sql("
             SELECT 
-            SUM(qty_in) as total_in,
-            SUM(qty_out) as total_out
-            FROM stock_ledger
+            SUM(CASE WHEN transaction_type = 1 THEN quantity ELSE 0 END) as total_in,
+            SUM(CASE WHEN transaction_type = 2 THEN quantity ELSE 0 END) as total_out
+            FROM transaction_master
             WHERE product_id = $product_id
-            AND DATE(trans_date) < '$from_date'
+            AND DATE(entry_date) < '$from_date'
         ");
 
         if($opening_data){
@@ -108,6 +109,7 @@ if($product_id > 0){
     <th>Balance</th>
     </tr>";
 
+    /* OPENING ROW */
     echo "<tr style='background:#f9f9f9;font-weight:bold;'>
     <td>-</td>
     <td>Opening Balance</td>
@@ -119,10 +121,18 @@ if($product_id > 0){
 
     $balance = $opening_qty;
 
+    /* =========================
+       LOOP DATA
+    ========================== */
     foreach($movements as $m){
 
-        $balance += (float)$m['qty_in'];
-        $balance -= (float)$m['qty_out'];
+        $qty_in  = ($m['transaction_type'] == 1) ? $m['quantity'] : 0;
+        $qty_out = ($m['transaction_type'] == 2) ? $m['quantity'] : 0;
+
+        $balance += $qty_in;
+        $balance -= $qty_out;
+
+        $type = ($m['transaction_type'] == 1) ? 'PURCHASE' : 'SALE';
 
         $row_style = "";
         if($balance < 0){
@@ -130,11 +140,11 @@ if($product_id > 0){
         }
 
         echo "<tr $row_style>
-        <td>".date("d-m-Y", strtotime($m['trans_date']))."</td>
-        <td>{$m['reference_no']}</td>
-        <td>{$m['reference_type']}</td>
-        <td>{$m['qty_in']}</td>
-        <td>{$m['qty_out']}</td>
+        <td>".date("d-m-Y", strtotime($m['entry_date']))."</td>
+        <td>{$m['bill_indent_no']}</td>
+        <td>{$type}</td>
+        <td>{$qty_in}</td>
+        <td>{$qty_out}</td>
         <td>{$balance}</td>
         </tr>";
     }
