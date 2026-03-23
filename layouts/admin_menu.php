@@ -73,7 +73,7 @@
         <!-- <li><a href="sales_report.php">Sales by Dates</a></li>
         <li><a href="monthly_sales.php">Monthly Sales</a></li>
         <li><a href="daily_sales.php">Daily Sales</a></li> -->
-        <!-- <li><a href="stock_book.php">Stock Report</a></li> -->
+        <li><a href="stock_book.php">Stock Report</a></li>
       </ul>
     </li>
 
