@@ -241,6 +241,7 @@ placeholder="Search organization...">
 
 <br>
 
+<div class="table-responsive">
 <table class="table table-bordered" id="orgTable">
 
 <thead>
@@ -272,16 +273,14 @@ placeholder="Search organization...">
 
 <td>
 
-<a href="?edit=<?php echo $org['org_id']; ?>"
-class="btn btn-info btn-xs">
-Edit
-</a>
+<div style="display:flex; gap:5px;">
+  <a href="?edit=<?php echo $org['org_id']; ?>"
+  class="btn btn-info btn-xs">Edit</a>
 
-<a href="?delete=<?php echo $org['org_id']; ?>"
-class="btn btn-danger btn-xs"
-onclick="return confirm('Delete this organization?')">
-Delete
-</a>
+  <a href="?delete=<?php echo $org['org_id']; ?>"
+  class="btn btn-danger btn-xs"
+  onclick="return confirm('Delete this organization?')">Delete</a>
+</div>
 
 </td>
 
