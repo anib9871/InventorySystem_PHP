@@ -39,32 +39,109 @@ include_once('layouts/header.php');
 
 <style>
 .dashboard-card{
-  border-radius:12px;
+  border-radius:10px;
   color:#fff;
-  padding:25px;
+  padding:14px 12px;
   text-align:center;
   transition:0.3s;
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  box-shadow:0 3px 10px rgba(0,0,0,0.08);
+  min-height:85px;
+  margin-bottom:15px;   /* 🔥 GAP BETWEEN CARDS */
 }
+
 .dashboard-card:hover{
-  transform:translateY(-6px);
-  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+  transform:translateY(-4px);
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
 }
+
+/* COLORS */
 .bg-org{ background:linear-gradient(45deg,#007bff,#00c6ff); }
 .bg-center{ background:linear-gradient(45deg,#28a745,#6ddf7a); }
 .bg-user{ background:linear-gradient(45deg,#f39c12,#f1c40f); }
 
+/* TEXT */
 .dashboard-card h3{
-  font-size:32px;
+  font-size:20px;
   margin:0;
 }
 .dashboard-card p{
-  margin:5px 0 0;
-  font-size:14px;
+  font-size:12px;
+  margin:4px 0 0;
 }
 
-.list-group-item small{
-  color:#777;
+.dashboard-card i{
+  font-size:16px;
+}
+
+/* 🔥 ROW GAP CONTROL */
+.row{
+  margin-bottom:10px;
+}
+
+/* 🔥 BUTTON GAP */
+.btn-block{
+  margin-bottom:12px;
+}
+
+/* 🔥 PANEL GAP */
+.panel{
+  margin-bottom:20px;
+  border-radius:8px;
+}
+
+/* ============================= */
+/* 📱 MOBILE FIX */
+/* ============================= */
+
+@media (max-width: 768px){
+
+  .row{
+    margin-left: -6px;
+    margin-right: -6px;
+    margin-bottom:5px;
+  }
+
+  .row > [class*='col-']{
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-bottom:12px;
+  }
+
+  .dashboard-card{
+    padding:12px;
+    min-height:75px;
+    margin-bottom:12px;  /* 🔥 MOBILE GAP */
+  }
+
+  .dashboard-card h3{
+    font-size:18px;
+  }
+
+  .dashboard-card p{
+    font-size:11px;
+  }
+
+  .btn{
+    padding:10px;
+    font-size:13px;
+  }
+
+  .panel{
+    margin-bottom:15px;
+  }
+
+  .panel-heading{
+    padding:10px;
+    font-size:13px;
+  }
+
+  .panel-body{
+    padding:10px;
+  }
+
+  .page{
+    padding:80px 12px 20px 12px;
+  }
 }
 </style>
 
@@ -78,21 +155,21 @@ include_once('layouts/header.php');
 <!-- ================= STATS ================= -->
 <div class="row">
 
-<div class="col-md-4">
+<div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 <div class="dashboard-card bg-org">
 <h3><i class="fa fa-building"></i> <?php echo $org_total; ?></h3>
 <p>Total Organizations</p>
 </div>
 </div>
 
-<div class="col-md-4">
+<div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 <div class="dashboard-card bg-center">
 <h3><i class="fa fa-map-marker"></i> <?php echo $center_total; ?></h3>
 <p>Total Centers</p>
 </div>
 </div>
 
-<div class="col-md-4">
+<div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 <div class="dashboard-card bg-user">
 <h3><i class="fa fa-users"></i> <?php echo $user_total; ?></h3>
 <p>Total Users</p>
