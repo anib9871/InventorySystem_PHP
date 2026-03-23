@@ -1,7 +1,7 @@
 <?php
 $page_title = 'Quotation List';
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 /* fetch quotation list */
 $quotes = find_by_sql("
