@@ -42,6 +42,11 @@ User Credentials
 </a>
 </li>
 
+<li>
+  <a href="subscription_plans.php">Subscription Plans</a>
+</li>
+
+
 </ul>
 
 </li>
