@@ -24,8 +24,47 @@ $user = $db->fetch_assoc($result);
 if($password !== $user['password']){
     $session->msg("d","Invalid Password");
     redirect('login_v2.php');
+    exit;
+}
+/* 🔥 SUPERADMIN BYPASS */
+if($user['role_id'] == 1){
+
+    $_SESSION['superadmin_login'] = true;
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['username'] = $user['username'];
+    $_SESSION['role_id'] = $user['role_id'];
+
+    redirect('superadmin_dashboard.php');
+    exit;
+}
+/* 🔥 SUBSCRIPTION CHECK */
+
+$org_id = $user['org_id'];
+
+$sub = $db->query("
+SELECT * FROM master_inventory.organization_subscriptions
+WHERE org_id='$org_id' AND status=1
+ORDER BY sub_id DESC LIMIT 1
+");
+
+if($db->num_rows($sub) == 0){
+
+    $session->msg("d","No active subscription");
+    redirect('login_v2.php');
+    exit;
 }
 
+$row = $db->fetch_assoc($sub);
+
+$today = date('Y-m-d');
+
+if($row['end_date'] < $today){
+
+    $session->msg("d","Subscription expired!");
+    redirect('login_v2.php');
+    exit;
+}
 /* LOGIN SESSION */
 $_SESSION['user_id'] = $user['id'];
 $_SESSION['username'] = $user['username'];
@@ -36,14 +75,14 @@ $_SESSION['db_name'] = $user['db_name'];
 /* ROLE BASED LOGIN */
 
 // 🔥 SUPERADMIN (NO DB SWITCH)
-if($user['role_id'] == 1){
+// if($user['role_id'] == 1){
 
-    $_SESSION['superadmin_login'] = true;
+//     $_SESSION['superadmin_login'] = true;
 
-    // ❌ DB SWITCH MAT KAR
-    redirect('superadmin_dashboard.php');
+//     // ❌ DB SWITCH MAT KAR
+//     redirect('superadmin_dashboard.php');
 
-}
+// }
 
 // 🔥 ADMIN
 elseif($user['role_id'] == 2){
@@ -54,6 +93,7 @@ elseif($user['role_id'] == 2){
     $db->db_connect();
 
     redirect('admin.php');
+    exit;
 }
 
 // 🔥 USER
@@ -65,12 +105,14 @@ elseif($user['role_id'] == 3){
     $db->db_connect();
 
     redirect('home.php');
+    exit;
 }
 
 }else{
 
 $session->msg("d","Invalid Username or Password");
 redirect('login_v2.php');
+exit;
 
 }
 ?>
