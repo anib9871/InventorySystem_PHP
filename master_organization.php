@@ -58,6 +58,28 @@ if($db->query($sql)){
     if(!$conn){
         die("Connection Failed: " . mysqli_connect_error());
     }
+/* 🔥 SUBSCRIPTION ADD (PRODUCTION) */
+
+$plan_id = $_POST['plan_id'] ?? 1; // default plan
+
+$plan = find_by_sql("SELECT * FROM master_inventory.subscription_plans WHERE plan_id='$plan_id'");
+
+if(!empty($plan)){
+
+    $duration = $plan[0]['duration_days'];
+    $start_date = date('Y-m-d');
+    $end_date = date('Y-m-d', strtotime("+$duration days"));
+
+    /* GET ORG ID */
+   $org_id = mysqli_insert_id($conn);
+
+    mysqli_query($conn,"
+    INSERT INTO master_inventory.organization_subscriptions
+    (org_id, plan_id, start_date, end_date, status, remark)
+    VALUES
+    ('$org_id','$plan_id','$start_date','$end_date',1,'Production subscription')
+    ");
+}
 
     mysqli_query($conn,"CREATE DATABASE IF NOT EXISTS `$db_name`");
 
