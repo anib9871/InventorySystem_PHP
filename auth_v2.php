@@ -85,7 +85,7 @@ $_SESSION['db_name'] = $user['db_name'];
 // }
 
 // 🔥 ADMIN
-elseif($user['role_id'] == 2){
+if($user['role_id'] == 2){
 
     $_SESSION['db_name'] = $user['db_name'];
 
