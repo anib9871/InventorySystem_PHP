@@ -478,13 +478,15 @@ function find_sale_by_dates($start_date,$end_date){
 /*--------------------------------------------------------------*/
 function  dailySales($year,$month){
   global $db;
+
   $sql  = "SELECT SUM(s.qty) AS qty,";
   $sql .= " DATE_FORMAT(s.date, '%Y-%m-%e') AS date,p.name,";
   $sql .= "SUM(p.sale_price * s.qty) AS total_saleing_price";
   $sql .= " FROM sales s";
   $sql .= " LEFT JOIN products p ON s.product_id = p.id";
   $sql .= " WHERE DATE_FORMAT(s.date, '%Y-%m' ) = '{$year}-{$month}'";
-  GROUP BY DATE(s.date), s.product_id
+  $sql .= " GROUP BY DATE(s.date), s.product_id";
+
   return find_by_sql($sql);
 }
 /*--------------------------------------------------------------*/
