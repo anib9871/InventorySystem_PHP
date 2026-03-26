@@ -247,6 +247,16 @@ placeholder="Organization Name"
 required>
 </div>
 
+<?php if($edit_org): ?>
+<div class="form-group">
+<input type="text"
+name="db_name"
+class="form-control"
+value="<?php echo $edit_org['db_name']; ?>"
+readonly>
+</div>
+<?php endif; ?>
+
 <div class="form-group">
 <select name="plan_id" class="form-control" required>
 <option value="">-- Select Plan --</option>
