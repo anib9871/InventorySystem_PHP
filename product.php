@@ -30,6 +30,7 @@ if(isset($_GET['edit'])){
 if(isset($_POST['add_product'])){
 
   $name = remove_junk($db->escape($_POST['product-title']));
+  $type = (int)$_POST['type'];
   $cat  = (int)$_POST['product-categorie'];
   $buy  = (float)$_POST['buying-price'];
   $sell = (float)$_POST['saleing-price'];
@@ -47,12 +48,12 @@ if(isset($_POST['add_product'])){
     redirect('product.php',false);
   }
 
-  $db->query("
-   INSERT INTO products
-(name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,date)
-    VALUES
-    ('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}',NOW())
-  ");
+$db->query("
+INSERT INTO products
+(name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,type,date)
+VALUES
+('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}','{$type}',NOW())
+");
 
   $session->msg("s","Product added successfully");
   redirect('product.php',false);
@@ -65,6 +66,7 @@ if(isset($_POST['update_product'])){
   $id = (int)$_POST['product_id'];
 
   $name = remove_junk($db->escape($_POST['product-title']));
+   $type = (int)$_POST['type'];
   $cat  = (int)$_POST['product-categorie'];
   $buy  = (float)$_POST['buying-price'];
   $sell = (float)$_POST['saleing-price'];
@@ -76,19 +78,20 @@ if(isset($_POST['update_product'])){
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
 
-  $db->query("
-    UPDATE products SET
-      name='{$name}',
-      buy_price='{$buy}',
-      sale_price='{$sell}',
-      buy_type='{$buy_type}',
-      sell_type='{$sell_type}',
-      gst_id='{$gst}',
-      categorie_id='{$cat}',
-      is_bom='{$is_bom}',
-      hsn_code='{$hsn}'
-    WHERE id='{$id}'
-  ");
+$db->query("
+UPDATE products SET
+  name='{$name}',
+  buy_price='{$buy}',
+  sale_price='{$sell}',
+  buy_type='{$buy_type}',
+  sell_type='{$sell_type}',
+  gst_id='{$gst}',
+  categorie_id='{$cat}',
+  is_bom='{$is_bom}',
+  hsn_code='{$hsn}',
+  type='{$type}'
+WHERE id='{$id}'
+");
 
   $session->msg("s","Product updated");
   redirect('product.php',false);
@@ -142,7 +145,11 @@ include_once('layouts/header.php');
 <?php endforeach; ?>
 </select>
 <br>
-
+<label>Type</label>
+<select name="type" class="form-control">
+<option value="1" <?php if($edit && $edit['type']==1) echo "selected"; ?>>Product</option>
+<option value="2" <?php if($edit && $edit['type']==2) echo "selected"; ?>>Service</option>
+</select>
 
 <!-- GST -->
 <select name="gst_id" id="gst_id" class="form-control">
