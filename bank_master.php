@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-page_require_level(2);
+//page_require_level(2);
 
 $orgs = find_all('organization_master');
 $banks = find_all('bank_master');
