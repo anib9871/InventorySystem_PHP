@@ -476,32 +476,39 @@ function find_sale_by_dates($start_date,$end_date){
 /*--------------------------------------------------------------*/
 /* Function for Generate Daily sales report
 /*--------------------------------------------------------------*/
-function  dailySales($year,$month){
+function dailySales($year,$month){
   global $db;
 
-  $sql  = "SELECT SUM(s.qty) AS qty,";
-  $sql .= " DATE_FORMAT(s.date, '%Y-%m-%e') AS date,p.name,";
-  $sql .= "SUM(p.sale_price * s.qty) AS total_saleing_price";
-  $sql .= " FROM sales s";
-  $sql .= " LEFT JOIN products p ON s.product_id = p.id";
-  $sql .= " WHERE DATE_FORMAT(s.date, '%Y-%m' ) = '{$year}-{$month}'";
-  $sql .= " GROUP BY DATE(s.date), s.product_id";
+  $sql  = "SELECT 
+            SUM(s.qty) AS qty,
+            DATE(s.date) AS date,
+            p.name,
+            SUM(p.sale_price * s.qty) AS total_saleing_price
+          FROM sales s
+          LEFT JOIN products p ON s.product_id = p.id
+          WHERE DATE_FORMAT(s.date, '%Y-%m') = '{$year}-{$month}'
+          GROUP BY DATE(s.date), p.name
+          ORDER BY DATE(s.date) ASC";
 
   return find_by_sql($sql);
 }
 /*--------------------------------------------------------------*/
 /* Function for Generate Monthly sales report
 /*--------------------------------------------------------------*/
-function  monthlySales($year){
+function monthlySales($year){
   global $db;
-  $sql  = "SELECT s.qty,";
-  $sql .= " DATE_FORMAT(s.date, '%Y-%m-%e') AS date,p.name,";
-  $sql .= "SUM(p.sale_price * s.qty) AS total_saleing_price";
-  $sql .= " FROM sales s";
-  $sql .= " LEFT JOIN products p ON s.product_id = p.id";
-  $sql .= " WHERE DATE_FORMAT(s.date, '%Y' ) = '{$year}'";
-  $sql .= " GROUP BY DATE_FORMAT( s.date,  '%c' ),s.product_id";
-  $sql .= " ORDER BY date_format(s.date, '%c' ) ASC";
+
+  $sql  = "SELECT 
+            SUM(s.qty) AS qty,
+            DATE_FORMAT(s.date, '%Y-%m') AS date,
+            p.name,
+            SUM(p.sale_price * s.qty) AS total_saleing_price
+          FROM sales s
+          LEFT JOIN products p ON s.product_id = p.id
+          WHERE DATE_FORMAT(s.date, '%Y') = '{$year}'
+          GROUP BY DATE_FORMAT(s.date, '%Y-%m'), p.name
+          ORDER BY DATE_FORMAT(s.date, '%Y-%m') ASC";
+
   return find_by_sql($sql);
 }
 
