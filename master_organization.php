@@ -152,6 +152,53 @@ $db_password = remove_junk($db->escape($_POST['db_password']));
 $db_link = remove_junk($db->escape($_POST['db_link']));
 $port = remove_junk($db->escape($_POST['port']));
 
+/* 🔥 SUBSCRIPTION UPDATE/INSERT START */
+
+$plan_id = $_POST['plan_id'];
+
+if(!empty($plan_id)){
+
+    $plan_id = (int)$plan_id;
+
+    $plan = find_by_sql("SELECT * FROM master_inventory.subscription_plans WHERE plan_id=$plan_id");
+
+    if(!empty($plan)){
+
+        $duration = $plan[0]['duration_days'];
+        $start_date = date('Y-m-d');
+        $end_date = date('Y-m-d', strtotime("+$duration days"));
+
+        $conn_main = mysqli_connect(
+            getenv('MYSQLHOST'),
+            getenv('MYSQLUSER'),
+            getenv('MYSQLPASSWORD'),
+            'master_inventory',
+            getenv('MYSQLPORT')
+        );
+
+        $check = mysqli_query($conn_main,"SELECT * FROM organization_subscriptions WHERE org_id='$id'");
+
+        if(mysqli_num_rows($check) > 0){
+
+            mysqli_query($conn_main,"UPDATE organization_subscriptions SET
+            plan_id='$plan_id',
+            start_date='$start_date',
+            end_date='$end_date',
+            status=1
+            WHERE org_id='$id'");
+
+        } else {
+
+            mysqli_query($conn_main,"INSERT INTO organization_subscriptions
+            (org_id, plan_id, start_date, end_date, status, remark)
+            VALUES
+            ('$id','$plan_id','$start_date','$end_date',1,'Updated subscription')");
+        }
+    }
+}
+
+/* 🔥 SUBSCRIPTION END */
+
 $sql = "UPDATE master_inventory.master_organization SET
 org_name='{$org_name}',
 db_name='{$db_name}',
@@ -206,11 +253,21 @@ required>
 
 <?php
 $plans = find_by_sql("SELECT * FROM master_inventory.subscription_plans WHERE status=1");
+
+$current_plan = null;
+
+if($edit_org){
+    $sub = find_by_sql("SELECT * FROM master_inventory.organization_subscriptions WHERE org_id='{$edit_org['org_id']}' LIMIT 1");
+    if($sub){
+        $current_plan = $sub[0]['plan_id'];
+    }
+}
+
 foreach($plans as $p){
-  echo "<option value='{$p['plan_id']}'>{$p['plan_name']}</option>";
+    $selected = ($p['plan_id'] == $current_plan) ? 'selected' : '';
+    echo "<option value='{$p['plan_id']}' $selected>{$p['plan_name']}</option>";
 }
 ?>
-
 </select>
 </div>
 
