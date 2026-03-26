@@ -55,10 +55,10 @@
         <li><a href="sales.php">Manage Sales</a></li>
 
         <!-- FIXED href (NO SPACES) -->
-        <li><a href="return_to_supplier.php">Return To Supplier</a></li>
-        <li><a href="return_from_customer.php">Return From Customer</a></li>
+        <!-- <li><a href="return_to_supplier.php">Return To Supplier</a></li> -->
+        <!-- <li><a href="return_from_customer.php">Return From Customer</a></li> -->
         <li><a href="manufacture.php">Manufacture Product Screen</a></li>
-        <li><a href="master_order_form.php">Master Order Form</a></li>
+        <!-- <li><a href="master_order_form.php">Master Order Form</a></li> -->
       </ul>
     </li>
 
@@ -70,9 +70,9 @@
       </a>
 
       <ul class="nav submenu">
-        <!-- <li><a href="sales_report.php">Sales by Dates</a></li>
+        <li><a href="sales_report.php">Sales by Dates</a></li>
         <li><a href="monthly_sales.php">Monthly Sales</a></li>
-        <li><a href="daily_sales.php">Daily Sales</a></li> -->
+        <li><a href="daily_sales.php">Daily Sales</a></li>
         <li><a href="stock_book.php">Stock Report</a></li>
       </ul>
     </li>
