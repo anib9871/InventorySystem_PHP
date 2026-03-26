@@ -75,11 +75,15 @@ function redirect($url, $permanent = false)
 function total_price($totals){
    $sum = 0;
    $sub = 0;
+   $profit = 0; // ✅ FIX: initialize
+
    foreach($totals as $total ){
-     $sum += $total['total_saleing_price'];
-     $sub += $total['total_buying_price'];
-     $profit = $sum - $sub;
+     $sum += $total['total_saleing_price'] ?? 0;
+     $sub += $total['total_buying_price'] ?? 0;
    }
+
+   $profit = $sum - $sub; // ✅ loop ke baad calculate
+
    return array($sum,$profit);
 }
 /*--------------------------------------------------------------*/
