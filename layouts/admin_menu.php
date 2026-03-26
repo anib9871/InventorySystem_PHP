@@ -52,7 +52,7 @@
         <li><a href="invoice_create.php">Invoice</a></li>
         <li><a href="invoice_list.php">Save Invoice</a></li>
 
-        <li><a href="sales.php">Manage Sales</a></li>
+        <!-- <li><a href="sales.php">Manage Sales</a></li> -->
 
         <!-- FIXED href (NO SPACES) -->
         <!-- <li><a href="return_to_supplier.php">Return To Supplier</a></li> -->
