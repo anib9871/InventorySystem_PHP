@@ -94,10 +94,12 @@ VALUES
      INSERT ITEMS
   ================================*/
   $itemInserted = false;
-
 foreach($_POST['product_id'] as $i => $pid){
 
 $pid = (int)$pid;
+
+$productData = find_by_id("products",$pid);
+$type = $productData['type'] ?? 1;
 
 if($pid <= 0){
     continue;
@@ -132,8 +134,12 @@ WHERE product_id = {$pid}
 ");
 
 $current_stock = $stock_row[0]['stock'] ?? 0;
+// $productData = find_by_id("products",$pid);
+// $type = $productData['type'] ?? 1;
 
-if($qty > $current_stock){
+$trans_type = ($type == 2) ? 5 : 2;
+
+if($type == 1 && $qty > $current_stock){
 
 $db->query("DELETE FROM invoice WHERE id = $qid");
 
@@ -144,6 +150,10 @@ window.history.back();
 
 exit;
 }
+if($type == 2 && $qty <= 0){
+    $qty = 1;
+}
+
 if($qty <= 0 || $base <= 0){
     continue;
 }
@@ -268,7 +278,7 @@ NOW(),
 '$line_total',
 '$gst_amount',
 '$line_total',
-2,
+'$trans_type',
 1,
 0,
 NULL,
