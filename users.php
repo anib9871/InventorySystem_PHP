@@ -33,27 +33,24 @@ if(isset($_GET['edit'])){
 
 <div class="panel panel-default">
 
-<div class="panel-heading">
-<strong>
-<span class="glyphicon glyphicon-th"></span>
-Users List
-</strong>
-</div>
-
-</div>
-
-
-<div class="panel-body">
-
-<!-- SEARCH BAR -->
-<div class="row" style="margin-bottom:10px;">
-  <div class="col-md-4">
-    <input type="text" id="userSearch" class="form-control" placeholder="Search user...">
+  <div class="panel-heading">
+    <strong>
+      <span class="glyphicon glyphicon-th"></span>
+      Users List
+    </strong>
   </div>
-</div>
 
-<div class="table-responsive">
-<table class="table table-bordered table-striped" id="usersTable">
+  <div class="panel-body">
+
+    <!-- SEARCH BAR -->
+    <div class="row" style="margin-bottom:10px;">
+      <div class="col-md-4">
+        <input type="text" id="userSearch" class="form-control" placeholder="Search user...">
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped" id="usersTable">
         <thead>
           <tr>
             <th class="text-center" style="width: 50px;">#</th>
