@@ -1,7 +1,7 @@
 <?php
 
-$page_title = 'Add User';
-require_once('includes/load.php');
+//$page_title = 'Add User';
+//require_once('includes/load.php');
 
 //page_require_level(1);
 
@@ -125,7 +125,7 @@ value="<?php echo isset($edit_user['username']) ? $edit_user['username'] : ''; ?
 
 <div class="input-group">
 <input type="password" class="form-control" name="password" id="password"
-value="<?php echo isset($edit_user['password']) ? $edit_user['password'] : ''; ?>"
+value=""
 placeholder="Leave blank if not changing">
 <span class="input-group-btn">
 <button type="button" class="btn btn-default" onclick="togglePassword()">👁</button>
@@ -138,8 +138,12 @@ placeholder="Leave blank if not changing">
 <label>Confirm Password</label>
 
 <div class="input-group">
-<input type="password" class="form-control" name="confirm_password" id="confirm_password"
-value="<?php echo isset($edit_user['password']) ? $edit_user['password'] : ''; ?>">
+<input type="password"
+class="form-control"
+name="confirm_password"
+id="confirm_password"
+value="">
+
 <span class="input-group-btn">
 <button type="button" class="btn btn-default" onclick="toggleConfirmPassword()">👁</button>
 </span>
