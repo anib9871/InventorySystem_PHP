@@ -13,10 +13,10 @@
 
     if(empty($errors)){
 
-             if($_POST['old-password'] !== current_user()['password'] )
-               $session->msg('d', "Your old password not match");
-               redirect('change_password.php',false);
-             }
+          if($_POST['old-password'] !== current_user()['password'] ){
+   $session->msg('d', "Your old password not match");
+   redirect('change_password.php',false);
+}
 
             $id = (int)$_POST['id'];
             $new = remove_junk($db->escape($_POST['new-password']));
