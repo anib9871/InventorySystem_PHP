@@ -95,6 +95,8 @@ if(isset($_GET['edit'])){
 </div>
 </div>
 
+</div> <!-- /.col-md-8 -->
+</div> <!-- /.row -->
 
 <?php include_once('layouts/footer.php'); ?>
 
