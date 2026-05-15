@@ -120,6 +120,24 @@ function randString($length = 5)
    $str .= $cha[mt_rand(0,strlen($cha))];
   return $str;
 }
+/*--------------------------------------------------------------*/
+/* Function for Detect System Mode (Inventory / Billing / Combined)
+/*--------------------------------------------------------------*/
+function getSystemMode(){
 
+  if(isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 1){
+    return 'combined';
+  }
+
+  if(isset($_SESSION['billing_access']) && $_SESSION['billing_access'] == 1){
+    return 'billing';
+  }
+
+  if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1){
+    return 'inventory';
+  }
+
+  return 'inventory'; // fallback
+}
 
 ?>
