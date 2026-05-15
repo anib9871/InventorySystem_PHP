@@ -4,10 +4,59 @@ require_once('includes/load.php');
 //page_require_level(2);
 
 /* FETCH CUSTOMER LIST */
-$customers = find_by_sql("SELECT cm.*, gsm.state_name 
-                          FROM customer_master cm
-                          LEFT JOIN gst_state_master gsm ON gsm.id = cm.state_id
-                          ORDER BY cm.id DESC");
+if($_SESSION['role_id'] == 2){
+
+/* ADMIN = ALL CUSTOMERS */
+
+$customers = find_by_sql("
+
+SELECT 
+
+cm.*,
+gsm.state_name,
+mc.center_name
+
+FROM customer_master cm
+
+LEFT JOIN gst_state_master gsm
+ON gsm.id = cm.state_id
+
+LEFT JOIN master_center mc
+ON mc.center_id = cm.center_id
+
+ORDER BY cm.id DESC
+
+");
+
+}else{
+
+/* USER = ONLY OWN CENTER */
+
+$center_id = $_SESSION['center_id'];
+
+$customers = find_by_sql("
+
+SELECT 
+
+cm.*,
+gsm.state_name,
+mc.center_name
+
+FROM customer_master cm
+
+LEFT JOIN gst_state_master gsm
+ON gsm.id = cm.state_id
+
+LEFT JOIN master_center mc
+ON mc.center_id = cm.center_id
+
+WHERE cm.center_id = '$center_id'
+
+ORDER BY cm.id DESC
+
+");
+
+}
 
 /* FETCH STATE LIST */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
@@ -22,15 +71,27 @@ if(isset($_POST['add_customer'])){
   $state_id = (int)$_POST['state_id'];
   $state_code = remove_junk($db->escape($_POST['state_code']));
   $gst = remove_junk($db->escape($_POST['gst_no']));
-
+  
   if($name==''){
      $session->msg("d","Customer name is required");
      redirect('customer_master.php',false);
   }
 
-  $sql = "INSERT INTO customer_master
-          (customer_name,contact_no,email,address,state_id,state_code,gst_no)
-          VALUES('$name','$contact','$email','$address','$state_id','$state_code','$gst')";
+$center_id = $_SESSION['center_id'];
+
+$sql = "INSERT INTO customer_master
+(customer_name,contact_no,email,address,state_id,state_code,gst_no,center_id)
+
+VALUES(
+'$name',
+'$contact',
+'$email',
+'$address',
+'$state_id',
+'$state_code',
+'$gst',
+'$center_id'
+)";
 
   if($db->query($sql)){
      $session->msg("s","Customer Added");
@@ -52,6 +113,8 @@ if(isset($_POST['update_customer'])){
   $state_id = (int)$_POST['state_id'];
   $state_code = remove_junk($db->escape($_POST['state_code']));
   $gst = remove_junk($db->escape($_POST['gst_no']));
+  $center_id = $_SESSION['center_id'];
+  
 
   $sql="UPDATE customer_master SET
         customer_name='$name',
@@ -60,7 +123,8 @@ if(isset($_POST['update_customer'])){
         address='$address',
         state_id='$state_id',
         state_code='$state_code',
-        gst_no='$gst'
+        gst_no='$gst',
+        center_id='$center_id'
         WHERE id='$id'";
 
 
@@ -90,10 +154,32 @@ include_once('layouts/header.php');
 ?>
 
 <style>
+
 .equal-btn{
-  min-width:60px;   /* same width */
+  min-width:55px;
   text-align:center;
+  padding:3px 6px;
+  font-size:11px;
 }
+
+.table-responsive table{
+  font-size:12px;
+}
+
+.table-responsive table th,
+.table-responsive table td{
+  padding:6px !important;
+  vertical-align:middle !important;
+}
+
+.table-responsive table th{
+  white-space:nowrap;
+}
+
+.label{
+  font-size:11px;
+}
+
 </style>
 
 
@@ -173,7 +259,33 @@ placeholder="GST Number"><br>
 
 <div class="panel-body">
 
-<input type="text" id="search" class="form-control" placeholder="Search customer..."><br>
+<div class="row" style="margin-bottom:10px;">
+
+<div class="col-md-4">
+<input type="text" id="search" class="form-control" placeholder="Search customer...">
+</div>
+
+<div class="col-md-8 text-right">
+
+<a href="customer_report_print.php" 
+class="btn btn-primary btn-sm" target="_blank">
+
+<i class="glyphicon glyphicon-print"></i>
+Print Report
+
+</a>
+
+<a href="customer_report_excel.php" 
+class="btn btn-success btn-sm">
+
+<i class="glyphicon glyphicon-download"></i>
+Excel
+
+</a>
+
+</div>
+
+</div>
 
 <div class="table-responsive">
 <table class="table table-bordered table-striped">
@@ -187,6 +299,8 @@ placeholder="GST Number"><br>
 <th>State</th>
 <th>State Code</th>
 <th>GST No</th>
+<th>Center</th>
+<th>Created Date</th>
 <th>Action</th>
 </tr>
 
@@ -201,7 +315,14 @@ placeholder="GST Number"><br>
 <td><?php echo $c['state_name']; ?></td>
 <td><?php echo $c['state_code']; ?></td>
 <td><?php echo $c['gst_no']; ?></td>
-
+<td>
+<span class="label label-primary">
+<?php echo $c['center_name']; ?>
+</span>
+</td>
+<td>
+<?php echo date('d-m-Y h:i A', strtotime($c['created_date'])); ?>
+</td>
 <td>
 <a href="customer_master.php?edit=<?php echo $c['id']; ?>" 
    class="btn btn-info btn-xs equal-btn">Edit</a>
