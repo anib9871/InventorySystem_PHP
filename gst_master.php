@@ -3,6 +3,11 @@ $page_title = 'GST Master';
 require_once('includes/load.php');
 //page_require_level(2);
 
+if($gst_enabled == "No"){
+   $session->msg("d","GST disabled from configuration");
+   redirect('home.php');
+}
+
 /* ---------- FETCH ALL ---------- */
 $all_gst = find_by_sql("SELECT * FROM gst_master ORDER BY gst_percent ASC");
 
