@@ -4,7 +4,7 @@
 ?>
 <?php
 // Checkin What level user has permission to view this page
-  page_require_level(1);
+//  page_require_level(1);
 //pull out all user form database
  $all_users = find_all_user();
  $edit_user = null;
@@ -33,29 +33,34 @@ if(isset($_GET['edit'])){
 
 <div class="panel panel-default">
 
-  <div class="panel-heading">
-    <strong>
-      <span class="glyphicon glyphicon-th"></span>
-      Users List
-    </strong>
+<div class="panel-heading">
+<strong>
+<span class="glyphicon glyphicon-th"></span>
+Users List
+</strong>
+</div>
+
+</div>
+
+
+<div class="panel-body">
+
+<!-- SEARCH BAR -->
+<div class="row" style="margin-bottom:10px;">
+  <div class="col-md-4">
+    <input type="text" id="userSearch" class="form-control" placeholder="Search user...">
   </div>
+</div>
 
-  <div class="panel-body">
-
-    <!-- SEARCH BAR -->
-    <div class="row" style="margin-bottom:10px;">
-      <div class="col-md-4">
-        <input type="text" id="userSearch" class="form-control" placeholder="Search user...">
-      </div>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped" id="usersTable">
+<div class="table-responsive">
+<table class="table table-bordered table-striped" id="usersTable">
         <thead>
           <tr>
             <th class="text-center" style="width: 50px;">#</th>
             <th>Name </th>
             <th>Username</th>
+         <!-- <th>Organization</th> -->
+            <th>Center</th>
             <th class="text-center" style="width: 15%;">User Role</th>
             <th class="text-center" style="width: 10%;">Status</th>
             <th style="width: 20%;">Last Login</th>
@@ -68,6 +73,8 @@ if(isset($_GET['edit'])){
            <td class="text-center"><?php echo count_id();?></td>
            <td><?php echo remove_junk(ucwords($a_user['name']))?></td>
            <td><?php echo remove_junk(ucwords($a_user['username']))?></td>
+       
+           <td><?php echo $a_user['center_name']; ?></td>
            <td class="text-center"><?php echo remove_junk(ucwords($a_user['group_name']))?></td>
            <td class="text-center">
            <?php if($a_user['status'] === '1'): ?>
@@ -95,8 +102,6 @@ if(isset($_GET['edit'])){
 </div>
 </div>
 
-</div> <!-- /.col-md-8 -->
-</div> <!-- /.row -->
 
 <?php include_once('layouts/footer.php'); ?>
 
