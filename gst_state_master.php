@@ -3,6 +3,11 @@ $page_title = 'GST State Code Master';
 require_once('includes/load.php');
 //page_require_level(2);
 
+if($gst_enabled == "No"){
+   $session->msg("d","GST disabled from configuration");
+   redirect('home.php');
+}
+
 /* FETCH */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
