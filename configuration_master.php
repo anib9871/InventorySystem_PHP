@@ -7,9 +7,8 @@ require_once('includes/load.php');
 $org_id = (int)$_SESSION['org_id'];
 
 $org_data = find_by_sql("
-SELECT org_id, org_name
+SELECT id, org_name
 FROM organization_master
-WHERE org_id = '{$org_id}'
 LIMIT 1
 ");
 
@@ -138,7 +137,7 @@ ORDER BY c.id DESC
 
 <input type="hidden"
 name="org_id"
-value="<?php echo $current_org['org_id']; ?>">
+value="<?php echo $current_org['id']; ?>"
 
 <input type="text"
 class="form-control"
