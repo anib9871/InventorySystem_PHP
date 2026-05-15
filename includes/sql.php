@@ -221,17 +221,36 @@ function current_user(){
   /* Find all user by
   /* Joining users table and user gropus table
   /*--------------------------------------------------------------*/
-  function find_all_user(){
-      global $db;
-      $results = array();
-      $sql = "SELECT u.id,u.name,u.username,u.user_level,u.status,u.last_login,";
-      $sql .="g.group_name ";
-      $sql .="FROM users u ";
-      $sql .="LEFT JOIN user_groups g ";
-      $sql .="ON g.group_level=u.user_level ORDER BY u.name ASC";
-      $result = find_by_sql($sql);
-      return $result;
-  }
+function find_all_user(){
+
+global $db;
+
+$sql = "SELECT 
+
+u.id,
+u.name,
+u.username,
+u.user_level,
+u.status,
+u.last_login,
+
+g.group_name,
+
+c.center_name
+
+FROM users u
+
+LEFT JOIN user_groups g
+ON g.group_level = u.user_level
+
+LEFT JOIN master_center c
+ON c.center_id = u.center_id
+
+ORDER BY u.name ASC";
+
+return find_by_sql($sql);
+
+}
   /*--------------------------------------------------------------*/
   /* Function to update the last log in of a user
   /*--------------------------------------------------------------*/
@@ -332,6 +351,7 @@ function join_product_table(){
               p.name,
               p.buy_price,
               p.sale_price,
+			  p.type,
               p.hsn_code,
               p.media_id,
               p.date,
