@@ -24,7 +24,7 @@ if(isset($_POST['add_user'])){
   $org_id   = (int)$_POST['org_id'];
   $role_id  = (int)$_POST['role_id'];
 
-  if($username=="" || $password=="" || $org_id==0 || $center_id==0){
+  if($username=="" || $password=="" || $org_id==0 || $role_id==0){
     $session->msg('d',"All fields required");
     redirect('user_credentials.php');
   }
