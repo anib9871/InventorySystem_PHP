@@ -115,7 +115,7 @@ if($combined){
 
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
-        <li><a href="billing_sales.php"> Sales REport</a></li>
+       
       </ul>
     </li>
 
