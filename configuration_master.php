@@ -137,7 +137,7 @@ ORDER BY c.id DESC
 
 <input type="hidden"
 name="org_id"
-value="<?php echo $current_org['id']; ?>"
+value="<?php echo $current_org['id']; ?>">
 
 <input type="text"
 class="form-control"
