@@ -71,17 +71,17 @@ if(isset($_POST['save_group'])){
                INSERT
             ====================== */
 
-            if(find_by_groupName($name)){
+            // if(find_by_groupName($name)){
 
-                $session->msg('d','Group name already exists.');
-                redirect('group.php', false);
-            }
+            //     $session->msg('d','Group name already exists.');
+            //     redirect('group.php', false);
+            // }
 
-            if(find_by_groupLevel($level)){
+            // if(find_by_groupLevel($level)){
 
-                $session->msg('d','Group level already exists.');
-                redirect('group.php', false);
-            }
+            //     $session->msg('d','Group level already exists.');
+            //     redirect('group.php', false);
+            // }
 
             $query  = "INSERT INTO user_groups (";
             $query .= "group_name, group_level, group_status";
