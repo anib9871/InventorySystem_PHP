@@ -113,7 +113,7 @@ body{
     letter-spacing: 1px;
     display: inline-block;
     width: 250px;
-    background-color: #db3434;
+    background-color: #111827;
 }.header-date{
   color: #9b9b9b;
   margin-left: 20px;
@@ -188,9 +188,13 @@ body{
   padding: 0;
 }.sidebar ul li {
   display: block;
-}.sidebar ul li:hover,ul.submenu{
+}
+
+.sidebar ul li:hover{
   background-color:#35404d;
-}.sidebar ul li a:hover {
+}
+
+.sidebar ul li a:hover {
   color: white;
 }.sidebar ul li a,ul.submenu li a {
   color: #aeb2b7;
@@ -206,9 +210,8 @@ body{
   letter-spacing: 1.5px;
   text-shadow: 0 1px rgba(0,0,0, 1);
 }.sidebar ul li a i{
-  color: #aeb2b7;
-  padding: 15px 22px;
-  text-align: center;
+  padding: 8px 10px;
+  width: 30px;
 }ul.submenu{
   display: none;
   position: relative;
@@ -216,7 +219,16 @@ body{
   background-color:#35404d;
 }ul.submenu li a {
   padding-left: 45px;
-}ul.submenu li:before{
+}
+ul.submenu li {
+  margin-bottom: 6px;   /* 🔥 gap between items */
+}
+
+ul.submenu li a {
+  padding: 8px 15px 8px 45px;  /* 🔥 vertical spacing */
+  border-radius: 4px;
+}
+ul.submenu li:before{
   content: "";
   display: block;
   position: absolute;
@@ -324,9 +336,57 @@ input[type=file]{
   height: 125px;
 }
 
-/* 🔥 ONLY MASTERS SUBMENU SCROLL */
-.sidebar ul.submenu {
-  max-height: 260px;      /* jitni height chahiye */
-  overflow-y: auto;       /* scroll enable */
-  overflow-x: hidden;
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
 }
+
+.arrow {
+  margin-left: auto;
+}
+
+/* 🔥 ARROW ROTATION FIX */
+.arrow i {
+  transition: transform 0.3s ease;
+}
+
+.arrow.rotate i {
+  transform: rotate(90deg);
+}
+
+/* 🔴 INVENTORY SYSTEM */
+.sidebar ul li.inventory-header > a {
+  background: #a10805 !important;   /* red */
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* 🔵 BILLING SYSTEM */
+.sidebar ul li.billing-header > a {
+  background: #a10805 !important;   /* red */
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* Hover effect */
+.sidebar ul li.inventory-header > a:hover {
+  background: #a10805 !important;   /* red */
+}
+
+.sidebar ul li.billing-header > a:hover {
+  background: #a10805 !important;   /* red */
+}
+
+/* 🔥 SYSTEM HEADER FULL WIDTH FIX */
+.sidebar ul li.inventory-header > a,
+.sidebar ul li.billing-header > a {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;   /* 🔥 height + width feel increase */
+  box-sizing: border-box;
+}
+
+.panel-body table a{
+  color: #000 !important;
+}
+
