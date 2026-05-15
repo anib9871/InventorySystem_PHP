@@ -7,6 +7,15 @@
 
 $groups = find_all('user_groups');
 
+$org_id = $_SESSION['org_id'];
+
+$centers = find_by_sql("
+SELECT center_id,center_name
+FROM master_center
+WHERE org_id='{$org_id}'
+ORDER BY center_name ASC
+");
+
 ?>
 
 <?php
@@ -24,6 +33,7 @@ $username = remove_junk($db->escape($_POST['username']));
 $password = $_POST['password'];
 $confirm = $_POST['confirm_password'];
 $user_level = (int)$db->escape($_POST['level']);
+$center_id = (int)$db->escape($_POST['center_id']);
 
 $check = find_by_sql("SELECT username FROM users WHERE username='{$username}'");
 
@@ -32,13 +42,35 @@ $session->msg('d',"Username already exists");
 redirect('users.php');
 }
 
+$org_id = $_SESSION['org_id'];
 if($password != $confirm){
 $session->msg('d',"Password not matched");
 redirect('users.php');
 }
 
-$query = "INSERT INTO users (name,username,password,user_level,status)
-VALUES ('{$name}','{$username}','{$password}','{$user_level}','1')";
+$query = "INSERT INTO users (
+
+name,
+username,
+password,
+user_level,
+status,
+org_id,
+center_id
+
+)
+
+VALUES (
+
+'{$name}',
+'{$username}',
+'{$password}',
+'{$user_level}',
+'1',
+'{$org_id}',
+'{$center_id}'
+
+)";
 
 if($db->query($query)){
 $session->msg('s',"User account created");
@@ -63,6 +95,7 @@ $id = (int)$_GET['edit'];
 $name = remove_junk($db->escape($_POST['full-name']));
 $username = remove_junk($db->escape($_POST['username']));
 $level = (int)$db->escape($_POST['level']);
+$center_id = (int)$db->escape($_POST['center_id']);
 
 $password = $_POST['password'];
 $confirm = $_POST['confirm_password'];
@@ -70,7 +103,8 @@ $confirm = $_POST['confirm_password'];
 $sql = "UPDATE users SET 
 name='{$name}',
 username='{$username}',
-user_level='{$level}'";
+user_level='{$level}',
+center_id='{$center_id}'";
 
 if(!empty($password)){
 
@@ -150,7 +184,29 @@ value="">
 </div>
 
 </div>
+<div class="form-group">
 
+<label>Center</label>
+
+<select class="form-control" name="center_id" required>
+
+<option value="">Select Center</option>
+
+<?php foreach($centers as $center): ?>
+
+<option value="<?php echo $center['center_id']; ?>"
+
+<?php if(isset($edit_user) && $center['center_id'] == $edit_user['center_id']) echo 'selected'; ?>>
+
+<?php echo $center['center_name']; ?>
+
+</option>
+
+<?php endforeach; ?>
+
+</select>
+
+</div>
 <div class="form-group">
 <label>User Role</label>
 
