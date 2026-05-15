@@ -19,9 +19,12 @@ class Session {
     return $this->user_is_logged_in;
  }
 
- public function login($user_id){
+public function login($user_id){
+
+    session_regenerate_id(true);
+
     $_SESSION['user_id'] = $user_id;
- }
+}
 
  private function userLoginSetup(){
     $this->user_is_logged_in = isset($_SESSION['user_id']);
