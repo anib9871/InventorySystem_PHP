@@ -6,6 +6,10 @@ $combined = (isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 
 $inventoryOnly = (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && !$combined);
 $billingOnly = (isset($_SESSION['billing_access']) && $_SESSION['billing_access'] == 1 && !$combined);
 
+echo "<pre>";
+print_r($_SESSION);
+echo "</pre>";
+
 // show flags
 $showInventory = $combined || $inventoryOnly;
 $showBilling   = $combined || $billingOnly;
