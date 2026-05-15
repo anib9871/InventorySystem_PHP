@@ -1,8 +1,15 @@
 <?php
-  $page_title = 'Home Page';
-  require_once('includes/load.php');
-  if (!$session->isUserLoggedIn(true)) { redirect('index.php', false);}
+$page_title = 'Home Page';
+require_once('includes/load.php');
+
+if (!$session->isUserLoggedIn(true)) {
+    redirect('index.php', false);
+}
+
+/* USER DASHBOARD REDIRECT */
+redirect('user_dashboard.php', false);
 ?>
+
 <?php include_once('layouts/header.php'); ?>
 <div class="row">
   <div class="col-md-12">
