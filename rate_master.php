@@ -15,12 +15,30 @@ if(isset($_POST['save'])){
     $product_id = (int)$_POST['product_id'];
     $rate = $_POST['rate'];
     $mrp = $_POST['mrp'];
-    $gst_id = (int)$_POST['gst_id'];
+    $gst_id = ($gst_enabled == "Yes")
+          ? (int)$_POST['gst_id']
+          : 0;
+
+
     //$gst_slab = $_POST['gst_slab'];
-    $rate_type = $_POST['rate_type']; // INCLUSIVE / EXCLUSIVE (Incoming)
-    $rate_type_outgoing = $_POST['rate_type_outgoing']; // INCLUSIVE / EXCLUSIVE
-    $batch = $_POST['batch'];
-    $expiry = !empty($_POST['expiry']) ? $_POST['expiry'] : NULL;
+    $rate_type = ($gst_enabled == "Yes")
+    ? $_POST['rate_type']
+    : 'EXCLUSIVE';
+
+$rate_type_outgoing = ($gst_enabled == "Yes")
+    ? $_POST['rate_type_outgoing']
+    : 'EXCLUSIVE';
+    if($rate_type == "NO_GST"){
+   $gst_id = 0;
+}
+
+    $batch = ($expiry_required == "Yes")
+    ? $_POST['batch']
+    : '';
+
+$expiry = ($expiry_required == "Yes" && !empty($_POST['expiry']))
+    ? $_POST['expiry']
+    : NULL;
     $price_date = $_POST['price_date'];
 
     $sql = "INSERT INTO rate_master
@@ -47,6 +65,18 @@ if(isset($_GET['del'])){
     redirect('rate_master.php',false);
 }
 
+if(isset($_GET['bulk_type'])){
+
+    $type = $_GET['bulk_type'];
+
+    $db->query("UPDATE rate_master 
+                SET rate_type = '$type',
+                    rate_type_outgoing = '$type'");
+
+    $session->msg("s","All rates updated to $type");
+    redirect('rate_master.php',false);
+}
+
 /* ================= EDIT LOAD ================= */
 $edit = false;
 if(isset($_GET['edit'])){
@@ -68,11 +98,28 @@ if(isset($_POST['update'])){
     $product_id = (int)$_POST['product_id'];
     $rate = $_POST['rate'];
     $mrp = $_POST['mrp'];
-    $gst_id = (int)$_POST['gst_id'];
-    $rate_type = $_POST['rate_type'];
-    $rate_type_outgoing = $_POST['rate_type_outgoing'];
-    $batch = $_POST['batch'];
-    $expiry = $_POST['expiry'];
+    $gst_id = ($gst_enabled == "Yes")
+          ? (int)$_POST['gst_id']
+          : 0;
+
+$rate_type = ($gst_enabled == "Yes")
+    ? $_POST['rate_type']
+    : 'EXCLUSIVE';
+
+$rate_type_outgoing = ($gst_enabled == "Yes")
+    ? $_POST['rate_type_outgoing']
+    : 'EXCLUSIVE';
+
+    if($rate_type == "NO_GST"){
+   $gst_id = 0;
+}
+$batch = ($expiry_required == "Yes")
+    ? $_POST['batch']
+    : '';
+
+$expiry = ($expiry_required == "Yes")
+    ? $_POST['expiry']
+    : NULL;
     $price_date = $_POST['price_date'];
 
     $sql = "UPDATE rate_master SET
@@ -145,8 +192,10 @@ value="<?php echo $edit ? $edit['rate'] : ''; ?>" required><br>
 <input type="number" step="0.01" name="mrp" class="form-control"
 value="<?php echo $edit ? $edit['mrp'] : ''; ?>" required><br>
 
+<?php if($gst_enabled == "Yes"): ?>
+
 <label>GST</label>
-<select name="gst_id" class="form-control" required>
+<select name="gst_id" class="form-control">
 <option value="">Select GST</option>
 <?php foreach($gst_list as $g){ ?>
 <option value="<?php echo $g['id']; ?>"
@@ -156,20 +205,35 @@ value="<?php echo $edit ? $edit['mrp'] : ''; ?>" required><br>
 
 <?php } ?>
 </select><br>
+<?php endif; ?>
 
 
+
+<?php if($gst_enabled == "Yes"): ?>
 
 <label>Incoming Rate Type</label>
 <select name="rate_type" class="form-control" required>
 <option value="INCLUSIVE" <?php if($edit && $edit['rate_type']=="INCLUSIVE") echo "selected"; ?>>Inclusive</option>
 <option value="EXCLUSIVE" <?php if($edit && $edit['rate_type']=="EXCLUSIVE") echo "selected"; ?>>Exclusive</option>
+<option value="NO_GST"
+<?php if($edit && $edit['rate_type']=="NO_GST") echo "selected"; ?>>
+No GST
+</option>
 </select><br>
 
 <label>Outgoing Rate Type</label>
 <select name="rate_type_outgoing" class="form-control" required>
 <option value="INCLUSIVE" <?php if($edit && $edit['rate_type_outgoing']=="INCLUSIVE") echo "selected"; ?>>Inclusive</option>
 <option value="EXCLUSIVE" <?php if($edit && $edit['rate_type_outgoing']=="EXCLUSIVE") echo "selected"; ?>>Exclusive</option>
+<option value="NO_GST"
+<?php if($edit && $edit['rate_type_outgoing']=="NO_GST") echo "selected"; ?>>
+No GST
+</option>
 </select><br>
+
+<?php endif; ?>
+
+<?php if($expiry_required == "Yes"): ?>
 
 <label>Batch No</label>
 <input type="text" name="batch" class="form-control"
@@ -178,6 +242,8 @@ value="<?php echo $edit ? $edit['batch_no'] : ''; ?>"><br>
 <label>Expiry Date</label>
 <input type="date" name="expiry" class="form-control"
 value="<?php echo $edit ? $edit['expiry_date'] : ''; ?>"><br>
+
+<?php endif; ?>
 
 <label>Price Date</label>
 <input type="date" name="price_date" class="form-control"
@@ -206,6 +272,21 @@ value="<?php echo $edit ? $edit['price_date'] : date('Y-m-d'); ?>" required><br>
 placeholder="Search by Product / GST / Batch / Rate"
 style="margin-bottom:10px;">
 
+
+<?php if($gst_enabled == "Yes"): ?>
+<select id="bulkType" class="form-control" style="width:200px;display:inline-block;">
+  <option value="">Select Type</option>
+  <option value="INCLUSIVE">Inclusive</option>
+  <option value="EXCLUSIVE">Exclusive</option>
+  <option value="NO_GST">No GST</option>
+</select>
+
+<button onclick="bulkUpdate()" class="btn btn-primary">
+  Apply to All
+</button>
+
+<?php endif; ?>
+
 <div class="panel-body">
 
 <div class="table-responsive">
@@ -218,11 +299,17 @@ style="margin-bottom:10px;">
 <th>Product</th>
 <th>Rate</th>
 <th>MRP</th>
+<?php if($gst_enabled == "Yes"): ?>
 <th>GST</th>
+<?php endif; ?>
+<?php if($gst_enabled == "Yes"): ?>
 <th>In Type</th>
 <th>Out Type</th>
+<?php endif; ?>
+<?php if($expiry_required == "Yes"): ?>
 <th>Batch</th>
 <th>Expiry</th>
+<?php endif; ?>
 <th>Price Date</th>
 <th>Action</th>
 </tr>
@@ -236,11 +323,27 @@ style="margin-bottom:10px;">
 <td><?php echo $r['product_name']; ?></td>
 <td><?php echo $r['rate']; ?></td>
 <td><?php echo $r['mrp']; ?></td>
-<td><?php echo $r['gst_name'].' ('.$r['gst_percent'].'%)'; ?></td>
+<?php if($gst_enabled == "Yes"): ?>
+<td>
+
+<?php
+if($r['rate_type'] == "NO_GST"){
+    echo "No GST";
+} else {
+    echo $r['gst_name'].' ('.$r['gst_percent'].'%)';
+}
+?>
+
+</td>
+<?php endif; ?>
+<?php if($gst_enabled == "Yes"): ?>
 <td><?php echo $r['rate_type']; ?></td>
 <td><?php echo $r['rate_type_outgoing']; ?></td>
+<?php endif; ?>
+<?php if($expiry_required == "Yes"): ?>
 <td><?php echo $r['batch_no']; ?></td>
 <td><?php echo $r['expiry_date']; ?></td>
+<?php endif; ?>
 <td><?php echo $r['price_date']; ?></td>
 
 <td>
@@ -262,7 +365,10 @@ class="btn btn-xs btn-danger">Delete</a>
 </div> <!-- panel-body -->
 </div>
 </div>
+
 <script>
+
+// 🔍 SEARCH
 document.getElementById("rateSearch").addEventListener("keyup", function() {
 
   let filter = this.value.toLowerCase();
@@ -274,6 +380,22 @@ document.getElementById("rateSearch").addEventListener("keyup", function() {
   });
 
 });
+
+// 🔥 BULK UPDATE (ALAG FUNCTION)
+function bulkUpdate(){
+
+    let type = document.getElementById("bulkType").value;
+
+    if(type == ""){
+        alert("Select type first");
+        return;
+    }
+
+   if(confirm("Are you sure? Ye sab rates change ho jayenge!")){
+    window.location = "rate_master.php?bulk_type=" + type;
+}
+}
+
 </script>
 <style>
 #rateTable th,
