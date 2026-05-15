@@ -30,15 +30,22 @@ if(isset($_GET['edit'])){
 if(isset($_POST['add_product'])){
 
   $name = remove_junk($db->escape($_POST['product-title']));
-  $type = (int)$_POST['type'];
   $cat  = (int)$_POST['product-categorie'];
   $buy  = (float)$_POST['buying-price'];
+  $type = (int)$_POST['type']; // 🔥 ADD HERE
   $sell = (float)$_POST['saleing-price'];
-  $gst  = (int)$_POST['gst_id'];
+  $gst = ($gst_enabled == "Yes")
+       ? (int)$_POST['gst_id']
+       : 0;
   $hsn = remove_junk($db->escape($_POST['hsn_code']));
 
-  $buy_type  = $_POST['buy_type'];
-  $sell_type = $_POST['sell_type'];
+$buy_type = ($gst_enabled == "Yes")
+    ? $_POST['buy_type']
+    : 'exclusive';
+
+$sell_type = ($gst_enabled == "Yes")
+    ? $_POST['sell_type']
+    : 'exclusive';
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
 
@@ -48,12 +55,12 @@ if(isset($_POST['add_product'])){
     redirect('product.php',false);
   }
 
-$db->query("
+  $db->query("
 INSERT INTO products
 (name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,type,date)
 VALUES
 ('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}','{$type}',NOW())
-");
+  ");
 
   $session->msg("s","Product added successfully");
   redirect('product.php',false);
@@ -66,32 +73,40 @@ if(isset($_POST['update_product'])){
   $id = (int)$_POST['product_id'];
 
   $name = remove_junk($db->escape($_POST['product-title']));
-   $type = (int)$_POST['type'];
   $cat  = (int)$_POST['product-categorie'];
   $buy  = (float)$_POST['buying-price'];
+  $type = (int)$_POST['type']; // 🔥 ADD HERE
   $sell = (float)$_POST['saleing-price'];
-  $gst  = (int)$_POST['gst_id'];
+  $gst = ($gst_enabled == "Yes")
+       ? (int)$_POST['gst_id']
+       : 0;
   $hsn = remove_junk($db->escape($_POST['hsn_code']));
 
-  $buy_type  = $_POST['buy_type'];
-  $sell_type = $_POST['sell_type'];
+$buy_type = ($gst_enabled == "Yes")
+    ? $_POST['buy_type']
+    : 'exclusive';
+
+$sell_type = ($gst_enabled == "Yes")
+    ? $_POST['sell_type']
+    : 'exclusive';
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
 
-$db->query("
-UPDATE products SET
-  name='{$name}',
-  buy_price='{$buy}',
-  sale_price='{$sell}',
-  buy_type='{$buy_type}',
-  sell_type='{$sell_type}',
-  gst_id='{$gst}',
-  categorie_id='{$cat}',
-  is_bom='{$is_bom}',
-  hsn_code='{$hsn}',
-  type='{$type}'
-WHERE id='{$id}'
-");
+  $db->query("
+    UPDATE products SET
+      name='{$name}',
+      buy_price='{$buy}',
+      sale_price='{$sell}',
+      buy_type='{$buy_type}',
+      sell_type='{$sell_type}',
+      gst_id='{$gst}',
+      categorie_id='{$cat}',
+      is_bom='{$is_bom}',
+      hsn_code='{$hsn}',
+      type='{$type}'
+    WHERE id='{$id}'
+    
+  ");
 
   $session->msg("s","Product updated");
   redirect('product.php',false);
@@ -145,11 +160,16 @@ include_once('layouts/header.php');
 <?php endforeach; ?>
 </select>
 <br>
+
+<br>
 <label>Type</label>
 <select name="type" class="form-control">
-<option value="1" <?php if($edit && $edit['type']==1) echo "selected"; ?>>Product</option>
-<option value="2" <?php if($edit && $edit['type']==2) echo "selected"; ?>>Service</option>
+  <option value="1" <?php if($edit && $edit['type']==1) echo "selected"; ?>>Product</option>
+  <option value="2" <?php if($edit && $edit['type']==2) echo "selected"; ?>>Service</option>
 </select>
+<br>
+
+<?php if($gst_enabled == "Yes"): ?>
 
 <!-- GST -->
 <select name="gst_id" id="gst_id" class="form-control">
@@ -162,6 +182,10 @@ include_once('layouts/header.php');
 <?php endforeach; ?>
 </select>
 <br>
+<?php endif; ?>
+
+<!-- HSN CODE -->
+<?php if($gst_enabled == "Yes"): ?>
 
 <!-- HSN CODE -->
 <input type="text"
@@ -170,38 +194,66 @@ include_once('layouts/header.php');
        placeholder="HSN Code"
        value="<?php echo $edit['hsn_code'] ?? ''; ?>">
 
+<?php endif; ?>
+
 <br>
 
 
 <!-- BUYING -->
 <label>Buying Price</label>
+
 <div class="input-group">
+
 <input type="number" step="0.01" id="buy_price"
- name="buying-price" class="form-control"
+ name="buying-price"
+ class="form-control"
+ style="width:150%;"
  value="<?php echo $edit['buy_price'] ?? ''; ?>">
+
+<?php if($gst_enabled == "Yes"): ?>
 
 <select name="buy_type" id="buy_type" class="form-control">
 <option value="exclusive" <?php if($edit && $edit['buy_type']=="exclusive") echo "selected"; ?>>Excluding GST</option>
 <option value="inclusive" <?php if($edit && $edit['buy_type']=="inclusive") echo "selected"; ?>>Including GST</option>
 </select>
+
+<?php endif; ?>
+
 </div>
 <br>
 
 
 <!-- SELLING -->
 <label>Selling Price</label>
+
 <div class="input-group">
+
 <input type="number" step="0.01" id="sell_price"
- name="saleing-price" class="form-control"
+ name="saleing-price"
+ class="form-control"
+ style="width:150%;"
  value="<?php echo $edit['sale_price'] ?? ''; ?>">
+
+<?php if($gst_enabled == "Yes"): ?>
 
 <select name="sell_type" id="sell_type" class="form-control">
 <option value="exclusive" <?php if($edit && $edit['sell_type']=="exclusive") echo "selected"; ?>>Excluding GST</option>
 <option value="inclusive" <?php if($edit && $edit['sell_type']=="inclusive") echo "selected"; ?>>Including GST</option>
 </select>
+
+<?php endif; ?>
+
 </div>
 <br>
 
+
+<?php
+if(
+   (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1)
+   ||
+   (isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 1)
+):
+?>
 
 <!-- BOM -->
 <label>
@@ -209,6 +261,8 @@ include_once('layouts/header.php');
 <?php if($edit && $edit['is_bom']==1) echo "checked"; ?>>
 This product is manufactured (BOM)
 </label>
+
+<?php endif; ?>
 
 <br><br>
 
@@ -242,24 +296,36 @@ This product is manufactured (BOM)
 
 <div class="panel-body">
 
+<!-- 🔥 SCROLL WRAPPER START -->
+<div style="max-height: 400px; overflow-y: auto;">
+
 <table class="table table-bordered" id="productTable">
 
+<thead>
 <tr>
 <th>#</th>
 <th>Name</th>
 <th>Category</th>
+<th>Type</th>
 <th>Selling</th>
+<?php if($gst_enabled == "Yes"): ?>
 <th>HSN</th>
+<?php endif; ?>
 <th>Action</th>
 </tr>
+</thead>
 
+<tbody>
 <?php foreach($products as $p): ?>
 <tr>
 <td><?php echo count_id(); ?></td>
 <td><?php echo $p['name']; ?></td>
 <td><?php echo $p['categorie']; ?></td>
+<td><?php echo ($p['type']==1) ? 'Product' : 'Service'; ?></td>
 <td>₹ <?php echo number_format($p['sale_price'],2); ?></td>
+<?php if($gst_enabled == "Yes"): ?>
 <td><?php echo $p['hsn_code']; ?></td>
+<?php endif; ?>
 
 <td>
 <a href="product.php?edit=<?php echo $p['id']; ?>" class="btn btn-info btn-xs">Edit</a>
@@ -267,8 +333,12 @@ This product is manufactured (BOM)
 </td>
 </tr>
 <?php endforeach; ?>
+</tbody>
 
 </table>
+
+</div>
+<!-- 🔥 SCROLL WRAPPER END -->
 
 </div>
 </div>
