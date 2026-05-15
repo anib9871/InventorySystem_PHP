@@ -266,7 +266,7 @@ GROUP BY p.payment_mode
 
 </style>
 
-<div id="main-content">
+
 
 <div id="dash-wrap">
 
@@ -365,8 +365,6 @@ GROUP BY p.payment_mode
         </div>
 
     </div>
-
-</div>
 
 </div>
 
