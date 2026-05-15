@@ -4,10 +4,13 @@ require_once('includes/load.php');
 //page_require_level(2);
 
 /* FETCH ORGANIZATION LIST */
+$org_id = $_SESSION['org_id'];
+
 $orgs = find_by_sql("SELECT om.*, gsm.state_name 
-                     FROM organization_master om
-                     LEFT JOIN gst_state_master gsm ON gsm.id = om.state_id
-                     ORDER BY om.id DESC");
+FROM organization_master om
+LEFT JOIN gst_state_master gsm ON gsm.id = om.state_id
+WHERE om.id = '{$org_id}'
+ORDER BY om.id DESC");
 
 /* FETCH STATE LIST */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
@@ -17,7 +20,7 @@ if(isset($_POST['add_org'])){
 
   $mnemonic = strtoupper(substr(remove_junk($db->escape($_POST['mnemonic'])),0,5));
 
-  $org_name = remove_junk($db->escape($_POST['org_name']));
+
   $address = remove_junk($db->escape($_POST['address']));
   $phone = remove_junk($db->escape($_POST['phone']));
   $email = remove_junk($db->escape($_POST['email']));
@@ -26,16 +29,28 @@ if(isset($_POST['add_org'])){
   $state_id = (int)$_POST['state_id'];
   $state_code = remove_junk($db->escape($_POST['state_code']));
 
-  if($org_name == ''){
-      $session->msg("d","Organization name is required");
-      redirect('organization_master.php',false);
-  }
+$master_org_id = $_SESSION['org_id'];
 
-  $sql = "INSERT INTO organization_master
-          (mnemonic,org_name,address,state_id,state_code,phone,email,contact_person,gst_no)
-          VALUES
-          ('$mnemonic','$org_name','$address','$state_id','$state_code',
-           '$phone','$email','$contact','$gst')";
+$master_org = find_by_sql("
+SELECT org_id, org_name 
+FROM master_inventory.master_organization 
+WHERE org_id = '{$master_org_id}'
+LIMIT 1
+");
+
+if(!$master_org){
+  die("Invalid Master Organization");
+}
+
+$org_id   = $master_org[0]['org_id'];
+$org_name = $master_org[0]['org_name'];
+
+
+$sql = "INSERT INTO organization_master
+(id,mnemonic,org_name,address,state_id,state_code,phone,email,contact_person,gst_no)
+VALUES
+('$org_id','$mnemonic','$org_name','$address','$state_id','$state_code',
+ '$phone','$email','$contact','$gst')";
 
   if($db->query($sql)){
       $session->msg("s","Organization Added");
@@ -51,7 +66,16 @@ if(isset($_POST['update_org'])){
   $id = (int)$_POST['id'];
 
   $mnemonic = strtoupper(substr(remove_junk($db->escape($_POST['mnemonic'])),0,5));
-  $org_name = remove_junk($db->escape($_POST['org_name']));
+  $master_org_id = $_SESSION['org_id'];
+
+    $master_org = find_by_sql("
+    SELECT org_name 
+    FROM master_inventory.master_organization 
+    WHERE org_id = '{$master_org_id}'
+    LIMIT 1
+    ");
+
+  $org_name = $master_org[0]['org_name'];
   $address = remove_junk($db->escape($_POST['address']));
   $phone = remove_junk($db->escape($_POST['phone']));
   $email = remove_junk($db->escape($_POST['email']));
@@ -70,7 +94,7 @@ if(isset($_POST['update_org'])){
             email='$email',
             contact_person='$contact',
             gst_no='$gst'
-          WHERE id='$id'";
+        WHERE id='{$_SESSION['org_id']}'  ";
 
   if($db->query($sql)){
       $session->msg("s","Organization Updated");
@@ -126,8 +150,18 @@ include_once('layouts/header.php');
 <input type="text" maxlength="5" id="mnemonic" name="mnemonic" class="form-control"
 value="<?php echo $edit ? $edit['mnemonic'] : ''; ?>" placeholder="Mnemonic *" required><br>
 
-<input type="text" name="org_name" class="form-control"
-value="<?php echo $edit ? $edit['org_name'] : ''; ?>" placeholder="Organization Name *" required><br>
+<?php
+$master_org = find_by_sql("
+SELECT org_name 
+FROM master_inventory.master_organization 
+WHERE org_id = '{$_SESSION['org_id']}'
+LIMIT 1
+");
+
+$org_name = $master_org ? $master_org[0]['org_name'] : '';
+?>
+<input type="text" class="form-control"
+value="<?php echo $edit ? $edit['org_name'] : $org_name; ?>" readonly>
 
 <input type="text" name="phone" class="form-control"
 value="<?php echo $edit ? $edit['phone'] : ''; ?>" placeholder="Phone No"><br>
@@ -139,6 +173,8 @@ value="<?php echo $edit ? $edit['email'] : ''; ?>" placeholder="Email ID"><br>
 value="<?php echo $edit ? $edit['contact_person'] : ''; ?>" placeholder="Contact Person"><br>
 
 <textarea name="address" class="form-control" placeholder="Address"><?php echo $edit ? $edit['address'] : ''; ?></textarea><br>
+
+<?php if($gst_enabled == "Yes"): ?>
 
 <select name="state_id" id="state_id" class="form-control" required>
 <option value="">Select State</option>
@@ -155,9 +191,22 @@ value="<?php echo $edit ? $edit['contact_person'] : ''; ?>" placeholder="Contact
 
 <input type="text" name="state_code" id="state_code" class="form-control"
 value="<?php echo $edit ? $edit['state_code'] : ''; ?>" placeholder="State Code" readonly><br>
+<?php endif; ?>
 
-<input type="text" name="gst" id="gst" class="form-control"
-value="<?php echo $edit ? $edit['gst_no'] : ''; ?>" placeholder="Enter GST Number"><br>
+<?php if($gst_enabled == "Yes"): ?>
+
+<input type="text"
+name="gst"
+id="gst"
+class="form-control"
+
+value="<?php echo $edit ? $edit['gst_no'] : ''; ?>"
+
+placeholder="Enter GST Number">
+
+<br>
+
+<?php endif; ?>
 
 <?php if($edit){ ?>
 <button name="update_org" class="btn btn-danger btn-block">Update</button>
@@ -195,9 +244,13 @@ value="<?php echo $edit ? $edit['gst_no'] : ''; ?>" placeholder="Enter GST Numbe
 <th>Email</th>
 <th>Contact</th>
 <th>Address</th>
+<?php if($gst_enabled == "Yes"): ?>
+
 <th>State</th>
 <th>State Code</th>
 <th>GST No</th>
+
+<?php endif; ?>
 <th>Action</th>
 </tr>
 </thead>
@@ -213,10 +266,15 @@ value="<?php echo $edit ? $edit['gst_no'] : ''; ?>" placeholder="Enter GST Numbe
 <td><?php echo $o['email']; ?></td>
 <td><?php echo $o['contact_person']; ?></td>
 <td><?php echo $o['address']; ?></td>
+<?php if($gst_enabled == "Yes"): ?>
+
 <td><?php echo $o['state_name']; ?></td>
+
 <td><?php echo $o['state_code']; ?></td>
+
 <td><?php echo $o['gst_no']; ?></td>
 
+<?php endif; ?>
 <td>
 <a href="organization_master.php?edit=<?php echo $o['id']; ?>" class="btn btn-info btn-xs equal-btn">Edit</a>
 
