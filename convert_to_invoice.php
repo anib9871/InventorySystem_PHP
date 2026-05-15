@@ -9,10 +9,42 @@ $q_data = find_by_sql("SELECT * FROM quotation_master WHERE id = $id");
 if(!$q_data) die("Quotation not found");
 $quotation = $q_data[0];
 
-/* Generate Invoice No */
-$invoice_no = "INV".time();
-$db->query("START TRANSACTION");
+/* 🔥 ORG SECURITY */
+if($quotation['organization_id'] != $_SESSION['org_id']){
+    die("Unauthorized Access");
+}
 
+/* 🔥 DUPLICATE CHECK */
+$check = find_by_sql("
+SELECT id FROM invoice 
+WHERE source_type='QUOTATION' 
+AND source_id='{$id}'
+LIMIT 1
+");
+
+if($check){
+    die("Invoice already created for this quotation");
+}
+
+/* Generate Invoice No */
+$seq = find_by_sql("
+SELECT last_no 
+FROM sequence_master 
+WHERE sequence_category='invoice'
+");
+
+$next = $seq[0]['last_no'] + 1;
+
+$invoice_no = "INV".str_pad($next,5,"0",STR_PAD_LEFT);
+
+$db->query("
+UPDATE sequence_master 
+SET last_no = $next
+WHERE sequence_category='invoice'
+");
+
+$db->query("START TRANSACTION");
+try{
 /* Insert Into Invoice Table */
 $query = "
 INSERT INTO invoice (
@@ -31,7 +63,7 @@ source_id
 '{$quotation['customer_id']}',
 '{$quotation['organization_id']}',
 NOW(),
-'{$quotation['gst_type']}',
+'".(($gst_enabled == "Yes") ? $quotation['gst_type'] : 'exclusive')."',
 '{$quotation['subtotal']}',
 '{$quotation['net_total']}',
 0,
@@ -78,14 +110,17 @@ INSERT INTO invoice_items (
     '{$it['line_total']}'
 )
 ")){
-    $db->query("ROLLBACK");
-    die("Invoice Item Insert Failed");
+  throw new Exception("Invoice Item Insert Failed");
 }
 
     /* ===== STOCK DEDUCT LOGIC (CONVERTED FROM QUOTATION) ===== */
 
 $product_id = (int)$it['product_id'];
 $qty        = (float)$it['qty'];
+
+if($qty <= 0){
+    continue;
+}
 
 /* Fetch product */
 $product = find_by_id('products', $product_id);
@@ -243,3 +278,10 @@ if($current_raw_stock < $total_raw_deduct){
 $db->query("COMMIT");
 header("Location: invoice_print.php?id=".$new_invoice_id);
 exit;
+
+}catch(Exception $e){
+
+    $db->query("ROLLBACK");
+    die($e->getMessage());
+
+}
