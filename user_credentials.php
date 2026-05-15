@@ -7,14 +7,12 @@ $orgs = find_by_sql("SELECT * FROM master_inventory.master_organization ORDER BY
 
 /* ================= USERS LIST (DESC) ================= */
 $users = find_by_sql("
-SELECT u.id,u.username,u.password,u.org_id,u.center_id,u.role_id,
+SELECT u.id,u.username,u.password,u.org_id,u.role_id,
 r.role_name,
-o.org_name,
-c.center_name
+o.org_name
 FROM master_inventory.user_credentials u
 LEFT JOIN master_inventory.master_role r ON r.role_id = u.role_id
 LEFT JOIN master_inventory.master_organization o ON o.org_id=u.org_id
-LEFT JOIN master_inventory.master_center c ON c.center_id=u.center_id
 ORDER BY u.id DESC
 ");
 
@@ -24,7 +22,6 @@ if(isset($_POST['add_user'])){
   $username = remove_junk($db->escape($_POST['username']));
   $password = remove_junk($db->escape($_POST['password']));
   $org_id   = (int)$_POST['org_id'];
-  $center_id= (int)$_POST['center_id'];
   $role_id  = (int)$_POST['role_id'];
 
   if($username=="" || $password=="" || $org_id==0 || $center_id==0){
@@ -33,8 +30,8 @@ if(isset($_POST['add_user'])){
   }
 
   $sql = "INSERT INTO master_inventory.user_credentials
-  (username,password,org_id,center_id,role_id)
-  VALUES('$username','$password','$org_id','$center_id','$role_id')";
+  (username,password,org_id,role_id)
+  VALUES('$username','$password','$org_id','$role_id')";
 
   if($db->query($sql)){
     $session->msg('s',"User Added Successfully");
@@ -66,14 +63,12 @@ if(isset($_POST['update_user'])){
   $username = remove_junk($db->escape($_POST['username']));
   $password = remove_junk($db->escape($_POST['password']));
   $org_id   = (int)$_POST['org_id'];
-  $center_id= (int)$_POST['center_id'];
   $role_id  = (int)$_POST['role_id'];
 
   $sql="UPDATE master_inventory.user_credentials SET
   username='{$username}',
   password='{$password}',
   org_id='{$org_id}',
-  center_id='{$center_id}',
   role_id='{$role_id}'
   WHERE id='{$id}'";
 
@@ -148,29 +143,6 @@ required>
 </select>
 </div>
 
-<!-- CENTER -->
-<div class="form-group">
-<select name="center_id" id="centerSelect" class="form-control" required>
-<option value="">Select Center</option>
-
-<?php
-if($edit_user){
-$centers = find_by_sql("
-SELECT * FROM master_inventory.master_center
-WHERE org_id='{$edit_user['org_id']}'
-ORDER BY center_id DESC
-");
-
-foreach($centers as $c){
-?>
-<option value="<?php echo $c['center_id']; ?>"
-<?php if($edit_user['center_id']==$c['center_id']) echo "selected"; ?>>
-<?php echo $c['center_name']; ?>
-</option>
-<?php } } ?>
-</select>
-</div>
-
 <!-- ROLE -->
 <div class="form-group">
 <select name="role_id" class="form-control" required>
@@ -214,7 +186,6 @@ foreach($centers as $c){
 <th>Username</th>
 <th>Password</th>
 <th>Organization</th>
-<th>Center</th>
 <th>Role</th>
 <th>Action</th>
 </tr>
@@ -228,7 +199,6 @@ foreach($centers as $c){
 <td><?php echo $u['username']; ?></td>
 <td><?php echo $u['password']; ?></td>
 <td><?php echo $u['org_name']; ?></td>
-<td><?php echo $u['center_name']; ?></td>
 <td><?php echo $u['role_name']; ?></td>
 
 <td>
@@ -256,16 +226,6 @@ document.getElementById("userSearch").addEventListener("keyup", function(){
   });
 });
 
-/* DYNAMIC CENTER LOAD */
-document.getElementById("orgSelect").addEventListener("change", function(){
-  let org_id = this.value;
-
-  fetch("get_centers.php?org_id="+org_id)
-  .then(res=>res.text())
-  .then(data=>{
-    document.getElementById("centerSelect").innerHTML = data;
-  });
-});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
