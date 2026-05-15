@@ -9,11 +9,11 @@ $org_name = trim($_POST['org_name']);
 /* MASTER DB CONNECT */
 
 $conn = mysqli_connect(
-"127.0.0.1",
-"root",
-"Mysql123@",
-"master_inventory",
-3306
+    getenv('MYSQLHOST'),
+    getenv('MYSQLUSER'),
+    getenv('MYSQLPASSWORD'),
+    'master_inventory',
+    getenv('MYSQLPORT')
 );
 
 if(!$conn){
