@@ -10,24 +10,17 @@ $page_title = 'Super Admin Dashboard';
 
 /* COUNTS */
 $org_total = find_by_sql("SELECT COUNT(org_id) as total FROM master_inventory.master_organization")[0]['total'];
-$center_total = find_by_sql("SELECT COUNT(center_id) as total FROM master_inventory.master_center")[0]['total'];
 $user_total = find_by_sql("SELECT COUNT(id) as total FROM master_inventory.user_credentials")[0]['total'];
 
 /* RECENT DATA */
 $recent_orgs = find_by_sql("SELECT * FROM master_inventory.master_organization ORDER BY org_id DESC LIMIT 5");
 
-$recent_centers = find_by_sql("
-SELECT c.center_name,o.org_name 
-FROM master_inventory.master_center c
-LEFT JOIN master_inventory.master_organization o ON o.org_id=c.org_id
-ORDER BY c.center_id DESC LIMIT 5
-");
+
 
 $recent_users = find_by_sql("
-SELECT u.username,o.org_name,c.center_name
+SELECT u.username,o.org_name
 FROM master_inventory.user_credentials u
 LEFT JOIN master_inventory.master_organization o ON o.org_id=u.org_id
-LEFT JOIN master_inventory.master_center c ON c.center_id=u.center_id
 ORDER BY u.id DESC LIMIT 5
 ");
 
@@ -148,7 +141,7 @@ include_once('layouts/header.php');
 <div class="row">
 <div class="col-md-12">
 <h2>Super Admin Dashboard</h2>
-<p style="color:#888;">Manage Organizations, Centers and Users</p>
+<p style="color:#888;">Manage Organizations and Users</p>
 </div>
 </div>
 
@@ -162,12 +155,7 @@ include_once('layouts/header.php');
 </div>
 </div>
 
-<div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
-<div class="dashboard-card bg-center">
-<h3><i class="fa fa-map-marker"></i> <?php echo $center_total; ?></h3>
-<p>Total Centers</p>
-</div>
-</div>
+
 
 <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
 <div class="dashboard-card bg-user">
@@ -189,11 +177,7 @@ include_once('layouts/header.php');
 </a>
 </div>
 
-<div class="col-md-4">
-<a href="master_center.php" class="btn btn-success btn-block">
-<i class="fa fa-plus"></i> Create Center
-</a>
-</div>
+
 
 <div class="col-md-4">
 <a href="user_credentials.php" class="btn btn-warning btn-block">
@@ -222,22 +206,7 @@ include_once('layouts/header.php');
 </div>
 </div>
 
-<!-- CENTER -->
-<div class="col-md-4">
-<div class="panel panel-default">
-<div class="panel-heading"><strong>Recent Centers</strong></div>
-<div class="panel-body">
-<ul class="list-group">
-<?php foreach($recent_centers as $c): ?>
-<li class="list-group-item">
-<?php echo $c['center_name']; ?>
-<small>(<?php echo $c['org_name']; ?>)</small>
-</li>
-<?php endforeach; ?>
-</ul>
-</div>
-</div>
-</div>
+
 
 <!-- USER -->
 <div class="col-md-4">
@@ -248,7 +217,7 @@ include_once('layouts/header.php');
 <?php foreach($recent_users as $u): ?>
 <li class="list-group-item">
 <?php echo $u['username']; ?>
-<small>(<?php echo $u['org_name']; ?> - <?php echo $u['center_name']; ?>)</small>
+<small>(<?php echo $u['org_name']; ?>)</small>
 </li>
 <?php endforeach; ?>
 </ul>
