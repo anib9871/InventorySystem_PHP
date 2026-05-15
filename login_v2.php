@@ -42,6 +42,18 @@ redirect('home.php', false);
         </div>
 
     </form>
+
+    <hr>
+
+<div class="text-center">
+
+<a href="user_login.php" class="btn btn-default">
+
+Employee / Staff Login
+
+</a>
+
+</div>
 </div>
 
 <?php include_once('layouts/footer.php'); ?>
