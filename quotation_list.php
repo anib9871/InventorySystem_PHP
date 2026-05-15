@@ -63,7 +63,7 @@ foreach($quotes as $q){
   <!-- View / Print -->
   <button class="btn btn-primary btn-sm openQuote"
           data-id="<?php echo $q['id']; ?>">
-    View / Print
+    <?php echo ($gst_enabled == "Yes") ? "GST Quote" : "Quotation"; ?>
   </button>
 
   <!-- Edit -->
@@ -93,7 +93,11 @@ foreach($quotes as $q){
     <div class="modal-content">
 
       <div class="modal-header">
-        <h4 class="modal-title">Quotation Preview</h4>
+        <h4 class="modal-title">
+<?php echo ($gst_enabled == "Yes")
+       ? "GST Quotation Preview"
+       : "Quotation Preview"; ?>
+</h4>
         <button type="button" class="close" data-dismiss="modal">&times;</button>
       </div>
 
