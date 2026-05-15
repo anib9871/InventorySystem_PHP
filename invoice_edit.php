@@ -24,19 +24,33 @@ $products  = join_product_table();
 if(isset($_POST['update_invoice'])){
 
     $cust = (int)$_POST['customer_id'];
-    $gst_type = $_POST['gst_type'] ?? 'exclusive';
+    $gst_type = ($gst_enabled == "Yes")
+            ? ($_POST['gst_type'] ?? 'exclusive')
+            : 'exclusive';
 
     $subtotal = 0;
     $net_total = 0;
 
-    $db->query("DELETE FROM invoice_items WHERE invoice_id = $id");
+    // 🔥 OLD DATA (reverse ke liye)
+$old = find_by_id('invoice', $id);
+$old_total = $old['net_total'];
+$old_customer = $old['customer_id'];
+
+$old_acc = "CUSTOMER";
+
+// 🔥 ONLY ITEMS DELETE
+$db->query("DELETE FROM invoice_items WHERE invoice_id = $id");
 
     foreach($_POST['product_id'] as $i => $pid){
 
         $pid  = (int)$pid;
         $qty  = (float)$_POST['qty'][$i];
         $base = (float)$_POST['rate'][$i];
-        $gst  = (float)$_POST['gst'][$i];
+        $gst = 0;
+
+if($gst_enabled == "Yes"){
+   $gst = (float)$_POST['gst'][$i];
+}
         $disc = (float)$_POST['discount'][$i];
 
         if($pid <= 0 || $qty <= 0) continue;
@@ -44,7 +58,14 @@ if(isset($_POST['update_invoice'])){
         $line_base = $qty * $base;
         $discounted_base = $line_base - $disc;
 
-        if($gst_type == "exclusive"){
+       if($gst_enabled == "No"){
+
+    $gst_amount = 0;
+    $rate_incl  = $base;
+    $line_total = $discounted_base;
+
+}
+else if($gst_type == "exclusive"){
             $gst_amount = $discounted_base * $gst / 100;
             $rate_incl  = $base + ($base * $gst / 100);
             $line_total = $discounted_base + $gst_amount;
@@ -69,6 +90,20 @@ if(isset($_POST['update_invoice'])){
 
     $gst_total = $net_total - $subtotal;
 
+    // 🔥 OLD ENTRY REVERSE (VERY IMPORTANT)
+
+// CUSTOMER reverse
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($id, $old_customer, 'CUSTOMER', 'CREDIT', '$old_total')
+");
+
+// SALES reverse
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($id, $old_customer, 'SALES', 'DEBIT', '$old_total')
+");
+
     $db->query("
     UPDATE invoice SET
     customer_id = '$cust',
@@ -79,10 +114,58 @@ if(isset($_POST['update_invoice'])){
     WHERE id = '$id'
     ");
 
+    // 🔥 LEDGER ENTRY (REINSERT)
+
+// CUSTOMER DEBIT
+$customer_acc = "CUSTOMER";
+
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($id, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
+");
+
+// SALES CREDIT
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($id, $cust, 'SALES', 'CREDIT', '$net_total')
+");
+
+if(isset($_POST['payment_amount'])){
+  foreach($_POST['payment_amount'] as $mode_id => $amt){
+
+    if($amt > 0){
+
+      $pm = find_by_id('payment_mode_master', $mode_id);
+      $mode_name = $pm['mode_name'];
+
+      $db->query("
+      INSERT INTO payments (invoice_id, payment_mode, amount)
+      VALUES ($id, '$mode_name', '$amt')
+      ");
+
+      // 🔥 LEDGER PAYMENT
+      $db->query("
+      INSERT INTO ledger_entries (invoice_id, account, type, amount)
+      VALUES ($id, '".strtoupper($mode_name)."', 'DEBIT', '$amt')
+      ");
+
+
+
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($id, $cust, 'CUSTOMER', 'CREDIT', '$amt')
+");
+    }
+  }
+}
+
+
     echo "<script>
     window.location='invoice_list.php?print_id=".$id."';
     </script>";
 }
+
+
 ?>
 
 <?php include_once('layouts/header.php'); ?>
@@ -106,6 +189,7 @@ if(isset($_POST['update_invoice'])){
 <?php } ?>
 </select>
 
+<?php if($gst_enabled == "Yes"): ?>
 <!-- GST TYPE -->
 <div class="mb-3">
 <label>
@@ -120,6 +204,7 @@ Exclusive
 Inclusive
 </label>
 </div>
+<?php endif; ?>
 
 <table class="table table-bordered">
 <thead>
@@ -127,9 +212,12 @@ Inclusive
 <th>Product</th>
 <th>Qty</th>
 <th>Rate</th>
+<?php if($gst_enabled == "Yes"): ?>
 <th>GST%</th>
+<?php endif; ?>
 <th>Discount</th>
 <th>Total</th>
+<th>Action</th>
 </tr>
 </thead>
 
@@ -157,10 +245,12 @@ value="<?=$it['qty'];?>">
 value="<?=$it['rate_excl_gst'];?>">
 </td>
 
+<?php if($gst_enabled == "Yes"): ?>
 <td>
 <input type="number" name="gst[]" class="form-control"
 value="<?=$it['gst_percent'];?>">
 </td>
+<?php endif; ?>
 
 <td>
 <input type="number" name="discount[]" class="form-control"
@@ -169,6 +259,12 @@ value="<?=$it['discount_amount'];?>">
 
 <td>
 ₹ <?=number_format($it['line_total'],2);?>
+</td>
+
+<td>
+  <button type="button" class="btn btn-danger btn-sm removeRow">
+    ✖
+  </button>
 </td>
 </tr>
 <?php } ?>
@@ -186,4 +282,12 @@ Update invoice
 </div>
 </div>
 
+<script>
+document.addEventListener("click", function(e){
+  if(e.target.classList.contains("removeRow")){
+    let row = e.target.closest("tr");
+    row.remove();
+  }
+});
+</script>
 <?php include_once('layouts/footer.php'); ?>
