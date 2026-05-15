@@ -2,15 +2,14 @@
 $page_title = 'Center Master';
 require_once('includes/load.php');
 
-/* FETCH ORGANIZATIONS (DESC) */
-$orgs = find_by_sql("SELECT * FROM master_inventory.master_organization ORDER BY org_id DESC");
 
 /* FETCH CENTERS (DESC) */
+$org_id = $_SESSION['org_id'];
+
 $centers = find_by_sql("
-SELECT c.center_id,c.center_name,c.org_id,o.org_name
-FROM master_inventory.master_center c
-LEFT JOIN master_inventory.master_organization o
-ON o.org_id=c.org_id
+SELECT c.center_id,c.center_name
+FROM master_center c
+WHERE c.org_id='{$org_id}'
 ORDER BY c.center_id DESC
 ");
 
@@ -18,15 +17,15 @@ ORDER BY c.center_id DESC
 if(isset($_POST['add_center'])){
 
   $center_name = remove_junk($db->escape($_POST['center_name']));
-  $org_id = (int)$_POST['org_id'];
+  $org_id = $_SESSION['org_id'];
 
   if($center_name == "" || $org_id == 0){
     $session->msg('d',"All fields required");
     redirect('master_center.php', false);
   }
 
-  $sql = "INSERT INTO master_inventory.master_center (center_name,org_id)
-          VALUES('{$center_name}','{$org_id}')";
+$sql = "INSERT INTO master_center (center_name,org_id)
+        VALUES('{$center_name}','{$org_id}')";
 
   if($db->query($sql)){
     $session->msg('s',"Center Added Successfully");
@@ -43,7 +42,13 @@ $edit_center = null;
 if(isset($_GET['edit'])){
   $id = (int)$_GET['edit'];
 
-  $res = find_by_sql("SELECT * FROM master_inventory.master_center WHERE center_id='{$id}' LIMIT 1");
+  $org_id = $_SESSION['org_id'];
+
+$res = find_by_sql("
+SELECT * FROM master_center 
+WHERE center_id='{$id}' AND org_id='{$org_id}' 
+LIMIT 1
+");
 
   if($res){
     $edit_center = $res[0];
@@ -55,12 +60,12 @@ if(isset($_POST['update_center'])){
 
   $id = (int)$_POST['center_id'];
   $center_name = remove_junk($db->escape($_POST['center_name']));
-  $org_id = (int)$_POST['org_id'];
+  $org_id = $_SESSION['org_id'];
 
-  $sql = "UPDATE master_inventory.master_center SET
-          center_name='{$center_name}',
-          org_id='{$org_id}'
-          WHERE center_id='{$id}'";
+$sql = "UPDATE master_center SET
+        center_name='{$center_name}',
+        org_id='{$org_id}'
+        WHERE center_id='{$id}' AND org_id='{$org_id}'";
 
   if($db->query($sql)){
     $session->msg('s',"Center Updated Successfully");
@@ -75,7 +80,10 @@ if(isset($_POST['update_center'])){
 if(isset($_GET['delete'])){
   $id = (int)$_GET['delete'];
 
-  $sql = "DELETE FROM master_inventory.master_center WHERE center_id='{$id}'";
+ $org_id = $_SESSION['org_id'];
+
+$sql = "DELETE FROM master_center 
+        WHERE center_id='{$id}' AND org_id='{$org_id}'";
 
   $db->query($sql);
 
@@ -104,20 +112,7 @@ include_once('layouts/header.php');
 <input type="hidden" name="center_id" value="<?php echo $edit_center['center_id']; ?>">
 <?php endif; ?>
 
-<!-- ORGANIZATION FIRST -->
-<div class="form-group">
-<select name="org_id" class="form-control" required>
-<option value="">Select Organization</option>
 
-<?php foreach($orgs as $org): ?>
-<option value="<?php echo $org['org_id']; ?>"
-<?php if($edit_center && $edit_center['org_id']==$org['org_id']) echo "selected"; ?>>
-<?php echo $org['org_name']; ?>
-</option>
-<?php endforeach; ?>
-
-</select>
-</div>
 
 <!-- CENTER NAME -->
 <div class="form-group">
@@ -172,7 +167,6 @@ Save Center
 <tr>
 <th>#</th>
 <th>Center Name</th>
-<th>Organization</th>
 <th>Action</th>
 </tr>
 </thead>
@@ -184,7 +178,7 @@ Save Center
 <tr>
 <td><?php echo $i+1; ?></td>
 <td><?php echo $center['center_name']; ?></td>
-<td><?php echo $center['org_name']; ?></td>
+
 
 <td>
 <a href="?edit=<?php echo $center['center_id']; ?>" class="btn btn-info btn-xs">Edit</a>
