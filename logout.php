@@ -2,12 +2,23 @@
 session_start();
 
 /* DESTROY SESSION */
-
 session_unset();
 session_destroy();
-
-/* REDIRECT LOGIN PAGE */
-
-header("Location: login_v2.php");
-exit();
 ?>
+
+<script>
+Object.keys(localStorage).forEach(function(key){
+
+    if(
+        key.startsWith("inventory_") ||
+        key.startsWith("billing_")
+    ){
+        localStorage.removeItem(key);
+    }
+
+});
+
+// REDIRECT
+window.location.href = "login_v2.php";
+
+</script>
