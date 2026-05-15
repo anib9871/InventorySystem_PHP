@@ -4,16 +4,35 @@ require_once('includes/load.php');
 //page_require_level(2);
 
 // FETCH ORGANIZATION LIST
-$org_list = find_by_sql("SELECT id, org_name FROM organization_master ORDER BY org_name");
+$org_id = (int)$_SESSION['org_id'];
+
+$org_data = find_by_sql("
+SELECT id, org_name
+FROM organization_master
+WHERE id = '{$org_id}'
+LIMIT 1
+");
+
+$current_org = $org_data ? $org_data[0] : [];
+$print_types = find_all('print_type_master');
 
 // -------------------- SAVE NEW --------------------
 if(isset($_POST['save'])){
     $org_id = (int)$_POST['org_id'];
     $batch_required = $_POST['batch_required'];
     $gst_registered = $_POST['gst_registered'];
+    $expiry_required = $_POST['expiry_required'];
+    $print_type_id = (int)$_POST['print_type_id'];
 
-    $sql = "INSERT INTO configuration_master (org_id, batch_required, gst_registered)
-            VALUES ('{$org_id}','{$batch_required}','{$gst_registered}')";
+$sql = "INSERT INTO configuration_master
+(org_id, batch_required, gst_registered,
+ expiry_required, print_type_id)
+
+VALUES
+('{$org_id}','{$batch_required}',
+ '{$gst_registered}',
+ '{$expiry_required}',
+ '{$print_type_id}')";
 
     if($db->query($sql)){
         $session->msg("s","Configuration saved successfully");
@@ -48,11 +67,15 @@ if(isset($_POST['update'])){
     $org_id = (int)$_POST['org_id'];
     $batch_required = $_POST['batch_required'];
     $gst_registered = $_POST['gst_registered'];
+    $expiry_required = $_POST['expiry_required'];
+    $print_type_id = (int)$_POST['print_type_id'];
 
     $sql = "UPDATE configuration_master 
             SET org_id='{$org_id}',
                 batch_required='{$batch_required}',
-                gst_registered='{$gst_registered}'
+                gst_registered='{$gst_registered}',
+                expiry_required='{$expiry_required}',
+                print_type_id='{$print_type_id}'
             WHERE id='{$id}'";
 
     if($db->query($sql)){
@@ -79,9 +102,12 @@ if(isset($_GET['search']) && $_GET['search'] != ""){
 
 // -------------------- LIST DATA --------------------
 $config_list = find_by_sql("
-SELECT c.*, o.org_name 
+SELECT c.*, o.org_name,
+       p.print_name
 FROM configuration_master c
 LEFT JOIN organization_master o ON o.id = c.org_id
+LEFT JOIN print_type_master p
+ON p.id = c.print_type_id
 {$where}
 ORDER BY c.id DESC
 ");
@@ -107,18 +133,18 @@ ORDER BY c.id DESC
 <?php endif; ?>
 
 <div class="form-group">
+
 <label>Organization</label>
-<select name="org_id" class="form-control" required>
-<option value="">-- Select Organization --</option>
 
-<?php foreach($org_list as $org): ?>
-<option value="<?php echo $org['id']; ?>"
-<?php if($edit_data && $edit_data['org_id']==$org['id']) echo "selected"; ?>>
-<?php echo $org['org_name']; ?>
-</option>
-<?php endforeach; ?>
+<input type="hidden"
+name="org_id"
+value="<?php echo $current_org['id']; ?>">
 
-</select>
+<input type="text"
+class="form-control"
+value="<?php echo $current_org['org_name']; ?>"
+readonly>
+
 </div>
 
 <div class="form-group">
@@ -135,6 +161,51 @@ ORDER BY c.id DESC
 <option value="Yes" <?php if($edit_data && $edit_data['gst_registered']=="Yes") echo "selected"; ?>>Yes</option>
 <option value="No" <?php if($edit_data && $edit_data['gst_registered']=="No") echo "selected"; ?>>No</option>
 </select>
+</div>
+
+<div class="form-group">
+<label>Expiry Required</label>
+
+<select name="expiry_required" class="form-control" required>
+
+<option value="Yes"
+<?php if($edit_data && $edit_data['expiry_required']=="Yes") echo "selected"; ?>>
+Yes
+</option>
+
+<option value="No"
+<?php if($edit_data && $edit_data['expiry_required']=="No") echo "selected"; ?>>
+No
+</option>
+
+</select>
+</div>
+
+<div class="form-group">
+
+<label>Invoice Print Type</label>
+
+<select name="print_type_id"
+class="form-control">
+
+<?php foreach($print_types as $pt){ ?>
+
+<option value="<?php echo $pt['id']; ?>"
+
+<?php
+if($edit_data &&
+   $edit_data['print_type_id']==$pt['id'])
+echo "selected";
+?>>
+
+<?php echo $pt['print_name']; ?>
+
+</option>
+
+<?php } ?>
+
+</select>
+
 </div>
 
 <?php if($edit_data): ?>
@@ -178,6 +249,8 @@ value="<?php echo $search; ?>" style="width:70%;">
 <th>Organization</th>
 <th>Batch</th>
 <th>GST</th>
+<th>Expiry</th>
+<th>Print Type</th>
 <th>Action</th>
 </tr>
 </thead>
@@ -189,6 +262,8 @@ value="<?php echo $search; ?>" style="width:70%;">
 <td><?php echo $conf['org_name']; ?></td>
 <td><?php echo $conf['batch_required']; ?></td>
 <td><?php echo $conf['gst_registered']; ?></td>
+<td><?php echo $conf['expiry_required']; ?></td>
+<td><?php echo $conf['print_name']; ?></td>
 
 <td>
 <a href="configuration_master.php?edit_id=<?php echo $conf['id']; ?>" class="btn btn-xs btn-info">Edit</a>
