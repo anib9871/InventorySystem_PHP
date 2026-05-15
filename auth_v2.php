@@ -7,7 +7,7 @@ $password = trim($_POST['password']);
 
 /* FETCH USER + ORGANIZATION DATABASE */
 
-$sql = "SELECT u.*, o.db_name
+$sql = "SELECT u.*, o.db_name, o.org_name
 FROM master_inventory.user_credentials u
 LEFT JOIN master_inventory.master_organization o
 ON u.org_id = o.org_id
@@ -72,6 +72,46 @@ $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
 $_SESSION['db_name'] = $user['db_name'];
+$_SESSION['user_level'] = 1;
+$_SESSION['org_name'] = $user['org_name'];
+
+/* GET PLAN TYPE */
+
+$sub = $db->query("
+SELECT os.*, sp.plan_type
+FROM master_inventory.organization_subscriptions os
+JOIN master_inventory.subscription_plans sp
+ON os.plan_id = sp.plan_id
+WHERE os.org_id='$org_id' AND os.status=1
+ORDER BY os.sub_id DESC LIMIT 1
+");
+
+$row = $db->fetch_assoc($sub);
+
+$plan = isset($row['plan_type']) ? $row['plan_type'] : '';
+
+/* RESET ACCESS */
+
+$_SESSION['inventory_access'] = 0;
+$_SESSION['billing_access'] = 0;
+$_SESSION['combined_mode'] = 0;
+
+/* PLAN ACCESS */
+
+if($plan == 'inventory'){
+    $_SESSION['inventory_access'] = 1;
+}
+
+elseif($plan == 'billing'){
+    $_SESSION['billing_access'] = 1;
+}
+
+elseif($plan == 'combined'){
+    $_SESSION['inventory_access'] = 1;
+    $_SESSION['billing_access'] = 1;
+    $_SESSION['combined_mode'] = 1;
+}
+    
 /* ROLE BASED LOGIN */
 
 // 🔥 SUPERADMIN (NO DB SWITCH)
@@ -92,6 +132,7 @@ if($user['role_id'] == 2){
     $db->db_disconnect();
     $db->db_connect();
 
+
     redirect('admin.php');
     exit;
 }
@@ -103,7 +144,7 @@ elseif($user['role_id'] == 3){
 
     $db->db_disconnect();
     $db->db_connect();
-
+   
     redirect('home.php');
     exit;
 }
