@@ -14,11 +14,11 @@ if(isset($_POST['login'])){
 /* ================= MASTER DB CONNECT ================= */
 
 $conn = mysqli_connect(
-"127.0.0.1",
-"root",
-"Mysql123@",
-"master_inventory",
-3306
+    getenv('MYSQLHOST'),
+    getenv('MYSQLUSER'),
+    getenv('MYSQLPASSWORD'),
+    'master_inventory',
+    getenv('MYSQLPORT')
 );
 
 if(!$conn){
@@ -49,11 +49,11 @@ $org_id  = $org['org_id'];
 /* ================= CONNECT ORG DB ================= */
 
 $tenant_conn = mysqli_connect(
-"127.0.0.1",
-"root",
-"Mysql123@",
-$db_name,
-3306
+    getenv('MYSQLHOST'),
+    getenv('MYSQLUSER'),
+    getenv('MYSQLPASSWORD'),
+    $db_name,
+    getenv('MYSQLPORT')
 );
 
 if(!$tenant_conn){
