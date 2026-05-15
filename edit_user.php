@@ -6,6 +6,15 @@ require_once('includes/load.php');
 $e_user = find_by_id('users',(int)$_GET['id']);
 $groups  = find_all('user_groups');
 
+$org_id = $_SESSION['org_id'];
+
+$centers = find_by_sql("
+SELECT center_id, center_name
+FROM master_center
+WHERE org_id='{$org_id}'
+ORDER BY center_name ASC
+");
+
 if(!$e_user){
   $session->msg("d","Missing user id.");
   redirect('users.php');
@@ -27,6 +36,7 @@ $username = remove_junk($db->escape($_POST['username']));
 $password = remove_junk($db->escape($_POST['password']));
 $confirm = remove_junk($db->escape($_POST['confirm_password']));
 $level = (int)$db->escape($_POST['level']);
+$center_id = (int)$db->escape($_POST['center_id']);
 
 if($password != $confirm){
 $session->msg('d',"Password not matched");
@@ -37,7 +47,8 @@ $sql = "UPDATE users SET
 name='{$name}',
 username='{$username}',
 password='{$password}',
-user_level='{$level}'
+user_level='{$level}',
+center_id='{$center_id}'
 WHERE id='{$id}'";
 
 $result = $db->query($sql);
@@ -98,6 +109,29 @@ value="<?php echo $e_user['password']; ?>">
 <label>Confirm Password</label>
 <input type="password" class="form-control" name="confirm_password"
 value="<?php echo $e_user['password']; ?>">
+</div>
+
+<div class="form-group">
+<label>Center</label>
+
+<select class="form-control" name="center_id">
+
+<option value="">Select Center</option>
+
+<?php foreach($centers as $center): ?>
+
+<option value="<?php echo $center['center_id']; ?>"
+
+<?php if($center['center_id'] == $e_user['center_id']) echo 'selected'; ?>>
+
+<?php echo $center['center_name']; ?>
+
+</option>
+
+<?php endforeach; ?>
+
+</select>
+
 </div>
 
 <div class="form-group">
