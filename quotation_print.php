@@ -91,7 +91,9 @@ body{background:#fff;}
 <td width="55%" class="section">
 <b style="font-size:16px;"><?= strtoupper($org['org_name']) ?></b><br>
 <?= $org['address'] ?><br>
+<?php if($gst_enabled == "Yes"): ?>
 GSTIN: <?= $org['gst_no'] ?><br>
+<?php endif; ?>
 Phone: <?= $org['phone'] ?>
 </td>
 
@@ -99,7 +101,9 @@ Phone: <?= $org['phone'] ?>
 <b>PROFORMA QUOTATION</b><br><br>
 Quotation No: <?= $quotation['quotation_no'] ?><br>
 Date: <?= date("d-m-Y", strtotime($quotation['quotation_date'])) ?><br>
+<?php if($gst_enabled == "Yes"): ?>
 GST Type: <?= ucfirst($quotation['gst_type']) ?>
+<?php endif; ?>
 </td>
 </tr>
 </table>
@@ -113,7 +117,9 @@ GST Type: <?= ucfirst($quotation['gst_type']) ?>
 <b>Order From</b><br><br>
 <?= $quotation['customer_name'] ?><br>
 <?= $quotation['address'] ?><br>
+<?php if($gst_enabled == "Yes"): ?>
 GSTIN: <?= $quotation['gst_no'] ?><br>
+<?php endif; ?>
 Phone: <?= $quotation['contact_no'] ?>
 </td>
 
@@ -136,7 +142,9 @@ Phone: <?= $quotation['contact_no'] ?>
 <th>Unit</th>
 <th>Price/Unit</th>
 <th>Discount</th>
+<?php if($gst_enabled == "Yes"): ?>
 <th>GST %</th>
+<?php endif; ?>
 <th>Amount</th>
 </tr>
 
@@ -159,39 +167,44 @@ $total_igst += $it['igst_amount'];
 <td class="center">Nos</td>
 <td class="right"><?= number_format($it['rate_excl_gst'],2) ?></td>
 <td class="right"><?= number_format($it['discount_amount'],2) ?></td>
+<?php if($gst_enabled == "Yes"): ?>
 <td class="right"><?= $it['gst_percent'] ?>%</td>
+<?php endif; ?>
 <td class="right"><?= number_format($it['line_total'],2) ?></td>
 </tr>
 <?php endforeach; ?>
 
 <tr>
-<td colspan="8" align="right"><b>Sub Total</b></td>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Sub Total</b></td>
 <td class="right"><?= number_format($quotation['subtotal'],2) ?></td>
 </tr>
 
+<?php if($gst_enabled == "Yes"): ?>
+
 <?php if($tax_mode=='IGST'): ?>
 <tr>
-<td colspan="8" align="right"><b>Total IGST</b></td>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total IGST</b></td>
 <td class="right"><?= number_format($total_igst,2) ?></td>
 </tr>
 <?php else: ?>
 <tr>
-<td colspan="8" align="right"><b>Total CGST</b></td>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total CGST</b></td>
 <td class="right"><?= number_format($total_cgst,2) ?></td>
 </tr>
 <tr>
-<td colspan="8" align="right"><b>Total SGST</b></td>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total SGST</b></td>
 <td class="right"><?= number_format($total_sgst,2) ?></td>
 </tr>
 <?php endif; ?>
+<?php endif; ?>
 
 <tr>
-<td colspan="8" align="right"><b>Total</b></td>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total</b></td>
 <td class="right"><b><?= number_format($quotation['net_total'],2) ?></b></td>
 </tr>
 
 <tr>
-<td colspan="9">
+<td colspan="<?= ($gst_enabled == 'Yes') ? '9' : '8' ?>">
 <b>Amount in Words:</b>
 <?= numberToWords(round($quotation['net_total'])) ?> Only
 </td>
