@@ -1,63 +1,241 @@
 <?php
 require_once('includes/load.php');
+$system = getSystemMode();
 //page_require_level(2);
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
+$center_id = $_SESSION['center_id'] ?? 0;
+
+if($_SESSION['role_id'] == 3){
+
+
+
+$customers = find_by_sql("
+SELECT * FROM customer_master
+WHERE center_id = '$center_id'
+");
+
+}else{
+
 $customers = find_all('customer_master');
+
+}
 $products  = join_product_table();
-$orgs = find_all('organization_master');
+$payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
+
+$rate_map = [];
+
+    $rates = find_by_sql("
+        SELECT r.product_id, r.rate, g.gst_percent
+        FROM rate_master r
+        LEFT JOIN gst_master g ON g.id = r.gst_id
+        
+    ");
+
+    foreach($rates as $r){
+        $rate_map[$r['product_id']] = $r;
+    }
+
+
 
 /* SAVE INVOICE */
 if(isset($_POST['save_invoice'])){
+
+if($_SESSION['role_id'] == 2){
+
+   $center_id = (int)$_POST['center_id'];
+
+}else{
+
+   $center_id = (int)$_SESSION['center_id'];
+}
   global $db;
+
+
+  mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+$db->query("START TRANSACTION");
+
+try {
 
 /* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
 
-$seq = find_by_sql("SELECT last_no FROM sequence_master WHERE sequence_category='invoice'");
+/* ===== SAFE INVOICE NUMBER (MULTI-USER FIX) ===== */
 
-$next = $seq[0]['last_no'] + 1;
 
-/* Invoice number generate */
-$inv_no = "INV".str_pad($next,5,"0",STR_PAD_LEFT);
 
-/* Update sequence table */
-$db->query("UPDATE sequence_master 
+/* 🔒 LOCK sequence row */
+$seq = $db->query("
+SELECT last_no,prefix,total_digits
+FROM sequence_master 
+WHERE sequence_category='invoice'
+FOR UPDATE
+")->fetch_assoc();
+
+if(!$seq){
+  throw new Exception("Invoice sequence not found");
+}
+
+/* NEXT NUMBER */
+$next = $seq['last_no'] + 1;
+
+$prefix = !empty($seq['prefix']) ? $seq['prefix'] : 'INV';
+
+$digits = !empty($seq['total_digits']) ? $seq['total_digits'] : 5;
+
+/* GENERATE INVOICE NO */
+$inv_no = $prefix . str_pad($next,$digits,"0",STR_PAD_LEFT);
+
+/* UPDATE sequence */
+$db->query("
+UPDATE sequence_master 
 SET last_no = $next 
-WHERE sequence_category='invoice'");
+WHERE sequence_category='invoice'
+");
 
-  $cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
-  $org_id = isset($_POST['organization_id']) ? (int)$_POST['organization_id'] : 0;
+
+$cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
+
+if($system != 'inventory'){
+
+if($cust <= 0){
+
+    $name  = remove_junk($db->escape($_POST['manual_name']));
+    $phone = remove_junk($db->escape($_POST['manual_phone']));
+    // $gst   = remove_junk($db->escape($_POST['manual_gst']));
+    // $addr  = remove_junk($db->escape($_POST['manual_address']));
+
+    if($name == ""){
+        echo "<script>
+alert('Please enter customer name');
+window.location='invoice_create.php';
+</script>";
+exit;
+    }
+
+    /* 🔥 SMART LOGIC START */
+
+    if($phone != ""){
+
+        // ✅ contact se match
+        $check = find_by_sql("SELECT id FROM customer_master WHERE contact_no='$phone' LIMIT 1");
+
+        if($check){
+            $cust = $check[0]['id'];
+        }else{
+            // new create
+            $db->query("INSERT INTO customer_master
+            (customer_name, contact_no, address, gst_no, center_id)
+            VALUES
+            (
+            '$name',
+            '$phone',
+            '$addr',
+            '$gst',
+            '$center_id'
+            )");
+
+            $cust = $db->insert_id();
+        }
+
+    }else{
+
+        // ❌ phone nahi → direct new customer
+          $db->query("INSERT INTO customer_master
+          (customer_name, contact_no, address, gst_no, center_id)
+          VALUES
+          (
+          '$name',
+           '',
+          '$addr',
+          '$gst',
+          '$center_id'
+          )");
+
+        $cust = $db->insert_id();
+    }
+
+    /* 🔥 SMART LOGIC END */
+}
+
+}else{
+
+    if($cust <= 0){
+        echo "<script>
+alert('Please select customer');
+window.location='invoice_create.php';
+</script>";
+exit;
+    }
+
+}
+  if(!isset($_SESSION['org_id'])){
+    echo "<script>
+    alert('Session expired. Please login again');
+    window.location='index.php';
+    </script>";
+    exit;
+}
+
+$org_id = $_SESSION['org_id'];
 
   /* ===============================
    STATE CODE CHECK
 ================================ */
 
-$org_data = find_by_sql("SELECT gst_no FROM organization_master WHERE id = $org_id");
+$org_data = find_by_sql("
+SELECT gst_no 
+FROM organization_master 
+WHERE id = '{$org_id}'
+");
 $cust_data = find_by_sql("SELECT gst_no FROM customer_master WHERE id = $cust");
 
-$org_gst = $org_data[0]['gst_no'] ?? '';
-$cust_gst = $cust_data[0]['gst_no'] ?? '';
+$cust_gst = '';
+
+if(!empty($cust_data)){
+    $cust_gst = $cust_data[0]['gst_no'] ?? '';
+}
+
+$org_gst = '';
+
+if(!empty($org_data)){
+    $org_gst = $org_data[0]['gst_no'] ?? '';
+}
+
+//$org_gst = $org_data[0]['gst_no'] ?? '';
+// $cust_gst = $cust_data[0]['gst_no'] ?? '';
 
 $org_state_code = substr($org_gst, 0, 2);
 $cust_state_code = substr($cust_gst, 0, 2);
 
 /* Determine GST Mode */
-$tax_mode = 'IGST';
+$tax_mode = 'CGST_SGST'; // default for services
 
-if($org_state_code == $cust_state_code){
-    $tax_mode = 'CGST_SGST';
-}
+if(isset($_POST['product_id']) && count($_POST['product_id']) > 0){
 
-if($org_id <= 0){
-    die("Invalid Organization Selected");
-}
+foreach($_POST['product_id'] as $pid){
 
-  if($cust <= 0){
-      die("Invalid Customer Selected");
+  $product = find_by_id('products', $pid);
+
+  if($product['type'] == 1){ // product
+
+      if($org_state_code != $cust_state_code){
+          $tax_mode = 'IGST';
+      }else{
+          $tax_mode = 'CGST_SGST';
+      }
+
+  }else{
+      // service (car wash etc)
+      $tax_mode = 'CGST_SGST';
   }
 
+  break; // first item se decide kar lenge
+}
+}
+
   $qdate    = date("Y-m-d");
-  $gst_type = $_POST['gst_type'] ?? 'exclusive';
+  $gst_type = 'inclusive';
 
   $subtotal  = 0;
   $net_total = 0;
@@ -76,30 +254,37 @@ VALUES
 ");
 
   if(!$insertMaster){
-      die("Master Insert Error");
+      echo "<script>alert('Master Insert Error');window.location='invoice_create.php';</script>";
+exit;
   }
 
   $qid = $db->insert_id();   // ✅ correct method
 
   if(!$qid){
-      die("Master insert failed");
+      echo "<script>
+alert('Something went wrong while saving invoice');
+window.location='invoice_create.php';
+</script>";
+exit;
   }
 
   if(!isset($_POST['product_id']) || count($_POST['product_id']) == 0){
       $db->query("DELETE FROM invoice WHERE id = $qid");
-      die("No products selected");
+      echo "<script>
+alert('Something went wrong while saving invoice');
+window.location='invoice_create.php';
+</script>";
+exit;
   }
 
   /* ===============================
      INSERT ITEMS
   ================================*/
   $itemInserted = false;
+
 foreach($_POST['product_id'] as $i => $pid){
 
 $pid = (int)$pid;
-
-$productData = find_by_id("products",$pid);
-$type = $productData['type'] ?? 1;
 
 if($pid <= 0){
     continue;
@@ -107,7 +292,13 @@ if($pid <= 0){
 
 $qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
 $base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
-$gst  = isset($_POST['gst'][$i]) ? (float)$_POST['gst'][$i] : 0;
+$gst = 0;
+
+if($gst_enabled == "Yes"){
+   $gst = isset($_POST['gst'][$i])
+          ? (float)$_POST['gst'][$i]
+          : 0;
+}
 $disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
 
 /* ===== CHECK AVAILABLE STOCK ===== */
@@ -117,7 +308,10 @@ $disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
 // | 2    | SALE            |
 // | 3    | PURCHASE RETURN |
 // | 4    | SALE RETURN     |
+$product = find_by_id('products',$pid);
 
+/* ===== ONLY PRODUCT ME STOCK CHECK ===== */
+if($product['type'] == 1){
 
 $stock_row = find_by_sql("
 SELECT 
@@ -134,12 +328,8 @@ WHERE product_id = {$pid}
 ");
 
 $current_stock = $stock_row[0]['stock'] ?? 0;
-// $productData = find_by_id("products",$pid);
-// $type = $productData['type'] ?? 1;
 
-$trans_type = ($type == 2) ? 5 : 2;
-
-if($type == 1 && $qty > $current_stock){
+if($qty > $current_stock){
 
 $db->query("DELETE FROM invoice WHERE id = $qid");
 
@@ -150,9 +340,10 @@ window.history.back();
 
 exit;
 }
-if($type == 2 && $qty <= 0){
-    $qty = 1;
-}
+
+} // 🔥 IMPORTANT: yahi close karo
+
+/* ===== YE SAB SABKE LIYE CHALEGA (product + service) ===== */
 
 if($qty <= 0 || $base <= 0){
     continue;
@@ -162,29 +353,27 @@ $itemInserted = true;
 
 $line_base = $qty * $base;
 
-/* 🔥 Discount pehle minus hoga */
+/* 🔥 Discount */
 $discounted_base = $line_base - $disc;
 
 if($gst_type == "exclusive"){
 
     if($tax_mode == 'IGST'){
+        $igst_amount = $discounted_base * $gst / 100;
+        $cgst_amount = 0;
+        $sgst_amount = 0;
+        $gst_amount  = $igst_amount;
+    }else{
+        $cgst_amount = ($discounted_base * $gst / 100) / 2;
+        $sgst_amount = ($discounted_base * $gst / 100) / 2;
+        $igst_amount = 0;
+        $gst_amount  = $cgst_amount + $sgst_amount;
+    }
 
-    $igst_amount = $discounted_base * $gst / 100;
-    $cgst_amount = 0;
-    $sgst_amount = 0;
-    $gst_amount  = $igst_amount;
-
-}else{
-
-    $cgst_amount = ($discounted_base * $gst / 100) / 2;
-    $sgst_amount = ($discounted_base * $gst / 100) / 2;
-    $igst_amount = 0;
-    $gst_amount  = $cgst_amount + $sgst_amount;
-}
     $rate_incl  = $base + ($base * $gst / 100);
     $line_total = $discounted_base + $gst_amount;
 
-} else {
+}else{
 
     $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
 
@@ -192,7 +381,7 @@ if($gst_type == "exclusive"){
         $igst_amount = $gst_amount;
         $cgst_amount = 0;
         $sgst_amount = 0;
-    } else {
+    }else{
         $cgst_amount = $gst_amount / 2;
         $sgst_amount = $gst_amount / 2;
         $igst_amount = 0;
@@ -219,7 +408,11 @@ $total_gst += $gst_amount;
 
       if(!$insertItem){
           $db->query("DELETE FROM invoice WHERE id = $qid");
-          die("Item Insert Error");
+          echo "<script>
+alert('Item Insert Error');
+window.location='invoice_create.php';
+</script>";
+exit;
       }
 
       /* ================= TRANSACTION MASTER ENTRY ================= */
@@ -255,7 +448,8 @@ balance_amount,
 from_dept,
 to_dept,
 comments,
-created_at
+created_at,
+center_id
 )
 VALUES
 (
@@ -278,7 +472,7 @@ NOW(),
 '$line_total',
 '$gst_amount',
 '$line_total',
-'$trans_type',
+2,
 1,
 0,
 NULL,
@@ -287,19 +481,25 @@ NULL,
 'STORE',
 'CUSTOMER',
 'Sale Invoice',
-NOW()
+NOW(),
+'$center_id'
 )
 ");
 
 if(!$trans){
-    die("Transaction Insert Error: ".$db->error);
+    echo "<script>alert('Transaction Error');window.location='invoice_create.php';</script>";
+exit;
 }
 }
 
 
   if(!$itemInserted){
       $db->query("DELETE FROM invoice WHERE id = $qid");
-      die("Please select at least one valid product");
+      echo "<script>
+alert('Please select at least one valid product');
+window.location='invoice_create.php';
+</script>";
+exit;
   }
 
   /* ===============================
@@ -315,420 +515,759 @@ if(!$trans){
     WHERE id = '$qid'
   ");
 
-echo "<script>
-window.location='invoice_list.php?print_id=".$qid."';
+if(isset($_POST['payment_amount'])){
+
+  foreach($_POST['payment_amount'] as $mode_id => $amt){
+
+    $amt = (float)$amt;
+
+    if($amt > 0){
+
+      // 🔥 get payment mode name
+      $pm = find_by_id('payment_mode_master', $mode_id);
+      $mode_name = $pm['mode_name'];
+
+      // 🔥 insert into NEW payments table
+$db->query("
+INSERT INTO payments
+(
+invoice_id,
+customer_id,
+payment_mode,
+amount,
+center_id
+)
+VALUES
+(
+$qid,
+$cust,
+'$mode_name',
+'$amt',
+'$center_id'
+)
+");
+
+    }
+  }
+}
+
+// ================= LEDGER ENTRY =================
+
+// 🔹 1. CUSTOMER DEBIT (invoice total)
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($qid, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
+");
+
+// 🔥 UPDATE CUSTOMER BALANCE (INVOICE)
+$db->query("
+UPDATE customer_master 
+SET balance = balance + $net_total
+WHERE id = $cust
+");
+
+// 🔹 2. SALES CREDIT
+$db->query("
+INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+VALUES ($qid, $cust, 'SALES', 'CREDIT', '$net_total')
+");
+
+
+// 🔹 3. PAYMENT ENTRIES
+if(isset($_POST['payment_amount'])){
+
+  foreach($_POST['payment_amount'] as $mode_id => $amt){
+
+    $amt = (float)$amt;
+
+    if($amt > 0){
+
+      $pm = find_by_id('payment_mode_master', $mode_id);
+      $mode_name = strtoupper($pm['mode_name']);
+
+      // CASH / UPI DEBIT
+      $db->query("
+      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+      VALUES ($qid, $cust, '$mode_name', 'DEBIT', '$amt')
+      ");
+
+      // CUSTOMER CREDIT
+      $db->query("
+      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+      VALUES ($qid, $cust, 'CUSTOMER', 'CREDIT', '$amt')
+      ");
+
+      // 🔥 CUSTOMER BALANCE REDUCE (PAYMENT)
+      $db->query("
+      UPDATE customer_master 
+      SET balance = balance - $amt
+      WHERE id = $cust
+      ");
+
+    }
+  }
+}
+
+$db->query("COMMIT");  // 🔥 FINAL COMMIT
+
+} catch(Exception $e){
+
+  $db->query("ROLLBACK");
+
+  echo "<script>
+alert(" . json_encode($e->getMessage()) . ");
+window.location='invoice_create.php';
 </script>";
+
+exit;
+}
+
+// echo "<script>
+// window.location='invoice_list.php?print_id=".$qid."';
+// </script>";
+
+echo "
+<script>
+
+window.location.href = 'invoice_print.php?id=".$qid."&direct=1';
+
+</script>
+";
+exit;
 }
 
 ?>
 
 <?php include_once('layouts/header.php'); ?>
 
-<div class="row">
-<div class="col-md-12">
-<div class="card shadow-sm">
+<style>
+body { background:#f1f5f9; }
 
-<div class="card-header bg-white">
-  <h4 class="mb-0">Create Invoice</h4>
-</div>
+.card{
+  border-radius:4px;
+  border:none;
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+table th{
+  background:#1e293b;
+  color:#fff;
+  font-size:13px;
+}
+
+.product-item{
+  cursor:pointer;
+  padding:8px;
+  border-bottom:1px solid #eee;
+}
+.product-item:hover{
+  background:#eef2ff;
+}
+
+.form-control-sm{
+  height:30px;
+  font-size:13px;
+}
+
+#productList tr td {
+  padding:6px 8px;
+  font-size:13px;
+}
+
+#productList tr {
+  cursor:pointer;
+}
+
+#productList tr:hover {
+  background:#eef2ff;
+}
+
+/* 🔥 PRODUCT LIST SCROLL */
+.product-scroll {
+  height: 180px;      /* 🔥 sirf list scroll hogi */
+  overflow-y: auto;
+}
+
+.product-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  color: #fff;
+  z-index: 10;
+}
+
+/* optional smooth scroll */
+.product-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.product-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.summary-card{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  height:100%;
+}
+
+.summary-row{
+  padding:8px 0;
+  border-bottom:1px dashed #eee;
+}
+
+.summary-row:last-child{
+  border-bottom:none;
+}
+
+.bill-grid {
+  height: 180px;        /* 🔥 fixed height (2–3 rows ke baad scroll) */
+  overflow-y: auto;
+  border-radius: 4px;
+}
+
+/* optional smooth scroll feel */
+.bill-grid::-webkit-scrollbar {
+  width: 6px;
+}
+.bill-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.bill-grid thead th {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  color: #fff;
+  z-index: 10;
+}
+
+/* full box size */
+.payment-box{
+  height: 180px;
+  overflow: hidden;
+}
+
+/* header fix */
+.payment-header{
+  font-weight: 600;
+  font-size: 13px;
+  padding-bottom: 5px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* scroll only list */
+.payment-scroll{
+  height: 140px;
+  overflow-y: auto;
+}
+
+/* smooth scroll */
+.payment-scroll::-webkit-scrollbar{
+  width:6px;
+}
+.payment-scroll::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:3px;
+}
+
+.summary-card{
+  display:flex;
+  flex-direction:column;
+  min-height:180px;   /* fixed nahi, flexible */
+}
+
+.summary-row{
+  padding: 6px 4px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.btn{
+  border-radius: 4px !important;
+}
+
+.form-control{
+  border-radius: 4px;
+}
+
+.save-btn{
+  width: 60%;        /* pehle 80% tha → ab chhota */
+  height: 34px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+/* center alignment */
+.save-wrapper{
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+</style>
 
 <div class="card-body">
-<form method="post">
+<form method="post" onsubmit="return validateCustomer()">
 
-<!-- ================= ORGANIZATION ================= -->
-<div class="mb-3" style="max-width:480px;">
-  <label class="form-label fw-bold">Organization</label>
-  <select name="organization_id" class="form-control" required>
-    <option value="">Select Organization</option>
-    <?php foreach($orgs as $o){ ?>
-      <option value="<?= $o['id']; ?>"
-        data-gst="<?= $o['gst_no']; ?>">
-        <?= $o['org_name']; ?>
-      </option>
-    <?php } ?>
-  </select>
+<!-- CUSTOMER -->
+<div class="card p-3 mb-3">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <label>Customer</label>
+      <select name="customer_id" class="form-control">
+        <option value="">Select Customer</option>
+        <?php foreach($customers as $c): ?>
+        <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label>Name</label>
+      <input type="text" name="manual_name" class="form-control">
+    </div>
+
+    <div class="col-md-4">
+      <label>Contact</label>
+      <input type="text" name="manual_phone" class="form-control">
+    </div>
+
+    <?php if($_SESSION['role_id'] == 2): ?>
+
+<div class="col-md-4">
+<label>Center</label>
+
+<select name="center_id" class="form-control" required>
+
+<?php
+$centers = find_all('master_center');
+
+foreach($centers as $c):
+?>
+
+<option value="<?= $c['center_id']; ?>">
+<?= $c['center_name']; ?>
+</option>
+
+<?php endforeach; ?>
+
+</select>
 </div>
 
-<!-- ================= CUSTOMER ================= -->
-<div class="mb-4" style="max-width:480px;">
-  <label class="form-label fw-bold">Customer</label>
-  <select name="customer_id" id="customer" class="form-control" required>
-    <option value="">Select Customer</option>
-    <?php foreach($customers as $c){ ?>
-    <option value="<?=$c['id'];?>"
-      data-name="<?=$c['customer_name'];?>"
-      data-phone="<?=$c['contact_no'];?>"
-      data-gst="<?=$c['gst_no'];?>"
-      data-addr="<?=$c['address'];?>">
-      <?=$c['customer_name'];?>
-    </option>
-    <?php } ?>
-  </select>
-<br>
-  <div class="border rounded p-2 bg-light mt-2 small shadow-sm">
-    <div><strong>Name:</strong> <span id="c_name">—</span></div>
-    <div><strong>Contact:</strong> <span id="c_phone">—</span></div>
-    <div><strong>GST:</strong> <span id="c_gst">—</span></div>
-    <div><strong>Address:</strong> <span id="c_addr">—</span></div>
+<?php endif; ?>
   </div>
 </div>
 <br>
-<input type="hidden" id="tax_mode" value="IGST">
+
+<div class="row align-items-stretch">
+
+  <!-- LEFT PRODUCT LIST -->
+  <div class="col-md-4">
+    <div class="card p-2">
+
+      <input type="text" id="productSearch"
+        class="form-control form-control-sm mb-2"
+        placeholder="Search Product...">
+      
+<div class="product-scroll">
+  <table class="table table-sm table-bordered mb-0">
+    <thead>
+      <tr>
+        <th style="font-size:12px;">Product</th>
+        <th style="width:80px; font-size:12px;">₹ Rate</th>
+      </tr>
+    </thead>
+    <tbody id="productList"></tbody>
+  </table>
+</div>
+
+</div> <!-- card close -->
+</div> <!-- 🔥 col-md-4 CLOSE (IMPORTANT) -->
+
+  <!-- RIGHT GRID -->
+<div class="col-md-8">
+
+  <!-- 🔵 GRID (SCROLL ONLY HERE) -->
+  <div class="bill-grid">
+    <table class="table table-bordered text-center mb-0" id="itemTable">
+
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Price</th>
+         <?php if($gst_enabled == "Yes"): ?>
+<th>GST%</th>
+<th>GST</th>
+<?php endif; ?>
+          <th>Disc %</th>
+          <th>Disc ₹</th>
+          <th>Total</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody id="billBody"></tbody>
+
+    </table>
+  </div>
 <br>
-<!-- ================= PRODUCTS ================= -->
-<!-- GST TYPE TOGGLE -->
-<div class="mb-3">
-  <label class="fw-bold me-3">GST Type:</label>
-  <label class="me-3">
-    <input type="radio" name="gst_type" value="exclusive" checked> Exclusive
-  </label>
-  <label>
-    <input type="radio" name="gst_type" value="inclusive"> Inclusive
-  </label>
+  <!-- 🔻 BELOW (NO SCROLL) -->
+<div class="row">
+
+  <!-- PAYMENT -->
+ <div class="col-md-5">
+  <div class="card p-2 payment-box">
+
+    <!-- 🔥 FIX HEADER -->
+    <div class="payment-header">
+      <b>Payment</b>
+    </div>
+
+    <!-- 🔥 SCROLL AREA -->
+    <div class="payment-scroll">
+
+      <table class="table table-sm mb-0">
+        <?php foreach($payment_modes as $pm): ?>
+        <tr>
+          <td width="30">
+            <input type="checkbox" class="payCheck" data-mode="<?=$pm['id'];?>">
+          </td>
+
+          <td><?= strtoupper($pm['mode_name']); ?></td>
+
+          <td>
+            <input type="number"
+              name="payment_amount[<?=$pm['id'];?>]"
+              class="form-control form-control-sm payAmt"
+              data-mode="<?=$pm['id'];?>"
+              value="0">
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </table>
+
+    </div>
+
+  </div>
 </div>
 
-<div class="table-responsive">
-<table class="table table-bordered table-sm align-middle" id="itemTable">
-<thead class="bg-dark text-white text-center">
-<tr>
-  <th>Product</th>
-  <th width="10%">Qty</th>
-  <th width="8%">BOM</th>
-  <th width="10%">Base</th>
-  <th width="8%">GST%</th>
-  <th width="10%">GST Amt</th>
-  <th width="10%">Disc ₹</th>
-  <th width="8%">Disc %</th>
-  <th width="12%">Total</th>
-  <th width="5%"></th>
-</tr>
-</thead>
+  <!-- SUMMARY -->
+ <div class="col-md-7">
+  <!-- <div class="card p-3 summary-card" style="height:180px;"> -->
+    <div class="card p-3 summary-card">
 
-<tbody>
-<tr class="rowItem">
+    <div class="summary-row">
+      <span>Gross</span>
+      <strong>₹ <span id="gross">0</span></strong>
+    </div>
 
-<td>
-<select name="product_id[]" class="form-control form-control-sm prod">
-<option value="">Select Product</option>
-<?php foreach($products as $p){
-  $price = $p['sale_price'] ?? 0;
-  $gst   = $p['gst_percent'] ?? 0;
-?>
-<option value="<?=$p['id'];?>"
-  data-rate="<?=$price;?>"
-  data-gst="<?=$gst;?>"
-  data-bom="<?=$p['is_bom'];?>">
-  <?=$p['name'];?>
-</option>
-<?php } ?>
-</select>
-</td>
+    <div class="summary-row">
+      <span>Net</span>
+      <strong class="text-primary">₹ <span id="net">0</span></strong>
+    </div>
 
-<td><input type="number" name="qty[]" 
-       class="form-control form-control-sm qty text-end" 
-       style="min-width:80px;" 
-       value="1"></td>
+    <div class="summary-row">
+      <span>Paid</span>
+      <strong class="text-success">₹ <span id="paid">0</span></strong>
+    </div>
 
-<td class="text-center">
-  <button type="button"
-    class="btn btn-info btn-xs bomBtn"
-    style="display:none;">
-    View BOM
-  </button>
-</td>
+    <!-- 🔴 FIXED -->
+    <div class="summary-row text-danger">
+      <span>Balance</span>
+      <strong>₹ <span id="balance">0</span></strong>
+    </div>
 
-<td><input type="number" name="rate[]" class="form-control form-control-sm base text-end"></td>
-
-<td><input type="number" name="gst[]" class="form-control form-control-sm gst bg-light text-end" readonly></td>
-
-<td><input type="text" class="form-control form-control-sm gstAmt bg-light text-end" readonly></td>
-
-<td><input type="number" name="discount[]" class="form-control form-control-sm discAmt text-end" value="0"></td>
-
-<td><input type="number" class="form-control form-control-sm discPer text-end" value="0"></td>
-
-<td><input type="text" class="form-control form-control-sm totalRow bg-light text-end" readonly></td>
-
-<td class="text-center">
-<button type="button" class="btn btn-sm btn-danger remove">×</button>
-</td>
-
-</tr>
-</tbody>
-</table>
-</div>
-
-<div class="mt-3 d-flex justify-content-between">
-  <button type="button" id="addRow" class="btn btn-primary btn-sm">
-    + Add Item
-  </button>
-
-  <h5>
-    Grand Total : ₹ <span id="gTotal">0.00</span>
-  </h5>
-</div>
-
-<br>
-
-
-
-<div class="text-end">
-  <button type="submit" name="save_invoice" class="btn btn-success">
-    Save Invoice
+    <!-- 🔴 FIXED -->
+    <div class="summary-row text-success">
+      <span>Return</span>
+      <strong>₹ <span id="returnAmt">0</span></strong>
+    </div>
+<div class="mt-auto text-center pt-2">
+  <button type="submit" name="save_invoice"
+    class="btn btn-success save-btn">
+    💾 Save Invoice
   </button>
 </div>
-</form>
-</div>
-</div>
-</div>
+
+  </div>
 </div>
 
 <?php include_once('layouts/footer.php'); ?>
 
 
-
 <script>
-/* CUSTOMER DETAILS */
+const products = <?= json_encode($products); ?>;
 
-document.addEventListener("DOMContentLoaded", function(){
+/* PRODUCT LIST */
+function renderProducts(filter=""){
+ let list = document.getElementById("productList");
+ list.innerHTML="";
 
-  const customerSelect = document.getElementById("customer");
-  const c_name  = document.getElementById("c_name");
-  const c_phone = document.getElementById("c_phone");
-  const c_gst   = document.getElementById("c_gst");
-  const c_addr  = document.getElementById("c_addr");
-  const orgSelect = document.querySelector("select[name='organization_id']");
-  const taxModeInput = document.getElementById("tax_mode");
+ products
+ .filter(p=>p.name.toLowerCase().includes(filter.toLowerCase()))
+ .forEach(p=>{
 
-function updateTaxMode(){
+  let tr=document.createElement("tr");
+  tr.style.cursor="pointer";
 
-    let custGST = customerSelect.selectedOptions[0]?.dataset.gst || "";
-    let orgOption = orgSelect.selectedOptions[0];
+  tr.innerHTML=`
+    <td>${p.name}</td>
+    <td>₹${p.sale_price}</td>
+  `;
 
-    if(!orgOption){
-        taxModeInput.value = "IGST";
-        return;
-    }
+  tr.addEventListener("click",()=>addProduct(p)); // 🔥 inline onclick remove
 
-    let orgGST = orgOption.dataset.gst || "";
+  list.appendChild(tr);
+ });
+}
+renderProducts();
 
-    let custState = custGST.substring(0,2);
-    let orgState  = orgGST.substring(0,2);
+document.getElementById("productSearch")
+.addEventListener("input",e=>renderProducts(e.target.value));
 
-    if(custState && orgState && custState === orgState){
-        taxModeInput.value = "CGST_SGST";
-    } else {
-        taxModeInput.value = "IGST";
-    }
+/* ADD PRODUCT */
+function addProduct(p){
+
+ let rows = document.querySelectorAll("#billBody tr");
+
+ for(let r of rows){
+   let name = r.querySelector("td").innerText.trim();
+
+   if(name === p.name){
+     let qtyInput = r.querySelector(".qty");
+     qtyInput.value = parseInt(qtyInput.value || 0) + 1;
+     calculate(r);
+     return;
+   }
+ }
+
+ let row=document.createElement("tr");
+
+ row.innerHTML=`
+  <td>${p.name}<input type="hidden" name="product_id[]" value="${p.id}"></td>
+
+  <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1"></td>
+
+  <td><input type="number" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}"></td>
+
+  <?php if($gst_enabled == "Yes"): ?>
+
+<td>
+<input type="number" name="gst[]"
+class="form-control form-control-sm gst"
+value="${p.gst_percent}">
+</td>
+
+<td>
+<input type="text"
+class="form-control form-control-sm gstAmt"
+readonly>
+</td>
+
+<?php endif; ?>
+
+  <td><input type="number" class="form-control form-control-sm discPer" value="0"></td>
+
+  <td><input type="number" name="discount[]" class="form-control form-control-sm discAmt" value="0"></td>
+
+  <td><input type="text" class="form-control form-control-sm totalRow" readonly></td>
+
+  <td><button type="button" class="btn btn-danger btn-sm remove">×</button></td>
+ `;
+
+ document.getElementById("billBody").appendChild(row);
+
+ calculate(row);
 }
 
-customerSelect.addEventListener("change", function(){
 
-    let o = this.selectedOptions[0];
+/* 🔥 INPUT FIX (VERY IMPORTANT) */
+document.addEventListener("input", function(e){
 
-    c_name.innerText  = o.dataset.name  || '—';
-    c_phone.innerText = o.dataset.phone || '—';
-    c_gst.innerText   = o.dataset.gst   || '—';
-    c_addr.innerText  = o.dataset.addr  || '—';
-
-    updateTaxMode();
-});
-
-orgSelect.addEventListener("change", updateTaxMode);
-
-});
-
-
-
-/* PRODUCT SELECT */
-document.addEventListener("change", e=>{
- if(e.target.classList.contains("prod")){
-
-    let r = e.target.closest("tr");
-    let o = e.target.selectedOptions[0];
-
-    let isBom = parseInt(o.dataset.bom || 0);
-    let bomBtn = r.querySelector(".bomBtn");
-
-    if(isBom == "1"){
-        bomBtn.style.display = "inline-block";
-    } else {
-        bomBtn.style.display = "none";
-    }
-
-    r.querySelector(".base").value = parseFloat(o.dataset.rate || 0).toFixed(2);
-    r.querySelector(".gst").value  = parseFloat(o.dataset.gst || 0);
-
-    calculate(r);
- }
-});
-
-/* INPUT EVENTS */
-document.addEventListener("input", e=>{
  if(
    e.target.classList.contains("qty") ||
    e.target.classList.contains("base") ||
-   e.target.classList.contains("discAmt") ||
-   e.target.classList.contains("discPer")
+   e.target.classList.contains("gst") ||
+   e.target.classList.contains("discPer") ||
+   e.target.classList.contains("discAmt")
  ){
    calculate(e.target.closest("tr"));
  }
+
 });
 
-/* GST TOGGLE CHANGE */
-document.querySelectorAll("input[name='gst_type']").forEach(radio=>{
- radio.addEventListener("change", ()=>{
-   document.querySelectorAll(".rowItem").forEach(r=>calculate(r));
- });
+
+/* REMOVE FIX */
+document.addEventListener("click", function(e){
+
+ if(e.target.classList.contains("remove")){
+   let row = e.target.closest("tr");
+   row.remove();
+   updateSummary();
+ }
+
 });
 
+
+/* CALC */
 function calculate(r){
 
- let qty   = +r.querySelector(".qty").value || 0;
- let base  = +r.querySelector(".base").value || 0;
- let gst   = +r.querySelector(".gst").value || 0;
- let dAmt  = +r.querySelector(".discAmt").value || 0;
- let dPer  = +r.querySelector(".discPer").value || 0;
+ let qty  = parseFloat(r.querySelector(".qty").value) || 0;
+ let base = parseFloat(r.querySelector(".base").value) || 0;
+let gst = 0;
 
- let gstType = document.querySelector("input[name='gst_type']:checked").value;
+let gstField = r.querySelector(".gst");
 
-let lineBase = qty * base;
-
-// 🔥 Discount dual logic pehle
-if(dPer > 0){
-    dAmt = (lineBase * dPer) / 100;
-    r.querySelector(".discAmt").value = dAmt.toFixed(2);
-}
-else if(dAmt > 0){
-    dPer = (dAmt / lineBase) * 100;
-    r.querySelector(".discPer").value = dPer.toFixed(2);
+if(gstField){
+   gst = parseFloat(gstField.value) || 0;
 }
 
-let discountedBase = lineBase - dAmt;
+ let dPer = parseFloat(r.querySelector(".discPer").value) || 0;
+ let dAmt = parseFloat(r.querySelector(".discAmt").value) || 0;
 
-let gstAmount = 0;
-let final = 0;
+ let total = qty * base;
 
-if(gstType === "exclusive"){
-   gstAmount = discountedBase * gst / 100;
-   final = discountedBase + gstAmount;
-} else {
-   gstAmount = discountedBase - (discountedBase / (1 + gst/100));
-   final = discountedBase;
+ // 🔥 FIX: prevent divide by zero
+ if(total === 0){
+   r.querySelector(".discAmt").value = 0;
+   r.querySelector(".discPer").value = 0;
+ }
+
+ // discount sync
+ if(dPer > 0){
+   dAmt = (total * dPer) / 100;
+   r.querySelector(".discAmt").value = dAmt.toFixed(2);
+ } 
+ else if(dAmt > 0 && total > 0){
+   dPer = (dAmt / total) * 100;
+   r.querySelector(".discPer").value = dPer.toFixed(2);
+ }
+
+ let afterDisc = total - dAmt;
+
+ // GST included breakdown
+ let gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
+
+ let final = afterDisc;
+
+let gstAmtField = r.querySelector(".gstAmt");
+
+if(gstAmtField){
+   gstAmtField.value = gstAmt.toFixed(2);
 }
-
- r.querySelector(".gstAmt").value = gstAmount.toFixed(2);
  r.querySelector(".totalRow").value = final.toFixed(2);
 
- calculateGrand();
+ updateSummary();
 }
 
-function calculateGrand(){
- let sum = 0;
+
+/* SUMMARY */
+function updateSummary(){
+
+ let gross=0;
+
  document.querySelectorAll(".totalRow").forEach(t=>{
-   sum += +t.value || 0;
+  gross += parseFloat(t.value) || 0;
  });
- document.getElementById("gTotal").innerText = sum.toFixed(2);
-}
 
-/* ADD ROW */
-document.getElementById("addRow").onclick = ()=>{
- let r = document.querySelector(".rowItem").cloneNode(true);
-r.querySelectorAll("input").forEach(i=>{
- if(i.type !== "button"){
-   i.value = "";
+ document.getElementById("gross").innerText = gross.toFixed(2);
+ document.getElementById("net").innerText   = gross.toFixed(2);
+
+ let paid=0;
+
+ document.querySelectorAll(".payAmt").forEach(i=>{
+  paid += parseFloat(i.value) || 0;
+ });
+
+ document.getElementById("paid").innerText = paid.toFixed(2);
+
+ let balance = gross - paid;
+ let returnAmt = 0;
+
+ if(paid > gross){
+  returnAmt = paid - gross;
+  balance = 0;
  }
-});
- r.querySelector(".base").value='';
- r.querySelector(".gst").value='';
- r.querySelector(".gstAmt").value='';
- r.querySelector(".totalRow").value='';
- document.querySelector("#itemTable tbody").appendChild(r);
-};
 
+ document.getElementById("balance").innerText   = balance.toFixed(2);
+ document.getElementById("returnAmt").innerText = returnAmt.toFixed(2);
 
-/* REMOVE ROW */
-document.addEventListener("click", function(e){
-
-if(e.target.classList.contains("remove")){
-
-    let rows = document.querySelectorAll(".rowItem");
-
-    if(rows.length <= 1){
-        alert("At least one item required");
-        return;
-    }
-
-    let row = e.target.closest("tr");
-
-    /* BOM row bhi remove kare */
-    let next = row.nextElementSibling;
-    if(next && next.classList.contains("bomRow")){
-        next.remove();
-    }
-
-    row.remove();
-
-    calculateGrand();
+/* 🔥 ADD THIS */
+highlightSummary();
 }
 
-});
 
-document.querySelector("form").addEventListener("submit", function(e){
 
-    let valid = false;
+/* PAYMENT */
+document.querySelectorAll(".payCheck").forEach(chk=>{
+ chk.addEventListener("change",function(){
 
-    document.querySelectorAll(".prod").forEach(function(select){
-        if(select.value){
-            valid = true;
-        }
+  let net = parseFloat(document.getElementById("net").innerText) || 0;
+
+  let input = document.querySelector(`.payAmt[data-mode='${chk.dataset.mode}']`);
+
+  if(chk.checked){
+
+    input.disabled = false;
+
+    let remaining = net;
+
+    document.querySelectorAll(".payAmt").forEach(i=>{
+      if(i !== input){
+        remaining -= parseFloat(i.value) || 0;
+      }
     });
 
-    if(!valid){
-        alert("Please select at least one product");
-        e.preventDefault();
-    }
+    input.value = remaining > 0 ? remaining.toFixed(2) : 0;
+
+  } else {
+    input.value = 0;
+    input.disabled = true;
+  }
+
+  updateSummary();
+ });
 });
 
-document.addEventListener("click", function(e){
+document.querySelectorAll(".payAmt").forEach(input=>{
+  input.addEventListener("input", function(){
+    updateSummary(); // 🔥 ye missing tha
+  });
+});
 
-if(e.target.classList.contains("bomBtn")){
+function highlightSummary(){
 
-    let row = e.target.closest("tr");
-    let product_id = row.querySelector(".prod").value;
+ let balance = parseFloat(document.getElementById("balance").innerText) || 0;
+ let ret = parseFloat(document.getElementById("returnAmt").innerText) || 0;
 
-    if(!product_id){
-        alert("Select product first");
-        return;
-    }
+ let balEl = document.getElementById("balance").parentElement;
+ let retEl = document.getElementById("returnAmt").parentElement;
 
-    fetch("get_bom.php?product_id="+product_id)
-    .then(res => res.text())
-    .then(data => {
-
-        let old = row.nextElementSibling;
-
-        if(old && old.classList.contains("bomRow")){
-            old.remove();
-        }else{
-
-            let tr = document.createElement("tr");
-            tr.className = "bomRow";
-
-            tr.innerHTML = `
-            <td colspan="10">
-            <div style="background:#f8f9fa;padding:10px;border:1px solid #ddd">
-            <b>BOM Details</b>
-            ${data}
-            </div>
-            </td>`;
-
-            row.after(tr);
-        }
-
-    });
-
+ balEl.style.color = balance > 0 ? "red" : "#333";
+ retEl.style.color = ret > 0 ? "green" : "#333";
 }
 
-});
+highlightSummary();
+
+function validateCustomer(){
+
+  let cust   = document.querySelector("select[name='customer_id']").value;
+  let name   = document.querySelector("input[name='manual_name']").value.trim();
+  let phone  = document.querySelector("input[name='manual_phone']").value.trim();
+
+  if(cust == "" && name == "" && phone == ""){
+    alert("⚠️ Please select customer OR enter name & contact");
+    return false;
+  }
+
+  return true;
+}
+
 </script>
