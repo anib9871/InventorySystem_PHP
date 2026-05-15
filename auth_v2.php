@@ -88,7 +88,7 @@ ORDER BY os.sub_id DESC LIMIT 1
 
 $row = $db->fetch_assoc($sub);
 
-$plan = isset($row['plan_type']) ? $row['plan_type'] : '';
+$plan = strtolower(trim($row['plan_type']));
 
 /* RESET ACCESS */
 
