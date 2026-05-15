@@ -25,6 +25,9 @@ include_once('layouts/header.php');
 
 <div class="panel-body">
 
+<!-- 🔥 SCROLL WRAPPER START -->
+<div style="max-height:400px; overflow-y:auto;">
+
 <table class="table table-bordered table-striped">
 <thead>
 <tr>
