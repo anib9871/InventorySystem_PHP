@@ -81,14 +81,81 @@ if(isset($_POST['save_bank'])){
 
 <?php include_once('layouts/header.php'); ?>
 
+<style>
+
+.bank-form-card{
+    border:1px solid #ddd;
+    border-radius:4px;
+    background:#fff;
+    overflow:hidden;
+}
+
+.bank-form-card .card-header{
+    background:#fff;
+    border-bottom:2px solid #2196f3;
+    padding:14px 16px;
+}
+
+.bank-form-card .card-header h5{
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+    color:#222;
+    letter-spacing:.5px;
+}
+
+.bank-form-card .card-body{
+    padding:14px;
+}
+
+.bank-form-card label{
+    font-size:13px;
+    font-weight:600;
+    color:#222;
+    margin-bottom:6px;
+    display:block;
+}
+
+.bank-form-card .form-control{
+    border-radius:3px;
+    height:34px;
+    border:1px solid #ccc;
+    box-shadow:none;
+    font-size:13px;
+}
+
+.bank-form-card .form-control:focus{
+    border-color:#2196f3;
+    box-shadow:none;
+}
+
+.bank-save-btn{
+    width:100%;
+    height:38px;
+    border:none;
+    border-radius:3px;
+    background:#ef5350;
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    margin-top:12px;
+    transition:.2s;
+}
+
+.bank-save-btn:hover{
+    background:#e53935;
+}
+
+</style>
+
 <div class="row">
 
 <!-- LEFT FORM -->
 <div class="col-md-4">
 
-<div class="card shadow-sm">
+<div class="card bank-form-card">
 
-<div class="card-header bg-white">
+<div class="card-header">
 <h5 class="mb-0">
 <?= isset($edit_data) ? 'EDIT BANK DETAILS' : 'ADD BANK DETAILS' ?>
 </h5>
@@ -172,10 +239,9 @@ name="upi_id"
 value="<?= $edit_data['upi_id'] ?? '' ?>"
 class="form-control">
 </div>
-
 <button type="submit"
 name="save_bank"
-class="btn btn-success w-100">
+class="bank-save-btn">
 
 <?= isset($edit_data) ? 'Update Bank' : 'Add Bank' ?>
 
@@ -205,6 +271,8 @@ class="btn btn-success w-100">
 id="bankSearch"
 class="form-control mb-3"
 placeholder="Search bank...">
+
+<div style="max-height:420px; overflow-y:auto;">
 
 <table class="table table-bordered table-striped"
 id="bankTable">
@@ -281,7 +349,7 @@ Delete
 </tbody>
 
 </table>
-
+</div>
 </div>
 
 </div>
