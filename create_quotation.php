@@ -15,7 +15,7 @@ if(isset($_POST['save_quotation'])){
 /* ===== GET NEXT QUOTATION NUMBER FROM SEQUENCE ===== */
 
 $seq = find_by_sql("
-SELECT last_no,prefix,total_digits
+SELECT last_no,prefix
 FROM sequence_master 
 WHERE sequence_category='quotation'
 FOR UPDATE
@@ -33,12 +33,8 @@ $prefix = !empty($seq['prefix'])
 ? $seq['prefix'] 
 : 'QT';
 
-$digits = !empty($seq['total_digits']) 
-? $seq['total_digits'] 
-: 5;
-
 /* Generate quotation number */
-$qno = $prefix . str_pad($next,$digits,"0",STR_PAD_LEFT);
+$qno = $prefix . $next;
 
 /* Update sequence table */
 $db->query("
