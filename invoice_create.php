@@ -66,7 +66,7 @@ try {
 
 /* 🔒 LOCK sequence row */
 $seq = $db->query("
-SELECT last_no,prefix,total_digits
+SELECT last_no,prefix
 FROM sequence_master 
 WHERE sequence_category='invoice'
 FOR UPDATE
@@ -81,10 +81,8 @@ $next = $seq['last_no'] + 1;
 
 $prefix = !empty($seq['prefix']) ? $seq['prefix'] : 'INV';
 
-$digits = !empty($seq['total_digits']) ? $seq['total_digits'] : 5;
-
 /* GENERATE INVOICE NO */
-$inv_no = $prefix . str_pad($next,$digits,"0",STR_PAD_LEFT);
+$inv_no = $prefix . $next;
 
 /* UPDATE sequence */
 $db->query("
