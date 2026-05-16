@@ -141,7 +141,7 @@ GROUP BY p.payment_mode
 
 ?>
 
-
+<?php include_once('layouts/header.php'); ?>
 
 <style>
 
@@ -466,4 +466,4 @@ new Chart(ctx2, {
 
 </script>
 
-
+<?php include_once('layouts/footer.php'); ?>
