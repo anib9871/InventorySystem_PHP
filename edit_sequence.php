@@ -18,14 +18,13 @@ if(isset($_POST['update_sequence'])){
   $category = remove_junk($_POST['sequence_category']);
   $last_no  = (int)$_POST['last_no'];
   $prefix = remove_junk($_POST['prefix']);
-  $digits = (int)$_POST['total_digits'];
+
 
 $sql = "UPDATE sequence_master SET
 
 sequence_category = '{$category}',
 last_no = '{$last_no}',
-prefix = '{$prefix}',
-total_digits = '{$digits}'
+prefix = '{$prefix}'
 
 WHERE sequence_id = '{$id}'";
 
@@ -91,14 +90,14 @@ class="form-control"
 value="<?= $sequence['prefix']; ?>">
 </div>
 
-<div class="form-group">
+<!-- <div class="form-group">
 <label>Total Digits</label>
 
 <input type="number"
 name="total_digits"
 class="form-control"
 value="<?= $sequence['total_digits']; ?>">
-</div>
+</div> -->
 
 <button class="btn btn-success" name="update_sequence">
 Update
