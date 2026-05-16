@@ -9,6 +9,7 @@ $org_id = (int)$_SESSION['org_id'];
 $org_data = find_by_sql("
 SELECT id, org_name
 FROM organization_master
+WHERE id = '{$org_id}'
 LIMIT 1
 ");
 
@@ -241,6 +242,8 @@ value="<?php echo $search; ?>" style="width:70%;">
 <a href="configuration_master.php" class="btn btn-default">Reset</a>
 </form>
 
+<div style="max-height:400px; overflow-y:auto;">
+
 <table class="table table-bordered table-striped">
 <thead>
 <tr>
@@ -276,7 +279,7 @@ class="btn btn-xs btn-danger">Delete</a>
 </tbody>
 
 </table>
-
+</div>
 </div>
 </div>
 </div>
