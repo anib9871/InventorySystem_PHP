@@ -10,7 +10,7 @@ if(isset($_POST['add_sequence'])){
   $category = remove_junk($_POST['sequence_category']);
   $value    = (int)$_POST['last_no'];
   $prefix = remove_junk($_POST['prefix']);
-  $digits = (int)$_POST['total_digits'];
+  
 
   $check = find_by_sql("SELECT * FROM sequence_master 
   WHERE sequence_category = '{$category}'");
@@ -21,11 +21,11 @@ if(isset($_POST['add_sequence'])){
   }
 
 $sql = "INSERT INTO sequence_master
-(sequence_category,last_no,prefix,total_digits)
+(sequence_category,last_no,prefix)
 
 VALUES
 
-('{$category}','{$value}','{$prefix}','{$digits}')";
+('{$category}','{$value}','{$prefix}')";
 
   if($db->query($sql)){
       $session->msg('s',"Sequence Added");
@@ -83,13 +83,7 @@ class="form-control"
 placeholder="INV">
 </div>
 
-<div class="form-group">
-<label>Total Digits</label>
-<input type="number"
-name="total_digits"
-class="form-control"
-value="5">
-</div>
+
 
 <button class="btn btn-success" name="add_sequence">
 Add Sequence
@@ -121,7 +115,7 @@ Add Sequence
 <th>Sequence Category</th>
 <th>Last no</th>
 <th>Prefix</th>
-<th>Digits</th>
+
 <th>Action</th>
 </tr>
 </thead>
@@ -140,7 +134,7 @@ Add Sequence
 
 <td><?= $seq['prefix']; ?></td>
 
-<td><?= $seq['total_digits']; ?></td>
+
 
 <td>
 
