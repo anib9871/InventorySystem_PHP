@@ -5,9 +5,16 @@ require_once('includes/load.php');
 $id = (int)$_GET['id'];
 
 $sequence = find_by_sql("
-SELECT *
-FROM sequence_master
-WHERE sequence_id = '{$id}'
+SELECT s.*,
+       f.fy_name
+
+FROM sequence_master s
+
+LEFT JOIN financial_year_master f
+ON f.fy_id = s.fy_id
+
+WHERE s.sequence_id = '{$id}'
+
 LIMIT 1
 ");
 
@@ -20,7 +27,7 @@ $sequence = $sequence[0];
 /* UPDATE */
 if(isset($_POST['update_sequence'])){
 
-  $category = remove_junk($_POST['sequence_category']);
+  $category = $db->escape($_POST['sequence_category']);
   $last_no  = (int)$_POST['last_no'];
   $prefix = $db->escape($_POST['prefix']);
 
@@ -85,6 +92,18 @@ class="form-control"
 value="<?= $sequence['last_no']; ?>"
 required>
 </div>
+
+<div class="form-group">
+
+<label>Financial Year</label>
+
+<input type="text"
+class="form-control"
+value="<?= $sequence['fy_name']; ?>"
+readonly>
+
+</div>
+
 
 <div class="form-group">
 <label>Prefix</label>
