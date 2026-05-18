@@ -2,18 +2,41 @@
 require_once('includes/load.php');
 //page_require_level(2);
 
-$sequences = find_all('sequence_master');
+$sequences = find_by_sql("
+
+SELECT s.*,
+       f.fy_name
+
+FROM sequence_master s
+
+LEFT JOIN financial_year_master f
+ON f.fy_id = s.fy_id
+
+ORDER BY s.sequence_id DESC
+");
 
 /* ADD */
 if(isset($_POST['add_sequence'])){
 
   $category = remove_junk($_POST['sequence_category']);
   $value    = (int)$_POST['last_no'];
+ $current_fy = find_by_sql("
+SELECT fy_id, fy_name
+FROM financial_year_master
+WHERE is_active = 1
+LIMIT 1
+");
+
+$fy_id = $current_fy[0]['fy_id'];
+
+$financial_year =
+$current_fy[0]['fy_name'];
   $prefix = $db->escape($_POST['prefix']);
   
 
   $check = find_by_sql("SELECT * FROM sequence_master 
-  WHERE sequence_category = '{$category}'");
+  WHERE sequence_category = '{$category}'
+AND fy_id = '{$fy_id}'");
 
   if($check){
       $session->msg('d',"Sequence already exists");
@@ -21,11 +44,14 @@ if(isset($_POST['add_sequence'])){
   }
 
 $sql = "INSERT INTO sequence_master
-(sequence_category,last_no,prefix)
+(sequence_category,fy_id,last_no,prefix)
 
 VALUES
 
-('{$category}','{$value}','{$prefix}')";
+('{$category}',
+ '{$fy_id}',
+ '{$value}',
+ '{$prefix}')";
 
   if($db->query($sql)){
       $session->msg('s',"Sequence Added");
@@ -75,6 +101,18 @@ if(isset($_GET['delete'])){
 <input type="number" name="last_no" class="form-control" required>
 </div>
 
+
+<div class="form-group">
+
+<label>Financial Year</label>
+
+<input type="text"
+class="form-control"
+value="<?= $_SESSION['financial_year']; ?>"
+readonly>
+
+</div>
+
 <div class="form-group">
 <label>Prefix</label>
 <input type="text" 
@@ -114,6 +152,7 @@ Add Sequence
 <th>#</th>
 <th>Sequence Category</th>
 <th>Last no</th>
+<th>Financial Year</th>
 <th>Prefix</th>
 
 <th>Action</th>
@@ -132,7 +171,10 @@ Add Sequence
 
 <td><?= $seq['last_no']; ?></td>
 
+<td><?= $seq['fy_name']; ?></td>
+
 <td><?= $seq['prefix']; ?></td>
+
 
 
 
