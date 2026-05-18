@@ -6,8 +6,6 @@ $combined = (isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 
 $inventoryOnly = (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && !$combined);
 $billingOnly = (isset($_SESSION['billing_access']) && $_SESSION['billing_access'] == 1 && !$combined);
 
-
-
 // show flags
 $showInventory = $combined || $inventoryOnly;
 $showBilling   = $combined || $billingOnly;
@@ -134,7 +132,7 @@ if($combined){
 
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
-       
+        <li><a href="billing_sales.php"> Sales REport</a></li>
       </ul>
     </li>
 
@@ -245,7 +243,8 @@ if($combined){
 
       <ul class="submenu">
         <li><a href="business_report.php">Sales Report</a></li>
-        <!-- <li><a href="billing_sales.php">Report</a></li> -->
+</ul>
+</li>      <!-- <li><a href="billing_sales.php">Report</a></li> -->
   </ul>
 </li>
 <?php endif; ?>
