@@ -1,13 +1,20 @@
+
 <?php
-ob_start();
 
 date_default_timezone_set('Asia/Kolkata');
-
+// -----------------------------------------------------------------------
+// DEFINE SEPERATOR ALIASES
+// -----------------------------------------------------------------------
 define("URL_SEPARATOR", '/');
+
 define("DS", DIRECTORY_SEPARATOR);
 
+// -----------------------------------------------------------------------
+// DEFINE ROOT PATHS
+// -----------------------------------------------------------------------
 defined('SITE_ROOT')? null: define('SITE_ROOT', realpath(dirname(__FILE__)));
 define("LIB_PATH_INC", SITE_ROOT.DS);
+
 
 require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
@@ -15,6 +22,7 @@ require_once(LIB_PATH_INC.'session.php');
 require_once(LIB_PATH_INC.'upload.php');
 require_once(LIB_PATH_INC.'database.php');
 require_once(LIB_PATH_INC.'sql.php');
+
 /* ================= GST CONFIG ================= */
 
 $gst_enabled = "Yes";
@@ -73,5 +81,74 @@ if(isset($_SESSION['org_id'])){
             $cfg2[0]['css_width'];
     }
 }
+
+/* ================= CURRENT FINANCIAL YEAR ================= */
+
+$current_month = date('m');
+
+$current_year = date('Y');
+
+if($current_month >= 4){
+
+    $fy_start = $current_year;
+    $fy_end   = $current_year + 1;
+
+}else{
+
+    $fy_start = $current_year - 1;
+    $fy_end   = $current_year;
+}
+
+$current_fy =
+    $fy_start . "-" .
+    substr($fy_end,2,2);
+
+/* CHECK FY */
+
+$fy = find_by_sql("
+SELECT *
+FROM financial_year_master
+WHERE fy_name='{$current_fy}'
+LIMIT 1
+");
+
+/* AUTO CREATE FY */
+
+if(!$fy){
+
+    $db->query("
+    INSERT INTO financial_year_master
+    (fy_name,fy_start_year,fy_end_year,is_active)
+
+    VALUES
+
+    ('{$current_fy}',
+     '{$fy_start}',
+     '{$fy_end}',
+     1)
+    ");
+
+    $db->query("
+    UPDATE financial_year_master
+    SET is_active = 0
+    WHERE fy_name!='{$current_fy}'
+    ");
+
+}else{
+
+    $db->query("
+    UPDATE financial_year_master
+    SET is_active = 1
+    WHERE fy_name='{$current_fy}'
+    ");
+
+$db->query("
+UPDATE financial_year_master
+SET is_active = 0
+WHERE fy_name!='{$current_fy}'
+");
+}
+
+$_SESSION['financial_year'] = $current_fy;
 
 ?>
