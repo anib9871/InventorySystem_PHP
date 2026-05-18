@@ -9,23 +9,29 @@
 <script>
 $(document).ready(function(){
 
+    // ✅ VERSION CHECK — naya deploy = localStorage saaf
+    var SIDEBAR_VERSION = "v2"; // har deploy pe ye number badha
+    if(localStorage.getItem('sidebar_ver') !== SIDEBAR_VERSION){
+        // purani keys saaf karo
+        ['inventory_main','billing_main','inventory_masters',
+         'billing_masters','inventory_transaction','billing_transaction',
+         'inventory_reports','billing_reports'].forEach(function(k){
+            localStorage.removeItem(k);
+        });
+        localStorage.setItem('sidebar_ver', SIDEBAR_VERSION);
+    }
+
     // RESTORE SAVED MENUS
     $(".submenu-toggle").each(function(){
-
         let menuKey = $(this).attr("data-menu");
-
         if(localStorage.getItem(menuKey) === "open"){
-
             $(this).next(".submenu").show();
             $(this).find(".arrow").addClass("rotate");
-
         }
-
     });
 
     // MENU TOGGLE
     $(".submenu-toggle").off("click").on("click", function(e){
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -34,48 +40,24 @@ $(document).ready(function(){
         let arrow = currentToggle.find(".arrow");
         let menuKey = currentToggle.attr("data-menu");
 
-        // ✅ CLOSE ONLY SAME LEVEL MENUS
-        currentToggle
-            .parent()
-            .siblings()
-            .find("> .submenu")
-            .slideUp(200);
-
-        currentToggle
-            .parent()
-            .siblings()
-            .find("> a .arrow")
-            .removeClass("rotate");
-
-        // ✅ REMOVE STORAGE OF CLOSED MENUS
-        currentToggle
-            .parent()
-            .siblings()
-            .find("> a.submenu-toggle")
-            .each(function(){
-
-                let siblingKey = $(this).attr("data-menu");
-                localStorage.removeItem(siblingKey);
-
+        currentToggle.parent().siblings()
+            .find("> .submenu").slideUp(200);
+        currentToggle.parent().siblings()
+            .find("> a .arrow").removeClass("rotate");
+        currentToggle.parent().siblings()
+            .find("> a.submenu-toggle").each(function(){
+                localStorage.removeItem($(this).attr("data-menu"));
             });
 
-        // ✅ TOGGLE CURRENT MENU
         submenu.stop(true,true).slideToggle(200, function(){
-
             if(submenu.is(":visible")){
-
                 localStorage.setItem(menuKey, "open");
                 arrow.addClass("rotate");
-
             } else {
-
                 localStorage.removeItem(menuKey);
                 arrow.removeClass("rotate");
-
             }
-
         });
-
     });
 
 });
