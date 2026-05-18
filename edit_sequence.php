@@ -4,7 +4,12 @@ require_once('includes/load.php');
 
 $id = (int)$_GET['id'];
 
-$sequence = find_by_sql("SELECT * FROM sequence_master WHERE sequence_id = $id LIMIT 1");
+$sequence = find_by_sql("
+SELECT *
+FROM sequence_master
+WHERE sequence_id = '{$id}'
+LIMIT 1
+");
 
 
 if(!$sequence){
@@ -17,7 +22,7 @@ if(isset($_POST['update_sequence'])){
 
   $category = remove_junk($_POST['sequence_category']);
   $last_no  = (int)$_POST['last_no'];
-  $prefix = remove_junk($_POST['prefix']);
+  $prefix = $db->escape($_POST['prefix']);
 
 
 $sql = "UPDATE sequence_master SET
