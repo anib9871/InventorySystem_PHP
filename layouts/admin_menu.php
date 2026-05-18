@@ -69,6 +69,7 @@ if(!empty($config)){
         <li><a href="rate_master.php">Rate Master</a></li>
         <li><a href="supplier_master.php">Supplier Master</a></li>
         <li><a href="customer_master.php">Customer Master</a></li>
+        <li><a href="financial_year_master.php">Financial Year Master</a></li>
         <li><a href="master_sequence.php">Sequence Master</a></li>
         <li><a href="bank_master.php">Bank Master</a></li>
         <li><a href="print_type_master.php">Print Type Master</a></li>
@@ -153,6 +154,7 @@ if(!empty($config)){
         <li><a href="product.php">Products</a></li>
         <li><a href="rate_master.php">Rate Master</a></li>
         <li><a href="customer_master.php">Customer Master</a></li>
+        <li><a href="financial_year_master.php">Financial Year Master</a></li>
         <li><a href="master_sequence.php">Sequence Master</a></li>
         <li><a href="bank_master.php">Bank Master</a></li>
         <li><a href="print_type_master.php">Print Type Master</a></li>
