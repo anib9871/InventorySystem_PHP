@@ -9,7 +9,7 @@ if(isset($_POST['add_sequence'])){
 
   $category = remove_junk($_POST['sequence_category']);
   $value    = (int)$_POST['last_no'];
-  $prefix = remove_junk($_POST['prefix']);
+  $prefix = $db->escape($_POST['prefix']);
   
 
   $check = find_by_sql("SELECT * FROM sequence_master 
