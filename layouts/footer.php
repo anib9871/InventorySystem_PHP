@@ -63,6 +63,7 @@ $(document).ready(function(){
 });
 </script>
 </body>
-</html>
+</html> 
 
 <?php if(isset($db)) { $db->db_disconnect(); } ?>
+// 
