@@ -175,7 +175,7 @@ Add Sequence
 </td>
 
 <td>
-<?= substr($seq['fy_name'], 2); ?>/<?= sprintf('%03d',$seq['last_no']); ?>
+<?= substr($seq['fy_name'], 2); ?>/<?= $seq['last_no']; ?>
 </td>
 
 
