@@ -40,7 +40,7 @@ LIMIT 1
 $fy_name = substr($fy[0]['fy_name'], 2);
 
 /* Generate quotation number */
-$qno = $fy_name . "/" . sprintf('%03d', $next);
+$qno = $fy_name . "/" . $next;
 /* Update sequence table */
 $db->query("
 UPDATE sequence_master 
