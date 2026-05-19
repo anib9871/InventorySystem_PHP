@@ -15,7 +15,7 @@ if(isset($_POST['save_quotation'])){
 /* ===== GET NEXT QUOTATION NUMBER FROM SEQUENCE ===== */
 
 $seq = find_by_sql("
-SELECT last_no,prefix
+SELECT last_no,fy_id
 FROM sequence_master 
 WHERE sequence_category='quotation'
 FOR UPDATE
@@ -29,13 +29,18 @@ $seq = $seq[0];
 
 $next = $seq['last_no'] + 1;
 
-$prefix = !empty($seq['prefix']) 
-? $seq['prefix'] 
-: 'QT';
+/* FY SHORT FORMAT */
+$fy = find_by_sql("
+SELECT fy_name
+FROM financial_year_master
+WHERE fy_id = '{$seq['fy_id']}'
+LIMIT 1
+");
+
+$fy_name = substr($fy[0]['fy_name'], 2);
 
 /* Generate quotation number */
-$qno = $prefix . $next;
-
+$qno = $fy_name . "/" . sprintf('%03d', $next);
 /* Update sequence table */
 $db->query("
 UPDATE sequence_master 
