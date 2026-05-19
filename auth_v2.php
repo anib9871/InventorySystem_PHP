@@ -1,14 +1,5 @@
 <?php
-// ✅ YAHAN DAALO
-session_name('SECURE_APP_SESSION');
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'secure'   => false,
-    'httponly' => true,
-    'samesite' => 'Strict'
-]);
-session_start(); // ✅ comment hatao, explicitly start karo
+//session_start();
 require_once('includes/load.php');
 
 $username = $db->escape(trim($_POST['username']));
@@ -37,14 +28,13 @@ if($password !== $user['password']){
 }
 /* 🔥 SUPERADMIN BYPASS */
 if($user['role_id'] == 1){
-    session_regenerate_id(true);                             // ✅ ADD
+
     $_SESSION['superadmin_login'] = true;
-    $_SESSION['user_id']   = $user['id'];
-    $_SESSION['username']  = $user['username'];
-    $_SESSION['role_id']   = $user['role_id'];
-    $_SESSION['login_time']  = time();                           // ✅ ADD
-    $_SESSION['user_agent']  = md5($_SERVER['HTTP_USER_AGENT']); // ✅ ADD
-    $_SESSION['ip_address']  = $_SERVER['REMOTE_ADDR'];          // ✅ ADD
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['username'] = $user['username'];
+    $_SESSION['role_id'] = $user['role_id'];
+
     redirect('superadmin_dashboard.php');
     exit;
 }
@@ -76,18 +66,14 @@ if($row['end_date'] < $today){
     exit;
 }
 /* LOGIN SESSION */
-session_regenerate_id(true);                                 // ✅ NEW
-$_SESSION['user_id']    = $user['id'];
-$_SESSION['username']   = $user['username'];
-$_SESSION['role_id']    = $user['role_id'];
-$_SESSION['org_id']     = $user['org_id'];
-$_SESSION['center_id']  = $user['center_id'];
-$_SESSION['db_name']    = $user['db_name'];
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['username'] = $user['username'];
+$_SESSION['role_id'] = $user['role_id'];
+$_SESSION['org_id'] = $user['org_id'];
+$_SESSION['center_id'] = $user['center_id'];
+$_SESSION['db_name'] = $user['db_name'];
 $_SESSION['user_level'] = 1;
-$_SESSION['org_name']   = $user['org_name'];
-$_SESSION['login_time']  = time();                           // ✅ NEW
-$_SESSION['user_agent']  = md5($_SERVER['HTTP_USER_AGENT']); // ✅ NEW
-$_SESSION['ip_address']  = $_SERVER['REMOTE_ADDR'];          // ✅ NEW
+$_SESSION['org_name'] = $user['org_name'];
 
 /* GET PLAN TYPE */
 
