@@ -31,7 +31,7 @@ $fy_id = $current_fy[0]['fy_id'];
 
 $financial_year =
 $current_fy[0]['fy_name'];
-  $prefix = $db->escape($_POST['prefix']);
+
   
 
   $check = find_by_sql("SELECT * FROM sequence_master 
@@ -44,14 +44,13 @@ AND fy_id = '{$fy_id}'");
   }
 
 $sql = "INSERT INTO sequence_master
-(sequence_category,fy_id,last_no,prefix)
+(sequence_category,fy_id,last_no)
 
 VALUES
 
 ('{$category}',
  '{$fy_id}',
- '{$value}',
- '{$prefix}')";
+ '{$value}')";
 
   if($db->query($sql)){
       $session->msg('s',"Sequence Added");
@@ -113,13 +112,13 @@ readonly>
 
 </div>
 
-<div class="form-group">
+<!-- <div class="form-group">
 <label>Prefix</label>
 <input type="text" 
 name="prefix" 
 class="form-control"
 placeholder="INV">
-</div>
+</div> -->
 
 
 
@@ -153,7 +152,7 @@ Add Sequence
 <th>Sequence Category</th>
 <th>Last no</th>
 <th>Financial Year</th>
-<th>Prefix</th>
+<th>Bill Format</th>
 
 <th>Action</th>
 </tr>
@@ -171,9 +170,13 @@ Add Sequence
 
 <td><?= $seq['last_no']; ?></td>
 
-<td><?= $seq['fy_name']; ?></td>
+<td>
+<?= substr($seq['fy_name'], 2); ?>
+</td>
 
-<td><?= $seq['prefix']; ?></td>
+<td>
+<?= substr($seq['fy_name'], 2); ?>/<?= sprintf('%03d',$seq['last_no']); ?>
+</td>
 
 
 
