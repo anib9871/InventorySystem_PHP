@@ -8,7 +8,7 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Strict'
 ]);
-//session_start();
+session_start(); // ✅ comment hatao, explicitly start karo
 require_once('includes/load.php');
 
 $username = $db->escape(trim($_POST['username']));
