@@ -29,14 +29,13 @@ if(isset($_POST['update_sequence'])){
 
   $category = $db->escape($_POST['sequence_category']);
   $last_no  = (int)$_POST['last_no'];
-  $prefix = $db->escape($_POST['prefix']);
+
 
 
 $sql = "UPDATE sequence_master SET
 
 sequence_category = '{$category}',
-last_no = '{$last_no}',
-prefix = '{$prefix}'
+last_no = '{$last_no}'
 
 WHERE sequence_id = '{$id}'";
 
@@ -99,29 +98,21 @@ required>
 
 <input type="text"
 class="form-control"
-value="<?= $sequence['fy_name']; ?>"
+value="<?= substr($sequence['fy_name'], 2); ?>"
 readonly>
 
 </div>
 
-
 <div class="form-group">
-<label>Prefix</label>
+
+<label>Bill Format</label>
 
 <input type="text"
-name="prefix"
 class="form-control"
-value="<?= $sequence['prefix']; ?>">
+value="<?= substr($sequence['fy_name'], 2); ?>/<?= sprintf('%03d',$sequence['last_no']); ?>"
+readonly>
+
 </div>
-
-<!-- <div class="form-group">
-<label>Total Digits</label>
-
-<input type="number"
-name="total_digits"
-class="form-control"
-value="<?= $sequence['total_digits']; ?>">
-</div> -->
 
 <button class="btn btn-success" name="update_sequence">
 Update
