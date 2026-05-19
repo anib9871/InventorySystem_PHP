@@ -1,5 +1,15 @@
 <?php
-require_once('includes/load.php');
+  // ✅ YAHAN DAALO
+  session_name('SECURE_APP_SESSION');
+  session_set_cookie_params([
+      'lifetime' => 0,
+      'path'     => '/',
+      'secure'   => false,
+      'httponly' => true,
+      'samesite' => 'Strict'
+  ]);
+  ob_start();
+  require_once('includes/load.php');
 
 /* SUPERADMIN ALREADY LOGIN */
 
