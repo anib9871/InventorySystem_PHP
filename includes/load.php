@@ -144,4 +144,28 @@ WHERE fy_name!='{$current_fy}'
 
 $_SESSION['financial_year'] = $current_fy;
 
+/* ================= SESSION SECURITY CHECK ================= */
+$open_pages = ['index.php','login_v2.php','auth_v2.php','user_login.php'];
+$current_page = basename($_SERVER['PHP_SELF']);
+
+if(!in_array($current_page, $open_pages)){
+    if(!isset($_SESSION['user_id'])){
+        redirect('index.php');
+        exit;
+    }
+    if(isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > 1800){
+        session_unset();
+        session_destroy();
+        redirect('index.php');
+        exit;
+    }
+    if(isset($_SESSION['user_agent']) &&
+       $_SESSION['user_agent'] !== md5($_SERVER['HTTP_USER_AGENT'])){
+        session_unset();
+        session_destroy();
+        redirect('index.php');
+        exit;
+    }
+    $_SESSION['login_time'] = time();
+}
 ?>
