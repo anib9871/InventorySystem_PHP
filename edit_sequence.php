@@ -109,7 +109,7 @@ readonly>
 
 <input type="text"
 class="form-control"
-value="<?= substr($sequence['fy_name'], 2); ?>/<?= sprintf('%03d',$sequence['last_no']); ?>"
+value="<?= substr($sequence['fy_name'], 2); ?>/<?= $sequence['last_no']; ?>"
 readonly>
 
 </div>
