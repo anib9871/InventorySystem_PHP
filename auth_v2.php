@@ -76,14 +76,18 @@ if($row['end_date'] < $today){
     exit;
 }
 /* LOGIN SESSION */
-$_SESSION['user_id'] = $user['id'];
-$_SESSION['username'] = $user['username'];
-$_SESSION['role_id'] = $user['role_id'];
-$_SESSION['org_id'] = $user['org_id'];
-$_SESSION['center_id'] = $user['center_id'];
-$_SESSION['db_name'] = $user['db_name'];
+session_regenerate_id(true);                                 // ✅ NEW
+$_SESSION['user_id']    = $user['id'];
+$_SESSION['username']   = $user['username'];
+$_SESSION['role_id']    = $user['role_id'];
+$_SESSION['org_id']     = $user['org_id'];
+$_SESSION['center_id']  = $user['center_id'];
+$_SESSION['db_name']    = $user['db_name'];
 $_SESSION['user_level'] = 1;
-$_SESSION['org_name'] = $user['org_name'];
+$_SESSION['org_name']   = $user['org_name'];
+$_SESSION['login_time']  = time();                           // ✅ NEW
+$_SESSION['user_agent']  = md5($_SERVER['HTTP_USER_AGENT']); // ✅ NEW
+$_SESSION['ip_address']  = $_SERVER['REMOTE_ADDR'];          // ✅ NEW
 
 /* GET PLAN TYPE */
 
