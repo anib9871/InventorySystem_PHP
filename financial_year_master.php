@@ -17,9 +17,10 @@ if(isset($_POST['add_fy'])){
 
     $end_year = $start_year + 1;
 
-    $fy_name =
-        $start_year . "-" .
-        substr($end_year,2,2);
+$fy_name =
+    substr($start_year,2,2)
+    . "-" .
+    substr($end_year,2,2);
 
     /* CHECK */
 
