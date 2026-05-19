@@ -1,4 +1,13 @@
 <?php
+// ✅ YAHAN DAALO
+session_name('SECURE_APP_SESSION');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'secure'   => false,
+    'httponly' => true,
+    'samesite' => 'Strict'
+]);
 //session_start();
 require_once('includes/load.php');
 
@@ -28,13 +37,14 @@ if($password !== $user['password']){
 }
 /* 🔥 SUPERADMIN BYPASS */
 if($user['role_id'] == 1){
-
+    session_regenerate_id(true);                             // ✅ ADD
     $_SESSION['superadmin_login'] = true;
-
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['username'] = $user['username'];
-    $_SESSION['role_id'] = $user['role_id'];
-
+    $_SESSION['user_id']   = $user['id'];
+    $_SESSION['username']  = $user['username'];
+    $_SESSION['role_id']   = $user['role_id'];
+    $_SESSION['login_time']  = time();                           // ✅ ADD
+    $_SESSION['user_agent']  = md5($_SERVER['HTTP_USER_AGENT']); // ✅ ADD
+    $_SESSION['ip_address']  = $_SERVER['REMOTE_ADDR'];          // ✅ ADD
     redirect('superadmin_dashboard.php');
     exit;
 }
