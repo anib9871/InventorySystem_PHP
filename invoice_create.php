@@ -66,7 +66,7 @@ try {
 
 /* 🔒 LOCK sequence row */
 $seq = $db->query("
-SELECT last_no,prefix
+SELECT last_no,fy_id
 FROM sequence_master 
 WHERE sequence_category='invoice'
 FOR UPDATE
@@ -79,16 +79,25 @@ if(!$seq){
 /* NEXT NUMBER */
 $next = $seq['last_no'] + 1;
 
-$prefix = !empty($seq['prefix']) ? $seq['prefix'] : 'INV';
+/* FY SHORT FORMAT */
+$fy = find_by_sql("
+SELECT fy_name
+FROM financial_year_master
+WHERE fy_id = '{$seq['fy_id']}'
+LIMIT 1
+");
+
+$fy_name = substr($fy[0]['fy_name'], 2);
 
 /* GENERATE INVOICE NO */
-$inv_no = $prefix . $next;
+$inv_no = $fy_name . "/" . sprintf('%03d', $next);
 
 /* UPDATE sequence */
 $db->query("
 UPDATE sequence_master 
 SET last_no = $next 
 WHERE sequence_category='invoice'
+AND fy_id = '{$seq['fy_id']}'
 ");
 
 
