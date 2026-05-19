@@ -8,7 +8,12 @@
       'httponly' => true,
       'samesite' => 'Strict'
   ]);
-  ob_start();
+ob_start();
+// ✅ ADD KARO - session.php include se PEHLE
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('SECURE_APP_SESSION');
+    session_start();
+}
   require_once('includes/load.php');
 
 /* SUPERADMIN ALREADY LOGIN */
