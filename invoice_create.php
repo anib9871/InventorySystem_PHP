@@ -90,7 +90,7 @@ LIMIT 1
 $fy_name = substr($fy[0]['fy_name'], 2);
 
 /* GENERATE INVOICE NO */
-$inv_no = $fy_name . "/" . sprintf('%03d', $next);
+$inv_no = $fy_name . "/" . $next;
 
 /* UPDATE sequence */
 $db->query("
