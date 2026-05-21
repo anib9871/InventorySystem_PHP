@@ -376,7 +376,11 @@ GROUP BY p.payment_mode
 
 /* SALES OVERVIEW */
 
-var ctx1 = document.getElementById('salesChart').getContext('2d');
+var salesCanvas = document.getElementById('salesChart');
+
+if(salesCanvas){
+
+var ctx1 = salesCanvas.getContext('2d');
 
 new Chart(ctx1, {
 
@@ -429,10 +433,14 @@ options:{
     }
 
 });
-
+}
 /* TOP PRODUCTS */
 
-var ctx2 = document.getElementById('topProductsChart').getContext('2d');
+var topCanvas = document.getElementById('topProductsChart');
+
+if(topCanvas){
+
+var ctx2 = topCanvas.getContext('2d');
 
 new Chart(ctx2, {
 
@@ -463,7 +471,7 @@ new Chart(ctx2, {
     }
 
 });
-
+}
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
