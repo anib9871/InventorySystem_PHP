@@ -87,7 +87,7 @@ if(!empty($config)){
         <li><a href="grn.php">GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
         <li><a href="quotation_list.php">Save Quotation</a></li>
-        <li><a href="invoice_create.php">Invoice</a></li>
+        <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
         <li><a href="invoice_list.php">Save Invoice</a></li>
       </ul>
     </li>
@@ -169,7 +169,7 @@ if(!empty($config)){
         <span class="arrow"><i class="glyphicon glyphicon-chevron-right"></i></span>
       </a>
       <ul class="submenu">
-        <li><a href="invoice_create.php">Direct Billing</a></li>
+        <li><a href="invoice_create.php?system=billing">Direct Billing</a></li>
         <li><a href="invoice_list.php">Duplicate Print</a></li>
       </ul>
     </li>
