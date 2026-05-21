@@ -6,8 +6,8 @@ $combined     = (isset($_SESSION['combined_mode'])    && $_SESSION['combined_mod
 $inventoryOnly= (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && !$combined);
 $billingOnly  = (isset($_SESSION['billing_access'])   && $_SESSION['billing_access']   == 1 && !$combined);
 
-$showInventory = true;
-$showBilling   = true;
+$showInventory = $combined || $inventoryOnly;
+$showBilling   = $combined || $billingOnly;
 
 $gst_enabled = "Yes";
 
@@ -87,7 +87,7 @@ if(!empty($config)){
         <li><a href="grn.php">GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
         <li><a href="quotation_list.php">Save Quotation</a></li>
-        <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
+        <li><a href="invoice_create.php">Invoice</a></li>
         <li><a href="invoice_list.php">Save Invoice</a></li>
       </ul>
     </li>
@@ -101,7 +101,7 @@ if(!empty($config)){
       </a>
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
-        <!-- <li><a href="billing_sales.php">Sales Report</a></li> -->
+        <li><a href="billing_sales.php">Sales Report</a></li>
       </ul>
     </li>
 
@@ -169,7 +169,7 @@ if(!empty($config)){
         <span class="arrow"><i class="glyphicon glyphicon-chevron-right"></i></span>
       </a>
       <ul class="submenu">
-        <li><a href="invoice_create.php?system=billing">Direct Billing</a></li>
+        <li><a href="invoice_create.php">Direct Billing</a></li>
         <li><a href="invoice_list.php">Duplicate Print</a></li>
       </ul>
     </li>
