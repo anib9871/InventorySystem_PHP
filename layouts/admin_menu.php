@@ -6,8 +6,8 @@ $combined     = (isset($_SESSION['combined_mode'])    && $_SESSION['combined_mod
 $inventoryOnly= (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && !$combined);
 $billingOnly  = (isset($_SESSION['billing_access'])   && $_SESSION['billing_access']   == 1 && !$combined);
 
-$showInventory = $combined || $inventoryOnly;
-$showBilling   = $combined || $billingOnly;
+$showInventory = true;
+$showBilling   = true;
 
 $gst_enabled = "Yes";
 
