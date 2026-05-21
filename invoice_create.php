@@ -1,6 +1,6 @@
 <?php
 require_once('includes/load.php');
-$system = getSystemMode();
+$system = $_GET['system'] ?? 'billing';
 //page_require_level(2);
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
@@ -243,6 +243,11 @@ foreach($_POST['product_id'] as $pid){
 
   $qdate    = date("Y-m-d");
   $gst_type = 'inclusive';
+
+if($system == 'inventory' || $system == 'combined'){
+
+   $gst_type = $_POST['gst_type'] ?? 'inclusive';
+}
 
   $subtotal  = 0;
   $net_total = 0;
@@ -866,6 +871,23 @@ foreach($centers as $c):
 
 </select>
 </div>
+<?php if($system != 'billing'): ?>
+
+<div class="col-md-4">
+
+<label>GST Type</label>
+
+<select name="gst_type" class="form-control">
+
+<option value="inclusive">Inclusive GST</option>
+
+<option value="exclusive">Exclusive GST</option>
+
+</select>
+
+</div>
+
+<?php endif; ?>
 
 <?php endif; ?>
   </div>
@@ -1098,6 +1120,18 @@ readonly>
 /* 🔥 INPUT FIX (VERY IMPORTANT) */
 document.addEventListener("input", function(e){
 
+document.addEventListener("change", function(e){
+
+ if(e.target.name == "gst_type"){
+
+   document.querySelectorAll("#billBody tr").forEach(r=>{
+      calculate(r);
+   });
+
+ }
+
+});
+
  if(
    e.target.classList.contains("qty") ||
    e.target.classList.contains("base") ||
@@ -1159,10 +1193,30 @@ if(gstField){
 
  let afterDisc = total - dAmt;
 
- // GST included breakdown
- let gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
+/* GST TYPE */
+let gstType = "inclusive";
 
- let final = afterDisc;
+let gstSelect = document.querySelector("select[name='gst_type']");
+
+if(gstSelect){
+   gstType = gstSelect.value;
+}
+
+let gstAmt = 0;
+let final = 0;
+
+if(gstType == "exclusive"){
+
+   gstAmt = (afterDisc * gst) / 100;
+
+   final = afterDisc + gstAmt;
+
+}else{
+
+   gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
+
+   final = afterDisc;
+}
 
 let gstAmtField = r.querySelector(".gstAmt");
 
