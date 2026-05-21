@@ -20,21 +20,36 @@ require_once(LIB_PATH_INC.'sql.php');
 
 define('APP_VERSION', '1.0.1');
 
-if(isset($_SESSION['app_version'])){
+if(
+   isset($_SESSION['app_version']) &&
+   $_SESSION['app_version'] !== APP_VERSION
+){
 
-    if($_SESSION['app_version'] !== APP_VERSION){
+    $_SESSION = array();
 
-        session_unset();
-        session_destroy();
+    if (ini_get("session.use_cookies")) {
 
-       header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
+        $params = session_get_cookie_params();
 
-header("Location: index.php?reload=".time());
-exit();
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $params["path"],
+            $params["domain"],
+            $params["secure"],
+            $params["httponly"]
+        );
     }
 
+    session_destroy();
+
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+
+    header("Location: index.php?reload=".time());
+    exit();
 }
 
 /* ================= GST CONFIG ================= */
