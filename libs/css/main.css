@@ -213,7 +213,7 @@ body{
   padding: 8px 10px;
   width: 30px;
 }ul.submenu{
-  display: block;
+  display: none;
   position: relative;
 }ul.submenu li a:hover{
   background-color:#35404d;
@@ -388,31 +388,4 @@ input[type=file]{
 
 .panel-body table a{
   color: #000 !important;
-}
-
-
-/* ===== FIX SIDEBAR AFTER RAILWAY REFRESH ===== */
-
-.sidebar{
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  left:0 !important;
-}
-
-.page{
-  margin-left:250px !important;
-  padding:35px 15px 20px 15px !important;
-}
-
-@media (max-width:768px){
-
-  .sidebar{
-    width:250px !important;
-    left:0 !important;
-  }
-
-  .page{
-    margin-left:250px !important;
-  }
 }
