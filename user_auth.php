@@ -67,6 +67,7 @@ $session->login($user['id']);
 $_SESSION['user_id'] = $user['id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['user_level'] = $user['user_level'];
+$_SESSION['app_version'] = APP_VERSION;
 
 redirect('home.php', false);
 
