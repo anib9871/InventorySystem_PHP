@@ -13,6 +13,7 @@ if(empty($errors)){
   if($user){
       // create session
       $session->login($user['id']);
+      $_SESSION['app_version'] = APP_VERSION;
 
       // update last login
       updateLastLogIn($user['id']);
