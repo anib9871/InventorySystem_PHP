@@ -16,6 +16,23 @@ require_once(LIB_PATH_INC.'upload.php');
 require_once(LIB_PATH_INC.'database.php');
 require_once(LIB_PATH_INC.'sql.php');
 
+/* ================= APP VERSION CHECK ================= */
+
+define('APP_VERSION', '1.0.1');
+
+if(isset($_SESSION['app_version'])){
+
+    if($_SESSION['app_version'] !== APP_VERSION){
+
+        session_unset();
+        session_destroy();
+
+        header("Location: index.php");
+        exit();
+    }
+
+}
+
 /* ================= GST CONFIG ================= */
 
 $gst_enabled = "Yes";
