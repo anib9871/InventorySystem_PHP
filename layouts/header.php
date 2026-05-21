@@ -42,7 +42,7 @@ else{
 
 <body>
 
-<?php if(isset($_SESSION['username'])): ?>
+<?php if($session->isUserLoggedIn()): ?>
 
   <?php
 $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
