@@ -72,6 +72,7 @@ if(isset($_GET['pid'])){
 
     $view_items = $db->query("
         SELECT 
+            b.raw_product_id,
             p.name AS raw_name,
             p.buy_price,
             p.buy_type,
@@ -255,6 +256,8 @@ BOM Details
 <th>Qty</th>
 <th>Unit Price (Incl GST)</th>
 <th>GST %</th>
+<th>Current Stock</th>
+<th>Status</th>
 <th>Line Total</th>
 </tr>
 
@@ -280,6 +283,52 @@ if($x['buy_type'] == "exclusive"){
 $line_total = $unit_price_inclusive * $qty;
 
 $grand_total += $line_total;
+
+/* CURRENT STOCK */
+
+$stock_data = find_by_sql("
+SELECT
+SUM(CASE WHEN transaction_type=1 THEN quantity ELSE 0 END) as total_in,
+
+SUM(CASE WHEN transaction_type=2 THEN quantity ELSE 0 END) as total_out
+
+FROM transaction_master
+WHERE product_id='{$x['raw_product_id']}'
+");
+
+$current_stock = 0;
+
+if($stock_data){
+
+$current_stock =
+(float)$stock_data[0]['total_in']
+-
+(float)$stock_data[0]['total_out'];
+
+}
+
+/* REORDER LEVEL */
+
+$product_info = find_by_id('products',$x['raw_product_id']);
+
+$reorder_level = $product_info['reorder_level'];
+
+$status = "In Stock";
+$color  = "#b6d7a8";
+
+if($current_stock <= $reorder_level){
+
+$status = "Low Stock";
+$color  = "#f9cb9c";
+
+}
+
+if($current_stock <= ($reorder_level / 2)){
+
+$status = "Critical Low";
+$color  = "#f4cccc";
+
+}
 ?>
 
 <tr>
@@ -288,13 +337,30 @@ $grand_total += $line_total;
 <td><?php echo $qty; ?></td>
 <td><?php echo number_format($unit_price_inclusive,2); ?></td>
 <td><?php echo $gst; ?>%</td>
+
+<td>
+<?php echo $current_stock; ?>
+</td>
+
+<td style="
+background:<?php echo $color; ?>;
+font-weight:bold;
+text-align:center;
+">
+
+<?php echo $status; ?>
+
+</td>
+
 <td><?php echo number_format($line_total,2); ?></td>
 </tr>
 
 <?php endwhile; ?>
 
 <tr>
-<td colspan="5" align="right"><strong>Grand Total (Incl GST)</strong></td>
+<td colspan="7" align="right">
+<strong>Grand Total (Incl GST)</strong>
+</td>
 <td><strong><?php echo number_format($grand_total,2); ?></strong></td>
 </tr>
 
