@@ -42,42 +42,124 @@ if(isset($_POST['save_manufacture'])){
 
         $total_required = $per_unit * $qty;
 
-        /* ===== Ledger Based Stock Check ===== */
-        $stock_data = find_by_sql("
-            SELECT IFNULL(SUM(qty_in),0) - IFNULL(SUM(qty_out),0) as current_stock
-            FROM stock_ledger
-            WHERE product_id = {$raw_id}
-        ");
+        $product_data = find_by_id('products', $raw_id);
 
-        $current_stock = (float)$stock_data[0]['current_stock'];
+        $gst_id = (int)$product_data['gst_id'];
+
+        /* ===== Ledger Based Stock Check ===== */
+/* ===== Transaction Based Stock Check ===== */
+
+$stock_data = find_by_sql("
+
+SELECT
+
+IFNULL(SUM(
+    CASE
+    WHEN transaction_type = 1
+    THEN quantity
+    ELSE 0
+    END
+),0)
+
+-
+
+IFNULL(SUM(
+    CASE
+    WHEN transaction_type = 2
+    THEN quantity
+    ELSE 0
+    END
+),0)
+
+AS current_stock
+
+FROM transaction_master
+
+WHERE product_id = {$raw_id}
+
+");
+
+$current_stock = (float)$stock_data[0]['current_stock'];
 
         if($current_stock < $total_required){
             $db->query("ROLLBACK");
-            die("Insufficient stock for raw material ID ".$raw_id);
+            $raw_product = find_by_id('products', $raw_id);
+
+           die("Insufficient stock for ".$raw_product['name']);
         }
 
-        /* ===== Deduct Raw Material ===== */
-        if(!$db->query("
-            INSERT INTO stock_ledger
-            (product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-            VALUES
-            ({$raw_id}, '{$ref_no}', 'MANUFACTURE-RAW', NOW(), 0, {$total_required}, NOW())
-        ")){
-            $db->query("ROLLBACK");
-            die("Raw material deduction failed");
-        }
+/* ===== Deduct Raw Material ===== */
+
+if(!$db->query("
+
+INSERT INTO transaction_master
+(
+    product_id,
+    bill_indent_no,
+    entry_date,
+    quantity,
+    gst_id,
+    transaction_type,
+    comments,
+    created_at
+)
+
+VALUES
+(
+    {$raw_id},
+    '{$ref_no}',
+    NOW(),
+    {$total_required},
+    {$gst_id},
+    2,
+    'Manufacture Raw Material',
+    NOW()
+)
+
+")){
+
+    $db->query("ROLLBACK");
+    die("Raw material deduction failed");
+}
     }
 
-    /* ===== Add Finished Goods ===== */
-    if(!$db->query("
-        INSERT INTO stock_ledger
-        (product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-        VALUES
-        ({$product_id}, '{$ref_no}', 'MANUFACTURE-FG', NOW(), {$qty}, 0, NOW())
-    ")){
-        $db->query("ROLLBACK");
-        die("Finished goods insert failed");
-    }
+/* ===== Add Finished Goods ===== */
+
+$fg_data = find_by_id('products', $product_id);
+
+$fg_gst_id = (int)$fg_data['gst_id'];
+
+if(!$db->query("
+
+INSERT INTO transaction_master
+(
+    product_id,
+    bill_indent_no,
+    entry_date,
+    quantity,
+    gst_id,
+    transaction_type,
+    comments,
+    created_at
+)
+
+VALUES
+(
+    {$product_id},
+    '{$ref_no}',
+    NOW(),
+    {$qty},
+    {$fg_gst_id},
+    1,
+    'Manufactured Finished Goods',
+    NOW()
+)
+
+")){
+
+    $db->query("ROLLBACK");
+    die("Finished goods insert failed");
+}
 
     $db->query("COMMIT");
 
