@@ -89,6 +89,7 @@ if(!empty($config)){
         <li><a href="quotation_list.php">Save Quotation</a></li>
         <li><a href="invoice_create.php">Invoice</a></li>
         <li><a href="invoice_list.php">Save Invoice</a></li>
+        <li><a href="manufacture.php">Manufacture</a></li>
       </ul>
     </li>
 
@@ -101,7 +102,6 @@ if(!empty($config)){
       </a>
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
-        <li><a href="billing_sales.php">Sales Report</a></li>
       </ul>
     </li>
 
