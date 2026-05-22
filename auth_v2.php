@@ -74,7 +74,6 @@ $_SESSION['center_id'] = $user['center_id'];
 $_SESSION['db_name'] = $user['db_name'];
 $_SESSION['user_level'] = 1;
 $_SESSION['org_name'] = $user['org_name'];
-$_SESSION['app_version'] = APP_VERSION;
 
 /* GET PLAN TYPE */
 
