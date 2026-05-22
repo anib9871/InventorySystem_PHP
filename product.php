@@ -48,6 +48,7 @@ $sell_type = ($gst_enabled == "Yes")
     : 'exclusive';
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
+  $reorder = (int)$_POST['reorder_level'];
 
   $check = find_by_sql("SELECT id FROM products WHERE name='{$name}' LIMIT 1");
   if($check){
@@ -57,9 +58,9 @@ $sell_type = ($gst_enabled == "Yes")
 
   $db->query("
 INSERT INTO products
-(name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,type,date)
+(name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,type,reorder_level,date)
 VALUES
-('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}','{$type}',NOW())
+('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}','{$type}','{$reorder}',NOW())
   ");
 
   $session->msg("s","Product added successfully");
@@ -92,6 +93,8 @@ $sell_type = ($gst_enabled == "Yes")
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
 
+  $reorder = (int)$_POST['reorder_level'];
+
   $db->query("
     UPDATE products SET
       name='{$name}',
@@ -103,7 +106,8 @@ $sell_type = ($gst_enabled == "Yes")
       categorie_id='{$cat}',
       is_bom='{$is_bom}',
       hsn_code='{$hsn}',
-      type='{$type}'
+      type='{$type}',
+      reorder_level='{$reorder}'
     WHERE id='{$id}'
     
   ");
@@ -207,7 +211,7 @@ include_once('layouts/header.php');
 <input type="number" step="0.01" id="buy_price"
  name="buying-price"
  class="form-control"
- style="width:100%;"
+ style="width:150%;"
  value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
@@ -231,7 +235,7 @@ include_once('layouts/header.php');
 <input type="number" step="0.01" id="sell_price"
  name="saleing-price"
  class="form-control"
- style="width:100%;"
+ style="width:150%;"
  value="<?php echo $edit['sale_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
@@ -246,6 +250,27 @@ include_once('layouts/header.php');
 </div>
 <br>
 
+<?php
+if(
+   (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1)
+   ||
+   (isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 1)
+):
+?>
+
+<label>Re-Order Level</label>
+
+<input type="number"
+name="reorder_level"
+class="form-control"
+placeholder="Enter Reorder Qty"
+value="<?php echo $edit['reorder_level'] ?? '0'; ?>">
+
+<br>
+
+<?php endif; ?>
+
+<br>
 
 <?php
 if(
@@ -307,6 +332,9 @@ This product is manufactured (BOM)
 <th>Name</th>
 <th>Category</th>
 <th>Type</th>
+<?php if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1): ?>
+<th>Reorder</th>
+<?php endif; ?>
 <th>Selling</th>
 <?php if($gst_enabled == "Yes"): ?>
 <th>HSN</th>
@@ -322,6 +350,11 @@ This product is manufactured (BOM)
 <td><?php echo $p['name']; ?></td>
 <td><?php echo $p['categorie']; ?></td>
 <td><?php echo ($p['type']==1) ? 'Product' : 'Service'; ?></td>
+
+<?php if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1): ?>
+<td><?php echo isset($p['reorder_level']) ? $p['reorder_level'] : 0; ?></td>
+<?php endif; ?>
+
 <td>₹ <?php echo number_format($p['sale_price'],2); ?></td>
 <?php if($gst_enabled == "Yes"): ?>
 <td><?php echo $p['hsn_code']; ?></td>
