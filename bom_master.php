@@ -12,6 +12,13 @@ WHERE is_bom='1'
 ORDER BY name ASC
 ");
 
+
+$edit_pid = 0;
+
+if(isset($_GET['edit'])){
+    $edit_pid = (int)$_GET['edit'];
+}
+
 /* RAW MATERIAL PRODUCTS */
 $raw_products = find_by_sql("
 SELECT id,name,buy_price,gst_id,buy_type
@@ -62,7 +69,6 @@ if(isset($_GET['delete'])){
 }
 
 /* ---------- LOAD FOR EDIT ---------- */
-$edit_pid = 0;
 $edit_rows = [];
 
 if(isset($_GET['edit'])){
