@@ -260,7 +260,7 @@ include_once('layouts/header.php');
 <input type="number" step="0.01" id="buy_price"
  name="buying-price"
  class="form-control"
- style="width:80%;"
+ style="width:95%;"
  value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
