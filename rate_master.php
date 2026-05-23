@@ -213,8 +213,15 @@ value="<?php echo $edit ? $edit['mrp'] : ''; ?>" required><br>
 
 <label>Incoming Rate Type</label>
 <select name="rate_type" class="form-control" required>
-<option value="INCLUSIVE" <?php if($edit && $edit['rate_type']=="INCLUSIVE") echo "selected"; ?>>Inclusive</option>
-<option value="EXCLUSIVE" <?php if($edit && $edit['rate_type']=="EXCLUSIVE") echo "selected"; ?>>Exclusive</option>
+<option value="INCLUSIVE"
+<?php if($edit && $edit['rate_type']=="INCLUSIVE") echo "selected"; ?>>
+Inclusive
+</option>
+
+<option value="EXCLUSIVE"
+<?php if((!$edit) || ($edit && $edit['rate_type']=="EXCLUSIVE")) echo "selected"; ?>>
+Exclusive
+</option>
 <option value="NO_GST"
 <?php if($edit && $edit['rate_type']=="NO_GST") echo "selected"; ?>>
 No GST
@@ -223,8 +230,15 @@ No GST
 
 <label>Outgoing Rate Type</label>
 <select name="rate_type_outgoing" class="form-control" required>
-<option value="INCLUSIVE" <?php if($edit && $edit['rate_type_outgoing']=="INCLUSIVE") echo "selected"; ?>>Inclusive</option>
-<option value="EXCLUSIVE" <?php if($edit && $edit['rate_type_outgoing']=="EXCLUSIVE") echo "selected"; ?>>Exclusive</option>
+<option value="INCLUSIVE"
+<?php if($edit && $edit['rate_type_outgoing']=="INCLUSIVE") echo "selected"; ?>>
+Inclusive
+</option>
+
+<option value="EXCLUSIVE"
+<?php if((!$edit) || ($edit && $edit['rate_type_outgoing']=="EXCLUSIVE")) echo "selected"; ?>>
+Exclusive
+</option>
 <option value="NO_GST"
 <?php if($edit && $edit['rate_type_outgoing']=="NO_GST") echo "selected"; ?>>
 No GST
