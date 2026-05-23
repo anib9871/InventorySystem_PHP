@@ -391,7 +391,7 @@ function bulkUpdate(){
         return;
     }
 
-   if(confirm("Are you sure? Ye sab rates change ho jayenge!")){
+   if(confirm("Are you sure? All rates will be updated!")){
     window.location = "rate_master.php?bulk_type=" + type;
 }
 }
