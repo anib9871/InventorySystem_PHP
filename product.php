@@ -352,12 +352,29 @@ This product is manufactured (BOM)
 
 
 <?php if($edit): ?>
-<button name="update_product" class="btn btn-danger btn-block">Update</button>
-<a href="product.php" class="btn btn-secondary btn-block">Cancel</a>
+
+<button name="update_product" class="btn btn-danger btn-block">
+Update
+</button>
+
+<button type="reset" class="btn btn-warning btn-block">
+Clear
+</button>
+
+<a href="product.php" class="btn btn-secondary btn-block">
+Cancel
+</a>
 
 <?php else: ?>
-<button id="save_btn" name="add_product" class="btn btn-danger btn-block">Save</button>
-<button type="reset" class="btn btn-secondary btn-block">Clear</button>
+
+<button id="save_btn" name="add_product" class="btn btn-danger btn-block">
+Save
+</button>
+
+<button type="reset" class="btn btn-warning btn-block">
+Clear
+</button>
+
 <?php endif; ?>
 
 </form>
