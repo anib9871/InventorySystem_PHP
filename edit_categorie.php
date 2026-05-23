@@ -1,5 +1,5 @@
 <?php
-  $page_title = 'Edit categorie';
+  $page_title = 'Edit Category';
   require_once('includes/load.php');
   // Checkin What level user has permission to view this page
   //page_require_level(1);
@@ -8,7 +8,7 @@
   //Display all catgories.
   $categorie = find_by_id('categories',(int)$_GET['id']);
   if(!$categorie){
-    $session->msg("d","Missing categorie id.");
+    $session->msg("d","Missing category id.");
     redirect('categorie.php');
   }
 ?>
@@ -23,7 +23,7 @@ if(isset($_POST['edit_cat'])){
        $sql .= " WHERE id='{$categorie['id']}'";
      $result = $db->query($sql);
      if($result && $db->affected_rows() === 1) {
-       $session->msg("s", "Successfully updated Categorie");
+       $session->msg("s", "Successfully updated Category");
        redirect('categorie.php',false);
      } else {
        $session->msg("d", "Sorry! Failed to Update");
@@ -46,7 +46,7 @@ if(isset($_POST['edit_cat'])){
        <div class="panel-heading">
          <strong>
            <span class="glyphicon glyphicon-th"></span>
-           <span>Editing <?php echo remove_junk(ucfirst($categorie['name']));?></span>
+           <span>Editing Category : <?php echo remove_junk(ucfirst($categorie['name']));?></span>
         </strong>
        </div>
        <div class="panel-body">
@@ -54,7 +54,7 @@ if(isset($_POST['edit_cat'])){
            <div class="form-group">
                <input type="text" class="form-control" name="categorie-name" value="<?php echo remove_junk(ucfirst($categorie['name']));?>">
            </div>
-           <button type="submit" name="edit_cat" class="btn btn-primary">Update categorie</button>
+           <button type="submit" name="edit_cat" class="btn btn-primary">Update category</button>
        </form>
        </div>
      </div>
