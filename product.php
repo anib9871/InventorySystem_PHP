@@ -37,7 +37,9 @@ if(isset($_POST['add_product'])){
   $gst = ($gst_enabled == "Yes")
        ? (int)$_POST['gst_id']
        : 0;
-  $hsn = remove_junk($db->escape($_POST['hsn_code']));
+  $hsn = isset($_POST['hsn_code'])
+ ? remove_junk($db->escape($_POST['hsn_code']))
+ : '';
 
 $buy_type = ($gst_enabled == "Yes")
     ? $_POST['buy_type']
@@ -48,7 +50,9 @@ $sell_type = ($gst_enabled == "Yes")
     : 'exclusive';
 
   $is_bom = isset($_POST['is_bom']) ? 1 : 0;
-  $reorder = (int)$_POST['reorder_level'];
+  $reorder = isset($_POST['reorder_level'])
+ ? (int)$_POST['reorder_level']
+ : 0;
 
   $check = find_by_sql("SELECT id FROM products WHERE name='{$name}' LIMIT 1");
   if($check){
@@ -56,15 +60,46 @@ $sell_type = ($gst_enabled == "Yes")
     redirect('product.php',false);
   }
 
-  $db->query("
+$db->query("
 INSERT INTO products
 (name,buy_price,sale_price,buy_type,sell_type,gst_id,categorie_id,is_bom,hsn_code,type,reorder_level,date)
 VALUES
 ('{$name}','{$buy}','{$sell}','{$buy_type}','{$sell_type}','{$gst}','{$cat}','{$is_bom}','{$hsn}','{$type}','{$reorder}',NOW())
-  ");
+");
 
-  $session->msg("s","Product added successfully");
-  redirect('product.php',false);
+/* LAST PRODUCT ID */
+$product_id = $db->insert_id();
+
+/* AUTO INSERT INTO RATE MASTER */
+
+$incoming_type = strtoupper($buy_type);
+$outgoing_type = strtoupper($sell_type);
+
+$db->query("
+INSERT INTO rate_master
+(
+    product_id,
+    rate,
+    mrp,
+    gst_id,
+    rate_type,
+    rate_type_outgoing,
+    price_date
+)
+VALUES
+(
+    '{$product_id}',
+    '{$sell}',
+    '0',
+    '{$gst}',
+    '{$incoming_type}',
+    '{$outgoing_type}',
+    CURDATE()
+)
+");
+
+$session->msg("s","Product added successfully");
+redirect('product.php',false);
 }
 
 
@@ -111,6 +146,20 @@ $sell_type = ($gst_enabled == "Yes")
     WHERE id='{$id}'
     
   ");
+
+  /* AUTO UPDATE RATE MASTER */
+
+$incoming_type = strtoupper($buy_type);
+$outgoing_type = strtoupper($sell_type);
+
+$db->query("
+UPDATE rate_master SET
+    rate = '{$sell}',
+    gst_id = '{$gst}',
+    rate_type = '{$incoming_type}',
+    rate_type_outgoing = '{$outgoing_type}'
+WHERE product_id = '{$id}'
+");
 
   $session->msg("s","Product updated");
   redirect('product.php',false);
@@ -211,7 +260,7 @@ include_once('layouts/header.php');
 <input type="number" step="0.01" id="buy_price"
  name="buying-price"
  class="form-control"
- style="width:150%;"
+ style="width:80%;"
  value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
@@ -335,6 +384,7 @@ This product is manufactured (BOM)
 <?php if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1): ?>
 <th>Reorder</th>
 <?php endif; ?>
+<th>Buying</th>
 <th>Selling</th>
 <?php if($gst_enabled == "Yes"): ?>
 <th>HSN</th>
@@ -355,6 +405,7 @@ This product is manufactured (BOM)
 <td><?php echo isset($p['reorder_level']) ? $p['reorder_level'] : 0; ?></td>
 <?php endif; ?>
 
+<td>₹ <?php echo number_format($p['buy_price'],2); ?></td>
 <td>₹ <?php echo number_format($p['sale_price'],2); ?></td>
 <?php if($gst_enabled == "Yes"): ?>
 <td><?php echo $p['hsn_code']; ?></td>
