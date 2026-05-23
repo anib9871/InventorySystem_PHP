@@ -9,59 +9,53 @@ FROM financial_year_master
 ORDER BY fy_start_year DESC
 ");
 
-/* ================= ADD FY ================= */
 
-if(isset($_POST['add_fy'])){
+/* AUTO CREATE CURRENT FY */
 
-    $start_year = (int)$_POST['fy_start_year'];
+$month = date('m');
 
-    $end_year = $start_year + 1;
+if($month >= 4){
+    $start_year = date('Y');
+}else{
+    $start_year = date('Y') - 1;
+}
+
+$end_year = $start_year + 1;
 
 $fy_name =
-    substr($start_year,2,2)
-    . "-" .
-    substr($end_year,2,2);
+substr($start_year,2,2)
+. "-" .
+substr($end_year,2,2);
 
-    /* CHECK */
+/* CHECK EXISTING */
 
-    $check = find_by_sql("
-    SELECT *
-    FROM financial_year_master
-    WHERE fy_name='{$fy_name}'
-    ");
+$check_current_fy = find_by_sql("
+SELECT *
+FROM financial_year_master
+WHERE fy_name='{$fy_name}'
+");
 
-    if($check){
+/* AUTO INSERT */
 
-        $session->msg('d',
-        'Financial Year Already Exists');
+if(!$check_current_fy){
 
-        redirect('financial_year_master.php');
-    }
+$db->query("
+INSERT INTO financial_year_master
+(fy_name, fy_start_year, fy_end_year, is_active)
 
-    /* INSERT */
+VALUES
 
-    $sql = "INSERT INTO financial_year_master
-    (fy_name, fy_start_year, fy_end_year)
+(
+'{$fy_name}',
+'{$start_year}',
+'{$end_year}',
+1
+)
+");
 
-    VALUES
-
-    ('{$fy_name}',
-     '{$start_year}',
-     '{$end_year}')";
-
-    if($db->query($sql)){
-
-        $session->msg('s',
-        'Financial Year Added');
-
-    }else{
-
-        $session->msg('d',
-        'Insert Failed');
-    }
-
-    redirect('financial_year_master.php');
 }
+
+
 
 /* ================= SET ACTIVE ================= */
 
@@ -91,65 +85,11 @@ if(isset($_GET['active'])){
 
 <div class="row">
 
-<!-- LEFT -->
 
-<div class="col-md-4">
-
-<div class="panel panel-default">
-
-<div class="panel-heading">
-<strong>Add Financial Year</strong>
-</div>
-
-<div class="panel-body">
-
-<form method="post">
-
-<div class="form-group">
-
-<label>Start Year</label>
-
-<select name="fy_start_year"
-class="form-control"
-required>
-
-<option value="">Select</option>
-
-<?php
-$current = date('Y');
-
-for($i=$current-2; $i<=$current+10; $i++):
-?>
-
-<option value="<?= $i; ?>">
-
-<?= $i; ?>
-
-</option>
-
-<?php endfor; ?>
-
-</select>
-
-</div>
-
-<button type="submit"
-name="add_fy"
-class="btn btn-success btn-block">
-
-Add Financial Year
-
-</button>
-
-</form>
-
-</div>
-</div>
-</div>
 
 <!-- RIGHT -->
 
-<div class="col-md-8">
+<div class="col-md-12">
 
 <div class="panel panel-default">
 
