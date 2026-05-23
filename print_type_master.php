@@ -3,6 +3,31 @@ $page_title = 'Print Type Master';
 require_once('includes/load.php');
 //page_require_level(1);
 
+/* AUTO DEFAULT PRINT TYPES */
+
+$check_print = find_by_sql("
+SELECT id
+FROM print_type_master
+LIMIT 1
+");
+
+if(!$check_print){
+
+$db->query("
+INSERT INTO print_type_master
+(print_name,paper_width,css_width,status)
+
+VALUES
+
+('A4','210mm','190mm','Active'),
+('58MM Thermal','58mm','54mm','Active'),
+('80MM Thermal','80mm','78mm','Active'),
+('112MM Thermal','112mm','108mm','Active')
+");
+
+}
+
+
 /* FETCH LIST */
 $print_types = find_by_sql("
 SELECT *
@@ -14,8 +39,11 @@ ORDER BY id ASC
 if(isset($_POST['add_print'])){
 
     $print_name = remove_junk($db->escape($_POST['print_name']));
-    $paper_width = remove_junk($db->escape($_POST['paper_width']));
-    $css_width = remove_junk($db->escape($_POST['css_width']));
+    $paper_width =
+remove_junk($db->escape($_POST['paper_width'])) . "mm";
+
+$css_width =
+remove_junk($db->escape($_POST['css_width'])) . "mm";
     $status = remove_junk($db->escape($_POST['status']));
 
     $sql = "INSERT INTO print_type_master
@@ -59,8 +87,11 @@ if(isset($_POST['update_print'])){
     $id = (int)$_POST['id'];
 
     $print_name = remove_junk($db->escape($_POST['print_name']));
-    $paper_width = remove_junk($db->escape($_POST['paper_width']));
-    $css_width = remove_junk($db->escape($_POST['css_width']));
+    $paper_width =
+remove_junk($db->escape($_POST['paper_width'])) . "mm";
+
+$css_width =
+remove_junk($db->escape($_POST['css_width'])) . "mm";
     $status = remove_junk($db->escape($_POST['status']));
 
     $sql = "UPDATE print_type_master SET
@@ -171,11 +202,12 @@ required>
 
 <label>Paper Width</label>
 
-<input type="text"
+<input type="number"
 name="paper_width"
+min="1"
 class="form-control"
+value="<?php echo $edit ? str_replace('mm','',$edit['paper_width']) : ''; ?>"
 
-value="<?php echo $edit ? $edit['paper_width'] : ''; ?>"
 
 placeholder="80mm"
 
@@ -187,11 +219,12 @@ required>
 
 <label>CSS Width</label>
 
-<input type="text"
+<input type="number"
 name="css_width"
+min="1"
 class="form-control"
 
-value="<?php echo $edit ? $edit['css_width'] : ''; ?>"
+value="<?php echo $edit ? str_replace('mm','',$edit['css_width']) : ''; ?>"
 
 placeholder="78mm"
 
