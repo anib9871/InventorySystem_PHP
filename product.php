@@ -257,7 +257,12 @@ include_once('layouts/header.php');
 
 <div class="input-group">
 
-<input type="number" step="0.01" id="buy_price"
+<input type="number"
+step="0.01"
+min="0"
+inputmode="decimal"
+oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
+id="buy_price"
  name="buying-price"
  class="form-control"
  style="width:100%;"
@@ -281,7 +286,12 @@ include_once('layouts/header.php');
 
 <div class="input-group">
 
-<input type="number" step="0.01" id="sell_price"
+<input type="number"
+step="0.01"
+min="0"
+inputmode="decimal"
+oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
+id="sell_price"
  name="saleing-price"
  class="form-control"
  style="width:100%;"
