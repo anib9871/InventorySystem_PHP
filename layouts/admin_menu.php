@@ -66,7 +66,7 @@ if(!empty($config)){
         <li><a href="configuration_master.php">Configuration Master</a></li>
         <li><a href="product.php">Products</a></li>
         <li><a href="bom_master.php">BOM Master</a></li>
-        <li><a href="rate_master.php">Rate Master</a></li>
+        <!-- <li><a href="rate_master.php">Rate Master</a></li> -->
         <li><a href="supplier_master.php">Supplier Master</a></li>
         <li><a href="customer_master.php">Customer Master</a></li>
         <li><a href="financial_year_master.php">Financial Year Master</a></li>
