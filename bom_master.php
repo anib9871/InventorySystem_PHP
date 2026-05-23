@@ -4,9 +4,19 @@ require_once('includes/load.php');
 //page_require_level(2);
 
 /* FETCH PRODUCTS WITH PRICE + GST + BUY TYPE */
-$products = find_by_sql("
-SELECT id,name,buy_price,gst_id,buy_type 
-FROM products 
+/* BOM PRODUCTS */
+$bom_products_dropdown = find_by_sql("
+SELECT id,name
+FROM products
+WHERE is_bom='1'
+ORDER BY name ASC
+");
+
+/* RAW MATERIAL PRODUCTS */
+$raw_products = find_by_sql("
+SELECT id,name,buy_price,gst_id,buy_type
+FROM products
+WHERE is_bom='0' OR id='{$edit_pid}'
 ORDER BY name ASC
 ");
 
@@ -119,7 +129,7 @@ include_once('layouts/header.php');
 <select name="product_id" class="form-control" required>
 <option value="">Select Product</option>
 
-<?php foreach($products as $p): ?>
+<?php foreach($bom_products_dropdown as $p): ?>
 <option value="<?php echo $p['id']; ?>" <?php if($edit_pid==$p['id']) echo "selected"; ?>>
 <?php echo $p['name']; ?>
 </option>
@@ -143,7 +153,7 @@ while($er=$edit_rows->fetch_assoc()){
 <div class="col-md-6">
 <select name="raw_product_id[]" class="form-control">
 <option value="">Select Raw Material</option>
-<?php foreach($products as $p): ?>
+<?php foreach($raw_products as $p): ?>
 <option value="<?php echo $p['id']; ?>" <?php if($p['id']==$er['raw_product_id']) echo "selected"; ?>>
 <?php echo $p['name']; ?>
 </option>
@@ -169,7 +179,7 @@ while($er=$edit_rows->fetch_assoc()){
 <div class="col-md-6">
 <select name="raw_product_id[]" class="form-control">
 <option value="">Select Raw Material</option>
-<?php foreach($products as $p): ?>
+<?php foreach($raw_products as $p): ?>
 <option value="<?php echo $p['id']; ?>"><?php echo $p['name']; ?></option>
 <?php endforeach; ?>
 </select>
