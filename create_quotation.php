@@ -432,7 +432,7 @@ Select Template
 <option
 value="<?= htmlspecialchars($t['template']); ?>">
 
-<?= $t['template_name']; ?>
+Template <?= $t['tc_id']; ?>
 
 </option>
 
@@ -459,8 +459,9 @@ Terms & Conditions
 <textarea
 name="terms_conditions"
 id="termsBox"
-rows="5"
-class="form-control"
+rows="7"
+class="form-control shadow-sm"
+style="resize:none;font-size:13px;line-height:20px;"
 placeholder="Terms & Conditions..."></textarea>
 
 </div>
