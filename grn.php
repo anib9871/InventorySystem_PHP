@@ -38,6 +38,33 @@ if (isset($_POST['save_grn'])) {
   $bill_no      = $_POST['bill_no'];
   $bill_date    = $_POST['bill_date'];
   $payment_mode = $_POST['payment_mode'] ?? '';
+
+  /* SUPPLIER OPENING BALANCE CHECK */
+
+$supplier_data = find_by_id(
+'supplier_master',
+$supplier_id
+);
+
+$opening_balance =
+(float)$supplier_data['opening_balance'];
+
+
+/* PAYMENT VALIDATION */
+
+if(
+$opening_balance <= 0
+&&
+empty($_POST['payments_json'])
+)
+{
+    $session->msg(
+    "d",
+    "Payment is mandatory for this supplier"
+    );
+
+    redirect('grn.php');
+}
   $payments = json_decode($_POST['payments_json'], true);
   $total_paid = 0;
   $comments     = $_POST['comments'] ?? '';
@@ -259,7 +286,13 @@ include_once('layouts/header.php');
 <select name="supplier_id" form="grnForm" class="form-control" required>
 <option value="">Select Supplier</option>
 <?php foreach ($suppliers as $s) { ?>
-<option value="<?= $s['id']; ?>"><?= $s['supplier_name']; ?></option>
+<option
+value="<?= $s['id']; ?>"
+data-opening="<?= $s['opening_balance']; ?>">
+
+<?= $s['supplier_name']; ?>
+
+</option>
 <?php } ?>
 </select><br>
 
@@ -785,6 +818,47 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
 });
+
+/* PAYMENT VALIDATION */
+
+document.getElementById("grnForm")
+
+.addEventListener("submit", function(e){
+
+let supplier =
+document.querySelector(
+'select[name="supplier_id"]'
+);
+
+let opening =
+parseFloat(
+supplier.selectedOptions[0]
+.dataset.opening || 0
+);
+
+let paymentJson =
+document.getElementById("payments_json").value;
+
+if(
+opening <= 0
+&&
+(
+!paymentJson
+||
+paymentJson == "[]"
+)
+){
+
+alert(
+"Payment is mandatory for this supplier"
+);
+
+e.preventDefault();
+
+}
+
+});
+
 
 
 </script>
