@@ -5,6 +5,10 @@ error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $customers = find_all('customer_master');
 $products  = join_product_table();
+
+/* TERMS & CONDITIONS */
+
+$terms_templates = find_all('terms_conditions_master');
 // $orgs = find_all('organization_master');
 
 /* SAVE QUOTATION */
@@ -84,10 +88,20 @@ $tax_mode = ($org_state == $cust_state) ? 'CGST_SGST' : 'IGST';
   $insertMaster = $db->query("
     INSERT INTO quotation_master
     (quotation_no, quotation_date, customer_id, organization_id,
-     subtotal, gst_total, net_total, remarks, created_at)
+     subtotal,
+gst_total,
+net_total,
+remarks,
+terms_conditions,
+created_at)
     VALUES
     ('$qno','$qdate','$cust', '$org_id',
-     0,0,0,'',NOW())
+     0,
+0,
+0,
+'',
+'".$db->escape($_POST['terms_conditions'])."',
+NOW())
   ");
 
   if(!$insertMaster){
@@ -389,6 +403,72 @@ readonly>
   </h5>
 </div>
 
+<!-- TERMS & CONDITIONS -->
+
+<div class="card p-3 mb-3">
+
+<div class="row">
+
+<div class="col-md-12">
+
+<label class="fw-bold">
+
+Terms & Conditions Template
+
+</label>
+
+<select
+id="termsTemplate"
+class="form-control">
+
+<option value="">
+
+Select Template
+
+</option>
+
+<?php foreach($terms_templates as $t): ?>
+
+<option
+value="<?= htmlspecialchars($t['template']); ?>">
+
+<?= $t['template_name']; ?>
+
+</option>
+
+<?php endforeach; ?>
+
+</select>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="row">
+
+<div class="col-md-12">
+
+<label class="fw-bold">
+
+Terms & Conditions
+
+</label>
+
+<textarea
+name="terms_conditions"
+id="termsBox"
+rows="5"
+class="form-control"
+placeholder="Terms & Conditions..."></textarea>
+
+</div>
+
+</div>
+
+</div>
+
 <br>
 
 
@@ -600,4 +680,16 @@ function calculateGrand(){
 
     document.getElementById("gTotal").innerText = total.toFixed(2);
 }
+
+/* TERMS TEMPLATE */
+
+document.getElementById("termsTemplate")
+
+.addEventListener("change", function(){
+
+document.getElementById("termsBox").value =
+this.value;
+
+});
+
 </script>
