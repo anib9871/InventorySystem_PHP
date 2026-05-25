@@ -85,7 +85,13 @@ $current_stock = (float)$stock_data[0]['current_stock'];
             $db->query("ROLLBACK");
             $raw_product = find_by_id('products', $raw_id);
 
-           die("Insufficient stock for ".$raw_product['name']);
+           $_SESSION['mfg_error'] =
+"Insufficient stock for ".$raw_product['name'];
+
+$db->query("ROLLBACK");
+
+redirect('manufacture.php', false);
+exit;
         }
 
 /* ===== Deduct Raw Material ===== */
@@ -177,6 +183,16 @@ VALUES
 </div>
 
 <div class="panel-body">
+
+<?php if(isset($_SESSION['mfg_error'])){ ?>
+
+<div class="alert alert-danger">
+
+<?= $_SESSION['mfg_error']; ?>
+
+</div>
+
+<?php unset($_SESSION['mfg_error']); } ?>
 
 <form method="post">
 
