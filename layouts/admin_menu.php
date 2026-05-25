@@ -66,13 +66,14 @@ if(!empty($config)){
         <li><a href="configuration_master.php">Configuration Master</a></li>
         <li><a href="product.php">Products</a></li>
         <li><a href="bom_master.php">BOM Master</a></li>
-        <!-- <li><a href="rate_master.php">Rate Master</a></li> -->
+        <li><a href="rate_master.php">Rate Master</a></li>
         <li><a href="supplier_master.php">Supplier Master</a></li>
         <li><a href="customer_master.php">Customer Master</a></li>
         <li><a href="financial_year_master.php">Financial Year Master</a></li>
         <li><a href="master_sequence.php">Sequence Master</a></li>
         <li><a href="bank_master.php">Bank Master</a></li>
         <li><a href="print_type_master.php">Print Type Master</a></li>
+        <li><a href="terms_conditions_master.php">Terms Conditions Master</a></li>
       </ul>
     </li>
 
@@ -86,10 +87,13 @@ if(!empty($config)){
       <ul class="submenu">
         <li><a href="grn.php">GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
-        <li><a href="quotation_list.php">Save Quotation</a></li>
+        <li><a href="quotation_list.php">Duplicate Quotation Print</a></li>
         <li><a href="invoice_create.php">Invoice</a></li>
-        <li><a href="invoice_list.php">Save Invoice</a></li>
+        <li><a href="invoice_list.php">Duplicate Invoice Print</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
+         <li><a href="payments.php">Manage Payments</a></li>
+        <li><a href="payment_report.php">Payments Report</a></li>
+
       </ul>
     </li>
 
@@ -102,6 +106,7 @@ if(!empty($config)){
       </a>
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
+        
       </ul>
     </li>
 
@@ -158,6 +163,7 @@ if(!empty($config)){
         <li><a href="master_sequence.php">Sequence Master</a></li>
         <li><a href="bank_master.php">Bank Master</a></li>
         <li><a href="print_type_master.php">Print Type Master</a></li>
+        <li><a href="terms_conditions_master.php">Terms Conditions Master</a></li>
       </ul>
     </li>
 
@@ -171,6 +177,10 @@ if(!empty($config)){
       <ul class="submenu">
         <li><a href="invoice_create.php">Direct Billing</a></li>
         <li><a href="invoice_list.php">Duplicate Print</a></li>
+        <li><a href="payments.php">Manage Payments</a></li>
+        <li><a href="payment_report.php">Payments Report</a></li>
+
+
       </ul>
     </li>
 
