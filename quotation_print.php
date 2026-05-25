@@ -213,31 +213,77 @@ $total_igst += $it['igst_amount'];
 
 <br>
 
-<!-- BANK + TERMS -->
+<!-- BANK + SIGNATURE -->
+
 <table>
+
 <tr>
-<td width="33%" class="section">
-<b>Bank Details</b><br><br>
+
+<td width="50%" class="section">
+
+<b>Bank Details</b>
+
+<br><br>
+
 <?php if($bank): ?>
+
 Bank: <?= $bank['bank_name'] ?><br>
+
 A/C Name: <?= $bank['account_name'] ?><br>
+
 A/C No: <?= $bank['account_number'] ?><br>
+
 IFSC: <?= $bank['ifsc_code'] ?><br>
+
 <?php endif; ?>
+
 </td>
 
-<td width="33%" class="section">
-<b>Terms & Conditions</b><br><br>
-1. 50% Advance.<br>
-2. Delay attracts 2% per week.<br>
-3. Goods once sold will not be returned.
-</td>
 
-<td width="33%" class="section center">
-For: <?= $org['org_name'] ?><br><br><br><br>
+
+<td width="50%" class="section center">
+
+For: <?= $org['org_name'] ?>
+
+<br><br><br><br><br>
+
 Authorized Signatory
+
 </td>
+
 </tr>
+
+</table>
+
+
+
+<!-- TERMS & CONDITIONS -->
+
+<table style="margin-top:10px;">
+
+<tr>
+
+<td class="section">
+
+<b>Terms & Conditions</b>
+
+<div style="
+margin-top:5px;
+white-space:pre-line;
+font-size:10px;
+line-height:13px;
+word-break:break-word;
+padding:0;
+">
+
+<?= trim($quotation['terms_conditions']); ?>
+
+</div>
+
+</td>
+
+</tr>
+
 </table>
 
 </div>
