@@ -23,6 +23,10 @@ $customers = find_all('customer_master');
 $products  = join_product_table();
 $payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
 
+/* TERMS & CONDITIONS */
+
+$terms_templates = find_all('terms_conditions_master');
+
 $rate_map = [];
 
     $rates = find_by_sql("
@@ -258,11 +262,41 @@ if($system == 'inventory' || $system == 'combined'){
   ================================*/
 $insertMaster = $db->query("
 INSERT INTO invoice
-(invoice_no, invoice_date, customer_id, organization_id, quotation_id,
- subtotal, gst_total, net_total, gst_type, remarks, created_at)
+(
+invoice_no,
+invoice_date,
+customer_id,
+organization_id,
+quotation_id,
+subtotal,
+gst_total,
+net_total,
+paid_amount,
+due_amount,
+payment_status,
+gst_type,
+remarks,
+terms_conditions,
+created_at
+)
 VALUES
-('$inv_no','$qdate','$cust', '$org_id' ,NULL,
- 0,0,0,'$gst_type','',NOW())
+(
+'$inv_no',
+'$qdate',
+'$cust',
+'$org_id',
+NULL,
+0,
+0,
+0,
+0,
+0,
+'Unpaid',
+'$gst_type',
+'',
+'".$db->escape($_POST['terms_conditions'])."',
+NOW()
+)
 ");
 
   if(!$insertMaster){
@@ -517,15 +551,49 @@ exit;
   /* ===============================
      UPDATE TOTALS
   ================================*/
-  $gst_total = $total_gst;
 
-  $db->query("
-    UPDATE invoice SET
-    subtotal = '$subtotal',
-    gst_total = '$gst_total',
-    net_total = '$net_total'
-    WHERE id = '$qid'
-  ");
+
+  $total_paid = 0;
+
+if(isset($_POST['payment_amount'])){
+
+    foreach($_POST['payment_amount'] as $amt){
+
+        $total_paid += (float)$amt;
+    }
+}
+
+$due_amount = $net_total - $total_paid;
+
+if($due_amount <= 0){
+
+    $payment_status = "Paid";
+    $due_amount = 0;
+
+}elseif($total_paid > 0){
+
+    $payment_status = "Partial";
+
+}else{
+
+    $payment_status = "Unpaid";
+}
+
+$gst_total = $total_gst;
+
+$db->query("
+UPDATE invoice SET
+
+subtotal = '$subtotal',
+gst_total = '$gst_total',
+net_total = '$net_total',
+
+paid_amount = '$total_paid',
+due_amount = '$due_amount',
+payment_status = '$payment_status'
+
+WHERE id = '$qid'
+");
 
 if(isset($_POST['payment_amount'])){
 
@@ -892,7 +960,77 @@ foreach($centers as $c):
 <?php endif; ?>
   </div>
 </div>
+
+<!-- 🔥 TERMS & CONDITIONS CARD -->
+
+<div class="card p-3 mb-3">
+
+<div class="row">
+
+<div class="col-md-12">
+
+<label>
+
+Terms & Conditions Template
+
+</label>
+
+<select
+id="termsTemplate"
+class="form-control">
+
+<option value="">
+
+Select Template
+
+</option>
+
+<?php foreach($terms_templates as $t): ?>
+
+<option
+value="<?= htmlspecialchars($t['template']); ?>">
+
+Template <?= $t['tc_id']; ?>
+
+</option>
+
+<?php endforeach; ?>
+
+</select>
+
+</div>
+
+</div>
+
 <br>
+
+<div class="row">
+
+<div class="col-md-12">
+
+<label>
+
+Terms & Conditions
+
+</label>
+
+<textarea
+name="terms_conditions"
+id="termsBox"
+rows="5"
+class="form-control"
+placeholder="Terms & Conditions..."></textarea>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<br>
+
 
 <div class="row align-items-stretch">
 
@@ -975,6 +1113,7 @@ foreach($centers as $c):
             <input type="number"
               name="payment_amount[<?=$pm['id'];?>]"
               class="form-control form-control-sm payAmt"
+              disabled
               data-mode="<?=$pm['id'];?>"
               value="0">
           </td>
@@ -1253,6 +1392,8 @@ function updateSummary(){
  let returnAmt = 0;
 
  if(paid > gross){
+
+ alert("Payment is greater than bill amount");
   returnAmt = paid - gross;
   balance = 0;
  }
@@ -1299,6 +1440,10 @@ document.querySelectorAll(".payCheck").forEach(chk=>{
 
 document.querySelectorAll(".payAmt").forEach(input=>{
   input.addEventListener("input", function(){
+
+  if(parseFloat(this.value) < 0){
+   this.value = 0;
+}
     updateSummary(); // 🔥 ye missing tha
   });
 });
@@ -1330,5 +1475,16 @@ function validateCustomer(){
 
   return true;
 }
+
+/* TERMS TEMPLATE */
+
+document.getElementById("termsTemplate")
+
+.addEventListener("change", function(){
+
+document.getElementById("termsBox").value =
+this.value;
+
+});
 
 </script>
