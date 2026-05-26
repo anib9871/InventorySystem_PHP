@@ -949,9 +949,21 @@ foreach($centers as $c):
 
 <select name="gst_type" class="form-control">
 
-<option value="inclusive">Inclusive GST</option>
+<option value="exclusive" selected hidden>
+GST Type
+</option>
 
-<option value="exclusive">Exclusive GST</option>
+<option value="inclusive">
+Inclusive GST
+</option>
+
+<option value="exclusive">
+Exclusive GST
+</option>
+
+<option value="nogst">
+No GST
+</option>
 
 </select>
 
@@ -1355,7 +1367,7 @@ else if(active.classList.contains("discAmt")){
  let afterDisc = total - dAmt;
 
 /* GST TYPE */
-let gstType = "inclusive";
+let gstType = "exclusive";
 
 let gstSelect = document.querySelector("select[name='gst_type']");
 
@@ -1365,6 +1377,14 @@ if(gstSelect){
 
 let gstAmt = 0;
 let final = 0;
+
+if(gstType == "nogst"){
+
+   gstAmt = 0;
+   final = afterDisc;
+
+}
+else if(gstType == "exclusive"){
 
 if(gstType == "exclusive"){
 
