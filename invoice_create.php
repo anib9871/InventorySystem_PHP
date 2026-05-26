@@ -1282,18 +1282,6 @@ value="0"></td>
 /* 🔥 INPUT FIX (VERY IMPORTANT) */
 document.addEventListener("input", function(e){
 
-document.addEventListener("change", function(e){
-
- if(e.target.name == "gst_type"){
-
-   document.querySelectorAll("#billBody tr").forEach(r=>{
-      calculate(r);
-   });
-
- }
-
-});
-
  if(
    e.target.classList.contains("qty") ||
    e.target.classList.contains("base") ||
@@ -1302,6 +1290,18 @@ document.addEventListener("change", function(e){
    e.target.classList.contains("discAmt")
  ){
    calculate(e.target.closest("tr"));
+ }
+
+});
+
+document.addEventListener("change", function(e){
+
+ if(e.target.name == "gst_type"){
+
+   document.querySelectorAll("#billBody tr").forEach(r=>{
+      calculate(r);
+   });
+
  }
 
 });
@@ -1380,23 +1380,22 @@ let final = 0;
 
 if(gstType == "nogst"){
 
-   gstAmt = 0;
-   final = afterDisc;
+    gstAmt = 0;
+    final = afterDisc;
 
 }
 else if(gstType == "exclusive"){
 
-if(gstType == "exclusive"){
+    gstAmt = (afterDisc * gst) / 100;
 
-   gstAmt = (afterDisc * gst) / 100;
+    final = afterDisc + gstAmt;
 
-   final = afterDisc + gstAmt;
+}
+else{
 
-}else{
+    gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
 
-   gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
-
-   final = afterDisc;
+    final = afterDisc;
 }
 
 let gstAmtField = r.querySelector(".gstAmt");
