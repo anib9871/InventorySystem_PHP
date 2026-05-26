@@ -95,7 +95,9 @@ function numberToWords($num){
 <!DOCTYPE html>
 <html>
 <head>
-<title>Invoice</title>
+<title>
+<?= $invoice['customer_name'] ?>_Invoice_<?= $invoice['invoice_no'] ?>
+</title>
 <style>
 /* ===== RESET ===== */
 *{
