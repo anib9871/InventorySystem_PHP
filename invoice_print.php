@@ -483,7 +483,7 @@ $total_tax = $data['cgst'] + $data['sgst'] + $data['igst'];
 ?>
 
 <tr>
-<td class="center"><?= $hsn ?></td>
+<td class="center"><?= $data['hsn'] ?></td>
 <td class="right"><?= number_format($data['taxable'],2) ?></td>
 <td class="center"><?= $data['rate'] ?>%</td>
 
