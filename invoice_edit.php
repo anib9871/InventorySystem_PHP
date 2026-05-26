@@ -58,34 +58,92 @@ if($gst_enabled == "Yes"){
         $line_base = $qty * $base;
         $discounted_base = $line_base - $disc;
 
-       if($gst_enabled == "No"){
+if($gst_enabled == "No"){
 
     $gst_amount = 0;
+
+    $cgst_amount = 0;
+    $sgst_amount = 0;
+    $igst_amount = 0;
+
     $rate_incl  = $base;
+
     $line_total = $discounted_base;
 
 }
-else if($gst_type == "exclusive"){
-            $gst_amount = $discounted_base * $gst / 100;
-            $rate_incl  = $base + ($base * $gst / 100);
-            $line_total = $discounted_base + $gst_amount;
-        } else {
-            $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
-            $rate_incl  = $base;
-            $line_total = $discounted_base;
-        }
+else{
 
-        $subtotal  += $discounted_base;
-        $net_total += $line_total;
+    if($gst_type == "exclusive"){
 
-        $db->query("
-        INSERT INTO invoice_items
-        (invoice_id, product_id, qty, rate_excl_gst,
-         discount_amount, gst_percent, rate_incl_gst, line_total)
-        VALUES
-        ($id, $pid, $qty, $base,
-         $disc, $gst, $rate_incl, $line_total)
-        ");
+        $gst_amount = $discounted_base * $gst / 100;
+
+        $rate_incl  = $base + ($base * $gst / 100);
+
+        $line_total = $discounted_base + $gst_amount;
+
+    }else{
+
+        $gst_amount = $discounted_base
+                    - ($discounted_base / (1 + $gst/100));
+
+        $rate_incl  = $base;
+
+        $line_total = $discounted_base;
+    }
+
+    /* 🔥 GST SPLIT */
+
+    if($tax_mode == "IGST"){
+
+        $igst_amount = $gst_amount;
+
+        $cgst_amount = 0;
+        $sgst_amount = 0;
+
+    }else{
+
+        $cgst_amount = $gst_amount / 2;
+
+        $sgst_amount = $gst_amount / 2;
+
+        $igst_amount = 0;
+    }
+}
+
+$subtotal  += $discounted_base;
+
+$net_total += $line_total;
+
+$db->query("
+INSERT INTO invoice_items
+(
+invoice_id,
+product_id,
+qty,
+rate_excl_gst,
+discount_amount,
+gst_percent,
+rate_incl_gst,
+line_total,
+cgst_amount,
+sgst_amount,
+igst_amount
+)
+VALUES
+(
+$id,
+$pid,
+$qty,
+$base,
+$disc,
+$gst,
+$rate_incl,
+$line_total,
+$cgst_amount,
+$sgst_amount,
+$igst_amount
+)
+");
     }
 
     $gst_total = $net_total - $subtotal;
