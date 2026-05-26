@@ -443,6 +443,7 @@ gap:6px;
 <input
 type="checkbox"
 class="pay-check"
+onchange="togglePaymentInput(this)"
 value="<?= $pm['mode_name']; ?>"
 id="pay_<?= $pm['id']; ?>"
 >
@@ -462,10 +463,13 @@ font-weight:600;
 <input
 type="number"
 class="form-control pay-amount"
-style="width:120px;"
+style="
+width:120px;
+display:none;
+"
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="0"
-value="0"
+value=""
 >
 
 </div>
@@ -808,6 +812,28 @@ collectPayments();
 
 });
 
+
+function togglePaymentInput(check){
+
+let mode = check.value;
+
+let input = document.querySelector(
+'.pay-amount[data-mode="' + mode + '"]'
+);
+
+if(check.checked){
+
+input.style.display = "block";
+input.focus();
+
+}else{
+
+input.style.display = "none";
+input.value = "";
+
+}
+
+}
 
 </script>
 
