@@ -212,6 +212,19 @@ h1, h2, h3{
   vertical-align:top;
 }
 
+
+@media print {
+
+  @page {
+    margin: 10mm;
+  }
+
+  body {
+    margin: 0;
+  }
+
+}
+
 }
 </style>
 </head>
@@ -241,11 +254,11 @@ Phone: <?= $org['phone'] ?>
 
 <td width="45%" class="section">
 <b>PROFORMA INVOICE</b><br><br>
+
 Invoice No: <?= $invoice['invoice_no'] ?><br>
+
 Date: <?= date("d-m-Y", strtotime($invoice['invoice_date'])) ?><br>
-<?php if($gst_enabled == "Yes"): ?>
-GST Type: <?= ucfirst($invoice['gst_type']) ?>
-<?php endif; ?>
+
 </td>
 </tr>
 </table>
