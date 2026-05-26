@@ -426,18 +426,32 @@ Grand Total ₹ <span id="grandTotal">0.00</span>
 
 <h4><strong>Payments</strong></h4>
 
-<div class="row">
-
-<div class="row">
+<div class="row" style="
+margin-left:-8px;
+margin-right:-8px;
+margin-top:10px;
+">
 
 <?php foreach($payment_modes as $pm){ ?>
 
-<div class="col-md-3" style="margin-bottom:10px;">
+<div class="col-md-4" style="
+margin-bottom:15px;
+padding-left:8px;
+padding-right:8px;
+">
+
+<div style="
+border:1px solid #ddd;
+padding:6px 8px;
+border-radius:5px;
+background:#fafafa;
+">
 
 <div style="
 display:flex;
 align-items:center;
-gap:6px;
+gap:8px;
+margin-bottom:6px;
 ">
 
 <input
@@ -451,24 +465,28 @@ id="pay_<?= $pm['id']; ?>"
 <label
 for="pay_<?= $pm['id']; ?>"
 style="
-min-width:80px;
 margin:0;
 font-weight:600;
+font-size:12px;
 ">
 
-<?= $pm['mode_name']; ?>
+<?= strtoupper($pm['mode_name']); ?>
 
 </label>
+
+</div>
 
 <input
 type="number"
 class="form-control pay-amount"
 style="
-width:120px;
 display:none;
+height:28px;
+font-size:11px;
+padding:2px 6px;
 "
 data-mode="<?= $pm['mode_name']; ?>"
-placeholder="0"
+placeholder="Enter Amount"
 value=""
 >
 
@@ -480,22 +498,6 @@ value=""
 
 </div>
 
-</div>
-
-<br>
-
-<table class="table table-bordered">
-<thead>
-<tr>
-<th>Payment Mode</th>
-<th>Amount</th>
-<th>X</th>
-</tr>
-</thead>
-
-<tbody id="paymentBody"></tbody>
-
-</table>
 
 <input type="hidden" name="payments_json" id="payments_json">
 
@@ -821,15 +823,57 @@ let input = document.querySelector(
 '.pay-amount[data-mode="' + mode + '"]'
 );
 
+let total = parseFloat(
+document.getElementById("grandTotal").innerText
+.replace(/,/g,'')
+) || 0;
+
+let checkedBoxes =
+document.querySelectorAll(".pay-check:checked");
+
 if(check.checked){
 
 input.style.display = "block";
+
+if(checkedBoxes.length == 1){
+
+input.value = total.toFixed(2);
+
+}else{
+
+input.value = "";
+
+}
+
 input.focus();
 
 }else{
 
 input.style.display = "none";
 input.value = "";
+
+}
+
+/* MULTIPLE MODE HANDLE */
+
+if(checkedBoxes.length > 1){
+
+document.querySelectorAll(".pay-check:checked")
+.forEach(ch => {
+
+let m = ch.value;
+
+let inp = document.querySelector(
+'.pay-amount[data-mode="' + m + '"]'
+);
+
+if(inp && inp.value == total.toFixed(2)){
+
+inp.value = "";
+
+}
+
+});
 
 }
 
