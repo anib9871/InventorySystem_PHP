@@ -432,12 +432,12 @@ Grand Total ₹ <span id="grandTotal">0.00</span>
 
 <?php foreach($payment_modes as $pm){ ?>
 
-<div class="col-md-6" style="margin-bottom:10px;">
+<div class="col-md-3" style="margin-bottom:10px;">
 
 <div style="
 display:flex;
 align-items:center;
-gap:10px;
+gap:6px;
 ">
 
 <input
@@ -462,6 +462,7 @@ font-weight:600;
 <input
 type="number"
 class="form-control pay-amount"
+style="width:120px;"
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="0"
 value="0"
