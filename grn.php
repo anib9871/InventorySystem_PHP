@@ -428,27 +428,51 @@ Grand Total ₹ <span id="grandTotal">0.00</span>
 
 <div class="row">
 
-<div class="col-md-4">
-<select id="pay_mode" class="form-control">
-<option value="">Select Mode</option>
+<div class="row">
 
 <?php foreach($payment_modes as $pm){ ?>
-<option value="<?= $pm['mode_name']; ?>">
+
+<div class="col-md-6" style="margin-bottom:10px;">
+
+<div style="
+display:flex;
+align-items:center;
+gap:10px;
+">
+
+<input
+type="checkbox"
+class="pay-check"
+value="<?= $pm['mode_name']; ?>"
+id="pay_<?= $pm['id']; ?>"
+>
+
+<label
+for="pay_<?= $pm['id']; ?>"
+style="
+min-width:80px;
+margin:0;
+font-weight:600;
+">
+
 <?= $pm['mode_name']; ?>
-</option>
+
+</label>
+
+<input
+type="number"
+class="form-control pay-amount"
+data-mode="<?= $pm['mode_name']; ?>"
+placeholder="0"
+value="0"
+>
+
+</div>
+
+</div>
+
 <?php } ?>
 
-</select>
-</div>
-
-<div class="col-md-3">
-<input type="number" id="pay_amount" class="form-control" placeholder="Amount">
-</div>
-
-<div class="col-md-2">
-<button type="button" onclick="addPayment()" class="btn btn-primary">
-Add
-</button>
 </div>
 
 </div>
@@ -498,47 +522,37 @@ let charges = [];
 
 let payments = [];
 
-function addPayment(){
+function collectPayments(){
 
-let mode = document.getElementById("pay_mode").value;
-let amount = parseFloat(document.getElementById("pay_amount").value) || 0;
+payments = [];
 
-if(!mode || amount<=0){
-alert("Enter payment details");
-return;
-}
+document.querySelectorAll(".pay-check").forEach(check => {
+
+if(check.checked){
+
+let mode = check.value;
+
+let amountInput = document.querySelector(
+'.pay-amount[data-mode="' + mode + '"]'
+);
+
+let amount = parseFloat(amountInput.value) || 0;
+
+if(amount > 0){
 
 payments.push({
-mode:mode,
-amount:amount
+mode: mode,
+amount: amount
 });
 
-renderPayments();
 }
 
-function renderPayments(){
-
-let body=document.getElementById("paymentBody");
-body.innerHTML="";
-
-payments.forEach((p,i)=>{
-
-body.innerHTML+=`
-<tr>
-<td>${p.mode}</td>
-<td>${p.amount}</td>
-<td>
-<button type="button"
-onclick="payments.splice(${i},1);renderPayments()">
-X
-</button>
-</td>
-</tr>
-`;
+}
 
 });
 
-document.getElementById("payments_json").value=JSON.stringify(payments);
+document.getElementById("payments_json").value =
+JSON.stringify(payments);
 
 }
 
@@ -783,6 +797,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
   }
+
+});
+
+document.getElementById("grnForm")
+.addEventListener("submit", function(){
+
+collectPayments();
 
 });
 
