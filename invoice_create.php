@@ -1243,9 +1243,18 @@ readonly>
 
 <?php endif; ?>
 
-  <td><input type="number" class="form-control form-control-sm discPer" value="0"></td>
+  <td><input
+type="number"
+step="0.01"
+class="form-control form-control-sm discPer"
+value="0"></td>
 
-  <td><input type="number" name="discount[]" class="form-control form-control-sm discAmt" value="0"></td>
+  <td><input
+type="number"
+step="0.01"
+name="discount[]"
+class="form-control form-control-sm discAmt"
+value="0"></td>
 
   <td><input type="text" class="form-control form-control-sm totalRow" readonly></td>
 
