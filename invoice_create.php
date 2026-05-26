@@ -1245,13 +1245,13 @@ readonly>
 
   <td><input
 type="number"
-step="0.01"
+step="0.0001"
 class="form-control form-control-sm discPer"
 value="0"></td>
 
   <td><input
 type="number"
-step="0.01"
+step="0.0001"
 name="discount[]"
 class="form-control form-control-sm discAmt"
 value="0"></td>
