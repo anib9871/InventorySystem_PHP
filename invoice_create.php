@@ -732,7 +732,8 @@ body { background:#f1f5f9; }
 table th{
   background:#1e293b;
   color:#fff;
-  font-size:13px;
+  font-size:15px;
+  padding:10px !important;
 }
 
 .product-item{
@@ -745,13 +746,14 @@ table th{
 }
 
 .form-control-sm{
-  height:30px;
-  font-size:13px;
+  height:38px;
+  font-size:15px;
+  padding:6px 10px;
 }
 
 #productList tr td {
-  padding:6px 8px;
-  font-size:13px;
+  padding:10px;
+  font-size:15px;
 }
 
 #productList tr {
@@ -802,7 +804,7 @@ table th{
 }
 
 .bill-grid {
-  height: 180px;        /* 🔥 fixed height (2–3 rows ke baad scroll) */
+  height: 260px;        /* 🔥 fixed height (2–3 rows ke baad scroll) */
   overflow-y: auto;
   border-radius: 4px;
 }
@@ -826,7 +828,7 @@ table th{
 
 /* full box size */
 .payment-box{
-  height: 180px;
+  height: 260px;
   overflow: hidden;
 }
 
@@ -1321,14 +1323,25 @@ if(gstField){
  }
 
  // discount sync
- if(dPer > 0){
+let active = document.activeElement;
+
+if(active.classList.contains("discPer")){
+
    dAmt = (total * dPer) / 100;
-   r.querySelector(".discAmt").value = dAmt.toFixed(2);
- } 
- else if(dAmt > 0 && total > 0){
-   dPer = (dAmt / total) * 100;
-   r.querySelector(".discPer").value = dPer.toFixed(2);
- }
+
+   r.querySelector(".discAmt").value =
+   dAmt.toFixed(2);
+
+}
+else if(active.classList.contains("discAmt")){
+
+   dPer = total > 0
+   ? (dAmt / total) * 100
+   : 0;
+
+   r.querySelector(".discPer").value =
+   dPer.toFixed(2);
+}
 
  let afterDisc = total - dAmt;
 
