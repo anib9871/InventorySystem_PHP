@@ -564,7 +564,10 @@ For: <?= $org_master['org_name'] ?>
 
 <br><br><br><br><br>
 
-Authorized Signatory
+<br><br>
+<small>
+This is a computer generated invoice and does not require signature.
+</small>
 
 </td>
 
