@@ -228,20 +228,19 @@ foreach($_POST['product_id'] as $pid){
 
   $product = find_by_id('products', $pid);
 
-  if($product['type'] == 1){ // product
+if($product['type'] == 1){ // product
 
-      if($org_state_code != $cust_state_code){
-          $tax_mode = 'IGST';
-      }else{
-          $tax_mode = 'CGST_SGST';
-      }
+if(trim((string)$org_state_code) !== trim((string)$cust_state_code)){
 
-  }else{
-      // service (car wash etc)
-      $tax_mode = 'CGST_SGST';
-  }
+    $tax_mode = 'IGST';
 
-  break; // first item se decide kar lenge
+}else{
+
+    $tax_mode = 'CGST_SGST';
+}
+
+break;
+}
 }
 }
 
