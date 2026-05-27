@@ -66,7 +66,7 @@ if(!empty($config)){
         <li><a href="configuration_master.php">Configuration Master</a></li>
         <li><a href="product.php">Products</a></li>
         <li><a href="bom_master.php">BOM Master</a></li>
-        <li><a href="rate_master.php">Rate Master</a></li>
+        <!-- <li><a href="rate_master.php">Rate Master</a></li> -->
         <li><a href="supplier_master.php">Supplier Master</a></li>
         <li><a href="customer_master.php">Customer Master</a></li>
         <li><a href="financial_year_master.php">Financial Year Master</a></li>
@@ -88,7 +88,7 @@ if(!empty($config)){
         <li><a href="grn.php">GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
         <li><a href="quotation_list.php">Duplicate Quotation Print</a></li>
-        <li><a href="invoice_create.php">Invoice</a></li>
+        <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
         <li><a href="invoice_list.php">Duplicate Invoice Print</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
          <li><a href="payments.php">Manage Payments</a></li>
