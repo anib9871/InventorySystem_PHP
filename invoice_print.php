@@ -268,17 +268,19 @@ Date: <?= date("d-m-Y", strtotime($invoice['invoice_date'])) ?><br>
 <br>
 
 <!-- BILL TO -->
+<!-- CUSTOMER DETAILS -->
+
 <table>
+
 <tr>
-<td width="50%" class="section">
+
+<td width="100%" class="section">
+
 <b>Customer Details</b><br><br>
 
 <b><?= strtoupper($invoice['customer_name']) ?></b><br>
 
-<?php
-$addr = explode(",", $invoice['address']);
-echo end($addr);
-?><br>
+<?= $invoice['address'] ?><br>
 
 <?php if($gst_enabled == "Yes"): ?>
 GSTIN: <?= $invoice['gst_no'] ?><br>
@@ -287,13 +289,11 @@ GSTIN: <?= $invoice['gst_no'] ?><br>
 <?php if(!empty($invoice['contact_no'])): ?>
 Phone: <?= $invoice['contact_no'] ?>
 <?php endif; ?>
+
 </td>
 
-<td width="50%" class="section">
-<b>Ship To</b><br><br>
-<?= $invoice['address'] ?>
-</td>
 </tr>
+
 </table>
 
 <br>
