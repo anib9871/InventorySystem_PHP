@@ -920,7 +920,7 @@ table th{
       <input type="text" name="manual_phone" class="form-control">
     </div>
 
-    <?php if($_SESSION['role_id'] == 2): ?>
+<?php if($_SESSION['role_id'] == 2 && $system != 'inventory'): ?>
 
 <div class="col-md-4">
 <label>Center</label>
