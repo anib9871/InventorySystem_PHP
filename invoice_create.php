@@ -941,6 +941,10 @@ foreach($centers as $c):
 
 </select>
 </div>
+
+<?php endif; ?>
+
+
 <?php if($system != 'billing'): ?>
 
 <div class="col-md-4">
@@ -949,8 +953,8 @@ foreach($centers as $c):
 
 <select name="gst_type" class="form-control">
 
-<option value="exclusive" selected hidden>
-GST Type
+<option value="exclusive" selected>
+Exclusive GST
 </option>
 
 <option value="inclusive">
@@ -968,8 +972,6 @@ No GST
 </select>
 
 </div>
-
-<?php endif; ?>
 
 <?php endif; ?>
   </div>
