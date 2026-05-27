@@ -19,9 +19,21 @@ $payment_modes = find_by_sql("
   ORDER BY mode_name
 ");
 
+$edit_mode = false;
+$edit_bill = '';
+
+if(isset($_GET['edit'])){
+
+    $edit_mode = true;
+
+    $edit_bill = $db->escape($_GET['edit']);
+
+}
+
+
 /* ================= SAVE GRN ================= */
 
-if (isset($_POST['save_grn'])) {
+if (isset($_POST['save_grn']) || isset($_POST['update_grn'])) {
 
   if (empty($_POST['items_json'])) {
     $session->msg("d", "Add at least one item");
@@ -49,6 +61,58 @@ if (isset($_POST['save_grn'])) {
 
   try {
 
+  if(isset($_POST['update_grn'])){
+
+$old_bill_no = $db->escape($_POST['old_bill_no']);
+
+$old = find_by_sql("
+SELECT * FROM transaction_master
+WHERE bill_indent_no = '$old_bill_no'
+");
+
+foreach($old as $o){
+
+update_product_qty(
+-($o['quantity'] + $o['free_qty']),
+$o['product_id']
+);
+
+}
+
+$db->query("
+DELETE FROM inventory
+WHERE transaction_id IN
+(
+SELECT id FROM transaction_master
+WHERE bill_indent_no = '$old_bill_no'
+)
+");
+
+$db->query("
+DELETE FROM transaction_master
+WHERE bill_indent_no = '$old_bill_no'
+");
+
+$db->query("
+DELETE FROM shipping
+WHERE bill_no = '$old_bill_no'
+");
+
+$db->query("
+DELETE FROM supplier_payment
+WHERE ledger_id IN
+(
+SELECT id FROM supplier_ledger
+WHERE bill_no = '$old_bill_no'
+)
+");
+
+$db->query("
+DELETE FROM supplier_ledger
+WHERE bill_no = '$old_bill_no'
+");
+}
+
     foreach ($items as $it) {
 
       $qty   = (float)$it['qty'];
@@ -59,23 +123,71 @@ if (isset($_POST['save_grn'])) {
       $misc  = (float)$it['misc'];
       $mrp   = (float)$it['mrp'];
 
-      $total_amount = ($qty * $rate) - $disc + $misc;
+$buy_type = $it['buy_type'];
 
-      $base_amount = $total_amount / (1 + ($gstp / 100));
-      $gst_amount  = $total_amount - $base_amount;
+if($buy_type == 'inclusive'){
 
-      $net_amount  = $total_amount;
+    $total_amount = ($qty * $rate) - $disc + $misc;
+
+    $base_amount = $total_amount / (1 + ($gstp / 100));
+    $gst_amount  = $total_amount - $base_amount;
+
+    $net_amount = $total_amount;
+
+} else {
+
+    $base_amount = ($qty * $rate) - $disc + $misc;
+
+    $gst_amount = ($base_amount * $gstp) / 100;
+
+    $net_amount = $base_amount + $gst_amount;
+}
 
       $grand_total += $net_amount;
 
       /* ===== RATE MASTER ===== */
-      $db->query("
-        INSERT INTO rate_master
-        (product_id, rate, mrp, gst_id, price_date, is_active, created_at)
-        VALUES
-        ('{$it['product_id']}', '$rate', '$mrp', '{$it['gst_id']}', CURDATE(), 1, NOW())
-      ");
-      $rate_id = $db->insert_id();
+
+            $existing_rate = find_by_sql("
+            SELECT id
+            FROM rate_master
+            WHERE product_id = '{$it['product_id']}'
+            AND rate = '$rate'
+            AND gst_id = '{$it['gst_id']}'
+            AND mrp = '$mrp'
+            LIMIT 1
+            ");
+
+if($existing_rate){
+
+    $rate_id = $existing_rate[0]['id'];
+
+} else {
+
+    $db->query("
+    INSERT INTO rate_master
+    (
+        product_id,
+        rate,
+        mrp,
+        gst_id,
+        price_date,
+        is_active,
+        created_at
+    )
+    VALUES
+    (
+        '{$it['product_id']}',
+        '$rate',
+        '$mrp',
+        '{$it['gst_id']}',
+        CURDATE(),
+        1,
+        NOW()
+    )
+    ");
+
+    $rate_id = $db->insert_id();
+}
 
       /* ===== TRANSACTION MASTER ===== */
       $db->query("
@@ -146,7 +258,7 @@ $db->query("
   SET 
     buy_price = '$rate',
     gst_id    = '{$it['gst_id']}',
-    buy_type  = 'inclusive'
+    buy_type  = '{$buy_type}'
   WHERE id = '{$it['product_id']}'
 ");
     }
@@ -183,6 +295,17 @@ if (is_array($charges)) {
   }
 }
 
+if(is_array($payments)){
+
+foreach($payments as $p){
+
+$total_paid += (float)$p['amount'];
+
+}
+
+}
+
+
     /* ===== SUPPLIER LEDGER ===== */
     $db->query("
       INSERT INTO supplier_ledger
@@ -211,16 +334,18 @@ foreach ($payments as $p){
 $mode = $p['mode'];
 $amount = $p['amount'];
 
+$utr = $p['utr'] ?? '';
+
 $total_paid += $amount;
 
 $db->query("
 INSERT INTO supplier_payment
 (ledger_id, supplier_id, payment_date,
-payment_amount, payment_mode, created_at)
+payment_amount, payment_mode, utr_no, created_at)
 
 VALUES
 ('$ledger_id','$supplier_id',CURDATE(),
-'$amount','$mode',NOW())
+'$amount','$mode','$utr',NOW())
 ");
 
 }
@@ -228,7 +353,15 @@ VALUES
 }
 
     $db->query("COMMIT");
-    $session->msg("s", "GRN Created Successfully");
+    if(isset($_POST['update_grn'])){
+
+$session->msg("s", "GRN Updated Successfully");
+
+} else {
+
+$session->msg("s", "GRN Created Successfully");
+
+}
 
   } catch (Exception $e) {
     $db->query("ROLLBACK");
@@ -236,6 +369,76 @@ VALUES
   }
 
   redirect('grn.php');
+}
+
+$edit_items = [];
+
+$edit_charges = [];
+
+if($edit_mode){
+
+$edit_items = find_by_sql("
+
+SELECT 
+tm.*,
+p.name,
+p.hsn_code,
+p.buy_type,
+g.gst_percent
+
+FROM transaction_master tm
+
+LEFT JOIN products p
+ON p.id = tm.product_id
+
+LEFT JOIN gst_master g
+ON g.id = tm.gst_id
+
+WHERE tm.bill_indent_no = '{$edit_bill}'
+
+");
+
+$edit_charges = find_by_sql("
+
+SELECT
+s.*,
+stm.type_name
+
+FROM shipping s
+
+LEFT JOIN shipping_type_master stm
+ON stm.id = s.shipping_type_id
+
+WHERE s.bill_no = '{$edit_bill}'
+
+");
+
+$edit_payments = find_by_sql("
+
+SELECT *
+FROM supplier_payment sp
+
+LEFT JOIN supplier_ledger sl
+ON sl.id = sp.ledger_id
+
+WHERE sl.bill_no = '{$edit_bill}'
+
+");
+
+$grn_info = [];
+
+if($edit_mode){
+
+$grn_info = find_by_sql("
+SELECT *
+FROM transaction_master
+WHERE bill_indent_no = '{$edit_bill}'
+LIMIT 1
+");
+
+$grn_info = $grn_info ? $grn_info[0] : [];
+
+}
 }
 
 include_once('layouts/header.php');
@@ -259,15 +462,35 @@ include_once('layouts/header.php');
 <select name="supplier_id" form="grnForm" class="form-control" required>
 <option value="">Select Supplier</option>
 <?php foreach ($suppliers as $s) { ?>
-<option value="<?= $s['id']; ?>"><?= $s['supplier_name']; ?></option>
+<option value="<?= $s['id']; ?>"
+<?php
+if($edit_mode && $grn_info['supplier_id'] == $s['id']){
+echo 'selected';
+}
+?>
+>
+<?= $s['supplier_name']; ?>
+</option>
 <?php } ?>
 </select><br>
 
 <label>Bill / GRN No</label>
-<input type="text" name="bill_no" form="grnForm" class="form-control" required><br>
+<input type="text"
+name="bill_no"
+value="<?= $edit_mode ? $grn_info['bill_indent_no'] : ''; ?>"
+class="form-control"
+form="grnForm"
+required>
+<br>
 
 <label>Bill Date</label>
-<input type="date" name="bill_date" form="grnForm" class="form-control" required><br>
+<input type="date"
+name="bill_date"
+value="<?= $edit_mode ? $grn_info['bill_indent_date'] : date('Y-m-d'); ?>"
+class="form-control"
+form="grnForm"
+required>
+<br>
 
 <input type="hidden" id="product">
 <input type="hidden" id="hsn_code">
@@ -299,6 +522,12 @@ include_once('layouts/header.php');
 <?php } ?>
 </select><br>
 
+<select id="buy_type" class="form-control">
+  <option value="exclusive">GST Exclusive</option>
+  <option value="inclusive">GST Inclusive</option>
+</select>
+<br>
+
 <div id="previousRateBox"
      style="display:none; margin-top:8px; padding:8px;
             background:#f5f5f5; border-left:4px solid #2196F3;
@@ -323,6 +552,13 @@ Add Item
 
 <input type="hidden" name="charges_json" id="charges_json">
 
+<?php if($edit_mode){ ?>
+
+<input type="hidden"
+name="old_bill_no"
+value="<?= $edit_bill; ?>">
+
+<?php } ?>
 
 <input type="hidden" name="items_json" id="items_json">
 
@@ -490,6 +726,19 @@ placeholder="Enter Amount"
 value=""
 >
 
+<input
+type="text"
+class="form-control pay-utr"
+style="
+display:none;
+height:28px;
+font-size:11px;
+padding:2px 6px;
+margin-top:5px;
+"
+data-mode="<?= $pm['mode_name']; ?>"
+placeholder="Enter UTR No"
+>
 </div>
 
 </div>
@@ -504,13 +753,30 @@ value=""
 <br>
 
 <label><strong>Comments</strong></label>
-<textarea name="comments" class="form-control" rows="3"></textarea>
-
+<textarea name="comments"
+class="form-control"
+rows="3"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
 <br>
 
-<button name="save_grn" class="btn btn-success pull-right">
-Create GRN
+<?php if($edit_mode){ ?>
+
+<button name="update_grn"
+class="btn btn-primary pull-right">
+
+Update GRN
+
 </button>
+
+<?php } else { ?>
+
+<button name="save_grn"
+class="btn btn-success pull-right">
+
+Create GRN
+
+</button>
+
+<?php } ?>
 
 </div>
 </div>
@@ -518,12 +784,101 @@ Create GRN
 </form>
 </div>
 
+<script>
 
+<?php if($edit_mode){ ?>
+
+items = <?= json_encode($edit_items); ?>;
+
+items.forEach((it,index)=>{
+
+it.sno = index + 1;
+
+it.total = parseFloat(it.net_price);
+
+it.base_amount =
+parseFloat(it.net_price)
+-
+parseFloat(it.gst_amount);
+
+it.gst_percent =
+parseFloat(it.gst_percent || 0);
+
+});
+
+charges = <?= json_encode($edit_charges); ?>;
+
+charges.forEach(c => {
+
+c.total = parseFloat(c.total_amount);
+
+});
+
+let editPayments =
+<?= json_encode($edit_payments); ?>;
+
+window.onload = function(){
+
+renderItems();
+
+renderCharges();
+
+editPayments.forEach(p => {
+
+let mode = p.payment_mode;
+
+let checkbox = document.querySelector(
+'.pay-check[value="' + mode + '"]'
+);
+
+let amountInput = document.querySelector(
+'.pay-amount[data-mode="' + mode + '"]'
+);
+
+let utrInput = document.querySelector(
+'.pay-utr[data-mode="' + mode + '"]'
+);
+
+if(checkbox){
+
+checkbox.checked = true;
+
+togglePaymentInput(checkbox);
+
+}
+
+if(amountInput){
+
+amountInput.value = p.payment_amount;
+
+}
+
+if(
+utrInput &&
+p.utr_no &&
+mode.toLowerCase() != 'cash'
+){
+
+utrInput.value = p.utr_no;
+
+utrInput.style.display = 'block';
+
+}
+
+});
+
+}
+
+<?php } ?>
+
+</script>
 <!-- ================= SCRIPT ================= -->
 
 <script>
 
-let items = [];
+if(typeof items === 'undefined'){
+    var items = [];
+}
 let sno = 1;
 let charges = [];
 
@@ -545,11 +900,18 @@ let amountInput = document.querySelector(
 
 let amount = parseFloat(amountInput.value) || 0;
 
+let utrInput = document.querySelector(
+'.pay-utr[data-mode="' + mode + '"]'
+);
+
+let utr = utrInput ? utrInput.value : '';
+
 if(amount > 0){
 
 payments.push({
 mode: mode,
-amount: amount
+amount: amount,
+utr: utr
 });
 
 }
@@ -584,10 +946,28 @@ function addItem() {
     return;
   }
 
-    let total = (qty * rate) - disc + misc;
+let buyType = document.getElementById("buy_type").value;
 
-    let base = total / (1 + (gstp/100));
-    let gst  = total - base;
+let base = 0;
+let gst = 0;
+let total = 0;
+
+if (buyType === "inclusive") {
+
+    total = (qty * rate) - disc + misc;
+
+    base = total / (1 + (gstp / 100));
+    gst = total - base;
+
+} else {
+
+    base = (qty * rate) - disc + misc;
+
+    gst = (base * gstp) / 100;
+
+    total = base + gst;
+}
+
 items.push({
   sno: sno++,
   product_id: pid,
@@ -598,6 +978,7 @@ items.push({
   rate: rate,
   gst_id: gst_id,
   gst_percent: gstp,
+  buy_type: buyType,
   base_amount: base,
   gst_amount: gst,
   discount: disc,
@@ -634,12 +1015,11 @@ function renderItems() {
 
   items.forEach((it, i) => {
 
+    it.sno = i + 1;
     grand += it.total;
-    let total = (it.qty * it.rate) - it.discount + it.misc;
-
-    let base = total / (1 + (it.gst_percent/100));
-    let gst_amt = total - base;
-
+    let base = it.base_amount;
+let gst_amt = it.gst_amount;
+let total = it.total;
 
 tb.innerHTML += `
 <tr>
@@ -653,7 +1033,21 @@ tb.innerHTML += `
 <td>${it.gst_amount.toFixed(2)}</td>
 <td>${it.total.toFixed(2)}</td>
 <td>
-<button type="button" onclick="items.splice(${i},1);renderItems()">X</button>
+<button type="button"
+onclick="editItem(${i})"
+class="btn btn-xs btn-info">
+
+Edit
+
+</button>
+
+<button type="button"
+onclick="items.splice(${i},1);renderItems()"
+class="btn btn-xs btn-danger">
+
+X
+
+</button>
 </td>
 </tr>`;
   });
@@ -719,6 +1113,8 @@ function addCharge() {
   });
 
   renderCharges();
+
+  
 }
 
 function renderCharges() {
@@ -768,6 +1164,9 @@ function selectProduct(id, name, hsn) {
       if (data.gst_id)
         document.getElementById("gst").value = data.gst_id;
 
+      if (data.buy_type)
+        document.getElementById("buy_type").value = data.buy_type;
+
    if (data.last_rate !== undefined) {
 
   let box = document.getElementById("previousRateBox");
@@ -808,9 +1207,158 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.getElementById("grnForm")
-.addEventListener("submit", function(){
+.addEventListener("submit", function(e){
 
 collectPayments();
+
+/* ================= REQUIRED FIELD VALIDATION ================= */
+
+let supplier =
+document.querySelector('[name="supplier_id"]').value;
+
+let billNo =
+document.querySelector('[name="bill_no"]').value.trim();
+
+let billDate =
+document.querySelector('[name="bill_date"]').value;
+
+let errors = [];
+
+/* SUPPLIER */
+
+if(supplier == ''){
+
+errors.push("Supplier is required.");
+
+}
+
+/* BILL NO */
+
+if(billNo == ''){
+
+errors.push("Bill / GRN No is required.");
+
+}
+
+/* BILL DATE */
+
+if(billDate == ''){
+
+errors.push("Bill Date is required.");
+
+}
+
+/* ITEMS */
+
+if(items.length == 0){
+
+errors.push("Please add at least one item.");
+
+}
+
+/* SHOW REQUIRED FIELD ERRORS */
+
+if(errors.length > 0){
+
+e.preventDefault();
+
+alert(errors.join("\n"));
+
+return false;
+
+}
+
+/* ================= PAYMENT VALIDATION ================= */
+
+let warningMessages = [];
+
+let enteredPaymentTotal = 0;
+document.querySelectorAll(".pay-check").forEach(check => {
+
+if(check.checked){
+
+let mode = check.value;
+
+let amountInput = document.querySelector(
+'.pay-amount[data-mode="' + mode + '"]'
+);
+
+let utrInput = document.querySelector(
+'.pay-utr[data-mode="' + mode + '"]'
+);
+
+let amount = parseFloat(amountInput.value) || 0;
+
+enteredPaymentTotal += amount;
+
+let utr = utrInput ? utrInput.value.trim() : '';
+
+/* PAYMENT EMPTY */
+
+if(amount <= 0){
+
+warningMessages.push(
+mode + " selected but payment amount not entered."
+);
+
+}
+
+/* UTR CHECK */
+
+if(
+mode.toLowerCase() != 'cash'
+&& amount > 0
+&& utr == ''
+){
+
+warningMessages.push(
+mode + " payment selected but UTR No not entered."
+);
+
+}
+
+}
+
+});
+
+let grandTotal = parseFloat(
+document.getElementById("grandTotal").innerText
+.replace(/,/g,'')
+) || 0;
+
+if(enteredPaymentTotal > grandTotal){
+
+e.preventDefault();
+
+alert(
+"Payment amount cannot be greater than Grand Total."
+);
+
+return false;
+
+}
+
+/* SHOW WARNING CONFIRMATION */
+
+if(warningMessages.length > 0){
+
+e.preventDefault();
+
+let finalMsg =
+warningMessages.join("\n\n") +
+"\n\nDo you still want to continue?";
+
+if(confirm(finalMsg)){
+
+document.getElementById("grnForm").submit();
+
+}else{
+
+return false;
+
+}
+
+}
 
 });
 
@@ -821,6 +1369,10 @@ let mode = check.value;
 
 let input = document.querySelector(
 '.pay-amount[data-mode="' + mode + '"]'
+);
+
+let utrInput = document.querySelector(
+'.pay-utr[data-mode="' + mode + '"]'
 );
 
 let total = parseFloat(
@@ -834,6 +1386,17 @@ document.querySelectorAll(".pay-check:checked");
 if(check.checked){
 
 input.style.display = "block";
+
+if(mode.toLowerCase() != 'cash'){
+
+utrInput.style.display = "block";
+
+}else{
+
+utrInput.style.display = "none";
+utrInput.value = '';
+
+}
 
 if(checkedBoxes.length == 1){
 
@@ -851,6 +1414,9 @@ input.focus();
 
 input.style.display = "none";
 input.value = "";
+
+utrInput.style.display = "none";
+utrInput.value = "";
 
 }
 
@@ -877,6 +1443,37 @@ inp.value = "";
 
 }
 
+}
+
+
+function editItem(index){
+
+let it = items[index];
+
+document.getElementById("product").value = it.product_id;
+document.getElementById("product_name").value = it.name;
+
+document.getElementById("hsn_code").value = it.hsn_code;
+
+document.getElementById("qty").value = it.qty;
+
+document.getElementById("free_qty").value = it.free_qty;
+
+document.getElementById("rate").value = it.rate;
+
+document.getElementById("discount").value = it.discount;
+
+document.getElementById("misc").value = it.misc;
+
+document.getElementById("mrp").value = it.mrp;
+
+document.getElementById("gst").value = it.gst_id;
+
+document.getElementById("buy_type").value = it.buy_type;
+
+items.splice(index,1);
+
+renderItems();
 }
 
 </script>
