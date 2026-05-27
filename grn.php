@@ -419,7 +419,7 @@ SELECT *
 FROM supplier_payment sp
 
 LEFT JOIN supplier_ledger sl
-ON sl.id = sp.ledger_id
+ON sl.ledger_id = sp.ledger_id
 
 WHERE sl.bill_no = '{$edit_bill}'
 
