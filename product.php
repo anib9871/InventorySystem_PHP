@@ -89,7 +89,7 @@ INSERT INTO rate_master
 VALUES
 (
     '{$product_id}',
-    '{$sell}',
+    '{$buy}',
     '0',
     '{$gst}',
     '{$incoming_type}',
@@ -154,7 +154,7 @@ $outgoing_type = strtoupper($sell_type);
 
 $db->query("
 UPDATE rate_master SET
-    rate = '{$sell}',
+    rate = '{$buy}',
     gst_id = '{$gst}',
     rate_type = '{$incoming_type}',
     rate_type_outgoing = '{$outgoing_type}'
@@ -265,7 +265,7 @@ oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
 id="buy_price"
  name="buying-price"
  class="form-control"
- style="width:100%;"
+ style="width:150%;"
  value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
@@ -294,7 +294,7 @@ oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
 id="sell_price"
  name="saleing-price"
  class="form-control"
- style="width:100%;"
+ style="width:150%;"
  value="<?php echo $edit['sale_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
