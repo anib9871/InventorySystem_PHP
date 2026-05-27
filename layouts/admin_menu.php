@@ -86,6 +86,7 @@ if(!empty($config)){
       </a>
       <ul class="submenu">
         <li><a href="grn.php">GRN</a></li>
+        <li><a href="manage_grn.php">Manage GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
         <li><a href="quotation_list.php">Duplicate Quotation Print</a></li>
         <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
