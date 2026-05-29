@@ -108,6 +108,7 @@ if(!empty($config)){
       <ul class="submenu">
         <li><a href="stock_book.php">Stock Report</a></li>
         <li><a href="inventory_report.php">Sales Report</a></li>
+        <li><a href="purchase_report.php">Purchase Report</a></li>
         
       </ul>
     </li>
