@@ -32,7 +32,9 @@ ORDER BY cm.id DESC
 
 /* USER = ONLY OWN CENTER */
 
-$center_id = $_SESSION['center_id'];
+$center_id = isset($_SESSION['center_id']) 
+? (int)$_SESSION['center_id'] 
+: 1;
 
 $customers = find_by_sql("
 
@@ -77,7 +79,9 @@ if(isset($_POST['add_customer'])){
      redirect('customer_master.php',false);
   }
 
-$center_id = $_SESSION['center_id'];
+$center_id = isset($_SESSION['center_id']) 
+? (int)$_SESSION['center_id'] 
+: 1;
 
 $sql = "INSERT INTO customer_master
 (customer_name,contact_no,email,address,state_id,state_code,gst_no,center_id)
@@ -113,7 +117,9 @@ if(isset($_POST['update_customer'])){
   $state_id = (int)$_POST['state_id'];
   $state_code = remove_junk($db->escape($_POST['state_code']));
   $gst = remove_junk($db->escape($_POST['gst_no']));
-  $center_id = $_SESSION['center_id'];
+  $center_id = isset($_SESSION['center_id']) 
+? (int)$_SESSION['center_id'] 
+: 1;
   
 
   $sql="UPDATE customer_master SET
