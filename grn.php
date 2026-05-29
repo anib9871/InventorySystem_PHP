@@ -950,6 +950,8 @@ JSON.stringify(items);
 document.getElementById("charges_json").value =
 JSON.stringify(charges);
 
+
+
 editPayments.forEach(p => {
 
 let mode = p.payment_mode;
@@ -1217,6 +1219,39 @@ JSON.stringify(items);
 
 document.getElementById("charges_json").value =
 JSON.stringify(charges);
+
+/* AUTO UPDATE PAYMENT INPUTS */
+
+let checkedBoxes =
+document.querySelectorAll(".pay-check:checked");
+
+if(checkedBoxes.length == 1){
+
+checkedBoxes.forEach(ch => {
+
+let mode = ch.value;
+
+let input = document.querySelector(
+'.pay-amount[data-mode="' + mode + '"]'
+);
+
+if(input){
+
+if(roundChecked){
+
+input.value = Math.round(finalTotal);
+
+}else{
+
+input.value = finalTotal.toFixed(2);
+
+}
+
+}
+
+});
+
+}
 
 }
 
