@@ -582,9 +582,35 @@ placeholder="MRP"><br>
 
 <br>
 
-<button type="button" onclick="addItem()" class="btn btn-info btn-block">
+<div class="row">
+
+<div class="col-md-6">
+
+<button
+type="button"
+onclick="addItem()"
+class="btn btn-info btn-block">
+
 Add Item
+
 </button>
+
+</div>
+
+<div class="col-md-6">
+
+<button
+type="button"
+onclick="cancelEditItem()"
+class="btn btn-danger btn-block">
+
+Cancel
+
+</button>
+
+</div>
+
+</div>
 
 </div>
 </div>
@@ -705,9 +731,33 @@ Add
 </table>
 
 
-<h4 class="text-right" style="margin-top:10px;">
-Grand Total ₹ <span id="grandTotal">0.00</span>
+<div
+style="
+display:flex;
+justify-content:flex-end;
+align-items:center;
+gap:15px;
+margin-top:10px;
+">
+
+<label style="margin:0; font-weight:normal;">
+
+<input
+type="checkbox"
+id="roundOffToggle"
+onchange="updateGrandTotal()"
+>
+
+Round Off
+
+</label>
+
+<h4 style="margin:0;">
+Grand Total ₹
+<span id="grandTotal">0.00</span>
 </h4>
+
+</div>
 
 <hr>
 
@@ -1050,6 +1100,8 @@ if (buyType === "inclusive") {
     total = base + gst;
 }
 
+backupItem = null;
+
 items.push({
   sno: sno++,
   product_id: pid,
@@ -1139,18 +1191,33 @@ X
 
 function updateGrandTotal() {
 
-  let itemTotal = 0;
-  let chargeTotal = 0;
+let itemTotal = 0;
+let chargeTotal = 0;
 
-  items.forEach(it => itemTotal += it.total);
-  charges.forEach(c => chargeTotal += c.total);
+items.forEach(it => itemTotal += it.total);
 
-  let finalTotal = itemTotal + chargeTotal;
+charges.forEach(c => chargeTotal += c.total);
 
-  document.getElementById("grandTotal").innerText = finalTotal.toFixed(2);
+let finalTotal = itemTotal + chargeTotal;
 
-  document.getElementById("items_json").value = JSON.stringify(items);
-  document.getElementById("charges_json").value = JSON.stringify(charges);
+let roundChecked =
+document.getElementById("roundOffToggle").checked;
+
+if(roundChecked){
+
+finalTotal = Math.round(finalTotal);
+
+}
+
+document.getElementById("grandTotal").innerText =
+finalTotal.toFixed(2);
+
+document.getElementById("items_json").value =
+JSON.stringify(items);
+
+document.getElementById("charges_json").value =
+JSON.stringify(charges);
+
 }
 
 function addCharge() {
@@ -1484,7 +1551,18 @@ utrInput.value = '';
 
 if(checkedBoxes.length == 1){
 
+let roundChecked =
+document.getElementById("roundOffToggle").checked;
+
+if(roundChecked){
+
 input.value = Math.round(total);
+
+}else{
+
+input.value = total.toFixed(2);
+
+}
 
 }else{
 
@@ -1540,6 +1618,7 @@ inp.value = "";
 function editItem(index){
 
 let it = items[index];
+backupItem = {...it};
 
 document.getElementById("product").value = it.product_id;
 document.getElementById("product_name").value = it.name;
@@ -1565,6 +1644,44 @@ document.getElementById("buy_type").value = it.buy_type;
 items.splice(index,1);
 
 renderItems();
+}
+
+let backupItem = null;
+
+function cancelEditItem(){
+
+if(backupItem){
+
+items.push(backupItem);
+
+backupItem = null;
+
+renderItems();
+
+}
+
+document.getElementById("product").value = "";
+
+document.getElementById("product_name").value = "";
+
+document.getElementById("hsn_code").value = "";
+
+document.getElementById("qty").value = "";
+
+document.getElementById("free_qty").value = "";
+
+document.getElementById("rate").value = "";
+
+document.getElementById("discount").value = "";
+
+document.getElementById("misc").value = "";
+
+document.getElementById("mrp").value = "";
+
+document.getElementById("gst").value = "";
+
+document.getElementById("buy_type").value = "exclusive";
+
 }
 
 </script>
