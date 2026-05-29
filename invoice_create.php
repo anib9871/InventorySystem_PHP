@@ -244,13 +244,11 @@ break;
 }
 }
 
-  $qdate    = date("Y-m-d");
-  $gst_type = 'inclusive';
+$qdate = date("Y-m-d");
 
-if($system == 'inventory' || $system == 'combined'){
-
-   $gst_type = $_POST['gst_type'] ?? 'inclusive';
-}
+$gst_type = isset($_POST['gst_type'])
+? $_POST['gst_type']
+: 'inclusive';
 
   $subtotal  = 0;
   $net_total = 0;
@@ -552,32 +550,40 @@ exit;
   ================================*/
 
 
-  $total_paid = 0;
+$total_paid = 0;
 
-if(isset($_POST['payment_amount'])){
+if($system == 'billing'){
 
-    foreach($_POST['payment_amount'] as $amt){
+    if(isset($_POST['payment_amount'])){
 
-        $total_paid += (float)$amt;
+        foreach($_POST['payment_amount'] as $amt){
+
+            $total_paid += (float)$amt;
+        }
     }
-}
 
-$due_amount = $net_total - $total_paid;
+    $due_amount = $net_total - $total_paid;
 
-if($due_amount <= 0){
+    if($due_amount <= 0){
 
-    $payment_status = "Paid";
-    $due_amount = 0;
+        $payment_status = "Paid";
+        $due_amount = 0;
 
-}elseif($total_paid > 0){
+    }elseif($total_paid > 0){
 
-    $payment_status = "Partial";
+        $payment_status = "Partial";
+
+    }else{
+
+        $payment_status = "Unpaid";
+    }
 
 }else{
 
-    $payment_status = "Unpaid";
+    $total_paid = 0;
+    $due_amount = 0;
+    $payment_status = '';
 }
-
 $gst_total = $total_gst;
 
 $db->query("
@@ -594,7 +600,7 @@ payment_status = '$payment_status'
 WHERE id = '$qid'
 ");
 
-if(isset($_POST['payment_amount'])){
+if($system == 'billing' && isset($_POST['payment_amount'])){
 
   foreach($_POST['payment_amount'] as $mode_id => $amt){
 
@@ -606,7 +612,10 @@ if(isset($_POST['payment_amount'])){
       $pm = find_by_id('payment_mode_master', $mode_id);
       $mode_name = $pm['mode_name'];
 
-      // 🔥 insert into NEW payments table
+// 🔥 insert into NEW payments table
+
+$utr = $_POST['utr_no'][$mode_id] ?? '';
+
 $db->query("
 INSERT INTO payments
 (
@@ -614,6 +623,7 @@ invoice_id,
 customer_id,
 payment_mode,
 amount,
+reference_no,
 center_id
 )
 VALUES
@@ -622,6 +632,7 @@ $qid,
 $cust,
 '$mode_name',
 '$amt',
+'".$db->escape($utr)."',
 '$center_id'
 )
 ");
@@ -653,7 +664,7 @@ VALUES ($qid, $cust, 'SALES', 'CREDIT', '$net_total')
 
 
 // 🔹 3. PAYMENT ENTRIES
-if(isset($_POST['payment_amount'])){
+if($system == 'billing' && isset($_POST['payment_amount'])){
 
   foreach($_POST['payment_amount'] as $mode_id => $amt){
 
@@ -904,7 +915,9 @@ table th{
       <select name="customer_id" class="form-control">
         <option value="">Select Customer</option>
         <?php foreach($customers as $c): ?>
-        <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
+<option value="<?=$c['id'];?>">
+<?=$c['customer_name'];?>
+</option>
         <?php endforeach; ?>
       </select>
     </div>
@@ -952,16 +965,12 @@ foreach($centers as $c):
 
 <select name="gst_type" class="form-control">
 
-<option value="exclusive" selected>
-Exclusive GST
-</option>
-
-<option value="inclusive">
-Inclusive GST
-</option>
-
 <option value="exclusive">
 Exclusive GST
+</option>
+
+<option value="inclusive" selected>
+Inclusive GST
 </option>
 
 <option value="nogst">
@@ -1095,7 +1104,94 @@ placeholder="Terms & Conditions..."></textarea>
         </tr>
       </thead>
 
-      <tbody id="billBody"></tbody>
+      <tbody id="billBody">
+
+<?php foreach($items as $it): ?>
+
+<tr>
+
+<td>
+  <?=$it['name'];?>
+
+  <input type="hidden"
+  name="product_id[]"
+  value="<?=$it['product_id'];?>">
+</td>
+
+<td>
+  <input type="number"
+  name="qty[]"
+  class="form-control form-control-sm qty"
+  value="<?=$it['qty'];?>">
+</td>
+
+<td>
+  <input type="number"
+  name="rate[]"
+  class="form-control form-control-sm base"
+  value="<?=$it['rate_excl_gst'];?>">
+</td>
+
+<?php if($gst_enabled == "Yes"): ?>
+
+<td>
+  <input type="number"
+  name="gst[]"
+  class="form-control form-control-sm gst"
+  value="<?=$it['gst_percent'];?>">
+</td>
+
+<td>
+  <input type="text"
+  class="form-control form-control-sm gstAmt"
+  readonly>
+</td>
+
+<?php endif; ?>
+
+<td>
+
+<input type="number"
+step="0.0001"
+class="form-control form-control-sm discPer"
+value="0">
+
+</td>
+
+<td>
+
+<input type="number"
+step="0.0001"
+name="discount[]"
+class="form-control form-control-sm discAmt"
+value="<?=$it['discount_amount'];?>">
+
+</td>
+
+<td>
+
+<input type="text"
+class="form-control form-control-sm totalRow"
+readonly>
+
+</td>
+
+<td>
+
+<button type="button"
+class="btn btn-danger btn-sm remove">
+
+×
+
+</button>
+
+</td>
+
+</tr>
+
+<?php endforeach; ?>
+
+</tbody>
 
     </table>
   </div>
@@ -1103,7 +1199,10 @@ placeholder="Terms & Conditions..."></textarea>
   <!-- 🔻 BELOW (NO SCROLL) -->
 <div class="row">
 
+<?php if($system == 'billing' || $system == 'inventory'): ?>
+
   <!-- PAYMENT -->
+
  <div class="col-md-5">
   <div class="card p-2 payment-box">
 
@@ -1124,14 +1223,27 @@ placeholder="Terms & Conditions..."></textarea>
 
           <td><?= strtoupper($pm['mode_name']); ?></td>
 
-          <td>
-            <input type="number"
-              name="payment_amount[<?=$pm['id'];?>]"
-              class="form-control form-control-sm payAmt"
-              disabled
-              data-mode="<?=$pm['id'];?>"
-              value="0">
-          </td>
+<td>
+
+<input type="number"
+name="payment_amount[<?=$pm['id'];?>]"
+class="form-control form-control-sm payAmt"
+disabled
+data-mode="<?=$pm['id'];?>"
+value="0">
+
+<?php if(strtolower($pm['mode_name']) != 'cash'): ?>
+
+<input type="text"
+name="utr_no[<?=$pm['id'];?>]"
+class="form-control form-control-sm mt-1 utrField"
+placeholder="Enter UTR No"
+disabled
+data-mode="<?=$pm['id'];?>">
+
+<?php endif; ?>
+
+</td>
         </tr>
         <?php endforeach; ?>
       </table>
@@ -1181,6 +1293,7 @@ placeholder="Terms & Conditions..."></textarea>
 
   </div>
 </div>
+<?php endif; ?>
 
 <?php include_once('layouts/footer.php'); ?>
 
@@ -1347,7 +1460,7 @@ if(gstField){
  // discount sync
 let active = document.activeElement;
 
-if(active.classList.contains("discPer")){
+if(active && active.classList.contains("discPer")){
 
    dAmt = (total * dPer) / 100;
 
@@ -1355,7 +1468,7 @@ if(active.classList.contains("discPer")){
    dAmt.toFixed(2);
 
 }
-else if(active.classList.contains("discAmt")){
+else if(active && active.classList.contains("discAmt")){
 
    dPer = total > 0
    ? (dAmt / total) * 100
@@ -1461,6 +1574,12 @@ document.querySelectorAll(".payCheck").forEach(chk=>{
 
     input.disabled = false;
 
+    let utr = document.querySelector(`.utrField[data-mode='${chk.dataset.mode}']`);
+
+if(utr){
+   utr.disabled = false;
+}
+
     let remaining = net;
 
     document.querySelectorAll(".payAmt").forEach(i=>{
@@ -1474,6 +1593,11 @@ document.querySelectorAll(".payCheck").forEach(chk=>{
   } else {
     input.value = 0;
     input.disabled = true;
+
+    if(utr){
+   utr.disabled = true;
+   utr.value = '';
+}
   }
 
   updateSummary();
@@ -1527,6 +1651,12 @@ document.getElementById("termsTemplate")
 document.getElementById("termsBox").value =
 this.value;
 
+});
+
+/* EXISTING ITEMS CALCULATE */
+
+document.querySelectorAll("#billBody tr").forEach(r=>{
+   calculate(r);
 });
 
 </script>
