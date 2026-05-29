@@ -14,7 +14,16 @@ p.amount,
 p.reference_no,
 
 i.invoice_no,
-i.payment_status,
+CASE
+
+WHEN
+(i.net_total - i.advance_paid) <= 0
+
+THEN 'Paid'
+
+ELSE 'Partial'
+
+END as payment_status,
 
 c.customer_name
 
@@ -47,7 +56,7 @@ isset($_SESSION['combined_mode'])
 <?php include_once('layouts/header.php'); ?>
 
 
-<?php if($is_combined): ?>
+<?php if($is_inventory || $is_combined): ?>
 
 <div class="row">
 <div class="col-md-12">
@@ -84,9 +93,12 @@ Supplier Payments
 
 <div class="col-md-12">
 
-<?php if(!$is_inventory): ?>
+<?php if($is_billing || $is_inventory || $is_combined): ?>
 
-<div class="panel panel-default">
+<div
+class="panel panel-default"
+id="customerPanel"
+>
 
 <div class="panel-heading">
 
@@ -320,7 +332,10 @@ ORDER BY sp.payment_id DESC
 
 <div class="col-md-12">
 
-<div class="panel panel-danger">
+<div
+class="panel panel-danger"
+id="supplierPanel"
+>
 
 <div class="panel-heading">
 
@@ -531,22 +546,22 @@ radio.addEventListener('change', function(){
 
 if(this.value == "customer"){
 
-document.querySelector(
-'.panel-default'
+document.getElementById(
+'customerPanel'
 ).style.display = "block";
 
-document.querySelector(
-'.panel-danger'
+document.getElementById(
+'supplierPanel'
 ).style.display = "none";
 
 }else{
 
-document.querySelector(
-'.panel-default'
+document.getElementById(
+'customerPanel'
 ).style.display = "none";
 
-document.querySelector(
-'.panel-danger'
+document.getElementById(
+'supplierPanel'
 ).style.display = "block";
 
 }
@@ -557,10 +572,10 @@ document.querySelector(
 
 /* DEFAULT */
 
-<?php if($is_combined): ?>
+<?php if($is_inventory || $is_combined): ?>
 
-document.querySelector(
-'.panel-danger'
+document.getElementById(
+'supplierPanel'
 ).style.display = "none";
 
 <?php endif; ?>
