@@ -319,9 +319,9 @@ $total_paid += (float)$p['amount'];
         '$supplier_id',
         '$bill_no',
         '$bill_date',
-        '$grand_total',
+        '".round($grand_total,2)."',
         '$total_paid',
-        '".($grand_total - $total_paid)."',
+        '".max(0, round($grand_total - $total_paid,2))."',
         '".($total_paid >= $grand_total ? 1 : 0)."',
         NOW()
       )
