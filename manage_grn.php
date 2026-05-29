@@ -91,7 +91,7 @@ No GRN Found
 
 <td>
 
-<a href="grn.php?edit=<?= $g['bill_indent_no']; ?>"
+<a href="grn.php?edit=<?= urlencode($g['bill_indent_no']); ?>"
 class="btn btn-xs btn-primary">
 
 Edit
