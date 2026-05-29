@@ -26,7 +26,9 @@ if(isset($_GET['edit'])){
 
     $edit_mode = true;
 
-    $edit_bill = $db->escape($_GET['edit']);
+    $edit_bill = urldecode(
+$db->escape($_GET['edit'])
+);
 
 }
 
@@ -83,7 +85,7 @@ $db->query("
 DELETE FROM inventory
 WHERE transaction_id IN
 (
-SELECT id FROM transaction_master
+SELECT transaction_id FROM transaction_master
 WHERE bill_indent_no = '$old_bill_no'
 )
 ");
@@ -102,7 +104,7 @@ $db->query("
 DELETE FROM supplier_payment
 WHERE ledger_id IN
 (
-SELECT id FROM supplier_ledger
+SELECT ledger_id FROM supplier_ledger
 WHERE bill_no = '$old_bill_no'
 )
 ");
@@ -295,9 +297,9 @@ if (is_array($charges)) {
   }
 }
 
-if(is_array($payments)){
+if (is_array($payments)) {
 
-foreach($payments as $p){
+foreach ($payments as $p){
 
 $total_paid += (float)$p['amount'];
 
@@ -320,7 +322,7 @@ $total_paid += (float)$p['amount'];
         '$grand_total',
         '$total_paid',
         '".($grand_total - $total_paid)."',
-        '".($total_paid > 0 ? 1 : 0)."',
+        '".($total_paid >= $grand_total ? 1 : 0)."',
         NOW()
       )
     ");
@@ -336,7 +338,7 @@ $amount = $p['amount'];
 
 $utr = $p['utr'] ?? '';
 
-$total_paid += $amount;
+
 
 $db->query("
 INSERT INTO supplier_payment
@@ -383,8 +385,8 @@ SELECT
 tm.*,
 p.name,
 p.hsn_code,
-p.buy_type,
-g.gst_percent
+COALESCE(p.buy_type,'exclusive') as buy_type,
+COALESCE(g.gst_percent,0) as gst_percent
 
 FROM transaction_master tm
 
@@ -506,12 +508,55 @@ required>
 </div>
 <br>
 
-<input id="qty" class="form-control" placeholder="Quantity"><br>
-<input id="free_qty" class="form-control" placeholder="Free Qty"><br>
-<input id="rate" class="form-control" placeholder="Unit Price"><br>
-<input id="discount" class="form-control" placeholder="Discount"><br>
-<input id="misc" class="form-control" placeholder="Misc Amount"><br>
-<input id="mrp" class="form-control" placeholder="MRP"><br>
+<input
+id="qty"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Quantity">
+<br>
+
+<input
+id="free_qty"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Free Qty">
+<br>
+
+<input
+id="rate"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Rate"><br>
+
+<input
+id="discount"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Discount"><br>
+
+<input
+id="misc"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Misc"><br>
+
+<input
+id="mrp"
+type="number"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="MRP"><br>
 
 <select id="gst" class="form-control">
 <option value="">Select GST</option>
@@ -607,7 +652,13 @@ foreach($shipping_types as $st){ ?>
 </div>
 
 <div class="col-md-2">
-<input type="number" id="charge_amount" class="form-control" placeholder="Amount">
+<input
+type="number"
+id="charge_amount"
+step="0.01"
+min="0"
+class="form-control"
+placeholder="Amount">
 </div>
 
 <div class="col-md-2">
@@ -714,6 +765,8 @@ font-size:12px;
 
 <input
 type="number"
+step="0.01"
+min="0"
 class="form-control pay-amount"
 style="
 display:none;
@@ -794,15 +847,33 @@ items.forEach((it,index)=>{
 
 it.sno = index + 1;
 
-it.total = parseFloat(it.net_price);
+it.qty = parseFloat(it.quantity || 0);
 
-it.base_amount =
-parseFloat(it.net_price)
--
-parseFloat(it.gst_amount);
+it.free_qty = parseFloat(it.free_qty || 0);
+
+it.rate = parseFloat(it.unit_price || 0);
+
+it.discount = parseFloat(it.discount_amount || 0);
+
+it.misc = parseFloat(it.misc_amount || 0);
+
+it.mrp = parseFloat(it.mrp || 0);
+
+it.gst_id = parseInt(it.gst_id || 0);
 
 it.gst_percent =
 parseFloat(it.gst_percent || 0);
+
+it.gst_amount =
+parseFloat(it.gst_amount || 0);
+
+it.base_amount =
+parseFloat(it.net_price || 0)
+-
+parseFloat(it.gst_amount || 0);
+
+it.total =
+parseFloat(it.net_price || 0);
 
 });
 
@@ -817,11 +888,17 @@ c.total = parseFloat(c.total_amount);
 let editPayments =
 <?= json_encode($edit_payments); ?>;
 
-window.onload = function(){
+document.addEventListener("DOMContentLoaded", function(){
 
 renderItems();
 
 renderCharges();
+
+document.getElementById("items_json").value =
+JSON.stringify(items);
+
+document.getElementById("charges_json").value =
+JSON.stringify(charges);
 
 editPayments.forEach(p => {
 
@@ -849,7 +926,8 @@ togglePaymentInput(checkbox);
 
 if(amountInput){
 
-amountInput.value = p.payment_amount;
+amountInput.value =
+parseFloat(p.payment_amount).toFixed(2);
 
 }
 
@@ -867,7 +945,7 @@ utrInput.style.display = 'block';
 
 });
 
-}
+});
 
 <?php } ?>
 
@@ -879,8 +957,12 @@ utrInput.style.display = 'block';
 if(typeof items === 'undefined'){
     var items = [];
 }
-let sno = 1;
-let charges = [];
+
+if(typeof charges === 'undefined'){
+    var charges = [];
+}
+
+let sno = items.length + 1;
 
 let payments = [];
 
@@ -1026,7 +1108,7 @@ tb.innerHTML += `
 <td>${it.sno}</td>
 <td>${it.name}</td>
 <td>${it.hsn_code || '-'}</td>
-<td>${it.qty} (+${it.free_qty})</td>
+<td>${parseFloat(it.qty).toFixed(2)} (+${parseFloat(it.free_qty).toFixed(2)})</td>
 <td>${it.rate}</td>
 <td>${it.base_amount.toFixed(2)}</td>
 <td>${it.gst_percent}%</td>
@@ -1326,7 +1408,10 @@ document.getElementById("grandTotal").innerText
 .replace(/,/g,'')
 ) || 0;
 
-if(enteredPaymentTotal > grandTotal){
+let roundedDown = Math.floor(grandTotal);
+let roundedUp = Math.ceil(grandTotal);
+
+if(enteredPaymentTotal > roundedUp){
 
 e.preventDefault();
 
@@ -1337,7 +1422,6 @@ alert(
 return false;
 
 }
-
 /* SHOW WARNING CONFIRMATION */
 
 if(warningMessages.length > 0){
@@ -1400,7 +1484,7 @@ utrInput.value = '';
 
 if(checkedBoxes.length == 1){
 
-input.value = total.toFixed(2);
+input.value = Math.round(total);
 
 }else{
 
@@ -1433,7 +1517,14 @@ let inp = document.querySelector(
 '.pay-amount[data-mode="' + m + '"]'
 );
 
-if(inp && inp.value == total.toFixed(2)){
+if(
+inp &&
+(
+parseFloat(inp.value) == total.toFixed(2)
+||
+parseFloat(inp.value) == Math.round(total)
+)
+){
 
 inp.value = "";
 
