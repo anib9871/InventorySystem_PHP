@@ -488,7 +488,9 @@ required>
 <label>Bill Date</label>
 <input type="date"
 name="bill_date"
-value="<?= $edit_mode ? $grn_info['bill_indent_date'] : date('Y-m-d'); ?>"
+value="<?= $edit_mode 
+? date('Y-m-d', strtotime($grn_info['bill_indent_date'])) 
+: date('Y-m-d'); ?>"
 class="form-control"
 form="grnForm"
 required>
