@@ -365,205 +365,492 @@ die();
 <?php include_once('layouts/header.php'); ?>
 
 <style>
-body { background:#f1f5f9; }
+
+body{
+    background:#f1f5f9;
+    font-family:'Segoe UI',sans-serif;
+}
+
+/* ===== CARDS ===== */
 
 .card{
-  border-radius:4px;
-  border:none;
-  box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    border:none;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 4px 18px rgba(15,23,42,.06);
 }
 
-table th{
-  background:#1e293b;
-  color:#fff;
-  font-size:15px;
-  padding:10px !important;
-}
+/* ===== FORM ===== */
 
-.product-item{
-  cursor:pointer;
-  padding:8px;
-  border-bottom:1px solid #eee;
-}
-.product-item:hover{
-  background:#eef2ff;
-}
-
+.form-control,
 .form-control-sm{
-  height:38px;
-  font-size:15px;
-  padding:6px 10px;
+    height:34px;
+    border-radius:10px !important;
+    border:1px solid #dbe2ea;
+    font-size:14px;
+    box-shadow:none !important;
 }
 
-#productList tr td {
-  padding:10px;
-  font-size:15px;
+.form-control:focus,
+.form-control-sm:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 0.15rem rgba(37,99,235,.15) !important;
 }
 
-#productList tr {
-  cursor:pointer;
+/* ===== LEFT PANEL ===== */
+
+.left-panel{
+    position:sticky;
+    top:10px;
 }
 
-#productList tr:hover {
-  background:#eef2ff;
+/* ===== PRODUCT SEARCH ===== */
+
+.product-card{
+    margin-bottom:24px;
 }
 
-/* 🔥 PRODUCT LIST SCROLL */
-.product-scroll {
-  height: 180px;      /* 🔥 sirf list scroll hogi */
-  overflow-y: auto;
+
+.product-scroll{
+    height:180px;
+    overflow-y:auto;
+    border-radius:10px;
 }
 
-.product-scroll thead th {
-  position: sticky;
-  top: 0;
-  background: #1e293b;
-  color: #fff;
-  z-index: 10;
+.product-scroll::-webkit-scrollbar{
+    width:6px;
 }
 
-/* optional smooth scroll */
-.product-scroll::-webkit-scrollbar {
-  width: 6px;
+.product-scroll::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
 }
-.product-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+
+#productSearch{
+    height:38px;
+    font-size:14px;
 }
+
+/* ===== PRODUCT LIST ===== */
+
+#productList tr{
+    transition:.2s;
+    cursor:pointer;
+}
+
+#productList tr:hover{
+    background:#eef4ff;
+}
+
+#productList td{
+    padding:12px 10px !important;
+    font-size:14px;
+}
+
+#productList th{
+    background:#0f172a;
+    color:#fff;
+    position:sticky;
+    top:0;
+    z-index:10;
+    padding:12px 10px !important;
+    font-size:13px;
+}
+
+/* ===== BILL GRID ===== */
+
+.bill-grid{
+    background:#fff;
+    border-radius:18px;
+    height:220px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    box-shadow:0 4px 18px rgba(15,23,42,.06);
+    position:relative;
+}
+
+.bill-grid::-webkit-scrollbar{
+    width:6px;
+}
+
+.bill-grid::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+
+/* ===== TABLE ===== */
+
+#itemTable{
+    width:100%;
+    table-layout:fixed;
+    border-collapse:separate;
+    border-spacing:0;
+    margin-top:0;
+}
+
+/* HEADER */
+
+#itemTable thead{
+    position:sticky;
+    top:0;
+    z-index:999;
+}
+
+#itemTable thead th{
+    position:sticky;
+    top:0;
+    background:#0f172a !important;
+    color:#fff;
+    border:none !important;
+    padding:14px 8px;
+    font-size:13px;
+    white-space:nowrap;
+    z-index:999;
+    box-shadow:0 2px 4px rgba(0,0,0,.08);
+}
+
+/* ROWS */
+
+#itemTable tbody tr{
+    transition:.2s;
+}
+
+#itemTable tbody tr:hover td{
+    background:#eef4ff;
+}
+
+/* CELLS */
+
+#itemTable td{
+    background:#f8fafc;
+    border:none !important;
+    padding:8px 6px;
+    vertical-align:middle;
+    height:72px;
+}
+
+/* INPUTS */
+
+#itemTable input{
+    width:100%;
+    min-width:60px;
+    height:38px;
+    border-radius:8px;
+    border:1px solid #dbe2ea;
+    background:#fff;
+    font-size:13px;
+}
+
+
+
+/* ===== PAYMENT ===== */
+
+.payment-box{
+    min-height:235px;
+    padding:12px !important;
+}
+
+.payment-header{
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:10px;
+}
+
+.payment-scroll{
+    height:190px;
+    overflow-y:auto;
+}
+
+.payment-scroll::-webkit-scrollbar{
+    width:6px;
+}
+
+.payment-scroll::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+/* PAYMENT TABLE COMPACT */
+
+.payment-box table td{
+    padding:6px 4px !important;
+    vertical-align:middle;
+    font-size:13px;
+}
+
+.payment-box .form-control{
+    height:34px !important;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:8px !important;
+}
+
+.payment-box .payCheck{
+    transform:scale(.9);
+}
+
+.payment-header{
+    margin-bottom:6px !important;
+    font-size:13px;
+}
+
+.payment-box hr{
+    margin:6px 0;
+}
+
+
+
+/* ===== SUMMARY ===== */
 
 .summary-card{
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  height:100%;
+    background:#fff;
+    border-radius:16px;
+    padding:12px !important;
+    margin-top:10px;
+    box-shadow:0 3px 12px rgba(15,23,42,.05);
 }
 
 .summary-row{
-  padding:8px 0;
-  border-bottom:1px dashed #eee;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 2px;
+    font-size:13px;
+    border-bottom:1px dashed #e2e8f0;
+}
+
+.summary-row strong{
+    font-weight:600;
+    font-size:13px;
 }
 
 .summary-row:last-child{
-  border-bottom:none;
+    border-bottom:none;
 }
 
-.bill-grid {
-  height: 260px;        /* 🔥 fixed height (2–3 rows ke baad scroll) */
-  overflow-y: auto;
-  border-radius: 4px;
+/* RIGHT SIDE */
+
+.summary-card label{
+    font-size:12px;
+    font-weight:600;
+    margin-bottom:3px;
 }
 
-/* optional smooth scroll feel */
-.bill-grid::-webkit-scrollbar {
-  width: 6px;
-}
-.bill-grid::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+.summary-card .form-control{
+    height:34px;
+    font-size:13px;
+    border-radius:8px !important;
 }
 
-.bill-grid thead th {
-  position: sticky;
-  top: 0;
-  background: #1e293b;
-  color: #fff;
-  z-index: 10;
+#termsTemplate{
+    margin-top:0;
+    margin-bottom:8px;
 }
 
-/* full box size */
+#termsBox{
+    margin-top:0;
+    min-height:75px;
+    resize:none;
+    padding:8px;
+    font-size:13px;
+}
+
+/* REMOVE EXTRA SPACE */
+
+.summary-card .col-lg-4{
+    padding-right:12px;
+}
+
+.summary-card .col-lg-8{
+    padding-left:12px;
+}
+/* ===== BUTTON ===== */
+
+.save-btn{
+    width:220px;
+    height:42px;
+    border:none;
+    border-radius:10px !important;
+    font-size:14px;
+    font-weight:600;
+    background:#22c55e;
+    transition:.2s;
+    display:block;
+    margin:18px auto 0;
+}
+
+.save-btn:hover{
+    background:#16a34a;
+}
+
+/* ===== REMOVE BUTTON ===== */
+
+.remove{
+    border-radius:8px !important;
+    width:34px;
+    height:34px;
+    padding:0;
+}
+
+
+#termsTemplate{
+    margin-top:12px;
+}
+
+#termsBox{
+    margin-top:10px;
+    min-height:90px;
+    resize:none;
+}
+
+.summary-card label{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:5px;
+}
+
+.summary-card select{
+    height:40px;
+}
+
+.summary-card textarea{
+    margin-top:6px;
+}
+
+.left-panel .card{
+    margin-bottom:22px;
+}
+
+.product-scroll{
+    border-bottom:1px solid #e2e8f0;
+    padding-bottom:8px;
+}
+
+.bill-grid::-webkit-scrollbar{
+    display:none;
+}
+
+#itemTable tbody tr:first-child td{
+    padding-top:18px;
+}
+
+
+
+.top-filter-card{
+    border-radius:3px;
+    padding:6px 7px !important;
+    margin-bottom:5px !important;
+}
+
+.top-filter-card label{
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.top-save-btn{
+    height:38px;
+    border-radius:8px !important;
+    font-size:14px;
+    font-weight:600;
+    padding:0 18px;
+    width:auto !important;
+    min-width:150px;
+}
+
+.top-filter-card .row{
+    margin-bottom:0 !important;
+}
+
+
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:991px){
+
+    .left-panel{
+        position:relative;
+        top:0;
+    }
+
+    .bill-grid{
+        height:auto;
+    }
+
+    .summary-card{
+        margin-top:20px;
+    }
+}
+
+/* EQUAL HEIGHT LAYOUT */
+
+.left-panel{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+}
+
+.product-card{
+    height:220px;
+}
+
 .payment-box{
-  height: 260px;
-  overflow: hidden;
+    flex:1;
+    min-height:248px;
 }
 
-/* header fix */
-.payment-header{
-  font-weight: 600;
-  font-size: 13px;
-  padding-bottom: 5px;
-  background: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-/* scroll only list */
-.payment-scroll{
-  height: 140px;
-  overflow-y: auto;
-}
-
-/* smooth scroll */
-.payment-scroll::-webkit-scrollbar{
-  width:6px;
-}
-.payment-scroll::-webkit-scrollbar-thumb{
-  background:#cbd5e1;
-  border-radius:3px;
+.bill-grid{
+    height:220px;
 }
 
 .summary-card{
-  display:flex;
-  flex-direction:column;
-  min-height:180px;   /* fixed nahi, flexible */
+    min-height:248px;
 }
 
-.summary-row{
-  padding: 6px 4px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-}
-
-.btn{
-  border-radius: 4px !important;
-}
-
-.form-control{
-  border-radius: 4px;
-}
-
-.save-btn{
-  width: 60%;        /* pehle 80% tha → ab chhota */
-  height: 34px;
-  font-size: 13px;
-  border-radius: 4px;
-}
-
-/* center alignment */
-.save-wrapper{
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
 </style>
 
 <div class="card-body">
 <form method="post" onsubmit="return validateCustomer()">
 
 <!-- CUSTOMER -->
-<div class="card p-3 mb-3">
-  <div class="row g-2">
-    <div class="col-md-4">
+<div class="card p-3 mb-3 top-filter-card">
+
+
+ 
+<div class="row align-items-end g-2">
+
+
+   <div class="col-md-4 d-flex flex-column justify-content-center">
       <label>Customer</label>
       <select name="customer_id" class="form-control">
         <option value="">Select Customer</option>
         <?php foreach($customers as $c): ?>
-        <option value="<?=$c['id'];?>"
-<?=$c['id']==$quote['customer_id']?'selected':'';?>><?=$c['customer_name'];?></option>
+<option value="<?=$c['id'];?>"
+<?=$c['id']==$quote['customer_id']?'selected':'';?>>
+
+<?=$c['customer_name'];?>
+
+</option>
         <?php endforeach; ?>
       </select>
     </div>
 
-    <div class="col-md-4">
-      <label>Name</label>
-      <input type="text" name="manual_name" class="form-control">
-    </div>
+<?php if($system == 'billing'): ?>> <div class="col-md-4 d-flex flex-column justify-content-center">
+  <label>Name</label>
+  <input type="text"
+  name="manual_name"
+  class="form-control">
+</div>
 
-    <div class="col-md-4">
-      <label>Contact</label>
-      <input type="text" name="manual_phone" class="form-control">
-    </div>
+<div class="col-md-4">
+  <label>Contact</label>
+  <input type="text"
+  name="manual_phone"
+  class="form-control">
+</div>
+
+<?php endif; ?>
 
 <?php if($_SESSION['role_id'] == 2 && $system != 'inventory'): ?>
 
@@ -590,26 +877,23 @@ foreach($centers as $c):
 <?php endif; ?>
 
 
-<?php if(true): ?>
 
-<div class="col-md-4">
+<?php if($system != 'billing'): ?>
 
-<label>GST Type</label>
+<div class="col-md-3 d-flex flex-column justify-content-center">
+  <label>GST Type</label>
 
 <select name="gst_type" class="form-control">
 
-<option value="exclusive"
-<?=$quote['gst_type']=='exclusive'?'selected':'';?>>
+<option value="exclusive" selected>
 Exclusive GST
 </option>
 
-<option value="inclusive"
-<?=$quote['gst_type']=='inclusive'?'selected':'';?>>
+<option value="inclusive">
 Inclusive GST
 </option>
 
-<option value="nogst"
-<?=$quote['gst_type']=='nogst'?'selected':'';?>>
+<option value="nogst">
 No GST
 </option>
 
@@ -617,160 +901,208 @@ No GST
 
 </div>
 
+<!-- SAVE BUTTON -->
+<div class="col-md-2 d-flex flex-column justify-content-end">
+<label style="visibility:hidden;">Save</label>
+<button
+type="submit"
+name="update_invoice"
+class="btn btn-success top-save-btn">
+
+💾 Save Invoice
+
+</button>
+
+</div>
+
 <?php endif; ?>
+
+
   </div>
 </div>
-
-<!-- 🔥 TERMS & CONDITIONS CARD -->
-
-<div class="card p-3 mb-3">
-
-<div class="row">
-
-<div class="col-md-12">
-
-<label>
-
-Terms & Conditions Template
-
-</label>
-
-<select
-id="termsTemplate"
-class="form-control">
-
-<option value="">
-
-Select Template
-
-</option>
-
-<?php foreach($terms_templates as $t): ?>
-
-<option
-value="<?= htmlspecialchars($t['template']); ?>">
-
-Template <?= $t['tc_id']; ?>
-
-</option>
-
-<?php endforeach; ?>
-
-</select>
-
-</div>
-
-</div>
-
-<br>
-
-<div class="row">
-
-<div class="col-md-12">
-
-<label>
-
-Terms & Conditions
-
-</label>
-
-<textarea
-name="terms_conditions"
-id="termsBox"
-rows="5"
-class="form-control"
-placeholder="Terms & Conditions..."></textarea>
-
-</div>
-
-</div>
-
-</div>
-
-
-
 <br>
 
 
 <div class="row align-items-stretch">
 
-  <!-- LEFT PRODUCT LIST -->
-  <div class="col-md-4">
-    <div class="card p-2">
+<div class="container-fluid px-4 py-3">
 
-      <input type="text" id="productSearch"
-        class="form-control form-control-sm mb-2"
-        placeholder="Search Product...">
-      
-<div class="product-scroll">
-  <table class="table table-sm table-bordered mb-0">
-    <thead>
-      <tr>
-        <th style="font-size:12px;">Product</th>
-        <th style="width:80px; font-size:12px;">₹ Rate</th>
-      </tr>
-    </thead>
-    <tbody id="productList"></tbody>
-  </table>
-</div>
+<div class="row">
 
-</div> <!-- card close -->
-</div> <!-- 🔥 col-md-4 CLOSE (IMPORTANT) -->
+  <!-- LEFT SIDE -->
+  <div class="col-lg-3 left-panel">
 
-  <!-- RIGHT GRID -->
-<div class="col-md-8">
+    <!-- PRODUCT SEARCH -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 product-card">
 
-  <!-- 🔵 GRID (SCROLL ONLY HERE) -->
-  <div class="bill-grid">
-    <table class="table table-bordered text-center mb-0" id="itemTable">
+      <input type="text"
+      id="productSearch"
+      class="form-control form-control-sm mb-2"
+      placeholder="Search Product...">
 
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Qty</th>
-          <th>Price</th>
-         <?php if($gst_enabled == "Yes"): ?>
-<th>GST%</th>
-<th>GST</th>
+      <div class="product-scroll">
+
+        <table class="table table-sm table-bordered mb-0">
+
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th width="90">₹ Rate</th>
+            </tr>
+          </thead>
+
+          <tbody id="productList"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+    <!-- PAYMENT -->
+    <div class="card border-0 shadow-sm p-3 payment-box">
+
+      <div class="payment-header mb-2">
+        <b>Payment</b>
+      </div>
+
+      <div class="payment-scroll">
+
+        <table class="table table-sm mb-0">
+
+<?php foreach($payment_modes as $pm): ?>
+
+<?php
+
+$checked = '';
+$old_amt = 0;
+$old_utr = '';
+
+foreach($old_payments as $op){
+
+   if(
+      strtolower($op['payment_mode']) ==
+      strtolower($pm['mode_name'])
+   ){
+
+      $checked = 'checked';
+
+      $old_amt = $op['amount'];
+
+      $old_utr = $op['reference_no'];
+   }
+}
+
+?>
+
+<tr>
+
+<td width="30">
+
+<input
+type="checkbox"
+class="payCheck"
+data-mode="<?=$pm['id'];?>"
+<?=$checked;?>>
+
+</td>
+
+<td>
+<?= strtoupper($pm['mode_name']); ?>
+</td>
+
+<td>
+
+<input
+type="number"
+name="payment_amount[<?=$pm['id'];?>]"
+class="form-control form-control-sm payAmt"
+data-mode="<?=$pm['id'];?>"
+value="<?=$old_amt;?>"
+<?=$checked ? '' : 'disabled'; ?>>
+
+<?php if(strtolower($pm['mode_name']) != 'cash'): ?>
+
+<input
+type="text"
+name="utr_no[<?=$pm['id'];?>]"
+class="form-control form-control-sm mt-1 utrField"
+placeholder="Enter UTR No"
+data-mode="<?=$pm['id'];?>"
+value="<?=$old_utr;?>"
+<?=$checked ? '' : 'disabled'; ?>>
+
 <?php endif; ?>
-          <th>Disc %</th>
-          <th>Disc ₹</th>
-          <th>Total</th>
-          <th></th>
-        </tr>
-      </thead>
 
-      <tbody id="billBody">
+</td>
 
-<?php foreach($items as $it): ?>
+</tr>
+
+<?php endforeach; ?>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDE -->
+  <div class="col-lg-9 ps-lg-3">
+
+    <!-- BILL GRID -->
+    <div class="bill-grid mb-3">
+
+      <table class="table table-bordered mb-0" id="itemTable">
+
+        <thead>
+
+          <tr>
+
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price</th>
+
+            <?php if($gst_enabled == "Yes"): ?>
+            <th>GST%</th>
+            <th>GST</th>
+            <?php endif; ?>
+
+            <th>Disc %</th>
+            <th>Disc ₹</th>
+            <th>Total</th>
+            <th width="50"></th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="billBody">
+
+          <?php foreach($items as $it): ?>
 
 <tr>
 
 <td>
-
-<input type="text"
-class="form-control form-control-sm"
-value="<?=$it['name'];?>"
-readonly>
-
+<?= $it['name']; ?>
 <input type="hidden"
 name="product_id[]"
-value="<?=$it['product_id'];?>">
-
+value="<?= $it['product_id']; ?>">
 </td>
 
 <td>
 <input type="number"
 name="qty[]"
 class="form-control form-control-sm qty"
-value="<?=$it['qty'];?>">
+value="<?= $it['qty']; ?>">
 </td>
 
 <td>
 <input type="number"
 name="rate[]"
 class="form-control form-control-sm base"
-value="<?=$it['rate_excl_gst'];?>">
+value="<?= $it['rate_excl_gst']; ?>">
 </td>
 
 <?php if($gst_enabled == "Yes"): ?>
@@ -779,7 +1111,7 @@ value="<?=$it['rate_excl_gst'];?>">
 <input type="number"
 name="gst[]"
 class="form-control form-control-sm gst"
-value="<?=$it['gst_percent'];?>">
+value="<?= $it['gst_percent']; ?>">
 </td>
 
 <td>
@@ -794,11 +1126,7 @@ readonly>
 <input type="number"
 step="0.0001"
 class="form-control form-control-sm discPer"
-value="<?=
-($it['rate_excl_gst'] * $it['qty']) > 0
-? round(($it['discount_amount'] / ($it['rate_excl_gst'] * $it['qty'])) * 100,2)
-: 0;
-?>">
+value="0">
 </td>
 
 <td>
@@ -806,7 +1134,7 @@ value="<?=
 step="0.0001"
 name="discount[]"
 class="form-control form-control-sm discAmt"
-value="<?=$it['discount_amount'];?>">
+value="<?= $it['discount_amount']; ?>">
 </td>
 
 <td>
@@ -826,128 +1154,101 @@ class="btn btn-danger btn-sm remove">
 
 <?php endforeach; ?>
 
-</tbody>
+        </tbody>
 
-    </table>
-  </div>
-<br>
-  <!-- 🔻 BELOW (NO SCROLL) -->
-<div class="row">
-
-  <!-- PAYMENT -->
- <div class="col-md-5">
-  <div class="card p-2 payment-box">
-
-    <!-- 🔥 FIX HEADER -->
-    <div class="payment-header">
-      <b>Payment</b>
-    </div>
-
-    <!-- 🔥 SCROLL AREA -->
-    <div class="payment-scroll">
-
-      <table class="table table-sm mb-0">
-
-
-        <?php foreach($payment_modes as $pm): ?>
-
-
-       <?php
-
-$old_amt = 0;
-$old_utr = '';
-
-foreach($old_payments as $op){
-
-if(strtolower($op['payment_mode']) == strtolower($pm['mode_name'])){
-
-    $old_amt = $op['amount'];
-    $old_utr = $op['reference_no'];
-}
-
-}
-?>     
-        <tr>
-          <td width="30">
-            <input type="checkbox" class="payCheck"
-<?=$old_amt > 0 ? 'checked' : '';?> data-mode="<?=$pm['id'];?>">
-          </td>
-
-          <td><?= strtoupper($pm['mode_name']); ?></td>
-
-<td>
-
-<input type="number"
-name="payment_amount[<?=$pm['id'];?>]"
-class="form-control form-control-sm payAmt"
-<?=$old_amt > 0 ? '' : 'disabled';?>
-data-mode="<?=$pm['id'];?>"
-value="<?=$old_amt;?>">
-
-<?php if(strtolower($pm['mode_name']) != 'cash'): ?>
-
-<input type="text"
-name="utr_no[<?=$pm['id'];?>]"
-class="form-control form-control-sm mt-1 utrField"
-placeholder="Enter UTR No"
-data-mode="<?=$pm['id'];?>"
-value="<?=$old_utr;?>"
-<?=$old_amt > 0 ? '' : 'disabled';?>>
-
-<?php endif; ?>
-
-</td>
-        </tr>
-        <?php endforeach; ?>
       </table>
 
     </div>
 
-  </div>
+    <!-- SUMMARY -->
+<div class="card border-0 shadow-sm rounded-4 p-3 mt-3 summary-card">
+
+<div class="row">
+
+    <!-- LEFT : TOTALS -->
+    <div class="col-lg-4 border-end">
+
+      <div class="summary-row">
+        <span>Gross</span>
+        <strong>₹ <span id="gross">0</span></strong>
+      </div>
+
+      <div class="summary-row">
+        <span>Net</span>
+        <strong class="text-primary">
+          ₹ <span id="net">0</span>
+        </strong>
+      </div>
+
+      <div class="summary-row">
+        <span>Paid</span>
+        <strong class="text-success">
+          ₹ <span id="paid">0</span>
+        </strong>
+      </div>
+
+      <div class="summary-row text-danger">
+        <span>Balance</span>
+        <strong>
+          ₹ <span id="balance">0</span>
+        </strong>
+      </div>
+
+      <div class="summary-row text-success">
+        <span>Return</span>
+        <strong>
+          ₹ <span id="returnAmt">0</span>
+        </strong>
+      </div>
+
+    </div>
+
+    <!-- RIGHT : TERMS -->
+    <div class="col-lg-8">
+
+      <label class="mb-1">
+        Terms & Conditions Template
+      </label>
+
+      <select
+      id="termsTemplate"
+      class="form-control mb-2">
+
+        <option value="">
+          Select Template
+        </option>
+
+        <?php foreach($terms_templates as $t): ?>
+
+        <option
+        value="<?= htmlspecialchars($t['template']); ?>">
+
+          Template <?= $t['tc_id']; ?>
+
+        </option>
+
+        <?php endforeach; ?>
+
+      </select>
+
+      <label class="mb-1">
+        Terms & Conditions
+      </label>
+
+      <textarea
+      name="terms_conditions"
+      id="termsBox"
+      rows="5"
+      class="form-control"
+      placeholder="Terms & Conditions..."></textarea>
+
+    </div>
+
+</div>
 </div>
 
-  <!-- SUMMARY -->
- <div class="col-md-7">
-  <!-- <div class="card p-3 summary-card" style="height:180px;"> -->
-    <div class="card p-3 summary-card">
 
-    <div class="summary-row">
-      <span>Gross</span>
-      <strong>₹ <span id="gross">0</span></strong>
-    </div>
 
-    <div class="summary-row">
-      <span>Net</span>
-      <strong class="text-primary">₹ <span id="net">0</span></strong>
-    </div>
-
-    <div class="summary-row">
-      <span>Paid</span>
-      <strong class="text-success">₹ <span id="paid">0</span></strong>
-    </div>
-
-    <!-- 🔴 FIXED -->
-    <div class="summary-row text-danger">
-      <span>Balance</span>
-      <strong>₹ <span id="balance">0</span></strong>
-    </div>
-
-    <!-- 🔴 FIXED -->
-    <div class="summary-row text-success">
-      <span>Return</span>
-      <strong>₹ <span id="returnAmt">0</span></strong>
-    </div>
-<div class="mt-auto text-center pt-2">
-  <button type="submit" name="update_invoice"
-    class="btn btn-success save-btn">
-    💾 Update Invoice
-  </button>
-</div>
-
-  </div>
-</div>
-
-<?php include_once('layouts/footer.php'); ?>
 
 
 <script>
