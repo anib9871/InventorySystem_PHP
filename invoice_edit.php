@@ -909,7 +909,7 @@ type="submit"
 name="update_invoice"
 class="btn btn-success top-save-btn">
 
-💾 Save Invoice
+💾 Update Invoice
 
 </button>
 
