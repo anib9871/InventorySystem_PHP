@@ -20,7 +20,7 @@ $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
-$center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
+$view_type = $_POST['view_type'] ?? $_GET['view_type'] ?? 'product';
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE
@@ -28,7 +28,13 @@ $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 $sale_query = "
 SELECT SUM(t.sale_net) as total_sale
 FROM transaction_master t
+
+LEFT JOIN invoice i
+ON i.invoice_no = t.bill_indent_no
 WHERE t.transaction_type = 2
+AND i.customer_id IS NOT NULL
+AND t.sale_net > 0
+AND t.bill_indent_no NOT LIKE 'MFG%'
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
@@ -58,10 +64,13 @@ if ($role_id == 2) {
     $cq = "SELECT x.center_name, x.center_id, SUM(x.mode_total) as total_sale,
              GROUP_CONCAT(CONCAT(x.payment_mode,' : Rs.',FORMAT(x.mode_total,2)) SEPARATOR ' | ') as payment_modes
            FROM (
-             SELECT mc.center_name, p.center_id, p.payment_mode, SUM(p.amount) as mode_total
-             FROM payments p
-             LEFT JOIN master_center mc ON mc.center_id = p.center_id
-             WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
+SELECT mc.center_name, p.center_id, p.payment_mode, SUM(p.amount) as mode_total
+FROM payments p
+
+LEFT JOIN master_center mc 
+ON mc.center_id = p.center_id
+
+WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
     if (!empty($center_filter)) $cq .= " AND p.center_id = '{$center_filter}'";
     $cq .= " GROUP BY p.center_id, p.payment_mode) x GROUP BY x.center_id, x.center_name";
     $center_sales = find_by_sql($cq);
@@ -71,13 +80,14 @@ if ($role_id == 2) {
    4. TRANSACTION LIST
 ═══════════════════════════════════════ */
 $txn_q = "
+
 SELECT
+
+    t.entry_date AS sale_date,
 
     t.bill_indent_no AS invoice_no,
 
-    DATE(t.entry_date) AS sale_date,
-
-    mc.center_name,
+    cm.customer_name,
 
     p.name,
 
@@ -87,23 +97,32 @@ SELECT
 
     t.gst_amount,
 
-    t.sale_net AS total_sale,
-
-    (
-        (t.unit_price - p.buy_price) * t.quantity
-    ) AS profit
+    t.sale_net AS total_sale
 
 FROM transaction_master t
+
+LEFT JOIN invoice i
+    ON i.invoice_no = t.bill_indent_no
+
+LEFT JOIN customer_master cm
+    ON cm.id = i.customer_id
 
 LEFT JOIN products p
     ON p.id = t.product_id
 
-LEFT JOIN master_center mc
-    ON mc.center_id = t.center_id
-
 WHERE t.transaction_type = 2
+
+AND i.customer_id IS NOT NULL
+
+AND t.sale_net > 0
+
+AND cm.customer_name IS NOT NULL
+
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
+
+ORDER BY t.entry_date DESC
+
 ";
 
 if ($role_id == 3)
@@ -111,11 +130,6 @@ if ($role_id == 3)
 
 elseif ($role_id == 2 && !empty($center_filter))
     $txn_q .= " AND t.center_id = '{$center_filter}'";
-
-$txn_q .= "
-GROUP BY t.transaction_id
-ORDER BY t.entry_date DESC
-";
 
 $sales = find_by_sql($txn_q);
 
@@ -128,7 +142,10 @@ foreach ($sales as $s) {
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
-$pq = "SELECT p.name, SUM(t.quantity) as qty FROM transaction_master t
+$pq = "SELECT 
+    p.name,
+    SUM(t.quantity) as qty,
+    SUM(t.sale_net) as total FROM transaction_master t
         LEFT JOIN products p ON p.id = t.product_id
         WHERE t.transaction_type = 2 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
 if ($role_id == 3)                               $pq .= " AND t.center_id = '{$user_center}'";
@@ -137,6 +154,46 @@ $pq .= " GROUP BY t.product_id";
 $product_data   = find_by_sql($pq);
 $product_labels = array_column($product_data, 'name');
 $product_qty    = array_column($product_data, 'qty');
+$product_total = array_column($product_data, 'total');
+
+
+/* ═══════════════════════════════════════
+   CUSTOMER CHART DATA
+═══════════════════════════════════════ */
+
+$cq = "
+SELECT 
+    cm.customer_name,
+    SUM(t.sale_net) as total_sale
+
+FROM transaction_master t
+
+LEFT JOIN invoice i
+    ON i.invoice_no = t.bill_indent_no
+
+LEFT JOIN customer_master cm
+    ON cm.id = i.customer_id
+
+WHERE t.transaction_type = 2
+AND DATE(t.entry_date)
+BETWEEN '{$from}' AND '{$to}'
+
+GROUP BY cm.id, cm.customer_name
+ORDER BY total_sale DESC
+LIMIT 10
+";
+
+$customer_data = find_by_sql($cq);
+
+$customer_labels = array_column($customer_data, 'customer_name');
+
+$customer_sales = array_column($customer_data, 'total_sale');
+
+$customer_data = find_by_sql($cq);
+
+$customer_labels = array_column($customer_data, 'customer_name');
+
+$customer_sales = array_column($customer_data, 'total_sale');
 
 /* ═══════════════════════════════════════
    6. CENTER CHART DATA
@@ -389,19 +446,19 @@ body {
       <input type="date" name="from" value="<?= $from ?>" class="form-control" style="width:135px;" required>
       <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
 
-      <?php if ($role_id == 2): ?>
-      <select name="center_id" class="form-control" style="width:170px;" onchange="this.form.submit();">
-        <option value="">All Centers</option>
-        <?php
-        $centers = find_by_sql("SELECT * FROM master_center ORDER BY center_name ASC");
-        foreach ($centers as $c):
-        ?>
-        <option value="<?= $c['center_id'] ?>" <?= ($center_filter == $c['center_id']) ? 'selected' : '' ?>>
-          <?= htmlspecialchars($c['center_name']) ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-      <?php endif; ?>
+<select name="view_type" class="form-control" style="width:200px;">
+
+    <option value="product"
+        <?= ($view_type=='product') ? 'selected' : '' ?>>
+        By Product Sales
+    </option>
+
+    <option value="customer"
+        <?= ($view_type=='customer') ? 'selected' : '' ?>>
+        By Customer Sales
+    </option>
+
+</select>
 
       <button type="submit" class="btn btn-primary">Filter</button>
       <a href="?pdf=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?><?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
@@ -472,12 +529,38 @@ body {
     </div>
 
     <!-- 2. Product Bar Chart -->
-    <div class="rpt-card rpt-product">
+<div class="rpt-card rpt-product" style="
+flex:0 0 36%;
+padding:14px;
+height:190px;
+margin-bottom:25px;
+">
       <div class="rpt-card-title">Product Wise Sale (Qty)</div>
-      <div class="rpt-chart-box" style="height:145px;">
-        <canvas id="productChart"></canvas>
+      <div class="rpt-chart-box" style="height:155px;">
+<div style="height:165px; padding-bottom:1px;">
+   <canvas id="productChart"></canvas>
+</div>
       </div>
     </div>
+
+<div class="rpt-card rpt-product" style="
+flex:0 0 36%;
+padding:14px;
+height:190px;
+margin-bottom:25px;
+overflow:hidden;
+">
+
+  <div class="rpt-card-title">
+    Customer Wise Sale
+  </div>
+
+  <div class="rpt-chart-box" style="height:170px;">
+    <canvas id="customerChart"></canvas>
+  </div>
+
+</div>
+
 
 
   </div><!-- /.rpt-top -->
@@ -485,7 +568,7 @@ body {
   <!-- ══════════════════════════════════════
        TRANSACTION TABLE
   ══════════════════════════════════════ -->
-  <div class="rpt-tbl-wrap">
+  <div class="rpt-tbl-wrap" style="margin-top:40px;">
    <div class="rpt-card-title">
 
 <?php
@@ -510,6 +593,16 @@ if(!empty($center_filter)){
 
 </div>
 
+  <div class="rpt-table-card" style="
+margin-top:25px;
+width:100%;
+clear:both;
+background:#fff;
+border-radius:12px;
+padding:14px;
+box-shadow:0 2px 8px rgba(0,0,0,.05);
+">
+  
     <?php if (empty($sales)): ?>
       <p style="color:#94a3b8;">No records found for selected period.</p>
     <?php else: ?>
@@ -522,6 +615,8 @@ if(!empty($center_filter)){
 <th>Date</th>
 
 <th>Invoice No</th>
+
+<th>Customer</th>
 
 <th>Product</th>
 
@@ -547,6 +642,11 @@ if(!empty($center_filter)){
 
 <td>
     <?= htmlspecialchars($s['invoice_no']) ?>
+</td>
+
+
+<td>
+    <?= htmlspecialchars($s['customer_name'] ?? '-') ?>
 </td>
 
 <td>
@@ -593,7 +693,7 @@ if(!empty($center_filter)){
     </div>
     <?php endif; ?>
   </div>
-
+</div>
 </div><!-- /.rpt -->
 
 <script>
@@ -615,39 +715,77 @@ new Chart(document.getElementById('productChart'), {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 35 } },
+      x: {
+  grid: { display: false },
+  ticks: {
+    font: { size: 11 },
+    maxRotation: 0,
+    minRotation: 0,
+    padding: 10,
+    autoSkip: false
+  }
+},
       y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 9 } } }
     }
   }
 });
 
-<?php if ($role_id == 2): ?>
-/* ── Center Pie ── */
-new Chart(document.getElementById('centerChart'), {
-  type: 'pie',
+/* ── Customer Sales Bar ── */
+
+const customerCanvas = document.getElementById('customerChart');
+
+if(customerCanvas){
+
+new Chart(customerCanvas, {
+
+  type: 'bar',
+
   data: {
-    labels: <?= json_encode($center_labels) ?>,
+
+    labels: <?= json_encode($customer_labels) ?>,
+
     datasets: [{
-      data: <?= json_encode($center_amounts) ?>,
-      backgroundColor: <?= json_encode(array_slice($pie_colors, 0, count($center_labels))) ?>,
-      borderWidth: 2,
-      hoverOffset: 5
+
+      label: 'Customer Sales',
+
+      data: <?= json_encode($customer_sales) ?>,
+
+      borderWidth: 1,
+      borderRadius: 4,
+
+      backgroundColor: 'rgba(37,99,235,.72)',
+
+      borderColor: '#2563eb'
+
     }]
   },
+
   options: {
+
     responsive: true,
+
     maintainAspectRatio: false,
+
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ' ' + ctx.label + ' : Rs.' + Number(ctx.raw).toLocaleString('en-IN', {minimumFractionDigits:2})
-        }
+
+      legend: { display: false }
+
+    },
+
+    scales: {
+
+      x: {
+        grid: { display: false }
+      },
+
+      y: {
+        beginAtZero: true
       }
     }
   }
 });
-<?php endif; ?>
+
+}
 </script>
 
 <?php if ($is_pdf): ?>
