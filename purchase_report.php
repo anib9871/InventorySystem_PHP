@@ -666,33 +666,83 @@ if(!empty($center_filter)){
 /* ── Product Bar ── */
 
 new Chart(document.getElementById('productChart'), {
+
   type: 'bar',
+
   data: {
+
     labels: <?= json_encode($product_labels) ?>,
+
     datasets: [{
-      label: 'Qty Sold',
-      data:  <?= json_encode($product_qty) ?>,
-      borderWidth: 1, borderRadius: 3,
+
+      label: 'Purchase Qty',
+
+      data: <?= json_encode($product_qty) ?>,
+
+      borderWidth: 1,
+
+      borderRadius: 4,
+
       backgroundColor: 'rgba(37,99,235,.72)',
+
       borderColor: '#2563eb'
+
     }]
   },
+
   options: {
+
     responsive: true,
+
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+
+    plugins: {
+
+      legend: { display:false },
+
+      tooltip: {
+
+        callbacks: {
+
+          title: function(context){
+
+            return context[0].label;
+
+          },
+
+          label: function(context){
+
+            return ' Qty : ' + context.raw;
+
+          }
+        }
+      }
+    },
+
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 35 } },
-      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 9 } } }
+
+      x: {
+
+        grid: { display:false },
+
+        ticks: {
+
+          display:false
+        }
+      },
+
+      y: {
+
+        beginAtZero:true,
+
+        ticks:{ font:{ size:9 } }
+
+      }
     }
   }
 });
 
-
 /* ── Supplier Bar ── */
-
-
-
 new Chart(document.getElementById('supplierChart'), {
 
   type: 'bar',
@@ -703,13 +753,13 @@ new Chart(document.getElementById('supplierChart'), {
 
     datasets: [{
 
-      label: 'Qty',
+      label: 'Purchase Qty',
 
       data: <?= json_encode($supplier_qty) ?>,
 
       borderWidth: 1,
 
-      borderRadius: 3,
+      borderRadius: 4,
 
       backgroundColor: 'rgba(22,163,74,.72)',
 
@@ -726,8 +776,25 @@ new Chart(document.getElementById('supplierChart'), {
 
     plugins: {
 
-      legend: { display:false }
+      legend: { display:false },
 
+      tooltip: {
+
+        callbacks: {
+
+          title: function(context){
+
+            return context[0].label;
+
+          },
+
+          label: function(context){
+
+            return ' Qty : ' + context.raw;
+
+          }
+        }
+      }
     },
 
     scales: {
@@ -740,10 +807,8 @@ new Chart(document.getElementById('supplierChart'), {
 
           font:{ size:9 },
 
-          maxRotation:35
-
+          maxRotation:0
         }
-
       },
 
       y: {
@@ -753,7 +818,6 @@ new Chart(document.getElementById('supplierChart'), {
         ticks:{ font:{ size:9 } }
 
       }
-
     }
   }
 });
