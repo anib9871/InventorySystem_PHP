@@ -308,7 +308,15 @@ sl.bill_no,
 sl.bill_amount,
 sl.paid_amount,
 sl.balance_amount,
-sl.payment_status,
+CASE
+
+WHEN sl.balance_amount <= 0
+
+THEN 'Paid'
+
+ELSE 'Partial'
+
+END as payment_status,
 
 sm.supplier_name
 
