@@ -715,14 +715,27 @@ new Chart(document.getElementById('productChart'), {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: {
+x: {
   grid: { display: false },
+
   ticks: {
-    font: { size: 11 },
+    font: { size: 10 },
+
     maxRotation: 0,
     minRotation: 0,
-    padding: 10,
-    autoSkip: false
+
+    padding: 8,
+
+    callback: function(value) {
+
+      let label = this.getLabelForValue(value);
+
+      if(label.length > 10){
+        return label.substring(0,10) + '...';
+      }
+
+      return label;
+    }
   }
 },
       y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 9 } } }
@@ -754,7 +767,6 @@ new Chart(customerCanvas, {
       borderRadius: 4,
 
       backgroundColor: 'rgba(37,99,235,.72)',
-
       borderColor: '#2563eb'
 
     }]
@@ -763,19 +775,36 @@ new Chart(customerCanvas, {
   options: {
 
     responsive: true,
-
     maintainAspectRatio: false,
 
     plugins: {
-
       legend: { display: false }
-
     },
 
     scales: {
 
       x: {
-        grid: { display: false }
+
+        grid: { display: false },
+
+        ticks: {
+
+          font: { size: 9 },
+
+          maxRotation: 15,
+          minRotation: 15,
+
+          callback: function(value){
+
+            let label = this.getLabelForValue(value);
+
+            if(label.length > 18){
+              return label.substring(0,18) + '...';
+            }
+
+            return label;
+          }
+        }
       },
 
       y: {
