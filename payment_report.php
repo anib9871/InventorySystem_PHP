@@ -14,16 +14,8 @@ p.amount,
 p.reference_no,
 
 i.invoice_no,
-CASE
 
-WHEN
-i.due_amount <= 0
-
-THEN 'Paid'
-
-ELSE 'Partial'
-
-END as payment_status,
+i.payment_status,
 
 c.customer_name
 
@@ -191,7 +183,7 @@ strtotime($r['payment_date'])
 
 <td>
 
-<?php if($r['payment_status']=="Paid"): ?>
+<?php if($r['payment_status']==1): ?>
 
 <span class="label label-success">
 
@@ -308,15 +300,8 @@ sl.bill_no,
 sl.bill_amount,
 sl.paid_amount,
 sl.balance_amount,
-CASE
 
-WHEN sl.balance_amount <= 0
-
-THEN 'Paid'
-
-ELSE 'Partial'
-
-END as payment_status,
+sl.payment_status,
 
 sm.supplier_name
 
@@ -450,7 +435,7 @@ strtotime($s['payment_date'])
 
 <td>
 
-<?php if($s['payment_status']=="Paid"): ?>
+<?php if($s['payment_status']==1): ?>
 
 <span class="label label-success">
 
