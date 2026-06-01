@@ -31,6 +31,10 @@ FROM transaction_master t
 WHERE t.transaction_type = 1
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
+
+AND t.supplier_id IS NOT NULL
+AND t.supplier_id != 0
+
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
@@ -109,6 +113,8 @@ LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
 
 WHERE t.transaction_type = 1
+AND t.supplier_id IS NOT NULL
+AND t.supplier_id != 0
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
@@ -135,14 +141,33 @@ foreach ($sales as $s) {
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
-$pq = "SELECT p.name, SUM(t.quantity) as qty FROM transaction_master t
-        LEFT JOIN products p ON p.id = t.product_id
-        WHERE t.transaction_type = 1 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
-if ($role_id == 3)                               $pq .= " AND t.center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $pq .= " AND t.center_id = '{$center_filter}'";
+
+$pq = "
+SELECT p.name, SUM(t.quantity) as qty
+FROM transaction_master t
+
+LEFT JOIN products p
+ON p.id = t.product_id
+
+WHERE t.transaction_type = 1
+AND t.supplier_id IS NOT NULL
+AND t.supplier_id != 0
+AND DATE(t.entry_date)
+BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3)
+    $pq .= " AND t.center_id = '{$user_center}'";
+
+elseif ($role_id == 2 && !empty($center_filter))
+    $pq .= " AND t.center_id = '{$center_filter}'";
+
 $pq .= " GROUP BY t.product_id";
+
 $product_data   = find_by_sql($pq);
+
 $product_labels = array_column($product_data, 'name');
+
 $product_qty    = array_column($product_data, 'qty');
 
 /* ═══════════════════════════════════════
@@ -157,6 +182,8 @@ LEFT JOIN supplier_master sm
 ON sm.id = t.supplier_id
 
 WHERE t.transaction_type = 1
+AND t.supplier_id IS NOT NULL
+AND t.supplier_id != 0
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 GROUP BY t.supplier_id
