@@ -20,7 +20,7 @@ $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
-$center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
+$report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE
@@ -81,13 +81,17 @@ SELECT
 
     p.name,
 
+    sm.supplier_name ,
+
     t.quantity AS sold_qty,
 
     t.unit_price AS purchase_price,
 
     t.gst_amount,
 
-    t.sale_net AS total_sale,
+    (
+   (t.unit_price * t.quantity) + t.gst_amount
+) AS total_sale,
 
     (
         (t.unit_price - p.buy_price) * t.quantity
@@ -97,6 +101,9 @@ FROM transaction_master t
 
 LEFT JOIN products p
     ON p.id = t.product_id
+
+LEFT JOIN supplier_master sm
+    ON sm.id = t.supplier_id
 
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
@@ -139,20 +146,27 @@ $product_labels = array_column($product_data, 'name');
 $product_qty    = array_column($product_data, 'qty');
 
 /* ═══════════════════════════════════════
-   6. CENTER CHART DATA
+   6. SUPPLIER CHART DATA
 ═══════════════════════════════════════ */
-$center_labels  = [];
-$center_amounts = [];
-$center_detail  = [];
-foreach ($center_sales as $c) {
-    $center_labels[]  = $c['center_name'];
-    $center_amounts[] = (float)$c['total_sale'];
-    $rows = [];
-    if (!empty($c['payment_modes']))
-        foreach (explode(' | ', $c['payment_modes']) as $part)
-            $rows[] = array_map('trim', explode(' : ', trim($part)));
-    $center_detail[] = $rows;
-}
+
+$sq = "
+SELECT sm.supplier_name, SUM(t.quantity) as qty
+FROM transaction_master t
+
+LEFT JOIN supplier_master sm
+ON sm.id = t.supplier_id
+
+WHERE t.transaction_type = 1
+AND DATE(t.entry_date)
+BETWEEN '{$from}' AND '{$to}'
+GROUP BY t.supplier_id
+";
+
+$supplier_data   = find_by_sql($sq);
+
+$supplier_labels = array_column($supplier_data, 'supplier_name');
+
+$supplier_qty    = array_column($supplier_data, 'qty');
 
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
@@ -390,18 +404,20 @@ body {
       <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
 
       <?php if ($role_id == 2): ?>
-      <select name="center_id" class="form-control" style="width:170px;" onchange="this.form.submit();">
-        <option value="">All Centers</option>
-        <?php
-        $centers = find_by_sql("SELECT * FROM master_center ORDER BY center_name ASC");
-        foreach ($centers as $c):
-        ?>
-        <option value="<?= $c['center_id'] ?>" <?= ($center_filter == $c['center_id']) ? 'selected' : '' ?>>
-          <?= htmlspecialchars($c['center_name']) ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-      <?php endif; ?>
+      <select name="report_type" class="form-control" style="width:170px;" onchange="this.form.submit();">
+
+  <option value="product" <?= ($report_type=='product')?'selected':'' ?>>
+    By Product
+  </option>
+
+  <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>
+    By Supplier
+  </option>
+
+</select>
+
+<?php endif; ?>
+
 
       <button type="submit" class="btn btn-primary">Filter</button>
       <a href="?pdf=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?><?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
@@ -471,14 +487,31 @@ body {
       </table>
     </div>
 
-    <!-- 2. Product Bar Chart -->
-    <div class="rpt-card rpt-product">
-      <div class="rpt-card-title">Product Wise Purchase (Qty)</div>
-      <div class="rpt-chart-box" style="height:145px;">
-        <canvas id="productChart"></canvas>
-      </div>
-    </div>
+<!-- Product Chart -->
+<div class="rpt-card rpt-product">
 
+  <div class="rpt-card-title">
+    Product Wise Purchase (Qty)
+  </div>
+
+  <div class="rpt-chart-box" style="height:145px;">
+    <canvas id="productChart"></canvas>
+  </div>
+
+</div>
+
+<!-- Supplier Chart -->
+<div class="rpt-card rpt-product">
+
+  <div class="rpt-card-title">
+    Supplier Wise Purchase (Qty)
+  </div>
+
+  <div class="rpt-chart-box" style="height:145px;">
+    <canvas id="supplierChart"></canvas>
+  </div>
+
+</div>
 
   </div><!-- /.rpt-top -->
 
@@ -525,6 +558,8 @@ if(!empty($center_filter)){
 
 <th>Product</th>
 
+<th>Supplier</th>
+
 <th>Qty</th>
 
 <th>Purchase Price</th>
@@ -551,6 +586,10 @@ if(!empty($center_filter)){
 
 <td>
     <?= htmlspecialchars($s['name']) ?>
+</td>
+
+<td>
+    <?= htmlspecialchars($s['supplier_name']) ?>
 </td>
 
 <td style="text-align:center;">
@@ -598,6 +637,7 @@ if(!empty($center_filter)){
 
 <script>
 /* ── Product Bar ── */
+
 new Chart(document.getElementById('productChart'), {
   type: 'bar',
   data: {
@@ -621,33 +661,76 @@ new Chart(document.getElementById('productChart'), {
   }
 });
 
-<?php if ($role_id == 2): ?>
-/* ── Center Pie ── */
-new Chart(document.getElementById('centerChart'), {
-  type: 'pie',
+
+/* ── Supplier Bar ── */
+
+
+
+new Chart(document.getElementById('supplierChart'), {
+
+  type: 'bar',
+
   data: {
-    labels: <?= json_encode($center_labels) ?>,
+
+    labels: <?= json_encode($supplier_labels) ?>,
+
     datasets: [{
-      data: <?= json_encode($center_amounts) ?>,
-      backgroundColor: <?= json_encode(array_slice($pie_colors, 0, count($center_labels))) ?>,
-      borderWidth: 2,
-      hoverOffset: 5
+
+      label: 'Qty',
+
+      data: <?= json_encode($supplier_qty) ?>,
+
+      borderWidth: 1,
+
+      borderRadius: 3,
+
+      backgroundColor: 'rgba(22,163,74,.72)',
+
+      borderColor: '#16a34a'
+
     }]
   },
+
   options: {
+
     responsive: true,
+
     maintainAspectRatio: false,
+
     plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ' ' + ctx.label + ' : Rs.' + Number(ctx.raw).toLocaleString('en-IN', {minimumFractionDigits:2})
+
+      legend: { display:false }
+
+    },
+
+    scales: {
+
+      x: {
+
+        grid: { display:false },
+
+        ticks: {
+
+          font:{ size:9 },
+
+          maxRotation:35
+
         }
+
+      },
+
+      y: {
+
+        beginAtZero:true,
+
+        ticks:{ font:{ size:9 } }
+
       }
+
     }
   }
 });
-<?php endif; ?>
+
 </script>
 
 <?php if ($is_pdf): ?>
