@@ -17,7 +17,7 @@ i.invoice_no,
 CASE
 
 WHEN
-(i.net_total - i.advance_paid) <= 0
+i.due_amount <= 0
 
 THEN 'Paid'
 
