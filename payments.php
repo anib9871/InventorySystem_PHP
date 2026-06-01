@@ -3,6 +3,7 @@
 $page_title = 'Outstanding Payments';
 require_once('includes/load.php');
 
+$type = $_GET['type'] ?? 'customer';
 /* ================= SAVE PAYMENT ================= */
 
 if(isset($_POST['save_payment'])){
@@ -46,7 +47,7 @@ $invoice = $invoice[0];
 
 foreach($amounts as $amt){
 
-$total_amount += (float)$amt;
+$total_amount += round((float)$amt);
 
 }
 
@@ -78,7 +79,7 @@ $status = 'Partial';
 
 foreach($amounts as $mode => $amt){
 
-$amt = (float)$amt;
+$amt = round((float)$amt);
 
 if($amt > 0){
 
@@ -174,6 +175,8 @@ redirect('payments.php');
 
 /* ================= FETCH INVOICES ================= */
 
+if($type == 'customer'){
+
 $payments = find_by_sql("
 
 SELECT
@@ -186,7 +189,7 @@ i.due_amount,
 i.payment_status,
 i.created_at,
 
-c.customer_name
+c.customer_name as party_name
 
 FROM invoice i
 
@@ -198,6 +201,41 @@ WHERE i.due_amount > 0
 ORDER BY i.id DESC
 
 ");
+
+}else{
+
+$payments = find_by_sql("
+
+SELECT
+
+sl.ledger_id as id,
+
+sl.bill_no as invoice_no,
+
+sl.bill_amount as net_total,
+
+sl.paid_amount,
+
+sl.balance_amount as due_amount,
+
+sl.payment_status,
+
+sl.created_at,
+
+sm.supplier_name as party_name
+
+FROM supplier_ledger sl
+
+LEFT JOIN supplier_master sm
+ON sm.id = sl.supplier_id
+
+WHERE sl.balance_amount > 0
+
+ORDER BY sl.ledger_id DESC
+
+");
+
+}
 
 /* ================= PAYMENT MODES ================= */
 
@@ -245,6 +283,38 @@ Outstanding Payments
 
 <div class="panel-body">
 
+<div style="margin-bottom:15px;">
+
+<label style="margin-right:20px;">
+
+<input type="radio"
+name="outstanding_type"
+value="customer"
+
+<?= ($type=='customer')?'checked':'' ?>
+
+onclick="window.location='payments.php?type=customer'">
+
+ Customer Outstanding
+
+</label>
+
+<label>
+
+<input type="radio"
+name="outstanding_type"
+value="supplier"
+
+<?= ($type=='supplier')?'checked':'' ?>
+
+onclick="window.location='payments.php?type=supplier'">
+
+ Supplier Outstanding
+
+</label>
+
+</div>
+
 <?php
 
 $total_due = 0;
@@ -284,8 +354,14 @@ placeholder="Search Customer / Invoice">
 <tr>
 
 <th>#</th>
-<th>Invoice No</th>
-<th>Customer</th>
+<th>
+
+<?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?>
+
+</th>
+<th>
+<?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
+</th>
 <th>Total</th>
 <th>Paid</th>
 <th>Due</th>
@@ -307,7 +383,11 @@ placeholder="Search Customer / Invoice">
 
 <td><?= $p['invoice_no']; ?></td>
 
-<td><?= $p['customer_name']; ?></td>
+<td>
+
+<?= htmlspecialchars($p['party_name']); ?>
+
+</td>
 
 <td>
 ₹ <?= number_format($p['net_total'],2); ?>
@@ -376,7 +456,7 @@ onclick="setPaymentData(
 
 '<?= $p['id']; ?>',
 '<?= $p['invoice_no']; ?>',
-'<?= $p['customer_name']; ?>',
+'<?= $p['party_name']; ?>',
 '<?= $p['due_amount']; ?>'
 
 )">
@@ -454,7 +534,11 @@ id="invoice_id">
 
 <div class="form-group">
 
-<label>Invoice No</label>
+<label>
+
+<?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?>
+
+</label>
 
 <input type="text"
 id="invoice_no"
@@ -465,7 +549,21 @@ readonly>
 
 <div class="form-group">
 
-<label>Customer</label>
+<label>Payment Date</label>
+
+<input type="date"
+name="payment_date"
+class="form-control"
+value="<?= date('Y-m-d'); ?>"
+required>
+
+</div>
+
+<div class="form-group">
+
+<label>
+<?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
+</label>
 
 <input type="text"
 id="customer_name"
@@ -554,17 +652,7 @@ readonly>
 
 </div>
 
-<div class="form-group">
 
-<label>Payment Date</label>
-
-<input type="date"
-name="payment_date"
-class="form-control"
-value="<?= date('Y-m-d'); ?>"
-required>
-
-</div>
 
 <div class="form-group">
 
@@ -717,13 +805,19 @@ this.dataset.target
 
 if(this.checked){
 
-target.removeAttribute('readonly');
-target.focus();
+let due = parseFloat(
+document.getElementById('due_amount').value
+) || 0;
+
+target.style.display = "block";
+
+target.value = due.toFixed(2);
 
 }else{
 
-target.value = 0;
-target.setAttribute('readonly', true);
+target.value = "";
+
+target.style.display = "none";
 
 }
 
