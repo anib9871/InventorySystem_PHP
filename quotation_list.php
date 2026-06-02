@@ -232,7 +232,7 @@ Edit
 href="convert_to_invoice.php?id=<?php echo $q['id']; ?>"
 class="btn btn-success btn-sm"
 title="Convert Quotation To Invoice"
-
+onclick="return confirm('Convert quotation to invoice?')">
 
 Convert
 
