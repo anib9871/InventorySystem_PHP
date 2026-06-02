@@ -26,24 +26,47 @@ if($check){
     die("Invoice already created for this quotation");
 }
 
+$db->query("START TRANSACTION");
 /* Generate Invoice No */
 $seq = find_by_sql("
-SELECT last_no 
-FROM sequence_master 
+SELECT last_no
+FROM sequence_master
 WHERE sequence_category='invoice'
+LIMIT 1
 ");
 
 $next = $seq[0]['last_no'] + 1;
 
-$invoice_no = "INV".str_pad($next,5,"0",STR_PAD_LEFT);
+if(empty($seq)){
 
+    $db->query("
+    INSERT INTO sequence_master
+    (sequence_category,last_no)
+    VALUES
+    ('invoice',0)
+    ");
+
+    $next = 1;
+
+}
+
+$fy = find_by_sql("
+SELECT fy_name
+FROM financial_year_master
+WHERE is_active = 1
+LIMIT 1
+");
+
+$fy_name = $fy[0]['fy_name'];
+
+$invoice_no = $fy_name.'/'.$next;
 $db->query("
 UPDATE sequence_master 
 SET last_no = $next
 WHERE sequence_category='invoice'
 ");
 
-$db->query("START TRANSACTION");
+
 try{
 /* Insert Into Invoice Table */
 $query = "
@@ -54,7 +77,9 @@ organization_id,
 invoice_date,
 gst_type,
 subtotal,
+gst_total,
 net_total,
+terms_conditions,
 advance_paid,
 source_type,
 source_id
@@ -62,10 +87,12 @@ source_id
 '{$invoice_no}',
 '{$quotation['customer_id']}',
 '{$quotation['organization_id']}',
-NOW(),
+'{$quotation['quotation_date']}',
 '".(($gst_enabled == "Yes") ? $quotation['gst_type'] : 'exclusive')."',
 '{$quotation['subtotal']}',
+'{$quotation['gst_total']}',
 '{$quotation['net_total']}',
+'".$db->escape($quotation['terms_conditions'])."',
 0,
 'QUOTATION',
 '$id'
@@ -93,6 +120,7 @@ INSERT INTO invoice_items (
     rate_excl_gst,
     discount_amount,
     gst_percent,
+    rate_incl_gst,
     cgst_amount,
     sgst_amount,
     igst_amount,
@@ -104,6 +132,7 @@ INSERT INTO invoice_items (
     '{$it['rate_excl_gst']}',
     '{$it['discount_amount']}',
     '{$it['gst_percent']}',
+    '{$it['rate_incl_gst']}',
     '{$it['cgst_amount']}',
     '{$it['sgst_amount']}',
     '{$it['igst_amount']}',
@@ -144,16 +173,11 @@ WHERE product_id = {$product_id}
 $current_stock = $stock_row[0]['stock'] ?? 0;
 
 if($current_stock < $qty){
-    $db->query("ROLLBACK");
-    die("Insufficient stock for ".$product['name']);
+    throw new Exception("Insufficient stock for ".$product['name']);
 }
 
     /* Step 1: Finished Goods minus */
-    $db->query("
-        UPDATE products
-        SET quantity = quantity - {$qty}
-        WHERE id = {$product_id}
-    ");
+
     
     $db->query("
 INSERT INTO transaction_master
@@ -241,32 +265,8 @@ NOW()
 
     $raw_product = find_by_id('products', $raw_id);
 
-$raw_stock_data = find_by_sql("
-    SELECT 
-    IFNULL(SUM(qty_in),0) - IFNULL(SUM(qty_out),0) as current_stock
-    FROM stock_ledger
-    WHERE product_id = {$raw_id}
-");
 
-$current_raw_stock = (float)$raw_stock_data[0]['current_stock'];
 
-if($current_raw_stock < $total_raw_deduct){
-    $db->query("ROLLBACK");
-    die("Insufficient raw material stock for ".$raw_product['name']);
-}
-
-    $db->query("
-        UPDATE products
-        SET quantity = quantity - {$total_raw_deduct}
-        WHERE id = {$raw_id}
-    ");
-
-    $db->query("
-        INSERT INTO stock_ledger
-        (product_id, reference_no, reference_type, trans_date, qty_in, qty_out, created_at)
-        VALUES
-        ({$raw_id}, '{$invoice_no}', 'SALE-BOM-CONVERT', NOW(), 0, {$total_raw_deduct}, NOW())
-    ");
 }
     }
 }
@@ -276,12 +276,28 @@ if($current_raw_stock < $total_raw_deduct){
 
 /* Redirect to Invoice Print */
 $db->query("COMMIT");
+
+ob_clean();
+
 header("Location: invoice_print.php?id=".$new_invoice_id);
 exit;
 
 }catch(Exception $e){
 
     $db->query("ROLLBACK");
-    die($e->getMessage());
+
+    $msg = addslashes($e->getMessage());
+
+    echo "
+    <script>
+
+    alert('$msg');
+
+    window.location.href='quotation_list.php';
+
+    </script>
+    ";
+
+    exit;
 
 }
