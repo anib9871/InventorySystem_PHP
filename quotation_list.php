@@ -60,11 +60,11 @@ foreach($quotes as $q){
   <td><?php echo number_format($q['net_total'],2); ?></td>
 
 <td>
-  <!-- View / Print -->
-  <button class="btn btn-primary btn-sm openQuote"
-          data-id="<?php echo $q['id']; ?>">
-    <?php echo ($gst_enabled == "Yes") ? "GST Quote" : "Quotation"; ?>
-  </button>
+<!-- View / Print -->
+<button class="btn btn-primary btn-sm openQuote"
+        data-id="<?php echo $q['id']; ?>">
+  View
+</button>
 
   <!-- Edit -->
   <a href="quotation_edit.php?id=<?php echo $q['id']; ?>"
@@ -73,10 +73,11 @@ foreach($quotes as $q){
   </a>
 
   <!-- Convert to Invoice -->
-  <a href="convert_to_invoice.php?id=<?php echo $q['id']; ?>"
-     class="btn btn-success btn-sm"
-     onclick="return confirm('Convert this quotation to invoice?')">
-     Convert
+<a href="convert_to_invoice.php?id=<?php echo $q['id']; ?>"
+   class="btn btn-success btn-sm"
+   title="Convert Quotation To Invoice"
+   onclick="return convertQuotation(this.href)">
+   Convert
   </a>
 </td>
 </tr>
@@ -117,6 +118,35 @@ document.querySelectorAll(".openQuote").forEach(function(btn){
         $("#quoteModal").modal("show");
     });
 });
+
+function convertQuotation(url){
+
+    fetch(url)
+
+    .then(res => res.text())
+
+    .then(data => {
+
+        if(data.includes("Insufficient")){
+
+            alert(data);
+
+        }else{
+
+            window.location.href = "invoice_list.php";
+
+        }
+
+    })
+
+    .catch(err => {
+
+        alert("Something went wrong");
+
+    });
+
+    return false;
+}
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
