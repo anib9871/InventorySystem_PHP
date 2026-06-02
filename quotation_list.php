@@ -232,7 +232,7 @@ Edit
 href="convert_to_invoice.php?id=<?php echo $q['id']; ?>"
 class="btn btn-success btn-sm"
 title="Convert Quotation To Invoice"
-onclick="return convertQuotation(this.href);">
+
 
 Convert
 
@@ -319,35 +319,7 @@ $("#quoteModal").modal("show");
 
 });
 
-function convertQuotation(url){
 
-fetch(url)
-
-.then(res => res.text())
-
-.then(data => {
-
-if(data.includes("Insufficient")){
-
-alert(data);
-
-}else{
-
-window.location.href = "invoice_list.php";
-
-}
-
-})
-
-.catch(err => {
-
-alert("Something went wrong");
-
-});
-
-return false;
-
-}
 
 document.querySelectorAll(".openQuote")
 
