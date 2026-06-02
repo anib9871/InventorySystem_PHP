@@ -179,7 +179,7 @@ Quotation List
 <?php
 $i = 1;
 
-foreach($quotes as $q):
+foreach($quotes as $q):{
 ?>
 
 <tr>
@@ -237,12 +237,11 @@ onclick="return confirm('Convert quotation to invoice?')">
 Convert
 
 </a>
-
 </td>
 
 </tr>
 
-<?php endforeach; ?>
+<?php } ?>
 
 </tbody>
 
@@ -303,7 +302,6 @@ style="width:100%;height:100%;border:none;"></iframe>
 <script>
 
 document.querySelectorAll(".openQuote")
-
 .forEach(function(btn){
 
 btn.addEventListener("click", function(){
@@ -319,7 +317,35 @@ $("#quoteModal").modal("show");
 
 });
 
+function convertQuotation(url){
 
+fetch(url)
+
+.then(res => res.text())
+
+.then(data => {
+
+if(data.includes("Insufficient")){
+
+alert(data);
+
+}else{
+
+window.location.href = "invoice_list.php";
+
+}
+
+})
+
+.catch(err => {
+
+alert("Something went wrong");
+
+});
+
+return false;
+
+}
 
 document.querySelectorAll(".openQuote")
 
