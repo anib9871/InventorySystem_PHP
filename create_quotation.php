@@ -449,7 +449,8 @@ body{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    table-layout:auto;
+    table-layout:fixed;
+}
 }
 
 /* HEADER */
@@ -481,7 +482,8 @@ body{
     border:none !important;
     padding:12px 8px;
     vertical-align:middle;
-    white-space:nowrap;
+    white-space:normal;
+    word-break:break-word;
     height:72px;
 }
 
