@@ -254,30 +254,6 @@ if($existing_rate){
       update_product_qty($qty + $free, $it['product_id']);
 
 
-$db->query("
-INSERT INTO stock_ledger
-(
-product_id,
-reference_no,
-reference_type,
-trans_date,
-qty_in,
-qty_out,
-created_at
-)
-
-VALUES
-(
-'{$it['product_id']}',
-'$bill_no',
-'GRN',
-NOW(),
-'".($qty + $free)."',
-0,
-NOW()
-)
-");
-
 
         /* ===== UPDATE PRODUCT MASTER (LATEST BUY PRICE) ===== */
 
