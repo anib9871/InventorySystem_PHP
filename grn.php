@@ -253,6 +253,33 @@ if($existing_rate){
 
       update_product_qty($qty + $free, $it['product_id']);
 
+      update_product_qty($qty + $free, $it['product_id']);
+
+$db->query("
+INSERT INTO stock_ledger
+(
+product_id,
+reference_no,
+reference_type,
+trans_date,
+qty_in,
+qty_out,
+created_at
+)
+
+VALUES
+(
+'{$it['product_id']}',
+'$bill_no',
+'GRN',
+NOW(),
+'".($qty + $free)."',
+0,
+NOW()
+)
+");
+
+
         /* ===== UPDATE PRODUCT MASTER (LATEST BUY PRICE) ===== */
 
 $db->query("
@@ -343,7 +370,7 @@ $utr = $p['utr'] ?? '';
 $db->query("
 INSERT INTO supplier_payment
 (ledger_id, supplier_id, payment_date,
-payment_amount, payment_mode, utr_no, created_at)
+payment_amount, payment_mode, reference_no, created_at)
 
 VALUES
 ('$ledger_id','$supplier_id',CURDATE(),
@@ -365,10 +392,13 @@ $session->msg("s", "GRN Created Successfully");
 
 }
 
-  } catch (Exception $e) {
+} catch (Exception $e) {
+
     $db->query("ROLLBACK");
-    $session->msg("d", "GRN Failed");
-  }
+
+    die($e->getMessage());
+
+}
 
   redirect('grn.php');
 }
@@ -1577,10 +1607,15 @@ input.style.display = "block";
 
 if(mode.toLowerCase() != 'cash'){
 
+utrInput.disabled = false;
+
 utrInput.style.display = "block";
+utrInput.required = true;
 
 }else{
 
+utrInput.required = false;
+utrInput.disabled = true;
 utrInput.style.display = "none";
 utrInput.value = '';
 
