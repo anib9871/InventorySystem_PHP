@@ -449,8 +449,7 @@ body{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    table-layout:fixed;
-}
+    table-layout:auto;
 }
 
 /* HEADER */
@@ -482,8 +481,7 @@ body{
     border:none !important;
     padding:12px 8px;
     vertical-align:middle;
-    white-space:normal;
-    word-break:break-word;
+    white-space:nowrap;
     height:72px;
 }
 
@@ -960,17 +958,21 @@ readonly>
 <td>
 
 <input type="number"
+step="0.01"
+min="0"
 class="form-control form-control-sm discPer"
-value="0">
+value="0.00">
 
 </td>
 
 <td>
 
 <input type="number"
+step="0.01"
+min="0"
 name="discount[]"
 class="form-control form-control-sm discAmt"
-value="0">
+value="0.00">
 
 </td>
 
