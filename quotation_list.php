@@ -179,7 +179,7 @@ Quotation List
 <?php
 $i = 1;
 
-foreach($quotes as $q):{
+foreach($quotes as $q){
 ?>
 
 <tr>
