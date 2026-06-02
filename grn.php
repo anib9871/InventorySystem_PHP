@@ -253,7 +253,6 @@ if($existing_rate){
 
       update_product_qty($qty + $free, $it['product_id']);
 
-      update_product_qty($qty + $free, $it['product_id']);
 
 $db->query("
 INSERT INTO stock_ledger
