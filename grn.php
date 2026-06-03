@@ -54,6 +54,8 @@ if (isset($_POST['save_grn']) || isset($_POST['update_grn'])) {
   $payment_mode = $_POST['payment_mode'] ?? '';
   $payments = json_decode($_POST['payments_json'], true);
   $total_paid = 0;
+  $used_advance =
+(float)($_POST['used_advance'] ?? 0);
   $comments     = $_POST['comments'] ?? '';
 
   $entry_date  = date('Y-m-d H:i:s');
@@ -301,11 +303,17 @@ if (is_array($charges)) {
 
 if (is_array($payments)) {
 
+if (is_array($payments)) {
+
 foreach ($payments as $p){
 
 $total_paid += (float)$p['amount'];
 
 }
+
+}
+
+$total_paid += $used_advance;
 
 }
 
@@ -355,6 +363,23 @@ VALUES
 }
 
 }
+
+  if($used_advance > 0){
+
+$db->query("
+
+UPDATE supplier_ledger
+
+SET balance_amount = 0
+
+WHERE supplier_id = '$supplier_id'
+
+AND balance_amount < 0
+
+");
+
+}
+
 
     $db->query("COMMIT");
     if(isset($_POST['update_grn'])){
@@ -466,7 +491,12 @@ include_once('layouts/header.php');
 <div class="panel-body">
 
 <label>Supplier</label>
-<select name="supplier_id" form="grnForm" class="form-control" required>
+<select
+name="supplier_id"
+id="supplier_id"
+form="grnForm"
+class="form-control"
+required>
 <option value="">Select Supplier</option>
 <?php foreach ($suppliers as $s) { ?>
 <option value="<?= $s['id']; ?>"
@@ -768,6 +798,38 @@ Grand Total ₹
 
 <hr>
 
+<?php
+
+$advance_amount = 0;
+
+?>
+
+<div class="alert alert-info">
+
+<strong>
+
+Available Advance :
+₹ <span id="advanceAmount">
+
+<?= number_format($advance_amount,2); ?>
+
+</span>
+
+</strong>
+
+<br>
+
+<label style="margin-top:8px;">
+
+<input type="checkbox"
+id="useAdvance">
+
+Use Advance
+
+</label>
+
+</div>
+
 <h4><strong>Payments</strong></h4>
 
 <div class="row" style="
@@ -859,6 +921,12 @@ placeholder="Enter UTR No"
 
 
 <input type="hidden" name="payments_json" id="payments_json">
+
+<input
+type="hidden"
+name="used_advance"
+id="used_advance"
+value="0">
 
 <br>
 
@@ -1218,6 +1286,9 @@ finalTotal = Math.round(finalTotal);
 
 }
 
+
+
+
 document.getElementById("grandTotal").innerText =
 finalTotal.toFixed(2);
 
@@ -1244,17 +1315,30 @@ let input = document.querySelector(
 
 if(input){
 
+let advanceUsed = parseFloat(
+document.getElementById("used_advance").value
+) || 0;
+
+let payable =
+finalTotal - advanceUsed;
+
+if(payable < 0){
+payable = 0;
+}
+
 if(roundChecked){
 
-input.value = Math.round(finalTotal);
+input.value = Math.round(payable);
 
 }else{
 
-input.value = finalTotal.toFixed(2);
+input.value = payable.toFixed(2);
 
 }
 
 }
+
+
 
 });
 
@@ -1731,7 +1815,88 @@ document.getElementById("buy_type").value = "exclusive";
 
 }
 
+function loadSupplierAdvance(){
+
+let supplier =
+document.getElementById("supplier_id");
+
+if(!supplier) return;
+
+let supplier_id = supplier.value;
+
+if(!supplier_id){
+
+document.getElementById("advanceAmount")
+.innerText = "0.00";
+
+return;
+
+}
+
+fetch(
+"get_supplier_advance.php?supplier_id="
++ supplier_id
+)
+
+.then(res => res.json())
+
+.then(data => {
+
+document.getElementById("advanceAmount")
+.innerText = parseFloat(
+data.advance || 0
+).toFixed(2);
+
+});
+
+}
+
+loadSupplierAdvance();
+
+document.getElementById("supplier_id")
+.addEventListener(
+"change",
+loadSupplierAdvance
+);
+
+let useAdvance =
+document.getElementById("useAdvance");
+
+if(useAdvance){
+
+useAdvance.onchange = function(){
+
+let advance = parseFloat(
+document.getElementById("advanceAmount")
+.innerText.replace(/,/g,'')
+) || 0;
+
+let total = parseFloat(
+document.getElementById("grandTotal")
+.innerText.replace(/,/g,'')
+) || 0;
+
+let used = 0;
+
+if(this.checked){
+
+used = Math.min(advance,total);
+
+}
+
+document.getElementById("used_advance")
+.value = used;
+
+updateGrandTotal();
+updatePaymentDistribution();
+
+};
+
+}
+
 </script>
+
+
 
 
 <!-- PRODUCT MODAL -->
