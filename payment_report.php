@@ -126,7 +126,7 @@ placeholder="Search Customer / Invoice / Mode">
 <th>Mode</th>
 <th>Amount</th>
 <th>Status</th>
-<th>Ref No</th>
+<th style="min-width:180px;">Ref No</th>
 
 </tr>
 
@@ -363,7 +363,7 @@ placeholder="Search Supplier / Bill / Payment Mode">
 <th>Supplier</th>
 <th>Bill Amount</th>
 <th>Paid</th>
-<th>Balance</th>
+<th style="width:180px;">Balance Status</th>
 <th>Mode</th>
 <th>Status</th>
 <th>Ref No</th>
@@ -411,19 +411,48 @@ strtotime($s['payment_date'])
 
 <td>
 
+<?php if($s['bill_no'] == 'ADVANCE'){ ?>
+
+₹ <?= number_format(
+abs($s['paid_amount']) - abs($s['balance_amount']),
+2
+); ?>
+
+<?php } else { ?>
+
 ₹ <?= number_format($s['bill_amount'],2); ?>
+
+<?php } ?>
 
 </td>
 
 <td style="color:green;font-weight:bold;">
 
-₹ <?= number_format($s['paid_amount'],2); ?>
+₹ <?= number_format($s['payment_amount'],2); ?>
 
 </td>
 
-<td style="color:red;font-weight:bold;">
+<td style="font-weight:bold;width:180px;">
 
-₹ <?= number_format($s['balance_amount'],2); ?>
+<?php if($s['balance_amount'] > 0){ ?>
+
+<span style="color:red;">
+Outstanding ₹ <?= number_format($s['balance_amount'],2); ?>
+</span>
+
+<?php } elseif($s['balance_amount'] < 0){ ?>
+
+<span style="color:green;">
+Advance ₹ <?= number_format(abs($s['balance_amount']),2); ?>
+</span>
+
+<?php } else { ?>
+
+<span style="color:green;">
+Settled
+</span>
+
+<?php } ?>
 
 </td>
 
@@ -455,9 +484,9 @@ Partial
 
 </td>
 
-<td>
+<td style="min-width:180px; white-space:nowrap;">
 
-<?= $s['reference_no']; ?>
+<?= $s['reference_no'] ?: '-'; ?>
 
 </td>
 
@@ -471,8 +500,7 @@ Partial
 
 <tr>
 
-<th colspan="7"
-class="text-right">
+<th colspan="7" class="text-right">
 
 Total Supplier Payments
 
