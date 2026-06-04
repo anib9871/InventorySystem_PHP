@@ -364,19 +364,56 @@ VALUES
 
 }
 
-  if($used_advance > 0){
+if($used_advance > 0){
 
-$db->query("
+$remaining = $used_advance;
 
-UPDATE supplier_ledger
+$advances = find_by_sql("
 
-SET balance_amount = 0
+SELECT ledger_id,balance_amount
+
+FROM supplier_ledger
 
 WHERE supplier_id = '$supplier_id'
 
 AND balance_amount < 0
 
+ORDER BY ledger_id ASC
+
 ");
+
+foreach($advances as $adv){
+
+if($remaining <= 0){
+break;
+}
+
+$currentAdvance = abs($adv['balance_amount']);
+
+if($remaining >= $currentAdvance){
+
+$db->query("
+UPDATE supplier_ledger
+SET balance_amount = 0
+WHERE ledger_id = '{$adv['ledger_id']}'
+");
+
+$remaining -= $currentAdvance;
+
+}else{
+
+$newBalance = -($currentAdvance - $remaining);
+
+$db->query("
+UPDATE supplier_ledger
+SET balance_amount = '$newBalance'
+WHERE ledger_id = '{$adv['ledger_id']}'
+");
+
+$remaining = 0;
+}
+
+}
 
 }
 
@@ -819,14 +856,19 @@ Available Advance :
 
 <br>
 
-<label style="margin-top:8px;">
-
-<input type="checkbox"
-id="useAdvance">
-
+<label>
+<input type="checkbox" id="useAdvance">
 Use Advance
-
 </label>
+
+<input
+type="number"
+id="advanceInput"
+class="form-control"
+style="margin-top:8px;display:none;"
+placeholder="Enter Advance Amount"
+min="0"
+step="0.01">
 
 </div>
 
@@ -1286,9 +1328,6 @@ finalTotal = Math.round(finalTotal);
 
 }
 
-
-
-
 document.getElementById("grandTotal").innerText =
 finalTotal.toFixed(2);
 
@@ -1319,8 +1358,7 @@ let advanceUsed = parseFloat(
 document.getElementById("used_advance").value
 ) || 0;
 
-let payable =
-finalTotal - advanceUsed;
+let payable = finalTotal - advanceUsed;
 
 if(payable < 0){
 payable = 0;
@@ -1866,7 +1904,34 @@ if(useAdvance){
 
 useAdvance.onchange = function(){
 
-let advance = parseFloat(
+if(this.checked){
+
+document.getElementById("advanceInput")
+.style.display = "block";
+
+}else{
+
+document.getElementById("advanceInput")
+.style.display = "none";
+
+document.getElementById("advanceInput")
+.value = "";
+
+document.getElementById("used_advance")
+.value = 0;
+
+updateGrandTotal();
+
+}
+
+};
+
+}
+
+document.getElementById("advanceInput")
+.addEventListener("input", function(){
+
+let available = parseFloat(
 document.getElementById("advanceAmount")
 .innerText.replace(/,/g,'')
 ) || 0;
@@ -1876,23 +1941,28 @@ document.getElementById("grandTotal")
 .innerText.replace(/,/g,'')
 ) || 0;
 
-let used = 0;
+let entered = parseFloat(this.value) || 0;
 
-if(this.checked){
+if(entered > available){
 
-used = Math.min(advance,total);
+entered = available;
+this.value = available;
+
+}
+
+if(entered > total){
+
+entered = total;
+this.value = total;
 
 }
 
 document.getElementById("used_advance")
-.value = used;
+.value = entered;
 
 updateGrandTotal();
-updatePaymentDistribution();
 
-};
-
-}
+});
 
 </script>
 
