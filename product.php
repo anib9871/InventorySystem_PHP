@@ -357,11 +357,14 @@ This product is manufactured (BOM)
 Update
 </button>
 
-<button type="reset" class="btn btn-warning btn-block">
+<button type="button"
+onclick="window.location='product.php';"
+class="btn btn-warning btn-block">
 Clear
 </button>
 
-<a href="product.php" class="btn btn-secondary btn-block">
+<a href="product.php"
+class="btn btn-secondary btn-block">
 Cancel
 </a>
 
