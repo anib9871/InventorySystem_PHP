@@ -13,7 +13,9 @@ if(isset($_POST['save_terms']))
 {
 
     $tc_id         = (int)$_POST['tc_id'];
-
+    $template_name = remove_junk(
+    $db->escape($_POST['template_name'])
+    );
 
     $template = remove_junk(
     $db->escape($_POST['template'])
@@ -30,16 +32,16 @@ if(isset($_POST['save_terms']))
 
 INSERT INTO terms_conditions_master
 (
+template_name,
 template,
 updated_by
 )
-
         VALUES
-        (
-            
-            '{$template}',
-            '{$updated_by}'
-        )
+(
+'{$template_name}',
+'{$template}',
+'{$updated_by}'
+)
 
         ";
 
@@ -65,7 +67,7 @@ updated_by
 
         SET
 
-        
+        template_name = '{$template_name}',
         template      = '{$template}',
         updated_by    = '{$updated_by}',
         updated_at    = NOW()
@@ -195,7 +197,18 @@ ORDER BY tc_id DESC
                     : 0;
                     ?>">
 
+        <div class="form-group">
 
+<label>Template Name</label>
+
+<input
+type="text"
+name="template_name"
+class="form-control"
+required
+value="<?= ($edit) ? $edit['template_name'] : ''; ?>">
+
+</div>
 
  
 
@@ -352,7 +365,8 @@ ORDER BY tc_id DESC
 
                                 <th>#</th>
 
-                                <th>Template</th>
+                                <th>Template Name</th>
+                                <th>Preview</th>
 
                                 <th>Updated By</th>
 
@@ -376,26 +390,12 @@ ORDER BY tc_id DESC
                                     <?= $t['tc_id']; ?>
                                 </td>
 
-                                <td>
+<td>
+<?= $t['template_name']; ?>
+</td>
 
-<strong>
-
-Template <?= $t['tc_id']; ?>
-
-</strong>
-
-<br>
-
-<small>
-
-<?= substr(
-$t['template'],
-0,
-80
-); ?>...
-
-</small>
-
+<td>
+<?= substr($t['template'],0,80); ?>...
 </td>
 
 
