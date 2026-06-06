@@ -11,33 +11,22 @@ WHERE is_active = 1
 ORDER BY mode_name ASC
 ");
 
-/* ================= SAVE ADVANCE ================= */
+ /* ================= SAVE ADVANCE ================= */
 
 if(isset($_POST['save_advance'])){
 
 $supplier_id = (int)$_POST['supplier_id'];
-
-$amount =
-(float)$_POST['amount'];
-
-$mode =
-$db->escape($_POST['payment_mode']);
-
-$ref =
-$db->escape($_POST['reference_no']);
-
-$remarks =
-$db->escape($_POST['remarks']);
+$amount = (float)$_POST['amount'];
+$mode = $db->escape($_POST['payment_mode']);
+$ref = $db->escape($_POST['reference_no']);
+$payment_date = $db->escape($_POST['payment_date']);
 
 if($supplier_id <= 0 || $amount <= 0){
 
 $session->msg('d','Invalid Details');
-
 redirect('supplier_advance.php');
 
 }
-
-/* ================= SUPPLIER LEDGER ================= */
 
 $db->query("
 
@@ -53,12 +42,11 @@ payment_status,
 entry_type,
 created_at
 )
-
 VALUES
 (
 '$supplier_id',
 'ADVANCE',
-CURDATE(),
+'$payment_date',
 0,
 '$amount',
 '-$amount',
@@ -70,8 +58,6 @@ NOW()
 ");
 
 $ledger_id = $db->insert_id();
-
-/* ================= SUPPLIER PAYMENT ================= */
 
 $db->query("
 
@@ -85,12 +71,11 @@ payment_mode,
 reference_no,
 created_at
 )
-
 VALUES
 (
 '$ledger_id',
 '$supplier_id',
-CURDATE(),
+'$payment_date',
 '$amount',
 '$mode',
 '$ref',
@@ -100,50 +85,123 @@ NOW()
 ");
 
 $session->msg('s','Advance Added Successfully');
-
 redirect('supplier_advance.php');
 
 }
 
-/* ================= ADVANCE LIST ================= */
+/* ================= UPDATE ADVANCE ================= */
 
-$advances = find_by_sql("
+if(isset($_POST['update_advance'])){
+
+$ledger_id = (int)$_POST['ledger_id'];
+$supplier_id = (int)$_POST['supplier_id'];
+$amount = (float)$_POST['amount'];
+$mode = $db->escape($_POST['payment_mode']);
+$ref = $db->escape($_POST['reference_no']);
+$payment_date = $db->escape($_POST['payment_date']);
+$remarks = $db->escape($_POST['remarks']);
+
+$db->query("
+UPDATE supplier_ledger
+SET
+supplier_id='{$supplier_id}',
+bill_date='{$payment_date}',
+paid_amount='{$amount}',
+balance_amount='-{$amount}'
+WHERE ledger_id='{$ledger_id}'
+");
+
+$db->query("
+UPDATE supplier_payment
+SET
+supplier_id='{$supplier_id}',
+payment_date='{$payment_date}',
+payment_amount='{$amount}',
+payment_mode='{$mode}',
+reference_no='{$ref}'
+WHERE ledger_id='{$ledger_id}'
+");
+
+$session->msg('s','Advance Updated Successfully');
+redirect('supplier_advance.php');
+
+}
+
+/* ================= EDIT FETCH ================= */
+
+$edit_data = null;
+
+if(isset($_GET['edit'])){
+
+$ledger_id = (int)$_GET['edit'];
+
+$edit = find_by_sql("
 
 SELECT
-
 sl.*,
-sm.supplier_name,
-
 sp.payment_mode,
 sp.reference_no
 
 FROM supplier_ledger sl
 
-LEFT JOIN supplier_master sm
-ON sm.id = sl.supplier_id
-
 LEFT JOIN supplier_payment sp
 ON sp.ledger_id = sl.ledger_id
 
-WHERE sl.entry_type='ADVANCE'
+WHERE sl.ledger_id = '{$ledger_id}'
 
-ORDER BY sl.ledger_id DESC
+LIMIT 1
 
 ");
 
-include_once('layouts/header.php');
+if($edit){
 
-?>
+$edit_data = $edit[0];
 
-<div class="row">
+}
 
-<div class="col-md-12">
+}
 
-<?php echo display_msg($msg); ?>
 
-</div>
 
-</div>
+    /* ================= ADVANCE LIST ================= */
+
+    $advances = find_by_sql("
+
+    SELECT
+
+    sl.*,
+    sm.supplier_name,
+
+    sp.payment_mode,
+    sp.reference_no
+
+    FROM supplier_ledger sl
+
+    LEFT JOIN supplier_master sm
+    ON sm.id = sl.supplier_id
+
+    LEFT JOIN supplier_payment sp
+    ON sp.ledger_id = sl.ledger_id
+
+    WHERE sl.entry_type='ADVANCE'
+
+    ORDER BY sl.ledger_id DESC
+
+    ");
+
+    include_once('layouts/header.php');
+
+    ?>
+
+    <div class="row">
+
+    <div class="col-md-12">
+
+    <?php echo display_msg($msg); ?>
+
+    </div>
+
+    </div>
 
 <div class="row">
 
@@ -167,6 +225,10 @@ Add Supplier Advance
 
 <form method="post">
 
+<input type="hidden"
+name="ledger_id"
+value="<?= $edit_data['ledger_id'] ?? ''; ?>">
+
 <div class="form-group">
 
 <label>Supplier</label>
@@ -184,7 +246,8 @@ Select Supplier
 
 <?php foreach($suppliers as $s): ?>
 
-<option value="<?= $s['id']; ?>">
+<option value="<?= $s['id']; ?>"
+<?= ($edit_data && $edit_data['supplier_id']==$s['id']) ? 'selected' : ''; ?>>
 
 <?= $s['supplier_name']; ?>
 
@@ -198,6 +261,19 @@ Select Supplier
 
 <div class="form-group">
 
+<label>Payment Date</label>
+
+<input
+type="date"
+name="payment_date"
+class="form-control"
+value="<?= $edit_data['bill_date'] ?? date('Y-m-d'); ?>"
+required>
+
+</div>
+
+<div class="form-group">
+
 <label>Advance Amount</label>
 
 <input
@@ -206,6 +282,7 @@ step="0.01"
 min="0"
 name="amount"
 class="form-control"
+value="<?= $edit_data['paid_amount'] ?? ''; ?>"
 required>
 
 </div>
@@ -227,7 +304,8 @@ Select Mode
 
 <?php foreach($payment_modes as $pm): ?>
 
-<option value="<?= $pm['mode_name']; ?>">
+<option value="<?= $pm['mode_name']; ?>"
+<?= ($edit_data && $edit_data['payment_mode']==$pm['mode_name']) ? 'selected' : ''; ?>>
 
 <?= strtoupper($pm['mode_name']); ?>
 
@@ -246,7 +324,8 @@ Select Mode
 <input
 type="text"
 name="reference_no"
-class="form-control">
+class="form-control"
+value="<?= $edit_data['reference_no'] ?? ''; ?>">
 
 </div>
 
@@ -257,16 +336,16 @@ class="form-control">
 <textarea
 name="remarks"
 class="form-control"
-rows="3"></textarea>
+rows="3"><?= $edit_data['remarks'] ?? ''; ?></textarea>
 
 </div>
 
 <button
 type="submit"
-name="save_advance"
+name="<?= $edit_data ? 'update_advance' : 'save_advance'; ?>"
 class="btn btn-success btn-block">
 
-Save Advance
+<?= $edit_data ? 'Update Advance' : 'Save Advance'; ?>
 
 </button>
 
@@ -319,6 +398,7 @@ class="table table-bordered table-striped">
 <th>Mode</th>
 <th>Reference</th>
 <th>Date</th>
+<th>Edit</th>
 
 </tr>
 
@@ -368,8 +448,19 @@ $a['payment_mode']
 
 <?= date(
 'd-m-Y',
-strtotime($a['created_at'])
+strtotime($a['bill_date'])
 ); ?>
+
+</td>
+
+<td>
+
+<a href="supplier_advance.php?edit=<?= $a['ledger_id']; ?>"
+class="btn btn-warning btn-xs">
+
+Edit
+
+</a>
 
 </td>
 
