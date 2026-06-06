@@ -183,6 +183,15 @@ SELECT
 
 i.id,
 i.invoice_no,
+
+(
+SELECT COALESCE(SUM(discount_amount),0)
+FROM invoice_items ii
+WHERE ii.invoice_id = i.id
+) as discount_total,
+
+i.subtotal,
+i.gst_total,
 i.net_total,
 i.paid_amount,
 i.due_amount,
@@ -362,9 +371,21 @@ placeholder="Search Customer / Invoice">
 <th>
 <?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
 </th>
-<th>Total</th>
+<?php if($type == 'customer'){ ?>
+
+<th>Amount</th>
+<th>Discount</th>
+<th>GST</th>
+<th>Paid</th>
+<th>Total Due</th>
+
+<?php } else { ?>
+
+<th>Bill Amount</th>
 <th>Paid</th>
 <th>Due</th>
+
+<?php } ?>
 <th>Status</th>
 <th>Date</th>
 <th>Action</th>
@@ -389,6 +410,32 @@ placeholder="Search Customer / Invoice">
 
 </td>
 
+<?php if($type == 'customer'){ ?>
+
+<td>
+₹ <?= number_format($p['subtotal'],2); ?>
+</td>
+
+<td>
+₹ <?= number_format($p['discount_total'],2); ?>
+</td>
+
+<td>
+₹ <?= number_format($p['gst_total'],2); ?>
+</td>
+
+<td>
+₹ <?= number_format($p['paid_amount'],2); ?>
+</td>
+
+<td>
+<span style="color:red;font-weight:bold;">
+₹ <?= number_format($p['due_amount'],2); ?>
+</span>
+</td>
+
+<?php } else { ?>
+
 <td>
 ₹ <?= number_format($p['net_total'],2); ?>
 </td>
@@ -398,14 +445,12 @@ placeholder="Search Customer / Invoice">
 </td>
 
 <td>
-
 <span style="color:red;font-weight:bold;">
-
 ₹ <?= number_format($p['due_amount'],2); ?>
-
 </span>
-
 </td>
+
+<?php } ?>
 
 <td>
 
