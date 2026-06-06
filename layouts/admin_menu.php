@@ -94,7 +94,7 @@ if(!empty($config)){
         <li><a href="manufacture.php">Manufacture</a></li>
          <li><a href="payments.php">Manage Payments</a></li>
         <li><a href="payment_report.php">Payments Report</a></li>
-        <li><a href="supplier_advance.php">Supplier</a></li>
+        <li><a href="supplier_advance.php">Supplier Advance</a></li>
 
       </ul>
     </li>
