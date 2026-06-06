@@ -66,6 +66,37 @@ try{
 
 $cust = (int)$_POST['customer_id'];
 
+$cust = (int)$_POST['customer_id'];
+
+/* ================= TAX MODE ================= */
+
+$org_data = find_by_sql("
+SELECT gst_no
+FROM organization_master
+WHERE id = '{$quote['organization_id']}'
+LIMIT 1
+");
+
+$cust_data = find_by_sql("
+SELECT gst_no
+FROM customer_master
+WHERE id = '$cust'
+LIMIT 1
+");
+
+$org_gst  = $org_data[0]['gst_no'] ?? '';
+$cust_gst = $cust_data[0]['gst_no'] ?? '';
+
+$org_state  = substr($org_gst,0,2);
+$cust_state = substr($cust_gst,0,2);
+
+$tax_mode =
+(trim($org_state) == trim($cust_state))
+? 'CGST_SGST'
+: 'IGST';
+
+$gst_type = $_POST['gst_type'] ?? 'exclusive';
+
 $gst_type = $_POST['gst_type'] ?? 'exclusive';
 
 $subtotal  = 0;
@@ -80,10 +111,10 @@ $db->query("DELETE FROM payments WHERE invoice_id = $id");
 
 $db->query("DELETE FROM ledger_entries WHERE invoice_id = $id");
 
-$db->query("
-DELETE FROM transaction_master
-WHERE bill_indent_no = '".$quote['invoice_no']."'
-");
+// $db->query("
+// DELETE FROM transaction_master
+// WHERE bill_indent_no = '".$quote['invoice_no']."'
+// ");
 
 /* ================= INSERT ITEMS AGAIN ================= */
 
@@ -114,9 +145,18 @@ if($gst_type == "exclusive"){
 
     $gst_amount = ($discounted_base * $gst) / 100;
 
-    $cgst_amount = $gst_amount / 2;
-    $sgst_amount = $gst_amount / 2;
-    $igst_amount = 0;
+    if($tax_mode == 'IGST'){
+
+        $igst_amount = $gst_amount;
+        $cgst_amount = 0;
+        $sgst_amount = 0;
+
+    }else{
+
+        $cgst_amount = $gst_amount / 2;
+        $sgst_amount = $gst_amount / 2;
+        $igst_amount = 0;
+    }
 
     $rate_incl = $base + ($base * $gst / 100);
 
@@ -128,26 +168,23 @@ elseif($gst_type == "inclusive"){
     $gst_amount = $discounted_base
                 - ($discounted_base / (1 + $gst/100));
 
-    $cgst_amount = $gst_amount / 2;
-    $sgst_amount = $gst_amount / 2;
-    $igst_amount = 0;
+    if($tax_mode == 'IGST'){
+
+        $igst_amount = $gst_amount;
+        $cgst_amount = 0;
+        $sgst_amount = 0;
+
+    }else{
+
+        $cgst_amount = $gst_amount / 2;
+        $sgst_amount = $gst_amount / 2;
+        $igst_amount = 0;
+    }
 
     $rate_incl = $base;
 
     $line_total = $discounted_base;
 
-}
-else{
-
-    $gst_amount = 0;
-
-    $cgst_amount = 0;
-    $sgst_amount = 0;
-    $igst_amount = 0;
-
-    $rate_incl = $base;
-
-    $line_total = $discounted_base;
 }
 
 $total_gst += $gst_amount;
@@ -191,49 +228,26 @@ $line_total
 
 /* ================= TRANSACTION ================= */
 
+/* ================= TRANSACTION UPDATE ================= */
+
 $db->query("
-INSERT INTO transaction_master
-(
-product_id,
-gst_id,
-bill_indent_no,
-entry_date,
-bill_indent_date,
-quantity,
-unit,
-unit_price,
-gst_amount,
-discount_amount,
-net_price,
-sale_amount,
-sale_gst,
-sale_net,
-transaction_type,
-status,
-comments,
-created_at
-)
-VALUES
-(
-'$pid',
-'$gst',
-'".$quote['invoice_no']."',
-NOW(),
-NOW(),
-'$qty',
-'PCS',
-'$base',
-'$gst_amount',
-'$disc',
-'$line_total',
-'$line_total',
-'$gst_amount',
-'$line_total',
-2,
-1,
-'Sale Invoice Edit',
-NOW()
-)
+UPDATE transaction_master
+SET
+product_id       = '$pid',
+gst_id           = '$gst',
+quantity         = '$qty',
+unit_price       = '$base',
+gst_amount       = '$gst_amount',
+discount_amount  = '$disc',
+net_price        = '$line_total',
+sale_amount      = '$discounted_base',
+sale_gst         = '$gst_amount',
+sale_net         = '$line_total',
+status           = 1,
+comments         = 'Sale Invoice Edit'
+WHERE bill_indent_no = '".$quote['invoice_no']."'
+AND transaction_type = 2
+LIMIT 1
 ");
 
 }
