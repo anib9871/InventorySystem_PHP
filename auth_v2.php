@@ -72,12 +72,6 @@ $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
 $_SESSION['db_name'] = $user['db_name'];
-echo "<pre>";
-echo "USER DB = ".$user['db_name']."<br>";
-echo "SESSION DB = ".$_SESSION['db_name']."<br>";
-print_r($user);
-echo "</pre>";
-exit;
 $_SESSION['user_level'] = 1;
 $_SESSION['org_name'] = $user['org_name'];
 
