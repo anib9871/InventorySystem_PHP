@@ -34,15 +34,14 @@ else{
 </title>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/css/datepicker3.min.css"/>
-<!-- <link rel="stylesheet" href="libs/css/main.css"/> -->
-<link rel="stylesheet" href="/libs/css/main.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/css/datepicker3.min.css"/>
+<link rel="stylesheet" href="libs/css/main.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 <body>
 
-<?php if($session->isUserLoggedIn()): ?>
+<?php if(isset($_SESSION['username'])): ?>
 
   <?php
 $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
@@ -52,24 +51,11 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <!-- ✅ ROLE BASED LOGO -->
 <?php if($user['role_id'] != 1): ?>
-<div class="logo pull-left" id="menuToggle" 
+<div class="logo pull-left" id="menuToggle"
      style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
-<?php 
-if(isset($_SESSION['billing_access']) && $_SESSION['billing_access'] == 1 && $_SESSION['inventory_access'] == 0){
-    echo "RED ORANGES CONSULTING";
-}
-elseif(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && $_SESSION['billing_access'] == 0){
-    echo "RED ORANGES CONSULTING";
-}
-elseif(isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 1){
-echo "RED ORANGES CONSULTING";
-}
-else{
-    echo "SYSTEM";
-}
-?>
 
-<span style="font-size:12px;"></span>
+<?php echo $_SESSION['org_name']; ?>
+
 </div>
 <?php else: ?>
   <div class="logo pull-left">
@@ -92,27 +78,8 @@ else{
 <img src="uploads/users/no_image.png" class="img-circle img-inline">
 
 <span>
-
-<?php if($_SESSION['role_id'] == 2): ?>
-
-    <?php echo $_SESSION['org_name']; ?>
-
-<?php else: ?>
-
-    <?php echo ucfirst($user['name']); ?>
-
-    <?php if(isset($_SESSION['org_name'])): ?>
-        | <?php echo $_SESSION['org_name']; ?>
-    <?php endif; ?>
-
-    <?php if(isset($_SESSION['center_name'])): ?>
-        | <?php echo $_SESSION['center_name']; ?>
-    <?php endif; ?>
-
-<?php endif; ?>
-
+Logout
 <i class="caret"></i>
-
 </span>
 
 </a>
