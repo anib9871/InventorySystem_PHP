@@ -2,6 +2,21 @@
 <?php
 require_once('includes/load.php');
 
+echo "<pre>";
+
+$dbcheck = find_by_sql("SELECT DATABASE() AS current_db");
+
+print_r($dbcheck);
+
+echo "SESSION DB = ";
+echo isset($_SESSION['db_name'])
+     ? $_SESSION['db_name']
+     : 'NOT SET';
+
+echo "</pre>";
+
+exit;
+
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
