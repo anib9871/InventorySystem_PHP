@@ -88,9 +88,9 @@ if(!empty($config)){
         <li><a href="grn.php">GRN</a></li>
         <li><a href="manage_grn.php">Manage GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
-        <li><a href="quotation_list.php">Duplicate Quotation Print</a></li>
+        <li><a href="quotation_list.php">Edit/Print Quotation</a></li>
         <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
-        <li><a href="invoice_list.php">Duplicate Invoice Print</a></li>
+        <li><a href="invoice_list.php">Edit/Print Invoice</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
          <li><a href="payments.php">Manage Payments</a></li>
         <li><a href="payment_report.php">Payments Report</a></li>
