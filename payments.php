@@ -184,6 +184,10 @@ SELECT
 i.id,
 i.invoice_no,
 
+tm.sale_amount,
+tm.sale_gst,
+tm.sale_net,
+
 (
 SELECT COALESCE(SUM(discount_amount),0)
 FROM invoice_items ii
@@ -204,6 +208,9 @@ FROM invoice i
 
 LEFT JOIN customer_master c
 ON c.id = i.customer_id
+
+LEFT JOIN transaction_master tm
+ON tm.bill_indent_no = i.invoice_no
 
 WHERE i.due_amount > 0
 
@@ -372,12 +379,10 @@ placeholder="Search Customer / Invoice">
 <?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
 </th>
 <?php if($type == 'customer'){ ?>
-
 <th>Amount</th>
-<th>Discount</th>
 <th>GST</th>
 <th>Paid</th>
-<th>Total Due</th>
+<th>Due</th>
 
 <?php } else { ?>
 
@@ -405,23 +410,17 @@ placeholder="Search Customer / Invoice">
 <td><?= $p['invoice_no']; ?></td>
 
 <td>
-
 <?= htmlspecialchars($p['party_name']); ?>
-
 </td>
 
 <?php if($type == 'customer'){ ?>
 
 <td>
-₹ <?= number_format($p['subtotal'],2); ?>
+₹ <?= number_format($p['sale_amount'],2); ?>
 </td>
 
 <td>
-₹ <?= number_format($p['discount_total'],2); ?>
-</td>
-
-<td>
-₹ <?= number_format($p['gst_total'],2); ?>
+₹ <?= number_format($p['sale_gst'],2); ?>
 </td>
 
 <td>
