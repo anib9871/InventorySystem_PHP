@@ -1234,12 +1234,13 @@ class="btn btn-danger btn-sm remove">
 
         <?php foreach($terms_templates as $t): ?>
 
-        <option
-        value="<?= htmlspecialchars($t['template']); ?>">
+<option
+value="<?= htmlspecialchars($t['template']); ?>"
+<?= trim($quote['terms_conditions']) == trim($t['template']) ? 'selected' : ''; ?>>
 
-          Template <?= $t['tc_id']; ?>
+<?= htmlspecialchars($t['template_name']); ?>
 
-        </option>
+</option>
 
         <?php endforeach; ?>
 
@@ -1249,12 +1250,12 @@ class="btn btn-danger btn-sm remove">
         Terms & Conditions
       </label>
 
-      <textarea
-      name="terms_conditions"
-      id="termsBox"
-      rows="5"
-      class="form-control"
-      placeholder="Terms & Conditions..."></textarea>
+<textarea
+name="terms_conditions"
+id="termsBox"
+rows="5"
+class="form-control"
+placeholder="Terms & Conditions..."><?= htmlspecialchars($quote['terms_conditions']); ?></textarea>
 
     </div>
 
