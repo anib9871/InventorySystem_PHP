@@ -413,7 +413,7 @@ body{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    table-layout:fixed;
+    table-layout:auto;
 }
 
 /* HEADER */
@@ -445,8 +445,7 @@ body{
     border:none !important;
     padding:12px 8px;
     vertical-align:middle;
-    white-space:normal;
-    word-break:break-word;
+    white-space:nowrap;
     height:72px;
 }
 
@@ -851,9 +850,10 @@ Select Template
 <?php foreach($terms_templates as $t): ?>
 
 <option
-value="<?= htmlspecialchars($t['template']); ?>">
+value="<?= htmlspecialchars($t['template']); ?>"
+<?= trim($quote['terms_conditions']) == trim($t['template']) ? 'selected' : ''; ?>>
 
-Template <?= $t['tc_id']; ?>
+<?= htmlspecialchars($t['template_name']); ?>
 
 </option>
 
@@ -869,8 +869,7 @@ Terms & Conditions
 name="terms_conditions"
 id="termsBox"
 rows="5"
-class="form-control"><?= $quote['terms_conditions']; ?></textarea>
-
+class="form-control"><?= htmlspecialchars($quote['terms_conditions']); ?></textarea>
 </div>
 
 </div>
@@ -1162,6 +1161,26 @@ document.getElementById("termsTemplate")
 
 document.querySelectorAll("#billBody tr").forEach(r=>{
    calculate(r);
+});
+
+window.addEventListener("load", function(){
+
+    let termsText =
+    document.getElementById("termsBox").value.trim();
+
+    let ddl =
+    document.getElementById("termsTemplate");
+
+    for(let i=0;i<ddl.options.length;i++){
+
+        if(
+            ddl.options[i].value.trim() === termsText
+        ){
+            ddl.selectedIndex = i;
+            break;
+        }
+    }
+
 });
 
 </script>
