@@ -19,7 +19,7 @@ WHERE id = $id
 ");
 
 if(!$qdata){
-    die("Quotation not found");
+    die("Quotation ID Not Found : ".$id);
 }
 
 $quote = $qdata[0];
