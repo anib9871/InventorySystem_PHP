@@ -2,6 +2,11 @@
 <?php
 require_once('includes/load.php');
 
+echo "<pre>";
+print_r($_SESSION);
+echo "</pre>";
+exit;
+
 $db->db_disconnect();
 $db->db_connect();
 
@@ -20,23 +25,6 @@ SELECT *
 FROM quotation_master
 WHERE id = $id
 ");
-
-echo "<pre>";
-
-echo "SESSION DB = ".($_SESSION['db_name'] ?? 'NOT SET')."\n\n";
-
-$dbname = find_by_sql("SELECT DATABASE() AS db");
-print_r($dbname);
-
-echo "\n\nQUOTATIONS:\n";
-
-print_r(find_by_sql("
-SELECT id, quotation_no
-FROM quotation_master
-"));
-
-echo "</pre>";
-exit;
 if(!$qdata){
     die("Quotation ID Not Found : ".$id);
 }
