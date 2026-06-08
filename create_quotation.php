@@ -821,10 +821,9 @@ Select Template
 <option
 value="<?= htmlspecialchars($t['template']); ?>">
 
-Template <?= $t['tc_id']; ?>
+<?= htmlspecialchars($t['template_name']); ?>
 
 </option>
-
 <?php endforeach; ?>
 
 </select>
