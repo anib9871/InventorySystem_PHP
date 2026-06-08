@@ -103,6 +103,20 @@ AND YEAR(created_at)=YEAR(CURDATE())
 ");
 
 $month_revenue = $month_revenue[0]['total'];
+
+/* MONTH SALES */
+
+$month_sales = find_by_sql("
+SELECT COALESCE(SUM(sale_net),0) as total
+
+FROM transaction_master
+
+WHERE transaction_type = 2
+AND MONTH(entry_date)=MONTH(CURDATE())
+AND YEAR(entry_date)=YEAR(CURDATE())
+");
+
+$month_sales = $month_sales[0]['total'];
 /* TODAY PAYMENT MODE */
 
 $today_modes = find_by_sql("
@@ -150,7 +164,7 @@ GROUP BY p.payment_mode
 
 .top-cards{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:1fr 1fr 1fr;
     gap:14px;
     margin-bottom:18px;
 }
@@ -337,7 +351,36 @@ GROUP BY p.payment_mode
 
 </div>
 
+<div class="rev-card">
+
+<div class="rev-left">
+
+    <div class="rev-label">
+        MONTH SALES
+    </div>
+
+    <div class="rev-value">
+        ₹<?= number_format($month_sales); ?>
+    </div>
+
+    <div class="rev-growth">
+        ↑ Total Invoice Sales
+    </div>
+
 </div>
+
+<div class="rev-right">
+
+<div class="rev-mode">
+SALES :
+<span>₹<?= number_format($month_sales); ?></span>
+</div>
+
+</div>
+
+</div>
+
+</div> <!-- top-cards close -->
 
 <div class="dh-body">
 
