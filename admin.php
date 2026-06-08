@@ -91,16 +91,15 @@ $today_revenue = $today_revenue[0]['total'];
 
 
 
-/* MONTH REVENUE */
+/* MONTH PAYMENT COLLECTION */
 
 $month_revenue = find_by_sql("
-SELECT COALESCE(SUM(sale_net),0) as total
+SELECT COALESCE(SUM(amount),0) as total
 
-FROM transaction_master
+FROM payments
 
-WHERE transaction_type = 2
-AND MONTH(entry_date)=MONTH(CURDATE())
-AND YEAR(entry_date)=YEAR(CURDATE())
+WHERE MONTH(created_at)=MONTH(CURDATE())
+AND YEAR(created_at)=YEAR(CURDATE())
 ");
 
 $month_revenue = $month_revenue[0]['total'];
