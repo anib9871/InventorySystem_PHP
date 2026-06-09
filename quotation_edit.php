@@ -1,12 +1,6 @@
 
 <?php
 require_once('includes/load.php');
-
-echo "<pre>";
-print_r($_SESSION);
-echo "</pre>";
-exit;
-
 $db->db_disconnect();
 $db->db_connect();
 
