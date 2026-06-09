@@ -322,8 +322,10 @@ if(
 <input type="number"
 name="reorder_level"
 class="form-control"
+min="0"
+step="1"
 placeholder="Enter Reorder Qty"
-value="<?php echo $edit['reorder_level'] ?? '0'; ?>">
+value="<?php echo (int)($edit['reorder_level'] ?? 0); ?>">
 
 <br>
 
@@ -432,7 +434,7 @@ Clear
 <td><?php echo ($p['type']==1) ? 'Product' : 'Service'; ?></td>
 
 <?php if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1): ?>
-<td><?php echo isset($p['reorder_level']) ? $p['reorder_level'] : 0; ?></td>
+<td><?php echo (int)($p['reorder_level'] ?? 0); ?></td>
 <?php endif; ?>
 
 <td>₹ <?php echo number_format($p['buy_price'],2); ?></td>
