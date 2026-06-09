@@ -104,15 +104,33 @@ Logout
 <!-- SIDEBAR -->
 <div class="sidebar">
 
-<?php if($user['role_id'] == 1): ?>
-  <?php include_once('superadmin_menu.php');?>
+<?php
 
-<?php elseif($user['role_id'] == 2): ?>
-  <?php include_once('admin_menu.php');?>
+/* SUPER ADMIN */
 
-<?php elseif($user['role_id'] == 3): ?>
-  <?php include_once('user_menu.php');?>
-<?php endif; ?>
+if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
+
+    include_once('superadmin_menu.php');
+
+}
+
+/* ORGANIZATION USERS */
+
+else{
+
+    if(isset($_SESSION['user_level']) && $_SESSION['user_level'] == 1){
+
+        include_once('admin_menu.php');
+
+    }else{
+
+        include_once('user_menu.php');
+
+    }
+
+}
+
+?>
 
 </div>
 
