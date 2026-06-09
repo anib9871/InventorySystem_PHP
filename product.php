@@ -230,7 +230,7 @@ include_once('layouts/header.php');
 <?php foreach(find_all("gst_master") as $g): ?>
 <option value="<?php echo $g['id']; ?>"
 <?php if($edit && $edit['gst_id']==$g['id']) echo "selected"; ?>>
-<?php echo $g['gst_percent']; ?>%
+<?php echo $g['gst_name']; ?> (<?php echo $g['gst_percent']; ?>%)
 </option>
 <?php endforeach; ?>
 </select>
