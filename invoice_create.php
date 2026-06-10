@@ -1484,7 +1484,7 @@ class="btn btn-success top-save-btn">
         <option
         value="<?= htmlspecialchars($t['template']); ?>">
 
-          Template <?= $t['tc_id']; ?>
+          <?= htmlspecialchars($t['template_name']); ?>
 
         </option>
 
