@@ -841,7 +841,7 @@ $advance_amount = 0;
 
 ?>
 
-<div class="alert alert-info">
+<div class="alert alert-info" id="advanceSection" style="display:none;">
 
 <strong>
 
@@ -1192,10 +1192,10 @@ function addItem() {
   let gst_id = gstSel.value;
   let gstp   = parseFloat(gstSel.options[gstSel.selectedIndex]?.dataset.gst || 0);
 
-  if (!pid || qty <= 0 || rate <= 0 || !gst_id) {
+if (!pid || qty <= 0 || !gst_id) {
     alert("Please fill all item fields");
     return;
-  }
+}
 
 let buyType = document.getElementById("buy_type").value;
 
@@ -1867,6 +1867,9 @@ if(!supplier_id){
 document.getElementById("advanceAmount")
 .innerText = "0.00";
 
+document.getElementById("advanceSection")
+.style.display = "none";
+
 return;
 
 }
@@ -1880,10 +1883,30 @@ fetch(
 
 .then(data => {
 
+let adv = parseFloat(data.advance || 0);
+
 document.getElementById("advanceAmount")
-.innerText = parseFloat(
-data.advance || 0
-).toFixed(2);
+.innerText = adv.toFixed(2);
+
+if(adv > 0){
+
+document.getElementById("advanceSection")
+.style.display = "block";
+
+}else{
+
+document.getElementById("advanceSection")
+.style.display = "none";
+
+document.getElementById("useAdvance").checked = false;
+
+document.getElementById("advanceInput").style.display = "none";
+
+document.getElementById("advanceInput").value = "";
+
+document.getElementById("used_advance").value = 0;
+
+}
 
 });
 
@@ -1986,10 +2009,11 @@ updateGrandTotal();
         <div style="max-height:350px; overflow-y:auto;">
           <table class="table table-bordered table-hover">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>Product Name</th>
-              </tr>
+             <tr>
+    <th width="10%">#</th>
+    <th width="70%">Product Name</th>
+    <th width="20%">HSN Code</th>
+</tr>
             </thead>
             <tbody id="productTable">
               <?php $i=1; foreach($products as $p){ ?>
