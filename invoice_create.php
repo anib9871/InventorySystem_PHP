@@ -1278,6 +1278,30 @@ class="btn btn-success top-save-btn">
 
 </div>
 
+<div class="col-md-2 d-flex flex-column justify-content-end">
+
+<label style="visibility:hidden;">Stock</label>
+
+<div id="stockInfo"
+style="
+height:38px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#fff;
+border:1px solid #dbe2ea;
+border-radius:8px;
+font-weight:600;
+padding:0 10px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+">
+No Product Selected
+</div>
+
+</div>
+
 <?php endif; ?>
 
 
@@ -1545,7 +1569,10 @@ document.getElementById("productSearch")
 /* ADD PRODUCT */
 function addProduct(p){
 
- let rows = document.querySelectorAll("#billBody tr");
+document.getElementById("stockInfo").innerHTML =
+`${p.name} : ${Math.floor(Number(p.current_stock || 0))} PCS`;
+
+let rows = document.querySelectorAll("#billBody tr");
 
  for(let r of rows){
    let name = r.querySelector("td").innerText.trim();
@@ -1561,7 +1588,10 @@ function addProduct(p){
  let row=document.createElement("tr");
 
  row.innerHTML=`
-  <td>${p.name}<input type="hidden" name="product_id[]" value="${p.id}"></td>
+ <td class="productName" data-product-id="${p.id}">
+${p.name}
+<input type="hidden" name="product_id[]" value="${p.id}">
+</td>
 
   <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1"></td>
 
@@ -1638,11 +1668,37 @@ document.addEventListener("change", function(e){
 /* REMOVE FIX */
 document.addEventListener("click", function(e){
 
- if(e.target.classList.contains("remove")){
-   let row = e.target.closest("tr");
-   row.remove();
-   updateSummary();
- }
+   if(e.target.classList.contains("remove")){
+
+      let row = e.target.closest("tr");
+      row.remove();
+
+      updateSummary();
+
+      let rows = document.querySelectorAll("#billBody tr");
+
+      if(rows.length === 0){
+
+         document.getElementById("stockInfo").innerHTML =
+         "No Product Selected";
+
+      }else{
+
+         let lastRow = rows[rows.length - 1];
+
+let productId =
+lastRow.querySelector(".productName").dataset.productId;
+
+let productObj =
+products.find(p => p.id == productId);
+
+         if(productObj){
+
+            document.getElementById("stockInfo").innerHTML =
+            `${productObj.name} : ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
+         }
+      }
+   }
 
 });
 
