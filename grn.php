@@ -856,10 +856,14 @@ Available Advance :
 
 <br>
 
+<div id="useAdvanceWrapper">
+
 <label>
 <input type="checkbox" id="useAdvance">
 Use Advance
 </label>
+
+</div>
 
 <input
 type="number"
@@ -1868,6 +1872,9 @@ document.getElementById("advanceAmount")
 .innerText = "0.00";
 
 document.getElementById("advanceSection")
+.style.display = "block";
+
+document.getElementById("useAdvanceWrapper")
 .style.display = "none";
 
 return;
@@ -1888,14 +1895,17 @@ let adv = parseFloat(data.advance || 0);
 document.getElementById("advanceAmount")
 .innerText = adv.toFixed(2);
 
+document.getElementById("advanceSection")
+.style.display = "block";
+
 if(adv > 0){
 
-document.getElementById("advanceSection")
+document.getElementById("useAdvanceWrapper")
 .style.display = "block";
 
 }else{
 
-document.getElementById("advanceSection")
+document.getElementById("useAdvanceWrapper")
 .style.display = "none";
 
 document.getElementById("useAdvance").checked = false;
