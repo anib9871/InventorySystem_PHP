@@ -346,29 +346,52 @@ function page_require_level($require_level){
 function join_product_table(){
    global $db;
 
-   $sql = "SELECT 
+   $sql = "SELECT
               p.id,
               p.name,
               p.buy_price,
               p.sale_price,
-			  p.type,
+              p.type,
               p.hsn_code,
               p.media_id,
               p.date,
               p.is_bom,
+              p.reorder_level,
               c.name AS categorie,
               m.file_name AS image,
               g.gst_percent,
-              g.gst_name
+              g.gst_name,
+
+              COALESCE(
+                SUM(
+                  CASE
+                    WHEN t.transaction_type = 1 THEN t.quantity
+                    WHEN t.transaction_type = 2 THEN -t.quantity
+                    ELSE 0
+                  END
+                ),0
+              ) AS current_stock
+
            FROM products p
-           LEFT JOIN categories c ON c.id = p.categorie_id
-           LEFT JOIN media m ON m.id = p.media_id
-           LEFT JOIN gst_master g ON g.id = p.gst_id
+
+           LEFT JOIN categories c
+           ON c.id = p.categorie_id
+
+           LEFT JOIN media m
+           ON m.id = p.media_id
+
+           LEFT JOIN gst_master g
+           ON g.id = p.gst_id
+
+           LEFT JOIN transaction_master t
+           ON t.product_id = p.id
+
+           GROUP BY p.id
+
            ORDER BY p.id ASC";
 
    return find_by_sql($sql);
 }
-
   /*--------------------------------------------------------------*/
   /* Function for Finding all product name
   /* Request coming from ajax.php for auto suggest
