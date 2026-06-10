@@ -16,9 +16,13 @@ if(isset($_POST['save_manufacture'])){
     $qty        = (float)$_POST['qty'];
 
     if($product_id <= 0 || $qty <= 0){
-        die("Invalid Data");
-    }
 
+    $_SESSION['mfg_error'] =
+    "Please select device and enter valid quantity";
+
+    redirect('manufacture.php', false);
+    exit;
+}
     $ref_no = "MFG".time();
 
     $db->query("START TRANSACTION");
@@ -31,9 +35,16 @@ if(isset($_POST['save_manufacture'])){
     ");
 
     if(!$bom_items){
-        $db->query("ROLLBACK");
-        die("No BOM found for this product");
-    }
+
+    $_SESSION['mfg_error'] =
+    "No BOM found for this product";
+
+    $db->query("ROLLBACK");
+
+    redirect('manufacture.php', false);
+
+    exit;
+}
 
     foreach($bom_items as $b){
 
@@ -85,13 +96,12 @@ $current_stock = (float)$stock_data[0]['current_stock'];
             $db->query("ROLLBACK");
             $raw_product = find_by_id('products', $raw_id);
 
-           $_SESSION['mfg_error'] =
-"Insufficient stock for ".$raw_product['name'];
+            $_SESSION['mfg_error'] =
+            "Insufficient stock for ".$raw_product['name'];
 
-$db->query("ROLLBACK");
 
-redirect('manufacture.php', false);
-exit;
+            redirect('manufacture.php', false);
+            exit;
         }
 
 /* ===== Deduct Raw Material ===== */
@@ -125,7 +135,12 @@ VALUES
 ")){
 
     $db->query("ROLLBACK");
-    die("Raw material deduction failed");
+    $_SESSION['mfg_error'] =
+    "Raw material deduction failed";
+
+    redirect('manufacture.php', false);
+
+    exit;
 }
     }
 
@@ -164,12 +179,22 @@ VALUES
 ")){
 
     $db->query("ROLLBACK");
-    die("Finished goods insert failed");
+    $_SESSION['mfg_error'] =
+    "Finished goods insert failed";
+
+
+    redirect('manufacture.php', false);
+
+    exit;
 }
 
     $db->query("COMMIT");
 
-    echo "<script>alert('Manufacturing Successful'); window.location='manufacture.php';</script>";
+    $session->msg("s", "Manufacturing Successful");
+
+redirect('manufacture.php', false);
+
+exit;
 }
 ?>
 
