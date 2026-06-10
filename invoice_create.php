@@ -1569,8 +1569,12 @@ document.getElementById("productSearch")
 /* ADD PRODUCT */
 function addProduct(p){
 
+let shortName = productObj.name.length > 20
+? productObj.name.substring(0,20) + "..."
+: productObj.name;
+
 document.getElementById("stockInfo").innerHTML =
-`${p.name} : ${Math.floor(Number(p.current_stock || 0))} PCS`;
+`${shortName} : ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
 
 let rows = document.querySelectorAll("#billBody tr");
 
