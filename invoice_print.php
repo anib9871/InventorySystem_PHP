@@ -1,1878 +1,632 @@
 <?php
-die("PRODUCTION PRINT FILE");
-
 require_once('includes/load.php');
-$system = $_GET['system'] ?? 'billing';
-//page_require_level(2);
-error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
-$center_id = $_SESSION['center_id'] ?? 0;
-
-if($_SESSION['role_id'] == 3){
-
-
-
-$customers = find_by_sql("
-SELECT * FROM customer_master
-WHERE center_id = '$center_id'
-");
-
-}else{
-
-$customers = find_all('customer_master');
-
-}
-$products  = join_product_table();
-$payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
-
-/* TERMS & CONDITIONS */
-
-$terms_templates = find_all('terms_conditions_master');
-
-$rate_map = [];
-
-    $rates = find_by_sql("
-        SELECT r.product_id, r.rate, g.gst_percent
-        FROM rate_master r
-        LEFT JOIN gst_master g ON g.id = r.gst_id
-        
-    ");
-
-    foreach($rates as $r){
-        $rate_map[$r['product_id']] = $r;
-    }
-
-
-
-/* SAVE INVOICE */
-if(isset($_POST['save_invoice'])){
-
-if($_SESSION['role_id'] == 2){
-
-   $center_id = (int)$_POST['center_id'];
-
-}else{
-
-   $center_id = (int)$_SESSION['center_id'];
-}
-  global $db;
-
-
-  mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-$db->query("START TRANSACTION");
-
-try {
-
-/* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
-
-/* ===== SAFE INVOICE NUMBER (MULTI-USER FIX) ===== */
-
-
-
-/* 🔒 LOCK sequence row */
-$seq = $db->query("
-SELECT last_no,fy_id
-FROM sequence_master 
-WHERE sequence_category='invoice'
-FOR UPDATE
-")->fetch_assoc();
-
-if(!$seq){
-  throw new Exception("Invoice sequence not found");
-}
-
-/* NEXT NUMBER */
-$next = $seq['last_no'] + 1;
-
-/* FY SHORT FORMAT */
-$fy = find_by_sql("
-SELECT fy_name
-FROM financial_year_master
-WHERE fy_id = '{$seq['fy_id']}'
-LIMIT 1
-");
-
-$fy_name = substr($fy[0]['fy_name'], 2);
-
-/* GENERATE INVOICE NO */
-$inv_no = $fy_name . "/" . $next;
-
-/* UPDATE sequence */
-$db->query("
-UPDATE sequence_master 
-SET last_no = $next 
-WHERE sequence_category='invoice'
-AND fy_id = '{$seq['fy_id']}'
-");
-
-
-$cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
-
-if($system != 'inventory'){
-
-if($cust <= 0){
-
-    $name  = remove_junk($db->escape($_POST['manual_name']));
-    $phone = remove_junk($db->escape($_POST['manual_phone']));
-    // $gst   = remove_junk($db->escape($_POST['manual_gst']));
-    // $addr  = remove_junk($db->escape($_POST['manual_address']));
-
-    if($name == ""){
-        echo "<script>
-alert('Please enter customer name');
-window.location='invoice_create.php';
-</script>";
-exit;
-    }
-
-    /* 🔥 SMART LOGIC START */
-
-    if($phone != ""){
-
-        // ✅ contact se match
-        $check = find_by_sql("SELECT id FROM customer_master WHERE contact_no='$phone' LIMIT 1");
-
-        if($check){
-            $cust = $check[0]['id'];
-        }else{
-            // new create
-            $db->query("INSERT INTO customer_master
-            (customer_name, contact_no, address, gst_no, center_id)
-            VALUES
-            (
-            '$name',
-            '$phone',
-            '$addr',
-            '$gst',
-            '$center_id'
-            )");
-
-            $cust = $db->insert_id();
-        }
-
-    }else{
-
-        // ❌ phone nahi → direct new customer
-          $db->query("INSERT INTO customer_master
-          (customer_name, contact_no, address, gst_no, center_id)
-          VALUES
-          (
-          '$name',
-           '',
-          '$addr',
-          '$gst',
-          '$center_id'
-          )");
-
-        $cust = $db->insert_id();
-    }
-
-    /* 🔥 SMART LOGIC END */
-}
-
-}else{
-
-    if($cust <= 0){
-        echo "<script>
-alert('Please select customer');
-window.location='invoice_create.php';
-</script>";
-exit;
-    }
-
-}
-  if(!isset($_SESSION['org_id'])){
-    echo "<script>
-    alert('Session expired. Please login again');
-    window.location='index.php';
-    </script>";
+if(strpos($print_name,'Thermal') !== false){
+    include('invoice_print_thermal.php');
     exit;
 }
 
-$org_id = $_SESSION['org_id'];
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if($id <= 0) die("Invalid Invoice ID");
 
-  /* ===============================
-   STATE CODE CHECK
-================================ */
-
-$org_data = find_by_sql("
-SELECT gst_no 
-FROM organization_master 
-WHERE id = '{$org_id}'
-");
-$cust_data = find_by_sql("SELECT gst_no FROM customer_master WHERE id = $cust");
-
-$cust_gst = '';
-
-if(!empty($cust_data)){
-    $cust_gst = $cust_data[0]['gst_no'] ?? '';
-}
-
-$org_gst = '';
-
-if(!empty($org_data)){
-    $org_gst = $org_data[0]['gst_no'] ?? '';
-}
-
-//$org_gst = $org_data[0]['gst_no'] ?? '';
-// $cust_gst = $cust_data[0]['gst_no'] ?? '';
-
-$org_state_code = substr($org_gst, 0, 2);
-$cust_state_code = substr($cust_gst, 0, 2);
-
-/* Determine GST Mode */
-$tax_mode = 'CGST_SGST'; // default for services
-
-if(isset($_POST['product_id']) && count($_POST['product_id']) > 0){
-
-foreach($_POST['product_id'] as $pid){
-
-  $product = find_by_id('products', $pid);
-
-if($product['type'] == 1){ // product
-
-if(trim((string)$org_state_code) !== trim((string)$cust_state_code)){
-
-    $tax_mode = 'IGST';
-
-}else{
-
-    $tax_mode = 'CGST_SGST';
-}
-
-break;
-}
-}
-}
-
-$qdate = date("Y-m-d");
-
-$gst_type = isset($_POST['gst_type'])
-? $_POST['gst_type']
-: 'inclusive';
-
-  $subtotal  = 0;
-  $net_total = 0;
-  $total_gst = 0;
-
-  /* ===============================
-     INSERT MASTER
-  ================================*/
-$insertMaster = $db->query("
-INSERT INTO invoice
-(
-invoice_no,
-invoice_date,
-customer_id,
-organization_id,
-quotation_id,
-subtotal,
-gst_total,
-net_total,
-paid_amount,
-due_amount,
-payment_status,
-gst_type,
-remarks,
-terms_conditions,
-created_at
-)
-VALUES
-(
-'$inv_no',
-'$qdate',
-'$cust',
-'$org_id',
-NULL,
-0,
-0,
-0,
-0,
-0,
-'Unpaid',
-'$gst_type',
-'',
-'".$db->escape($_POST['terms_conditions'])."',
-NOW()
-)
+/* Fetch Invoice */
+$invoice_data = find_by_sql("
+SELECT i.*, c.customer_name, c.address, c.gst_no, c.contact_no
+FROM invoice i
+LEFT JOIN customer_master c ON c.id = i.customer_id
+WHERE i.id = $id
 ");
 
-  if(!$insertMaster){
-      echo "<script>alert('Master Insert Error');window.location='invoice_create.php';</script>";
-exit;
-  }
+if(!$invoice_data) die("Invoice not found");
+$invoice = $invoice_data[0];
 
-  $qid = $db->insert_id();   // ✅ correct method
-
-  if(!$qid){
-      echo "<script>
-alert('Something went wrong while saving invoice');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  if(!isset($_POST['product_id']) || count($_POST['product_id']) == 0){
-      $db->query("DELETE FROM invoice WHERE id = $qid");
-      echo "<script>
-alert('Something went wrong while saving invoice');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  /* ===============================
-     INSERT ITEMS
-  ================================*/
-  $itemInserted = false;
-
-foreach($_POST['product_id'] as $i => $pid){
-
-$pid = (int)$pid;
-
-if($pid <= 0){
-    continue;
-}
-
-$qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
-$base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
-$gst = 0;
-
-if($gst_enabled == "Yes"){
-   $gst = isset($_POST['gst'][$i])
-          ? (float)$_POST['gst'][$i]
-          : 0;
-}
-$disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
-
-/* ===== CHECK AVAILABLE STOCK ===== */
-// | type | meaning         |
-// | ---- | --------------- |
-// | 1    | GRN             |
-// | 2    | SALE            |
-// | 3    | PURCHASE RETURN |
-// | 4    | SALE RETURN     |
-$product = find_by_id('products',$pid);
-
-/* ===== ONLY PRODUCT ME STOCK CHECK ===== */
-if($product['type'] == 1){
-
-$stock_row = find_by_sql("
-SELECT 
-COALESCE(SUM(
-CASE
-WHEN transaction_type = 1 THEN quantity
-WHEN transaction_type = 2 THEN -quantity
-WHEN transaction_type = 3 THEN -quantity
-WHEN transaction_type = 4 THEN quantity
-END
-),0) AS stock
-FROM transaction_master
-WHERE product_id = {$pid}
+/* MASTER ORG NAME */
+$org_master = find_by_sql("
+SELECT org_name 
+FROM master_inventory.master_organization 
+WHERE org_id = '{$invoice['organization_id']}'
+LIMIT 1
 ");
 
-$current_stock = $stock_row[0]['stock'] ?? 0;
+$org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 
-if($qty > $current_stock){
+/* Organization */
+$org = find_by_sql("SELECT * FROM organization_master WHERE id=".$invoice['organization_id'])[0];
 
-$db->query("DELETE FROM invoice WHERE id = $qid");
+/* ================= TAX MODE DETECT ================= */
 
-echo "<script>
-alert('Stock not available. Available stock: ".$current_stock."');
-window.history.back();
-</script>";
+$org_state  = substr($org['gst_no'], 0, 2);
+$cust_state = substr($invoice['gst_no'], 0, 2);
 
-exit;
-}
+$tax_mode = ($org_state == $cust_state) ? 'CGST_SGST' : 'IGST';
 
-} // 🔥 IMPORTANT: yahi close karo
+/* Bank */
+$bank_data = find_by_sql("SELECT * FROM bank_master WHERE organization_id=".$invoice['organization_id']);
+$bank = $bank_data ? $bank_data[0] : null;
 
-/* ===== YE SAB SABKE LIYE CHALEGA (product + service) ===== */
+/* Items */
+$items = find_by_sql("
+SELECT ii.*, p.name , p.hsn_code
+FROM invoice_items ii
+LEFT JOIN products p ON p.id = ii.product_id
+WHERE ii.invoice_id = $id
+");
 
-if($qty <= 0 || $base <= 0){
-    continue;
-}
+/* ================= NUMBER TO WORDS ================= */
 
-$itemInserted = true;
+function numberToWords($num){
+    $ones = array(
+        0=>"",1=>"One",2=>"Two",3=>"Three",4=>"Four",5=>"Five",
+        6=>"Six",7=>"Seven",8=>"Eight",9=>"Nine",10=>"Ten",
+        11=>"Eleven",12=>"Twelve",13=>"Thirteen",14=>"Fourteen",
+        15=>"Fifteen",16=>"Sixteen",17=>"Seventeen",
+        18=>"Eighteen",19=>"Nineteen"
+    );
+    $tens = array(
+        0=>"",2=>"Twenty",3=>"Thirty",4=>"Forty",
+        5=>"Fifty",6=>"Sixty",7=>"Seventy",
+        8=>"Eighty",9=>"Ninety"
+    );
 
-$line_base = $qty * $base;
+    if($num==0) return "Zero";
 
-/* 🔥 Discount */
-$discounted_base = $line_base - $disc;
+    if($num<20) return $ones[$num];
 
-if($gst_type == "exclusive"){
-
-    if($tax_mode == 'IGST'){
-        $igst_amount = $discounted_base * $gst / 100;
-        $cgst_amount = 0;
-        $sgst_amount = 0;
-        $gst_amount  = $igst_amount;
-    }else{
-        $cgst_amount = ($discounted_base * $gst / 100) / 2;
-        $sgst_amount = ($discounted_base * $gst / 100) / 2;
-        $igst_amount = 0;
-        $gst_amount  = $cgst_amount + $sgst_amount;
+    if($num<100){
+        return $tens[intval($num/10)]." ".$ones[$num%10];
     }
 
-    $rate_incl  = $base + ($base * $gst / 100);
-    $line_total = $discounted_base + $gst_amount;
-
-}else{
-
-    $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
-
-    if($tax_mode == 'IGST'){
-        $igst_amount = $gst_amount;
-        $cgst_amount = 0;
-        $sgst_amount = 0;
-    }else{
-        $cgst_amount = $gst_amount / 2;
-        $sgst_amount = $gst_amount / 2;
-        $igst_amount = 0;
+    if($num<1000){
+        return $ones[intval($num/100)]." Hundred ".numberToWords($num%100);
     }
 
-    $rate_incl  = $base;
-    $line_total = $discounted_base;
-}
-
-$total_gst += $gst_amount;
-
-      $subtotal  += $line_base;
-      $net_total += $line_total;
-      $insertItem = $db->query("
-      INSERT INTO invoice_items
-      (invoice_id, product_id, qty, rate_excl_gst,
-      discount_amount, gst_percent, rate_incl_gst, 
-      cgst_amount, sgst_amount, igst_amount, line_total)
-      VALUES
-      ($qid, $pid, $qty, $base,
-      $disc, $gst, $rate_incl,
-      $cgst_amount, $sgst_amount, $igst_amount, $line_total)
-      ");
-
-      if(!$insertItem){
-          $db->query("DELETE FROM invoice WHERE id = $qid");
-          echo "<script>
-alert('Item Insert Error');
-window.location='invoice_create.php';
-</script>";
-exit;
-      }
-
-      /* ================= TRANSACTION MASTER ENTRY ================= */
-
-$trans = $db->query("
-INSERT INTO transaction_master
-(
-product_id,
-supplier_id,
-bill_indent_no,
-entry_date,
-bill_indent_date,
-quantity,
-free_qty,
-unit,
-rate_id,
-gst_id,
-unit_price,
-gst_amount,
-discount_amount,
-net_price,
-mrp,
-misc_amount,
-sale_amount,
-sale_gst,
-sale_net,
-transaction_type,
-status,
-payment_status,
-payment_mode,
-amount_received,
-balance_amount,
-from_dept,
-to_dept,
-comments,
-created_at,
-center_id
-)
-VALUES
-(
-'$pid',
-NULL,
-'$inv_no',
-NOW(),
-NOW(),
-'$qty',
-0,
-'PCS',
-0,
-0,
-'$base',
-'$gst_amount',
-'$disc',
-'$line_total',
-0,
-0,
-'$discounted_base',
-'$gst_amount',
-'$line_total',
-2,
-1,
-0,
-NULL,
-0,
-0,
-'STORE',
-'CUSTOMER',
-'Sale Invoice',
-NOW(),
-'$center_id'
-)
-");
-
-if(!$trans){
-    echo "<script>alert('Transaction Error');window.location='invoice_create.php';</script>";
-exit;
-}
-}
-
-
-  if(!$itemInserted){
-      $db->query("DELETE FROM invoice WHERE id = $qid");
-      echo "<script>
-alert('Please select at least one valid product');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  /* ===============================
-     UPDATE TOTALS
-  ================================*/
-
-
-$total_paid = 0;
-
-if($system == 'billing'){
-
-    if(isset($_POST['payment_amount'])){
-
-        foreach($_POST['payment_amount'] as $amt){
-
-            $total_paid += (float)$amt;
-        }
+    if($num<100000){
+        return numberToWords(intval($num/1000))." Thousand ".numberToWords($num%1000);
     }
 
-    $due_amount = $net_total - $total_paid;
-
-    if($due_amount <= 0){
-
-        $payment_status = "Paid";
-        $due_amount = 0;
-
-    }elseif($total_paid > 0){
-
-        $payment_status = "Partial";
-
-    }else{
-
-        $payment_status = "Unpaid";
+    if($num<10000000){
+        return numberToWords(intval($num/100000))." Lakh ".numberToWords($num%100000);
     }
 
-}else{
-
-    $total_paid = 0;
-    $due_amount = 0;
-    $payment_status = '';
+    return numberToWords(intval($num/10000000))." Crore ".numberToWords($num%10000000);
 }
-$gst_total = $total_gst;
-
-$db->query("
-UPDATE invoice SET
-
-subtotal = '$subtotal',
-gst_total = '$gst_total',
-net_total = '$net_total',
-
-paid_amount = '$total_paid',
-due_amount = '$due_amount',
-payment_status = '$payment_status'
-
-WHERE id = '$qid'
-");
-
-if($system == 'billing' && isset($_POST['payment_amount'])){
-
-  foreach($_POST['payment_amount'] as $mode_id => $amt){
-
-    $amt = (float)$amt;
-
-    if($amt > 0){
-
-      // 🔥 get payment mode name
-      $pm = find_by_id('payment_mode_master', $mode_id);
-      $mode_name = $pm['mode_name'];
-
-// 🔥 insert into NEW payments table
-
-$utr = $_POST['utr_no'][$mode_id] ?? '';
-
-$db->query("
-INSERT INTO payments
-(
-invoice_id,
-customer_id,
-payment_mode,
-amount,
-reference_no,
-center_id
-)
-VALUES
-(
-$qid,
-$cust,
-'$mode_name',
-'$amt',
-'".$db->escape($utr)."',
-'$center_id'
-)
-");
-
-    }
-  }
-}
-
-// ================= LEDGER ENTRY =================
-
-// 🔹 1. CUSTOMER DEBIT (invoice total)
-$db->query("
-INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-VALUES ($qid, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
-");
-
-// 🔥 UPDATE CUSTOMER BALANCE (INVOICE)
-$db->query("
-UPDATE customer_master 
-SET balance = balance + $net_total
-WHERE id = $cust
-");
-
-// 🔹 2. SALES CREDIT
-$db->query("
-INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-VALUES ($qid, $cust, 'SALES', 'CREDIT', '$net_total')
-");
-
-
-// 🔹 3. PAYMENT ENTRIES
-if($system == 'billing' && isset($_POST['payment_amount'])){
-
-  foreach($_POST['payment_amount'] as $mode_id => $amt){
-
-    $amt = (float)$amt;
-
-    if($amt > 0){
-
-      $pm = find_by_id('payment_mode_master', $mode_id);
-      $mode_name = strtoupper($pm['mode_name']);
-
-      // CASH / UPI DEBIT
-      $db->query("
-      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-      VALUES ($qid, $cust, '$mode_name', 'DEBIT', '$amt')
-      ");
-
-      // CUSTOMER CREDIT
-      $db->query("
-      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-      VALUES ($qid, $cust, 'CUSTOMER', 'CREDIT', '$amt')
-      ");
-
-      // 🔥 CUSTOMER BALANCE REDUCE (PAYMENT)
-      $db->query("
-      UPDATE customer_master 
-      SET balance = balance - $amt
-      WHERE id = $cust
-      ");
-
-    }
-  }
-}
-
-$db->query("COMMIT");  // 🔥 FINAL COMMIT
-
-} catch(Exception $e){
-
-  $db->query("ROLLBACK");
-
-  echo "<script>
-alert(" . json_encode($e->getMessage()) . ");
-window.location='invoice_create.php';
-</script>";
-
-exit;
-}
-
-// echo "<script>
-// window.location='invoice_list.php?print_id=".$qid."';
-// </script>";
-
-echo "
-<script>
-
-window.location.href = 'invoice_print.php?id=".$qid."&direct=1';
-
-</script>
-";
-exit;
-}
-
 ?>
 
-<?php include_once('layouts/header.php'); ?>
-
+<!DOCTYPE html>
+<html>
+<head>
+<title>
+<?= $invoice['customer_name'] ?>_Invoice_<?= $invoice['invoice_no'] ?>
+</title>
 <style>
+/* ===== RESET ===== */
+*{
+  box-sizing:border-box;
+}
 
 body{
-    background:#f1f5f9;
-    font-family:'Segoe UI',sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:13px;
+  margin:0;
+  padding:0;
+  background:#f2f2f2;
+  color:#000;
 }
 
-/* ===== CARDS ===== */
+/* ===== PRINT BUTTON ===== */
+.no-print{
+  max-width:900px;
+  margin:20px auto 0;
+  text-align:right;
+}
 
-.card{
+.no-print button{
+  padding:8px 18px;
+  font-size:13px;
+  cursor:pointer;
+  border:1px solid #000;
+  background:#fff;
+}
+
+/* ===== MAIN WRAPPER ===== */
+.wrapper{
+  width:100%;
+  max-width:900px;      /* A4 safe width */
+  margin:15px auto;
+  background:#fff;
+  border:2px solid #000;
+  padding:20px;
+}
+
+/* ===== SECTION BOXES ===== */
+.section{
+  border:1px solid #000;
+  padding:10px;
+}
+
+/* ===== TABLES ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th, td{
+  border:1px solid #000;
+  padding:7px;
+  vertical-align:top;
+}
+
+th{
+  background:#eaeaea;
+  font-weight:600;
+  text-align:center;
+}
+
+.right{
+  text-align:right;
+}
+
+.center{
+  text-align:center;
+}
+
+/* ===== HEADINGS ===== */
+h1, h2, h3{
+  margin:0 0 5px 0;
+}
+
+/* ===== TOTAL ROWS ===== */
+.total-row td{
+  font-weight:600;
+}
+
+/* ===== A4 PRINT SETTINGS ===== */
+@page{
+  size:A4;
+  margin:15mm;
+}
+
+@media print{
+
+  body{
+    background:#fff;
+  }
+
+  .wrapper{
     border:none;
-    border-radius:18px;
-    background:#fff;
-    box-shadow:0 4px 18px rgba(15,23,42,.06);
-}
-
-/* ===== FORM ===== */
-
-.form-control,
-.form-control-sm{
-    height:34px;
-    border-radius:10px !important;
-    border:1px solid #dbe2ea;
-    font-size:14px;
-    box-shadow:none !important;
-}
-
-.form-control:focus,
-.form-control-sm:focus{
-    border-color:#2563eb;
-    box-shadow:0 0 0 0.15rem rgba(37,99,235,.15) !important;
-}
-
-/* ===== LEFT PANEL ===== */
-
-.left-panel{
-    position:sticky;
-    top:10px;
-}
-
-/* ===== PRODUCT SEARCH ===== */
-
-.product-card{
-    margin-bottom:24px;
-}
-
-
-.product-scroll{
-    height:180px;
-    overflow-y:auto;
-    border-radius:10px;
-}
-
-.product-scroll::-webkit-scrollbar{
-    width:6px;
-}
-
-.product-scroll::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-#productSearch{
-    height:38px;
-    font-size:14px;
-}
-
-/* ===== PRODUCT LIST ===== */
-
-#productList tr{
-    transition:.2s;
-    cursor:pointer;
-}
-
-#productList tr:hover{
-    background:#eef4ff;
-}
-
-#productList td{
-    padding:12px 10px !important;
-    font-size:14px;
-}
-
-#productList th{
-    background:#0f172a;
-    color:#fff;
-    position:sticky;
-    top:0;
-    z-index:10;
-    padding:12px 10px !important;
-    font-size:13px;
-}
-
-/* ===== BILL GRID ===== */
-
-.bill-grid{
-    background:#fff;
-    border-radius:18px;
-    height:220px;
-    overflow-y:auto;
-    overflow-x:hidden;
-    box-shadow:0 4px 18px rgba(15,23,42,.06);
-    position:relative;
-}
-
-.bill-grid::-webkit-scrollbar{
-    width:6px;
-}
-
-.bill-grid::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-
-/* ===== TABLE ===== */
-
-#itemTable{
-    width:100%;
-    table-layout:fixed;
-    border-collapse:separate;
-    border-spacing:0;
-    margin-top:0;
-}
-
-/* HEADER */
-
-#itemTable thead{
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-
-#itemTable thead th{
-    position:sticky;
-    top:0;
-    background:#0f172a !important;
-    color:#fff;
-    border:none !important;
-    padding:14px 8px;
-    font-size:13px;
-    white-space:nowrap;
-    z-index:999;
-    box-shadow:0 2px 4px rgba(0,0,0,.08);
-}
-
-/* ROWS */
-
-#itemTable tbody tr{
-    transition:.2s;
-}
-
-#itemTable tbody tr:hover td{
-    background:#eef4ff;
-}
-
-/* CELLS */
-
-#itemTable td{
-    background:#f8fafc;
-    border:none !important;
-    padding:8px 6px;
-    vertical-align:middle;
-    height:72px;
-}
-
-/* INPUTS */
-
-#itemTable input{
-    width:100%;
-    min-width:60px;
-    height:38px;
-    border-radius:8px;
-    border:1px solid #dbe2ea;
-    background:#fff;
-    font-size:13px;
-}
-
-
-
-/* ===== PAYMENT ===== */
-
-.payment-box{
-    min-height:235px;
-    padding:12px !important;
-}
-
-.payment-header{
-    font-size:14px;
-    font-weight:600;
-    margin-bottom:10px;
-}
-
-.payment-scroll{
-    height:190px;
-    overflow-y:auto;
-}
-
-.payment-scroll::-webkit-scrollbar{
-    width:6px;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-/* PAYMENT TABLE COMPACT */
-
-.payment-box table td{
-    padding:6px 4px !important;
-    vertical-align:middle;
-    font-size:13px;
-}
-
-.payment-box .form-control{
-    height:34px !important;
-    font-size:12px;
-    padding:4px 8px;
-    border-radius:8px !important;
-}
-
-.payment-box .payCheck{
-    transform:scale(.9);
-}
-
-.payment-header{
-    margin-bottom:6px !important;
-    font-size:13px;
-}
-
-.payment-box hr{
-    margin:6px 0;
-}
-
-
-
-/* ===== SUMMARY ===== */
-
-.summary-card{
-    background:#fff;
-    border-radius:16px;
-    padding:12px !important;
-    margin-top:10px;
-    box-shadow:0 3px 12px rgba(15,23,42,.05);
-}
-
-.summary-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:7px 2px;
-    font-size:13px;
-    border-bottom:1px dashed #e2e8f0;
-}
-
-.summary-row strong{
-    font-weight:600;
-    font-size:13px;
-}
-
-.summary-row:last-child{
-    border-bottom:none;
-}
-
-/* RIGHT SIDE */
-
-.summary-card label{
-    font-size:12px;
-    font-weight:600;
-    margin-bottom:3px;
-}
-
-.summary-card .form-control{
-    height:34px;
-    font-size:13px;
-    border-radius:8px !important;
-}
-
-#termsTemplate{
-    margin-top:0;
-    margin-bottom:8px;
-}
-
-#termsBox{
-    margin-top:0;
-    min-height:75px;
-    resize:none;
-    padding:8px;
-    font-size:13px;
-}
-
-/* REMOVE EXTRA SPACE */
-
-.summary-card .col-lg-4{
-    padding-right:12px;
-}
-
-.summary-card .col-lg-8{
-    padding-left:12px;
-}
-/* ===== BUTTON ===== */
-
-.save-btn{
-    width:220px;
-    height:42px;
-    border:none;
-    border-radius:10px !important;
-    font-size:14px;
-    font-weight:600;
-    background:#22c55e;
-    transition:.2s;
-    display:block;
-    margin:18px auto 0;
-}
-
-.save-btn:hover{
-    background:#16a34a;
-}
-
-/* ===== REMOVE BUTTON ===== */
-
-.remove{
-    border-radius:8px !important;
-    width:34px;
-    height:34px;
+    margin:0;
+    max-width:100%;
     padding:0;
-}
+  }
 
-
-#termsTemplate{
-    margin-top:12px;
-}
-
-#termsBox{
-    margin-top:10px;
-    min-height:90px;
-    resize:none;
-}
-
-.summary-card label{
-    font-size:13px;
-    font-weight:600;
-    margin-bottom:5px;
-}
-
-.summary-card select{
-    height:40px;
-}
-
-.summary-card textarea{
-    margin-top:6px;
-}
-
-.left-panel .card{
-    margin-bottom:22px;
-}
-
-.product-scroll{
-    border-bottom:1px solid #e2e8f0;
-    padding-bottom:8px;
-}
-
-.bill-grid::-webkit-scrollbar{
+  .no-print{
     display:none;
-}
+  }
 
-#itemTable tbody tr:first-child td{
-    padding-top:18px;
-}
+  th{
+    background:#f5f5f5 !important;
+  }
 
-
-
-.top-filter-card{
-    border-radius:3px;
-    padding:6px 7px !important;
-    margin-bottom:5px !important;
-}
-
-.top-filter-card label{
-    font-size:14px;
-    font-weight:600;
-    margin-bottom:6px;
-}
-
-.top-save-btn{
-    height:38px;
-    border-radius:8px !important;
-    font-size:14px;
-    font-weight:600;
-    padding:0 18px;
-    width:auto !important;
-    min-width:150px;
-}
-
-.top-filter-card .row{
-    margin-bottom:0 !important;
+.section{
+  border:1px solid #000;
+  padding:8px;
+  vertical-align:top;
 }
 
 
+@media print {
 
-/* ===== RESPONSIVE ===== */
+  @page {
+    margin: 10mm;
+  }
 
-@media(max-width:991px){
+  body {
+    margin: 0;
+  }
 
-    .left-panel{
-        position:relative;
-        top:0;
-    }
-
-    .bill-grid{
-        height:auto;
-    }
-
-    .summary-card{
-        margin-top:20px;
-    }
 }
 
-/* EQUAL HEIGHT LAYOUT */
-
-.left-panel{
-    display:flex;
-    flex-direction:column;
-    height:100%;
 }
-
-.product-card{
-    height:220px;
-}
-
-.payment-box{
-    flex:1;
-    min-height:248px;
-}
-
-.bill-grid{
-    height:220px;
-}
-
-.summary-card{
-    min-height:248px;
-}
-
 </style>
+</head>
 
-<div class="card-body">
-<form method="post" onsubmit="return validateCustomer()">
+<body>
 
-<!-- CUSTOMER -->
-<div class="card p-3 mb-3 top-filter-card">
-
-
- 
-<div class="row align-items-end g-2">
-
-
-   <div class="col-md-4 d-flex flex-column justify-content-center">
-      <label>Customer</label>
-      <select name="customer_id" class="form-control">
-        <option value="">Select Customer</option>
-        <?php foreach($customers as $c): ?>
-<option value="<?=$c['id'];?>">
-<?=$c['customer_name'];?>
-</option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-
-<?php if($system == 'billing'): ?> <div class="col-md-4 d-flex flex-column justify-content-center">
-  <label>Name</label>
-  <input type="text"
-  name="manual_name"
-  class="form-control">
+<div class="no-print" style="width:900px;margin:auto;">
+    <button onclick="window.print()" 
+        style="padding:6px 15px;cursor:pointer;">
+        🖨 Print Invoice
+    </button>
 </div>
 
-<div class="col-md-4">
-  <label>Contact</label>
-  <input type="text"
-  name="manual_phone"
-  class="form-control">
-</div>
+<div class="wrapper">
 
+<!-- HEADER -->
+<table>
+<tr>
+<td width="55%" class="section">
+<b style="font-size:16px;"><?= strtoupper($org_master['org_name']) ?></b><br>
+<?= $org['address'] ?><br>
+<?php if($gst_enabled == "Yes"): ?>
+GSTIN: <?= $org['gst_no'] ?><br>
+<?php endif; ?>
+Phone: <?= $org['phone'] ?>
+</td>
+
+<td width="45%" class="section">
+<b>PROFORMA INVOICE</b><br><br>
+
+Invoice No: <?= $invoice['invoice_no'] ?><br>
+
+Date: <?= date("d-m-Y", strtotime($invoice['invoice_date'])) ?><br>
+
+</td>
+</tr>
+</table>
+
+<br>
+
+<!-- BILL TO -->
+<!-- CUSTOMER DETAILS -->
+
+<table>
+
+<tr>
+
+<td width="100%" class="section">
+
+<b>Customer Details</b><br><br>
+
+<b><?= strtoupper($invoice['customer_name']) ?></b><br>
+
+<?= $invoice['address'] ?><br>
+
+<?php if($gst_enabled == "Yes"): ?>
+GSTIN: <?= $invoice['gst_no'] ?><br>
 <?php endif; ?>
 
-<?php if($_SESSION['role_id'] == 2 && $system != 'inventory'): ?>
+<?php if(!empty($invoice['contact_no'])): ?>
+Phone: <?= $invoice['contact_no'] ?>
+<?php endif; ?>
 
-<div class="col-md-4">
-<label>Center</label>
+</td>
 
-<select name="center_id" class="form-control" required>
+</tr>
+
+</table>
+
+<br>
+
+<!-- ITEMS TABLE -->
+<table>
+<tr>
+<th>#</th>
+<th>Item Name</th>
+<th>HSN/SAC</th>
+<th>Qty</th>
+<th>Unit</th>
+<th>Price/Unit</th>
+<th>Discount</th>
+<?php if($gst_enabled == "Yes"): ?>
+<th>GST %</th>
+<?php endif; ?>
+<th>Amount</th>
+</tr>
 
 <?php
-$centers = find_all('master_center');
+$i = 1;
 
-foreach($centers as $c):
+$total_taxable = 0;
+$total_cgst = 0;
+$total_sgst = 0;
+$total_igst = 0;
+
+
+foreach($items as $it){
+
+$taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
+
+$total_taxable += $taxable;
+$total_cgst += $it['cgst_amount'];
+$total_sgst += $it['sgst_amount'];
+$total_igst += $it['igst_amount'];
+
 ?>
 
-<option value="<?= $c['center_id']; ?>">
-<?= $c['center_name']; ?>
-</option>
+<tr>
+<td class="center"><?= $i++ ?></td>
+<td><?= $it['name'] ?></td>
+<td><?= $it['hsn_code'] ?></td>
+<td class="right"><?= $it['qty'] ?></td>
+<td class="center">Nos</td>
+<td class="right"><?= number_format($it['rate_excl_gst'],2) ?></td>
+<td class="right"><?= number_format($it['discount_amount'],2) ?></td>
+<?php if($gst_enabled == "Yes"): ?>
+<td class="right"><?= $it['gst_percent'] ?>%</td>
+<?php endif; ?>
+<td class="right"><?= number_format($it['line_total'],2) ?></td>
+</tr>
+
+<?php } ?>
+
+<!-- TOTAL ROWS -->
+<tr>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Sub Total</b></td>
+<td class="right"><?= number_format($invoice['subtotal'],2) ?></td>
+</tr>
+
+<?php if($gst_enabled == "Yes"){ ?>
+
+    <?php if($tax_mode == 'IGST'){ ?>
+    
+    <tr>
+    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
+        <b>Total IGST</b>
+    </td>
+    <td class="right"><?= number_format($total_igst,2) ?></td>
+    </tr>
+
+    <?php } else { ?>
+
+    <tr>
+    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
+        <b>Total CGST</b>
+    </td>
+    <td class="right"><?= number_format($total_cgst,2) ?></td>
+    </tr>
+
+    <tr>
+    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
+        <b>Total SGST</b>
+    </td>
+    <td class="right"><?= number_format($total_sgst,2) ?></td>
+    </tr>
+
+    <?php } ?>
+
+<?php } ?>
+
+<tr>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total</b></td>
+<td class="right"><b><?= number_format($invoice['net_total'],2) ?></b></td>
+</tr>
+
+<tr>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Advance</b></td>
+<td class="right"><?= number_format($invoice['advance_paid'] ?? 0,2) ?></td>
+</tr>
+
+<tr>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Balance</b></td>
+<td class="right">
+<b><?= number_format($invoice['net_total'] - ($invoice['advance_paid'] ?? 0),2) ?></b>
+</td>
+</tr>
+
+<tr>
+<td colspan="<?= ($gst_enabled == 'Yes') ? '9' : '8' ?>">
+<b>Amount in Words:</b>
+<?= numberToWords(round($invoice['net_total'])) ?> Only
+</td>
+</tr>
+
+</table>
+
+<br>
+
+<?php if($gst_enabled == "Yes"): ?>
+
+<!-- GST SUMMARY -->
+<!-- ================= GST SUMMARY ================= -->
+
+<table>
+<tr>
+<th rowspan="2">HSN / SAC</th>
+<th rowspan="2">Taxable Amount</th>
+<th rowspan="2">Rate</th>
+
+<?php if($tax_mode == 'IGST'){ ?>
+    <th colspan="2">IGST</th>
+<?php } else { ?>
+    <th colspan="2">CGST</th>
+    <th colspan="2">SGST</th>
+<?php } ?>
+
+<th rowspan="2">Total Tax</th>
+</tr>
+
+<tr>
+<?php if($tax_mode == 'IGST'){ ?>
+    <th>Rate</th>
+    <th>Amount</th>
+<?php } else { ?>
+    <th>Rate</th>
+    <th>Amount</th>
+    <th>Rate</th>
+    <th>Amount</th>
+<?php } ?>
+</tr>
+
+<?php
+$gst_summary = [];
+
+foreach($items as $it){
+
+    $hsn  = $it['hsn_code'] ?? 'NA';
+$rate = $it['gst_percent'];
+
+$key = $hsn . '_' . $rate;
+
+if(!isset($gst_summary[$key])){
+    $gst_summary[$key] = [
+        'hsn'      => $hsn,
+        'rate'     => $rate,
+        'taxable'  => 0,
+        'cgst'     => 0,
+        'sgst'     => 0,
+        'igst'     => 0
+    ];
+}
+
+
+    $taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
+
+$gst_summary[$key]['taxable'] += $taxable;
+$gst_summary[$key]['cgst']    += $it['cgst_amount'];
+$gst_summary[$key]['sgst']    += $it['sgst_amount'];
+$gst_summary[$key]['igst']    += $it['igst_amount'];
+}
+
+$grand_taxable = 0;
+$grand_cgst = 0;
+$grand_sgst = 0;
+$grand_igst = 0;
+
+foreach($gst_summary as $key => $data):
+
+$grand_taxable += $data['taxable'];
+$grand_cgst += $data['cgst'];
+$grand_sgst += $data['sgst'];
+$grand_igst += $data['igst'];
+
+$total_tax = $data['cgst'] + $data['sgst'] + $data['igst'];
+?>
+
+<tr>
+<td class="center"><?= $data['hsn'] ?></td>
+<td class="right"><?= number_format($data['taxable'],2) ?></td>
+<td class="center"><?= $data['rate'] ?>%</td>
+
+<?php if($tax_mode == 'IGST'){ ?>
+    <td class="center"><?= $data['rate'] ?>%</td>
+    <td class="right"><?= number_format($data['igst'],2) ?></td>
+<?php } else { ?>
+    <td class="center"><?= $data['rate']/2 ?>%</td>
+    <td class="right"><?= number_format($data['cgst'],2) ?></td>
+    <td class="center"><?= $data['rate']/2 ?>%</td>
+    <td class="right"><?= number_format($data['sgst'],2) ?></td>
+<?php } ?>
+
+<td class="right"><?= number_format($total_tax,2) ?></td>
+</tr>
 
 <?php endforeach; ?>
 
-</select>
-</div>
+<tr>
+<td class="center"><b>Total</b></td>
+<td class="right"><b><?= number_format($grand_taxable,2) ?></b></td>
+<td></td>
+
+<?php if($tax_mode == 'IGST'){ ?>
+    <td></td>
+    <td class="right"><b><?= number_format($grand_igst,2) ?></b></td>
+<?php } else { ?>
+    <td></td>
+    <td class="right"><b><?= number_format($grand_cgst,2) ?></b></td>
+    <td></td>
+    <td class="right"><b><?= number_format($grand_sgst,2) ?></b></td>
+<?php } ?>
+
+<td class="right">
+<b><?= number_format($grand_cgst + $grand_sgst + $grand_igst,2) ?></b>
+</td>
+</tr>
+
+</table>
 
 <?php endif; ?>
 
-
-
-<?php if($system != 'billing'): ?>
-
-<div class="col-md-3 d-flex flex-column justify-content-center">
-  <label>GST Type</label>
-
-<select name="gst_type" class="form-control">
-
-<option value="exclusive" selected>
-Exclusive GST
-</option>
-
-<option value="inclusive">
-Inclusive GST
-</option>
-
-<option value="nogst">
-No GST
-</option>
-
-</select>
-
-</div>
-
-<!-- SAVE BUTTON -->
-<div class="col-md-2 d-flex flex-column justify-content-end">
-<label style="visibility:hidden;">Save</label>
-<button
-type="submit"
-name="save_invoice"
-class="btn btn-success top-save-btn">
-
-💾 Save Invoice
-
-</button>
-
-</div>
-
-<?php endif; ?>
-
-
-  </div>
-</div>
 <br>
 
+<!-- BANK + SIGNATURE -->
 
-<div class="row align-items-stretch">
+<table>
 
-<div class="container-fluid px-4 py-3">
+<tr>
 
-<div class="row">
+<td width="50%" class="section">
 
-  <!-- LEFT SIDE -->
-  <div class="col-lg-3 left-panel">
+<b>Bank Details</b>
 
-    <!-- PRODUCT SEARCH -->
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 product-card">
+<br><br>
 
-      <input type="text"
-      id="productSearch"
-      class="form-control form-control-sm mb-2"
-      placeholder="Search Product...">
+<?php if($bank){ ?>
 
-      <div class="product-scroll">
+Bank: <?= $bank['bank_name'] ?><br>
 
-        <table class="table table-sm table-bordered mb-0">
+A/C Name: <?= $bank['account_name'] ?><br>
 
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th width="90">₹ Rate</th>
-            </tr>
-          </thead>
+A/C No: <?= $bank['account_number'] ?><br>
 
-          <tbody id="productList"></tbody>
+IFSC: <?= $bank['ifsc_code'] ?><br>
 
-        </table>
+<?php } ?>
 
-      </div>
+</td>
 
-    </div>
 
-    <!-- PAYMENT -->
-    <div class="card border-0 shadow-sm p-3 payment-box">
 
-      <div class="payment-header mb-2">
-        <b>Payment</b>
-      </div>
+<td width="50%" class="section center">
 
-      <div class="payment-scroll">
+For: <?= $org_master['org_name'] ?>
 
-        <table class="table table-sm mb-0">
+<br><br><br><br><br>
 
-          <?php foreach($payment_modes as $pm): ?>
+<br><br>
+<small>
+This is a computer generated invoice and does not require signature.
+</small>
 
-          <tr>
+</td>
 
-            <td width="30">
-              <input type="checkbox"
-              class="payCheck"
-              data-mode="<?=$pm['id'];?>">
-            </td>
+</tr>
 
-            <td>
-              <?= strtoupper($pm['mode_name']); ?>
-            </td>
+</table>
 
-            <td>
 
-              <input type="number"
-              name="payment_amount[<?=$pm['id'];?>]"
-              class="form-control form-control-sm payAmt"
-              disabled
-              data-mode="<?=$pm['id'];?>"
-              value="0">
 
-              <?php if(strtolower($pm['mode_name']) != 'cash'): ?>
+<!-- TERMS & CONDITIONS -->
 
-              <input type="text"
-              name="utr_no[<?=$pm['id'];?>]"
-              class="form-control form-control-sm mt-1 utrField"
-              placeholder="Enter UTR No"
-              disabled
-              data-mode="<?=$pm['id'];?>">
+<table style="margin-top:10px;">
 
-              <?php endif; ?>
+<tr>
 
-            </td>
+<td class="section">
 
-          </tr>
+<b>Terms & Conditions</b>
 
-          <?php endforeach; ?>
+<div style="
+margin-top:5px;
+white-space:pre-line;
+font-size:10px;
+line-height:13px;
+word-break:break-word;
+padding:0;
+">
 
-        </table>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- RIGHT SIDE -->
-  <div class="col-lg-9 ps-lg-3">
-
-    <!-- BILL GRID -->
-    <div class="bill-grid mb-3">
-
-      <table class="table table-bordered mb-0" id="itemTable">
-
-        <thead>
-
-          <tr>
-
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Price</th>
-
-            <?php if($gst_enabled == "Yes"): ?>
-            <th>GST%</th>
-            <th>GST</th>
-            <?php endif; ?>
-
-            <th>Disc %</th>
-            <th>Disc ₹</th>
-            <th>Total</th>
-            <th width="50"></th>
-
-          </tr>
-
-        </thead>
-
-        <tbody id="billBody">
-
-          <!-- EXISTING ITEMS -->
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-    <!-- SUMMARY -->
-<div class="card border-0 shadow-sm rounded-4 p-3 mt-3 summary-card">
-
-<div class="row">
-
-    <!-- LEFT : TOTALS -->
-    <div class="col-lg-4 border-end">
-
-      <div class="summary-row">
-        <span>Gross</span>
-        <strong>₹ <span id="gross">0</span></strong>
-      </div>
-
-      <div class="summary-row">
-        <span>Net</span>
-        <strong class="text-primary">
-          ₹ <span id="net">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row">
-        <span>Paid</span>
-        <strong class="text-success">
-          ₹ <span id="paid">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row text-danger">
-        <span>Balance</span>
-        <strong>
-          ₹ <span id="balance">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row text-success">
-        <span>Return</span>
-        <strong>
-          ₹ <span id="returnAmt">0</span>
-        </strong>
-      </div>
-
-    </div>
-
-    <!-- RIGHT : TERMS -->
-    <div class="col-lg-8">
-
-      <label class="mb-1">
-        Terms & Conditions Template
-      </label>
-
-      <select
-      id="termsTemplate"
-      class="form-control mb-2">
-
-        <option value="">
-          Select Template
-        </option>
-
-        <?php foreach($terms_templates as $t): ?>
-
-        <option
-        value="<?= htmlspecialchars($t['template']); ?>">
-
-          <?= htmlspecialchars($t['template_name']); ?>
-
-        </option>
-
-        <?php endforeach; ?>
-
-      </select>
-
-      <label class="mb-1">
-        Terms & Conditions
-      </label>
-
-      <textarea
-      name="terms_conditions"
-      id="termsBox"
-      rows="5"
-      class="form-control"
-      placeholder="Terms & Conditions..."></textarea>
-
-    </div>
+<?= trim($invoice['terms_conditions']); ?>
 
 </div>
+
+</td>
+
+</tr>
+
+</table>
+
 </div>
-
-
-<?php include_once('layouts/footer.php'); ?>
-
 
 <script>
-const products = <?= json_encode($products); ?>;
+window.onload = function() {
 
-/* PRODUCT LIST */
-function renderProducts(filter=""){
- let list = document.getElementById("productList");
- list.innerHTML="";
+  window.print();
 
- products
- .filter(p=>p.name.toLowerCase().includes(filter.toLowerCase()))
- .forEach(p=>{
+  window.onafterprint = function(){
+      window.location.href = 'invoice_create.php';
+  };
 
-  let tr=document.createElement("tr");
-  tr.style.cursor="pointer";
-
-  tr.innerHTML=`
-    <td>${p.name}</td>
-    <td>₹${p.sale_price}</td>
-  `;
-
-  tr.addEventListener("click",()=>addProduct(p)); // 🔥 inline onclick remove
-
-  list.appendChild(tr);
- });
-}
-renderProducts();
-
-document.getElementById("productSearch")
-.addEventListener("input",e=>renderProducts(e.target.value));
-
-/* ADD PRODUCT */
-function addProduct(p){
-
- let rows = document.querySelectorAll("#billBody tr");
-
- for(let r of rows){
-   let name = r.querySelector("td").innerText.trim();
-
-   if(name === p.name){
-     let qtyInput = r.querySelector(".qty");
-     qtyInput.value = parseInt(qtyInput.value || 0) + 1;
-     calculate(r);
-     return;
-   }
- }
-
- let row=document.createElement("tr");
-
- row.innerHTML=`
-  <td>${p.name}<input type="hidden" name="product_id[]" value="${p.id}"></td>
-
-  <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1"></td>
-
-  <td><input type="number" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}"></td>
-
-  <?php if($gst_enabled == "Yes"): ?>
-
-<td>
-<input type="number" name="gst[]"
-class="form-control form-control-sm gst"
-value="${p.gst_percent}">
-</td>
-
-<td>
-<input type="text"
-class="form-control form-control-sm gstAmt"
-readonly>
-</td>
-
-<?php endif; ?>
-
-  <td><input
-type="number"
-step="0.0001"
-class="form-control form-control-sm discPer"
-value="0"></td>
-
-  <td><input
-type="number"
-step="0.0001"
-name="discount[]"
-class="form-control form-control-sm discAmt"
-value="0"></td>
-
-  <td><input type="text" class="form-control form-control-sm totalRow" readonly></td>
-
-  <td><button type="button" class="btn btn-danger btn-sm remove">×</button></td>
- `;
-
- document.getElementById("billBody").appendChild(row);
-
- calculate(row);
-}
-
-
-/* 🔥 INPUT FIX (VERY IMPORTANT) */
-document.addEventListener("input", function(e){
-
- if(
-   e.target.classList.contains("qty") ||
-   e.target.classList.contains("base") ||
-   e.target.classList.contains("gst") ||
-   e.target.classList.contains("discPer") ||
-   e.target.classList.contains("discAmt")
- ){
-   calculate(e.target.closest("tr"));
- }
-
-});
-
-document.addEventListener("change", function(e){
-
- if(e.target.name == "gst_type"){
-
-   document.querySelectorAll("#billBody tr").forEach(r=>{
-      calculate(r);
-   });
-
- }
-
-});
-
-
-/* REMOVE FIX */
-document.addEventListener("click", function(e){
-
- if(e.target.classList.contains("remove")){
-   let row = e.target.closest("tr");
-   row.remove();
-   updateSummary();
- }
-
-});
-
-
-/* CALC */
-function calculate(r){
-
- let qty  = parseFloat(r.querySelector(".qty").value) || 0;
- let base = parseFloat(r.querySelector(".base").value) || 0;
-let gst = 0;
-
-let gstField = r.querySelector(".gst");
-
-if(gstField){
-   gst = parseFloat(gstField.value) || 0;
-}
-
- let dPer = parseFloat(r.querySelector(".discPer").value) || 0;
- let dAmt = parseFloat(r.querySelector(".discAmt").value) || 0;
-
- let total = qty * base;
-
- // 🔥 FIX: prevent divide by zero
- if(total === 0){
-   r.querySelector(".discAmt").value = 0;
-   r.querySelector(".discPer").value = 0;
- }
-
- // discount sync
-let active = document.activeElement;
-
-if(active && active.classList.contains("discPer")){
-
-   dAmt = (total * dPer) / 100;
-
-   r.querySelector(".discAmt").value =
-   dAmt.toFixed(2);
-
-}
-else if(active && active.classList.contains("discAmt")){
-
-   dPer = total > 0
-   ? (dAmt / total) * 100
-   : 0;
-
-   r.querySelector(".discPer").value =
-   dPer.toFixed(2);
-}
-
- let afterDisc = total - dAmt;
-
-/* GST TYPE */
-let gstType = "exclusive";
-
-let gstSelect = document.querySelector("select[name='gst_type']");
-
-if(gstSelect){
-   gstType = gstSelect.value;
-}
-
-let gstAmt = 0;
-let final = 0;
-
-if(gstType == "nogst"){
-
-    gstAmt = 0;
-    final = afterDisc;
-
-}
-else if(gstType == "exclusive"){
-
-    gstAmt = (afterDisc * gst) / 100;
-
-    final = afterDisc + gstAmt;
-
-}
-else{
-
-    gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
-
-    final = afterDisc;
-}
-
-let gstAmtField = r.querySelector(".gstAmt");
-
-if(gstAmtField){
-   gstAmtField.value = gstAmt.toFixed(2);
-}
- r.querySelector(".totalRow").value = final.toFixed(2);
-
- updateSummary();
-}
-
-
-/* SUMMARY */
-function updateSummary(){
-
- let gross=0;
-
- document.querySelectorAll(".totalRow").forEach(t=>{
-  gross += parseFloat(t.value) || 0;
- });
-
- document.getElementById("gross").innerText = gross.toFixed(2);
- document.getElementById("net").innerText   = gross.toFixed(2);
-
- let paid=0;
-
- document.querySelectorAll(".payAmt").forEach(i=>{
-  paid += parseFloat(i.value) || 0;
- });
-
- document.getElementById("paid").innerText = paid.toFixed(2);
-
- let balance = gross - paid;
- let returnAmt = 0;
-
- if(paid > gross){
-
- alert("Payment is greater than bill amount");
-  returnAmt = paid - gross;
-  balance = 0;
- }
-
- document.getElementById("balance").innerText   = balance.toFixed(2);
- document.getElementById("returnAmt").innerText = returnAmt.toFixed(2);
-
-/* 🔥 ADD THIS */
-highlightSummary();
-}
-
-
-
-/* PAYMENT */
-document.querySelectorAll(".payCheck").forEach(chk=>{
- chk.addEventListener("change",function(){
-
-  let net = parseFloat(document.getElementById("net").innerText) || 0;
-
-  let input = document.querySelector(`.payAmt[data-mode='${chk.dataset.mode}']`);
-
-  if(chk.checked){
-
-    input.disabled = false;
-
-    let utr = document.querySelector(`.utrField[data-mode='${chk.dataset.mode}']`);
-
-if(utr){
-   utr.disabled = false;
-}
-
-    let remaining = net;
-
-    document.querySelectorAll(".payAmt").forEach(i=>{
-      if(i !== input){
-        remaining -= parseFloat(i.value) || 0;
-      }
-    });
-
-    input.value = remaining > 0 ? remaining.toFixed(2) : 0;
-
-  } else {
-    input.value = 0;
-    input.disabled = true;
-
-    if(utr){
-   utr.disabled = true;
-   utr.value = '';
-}
-  }
-
-  updateSummary();
- });
-});
-
-document.querySelectorAll(".payAmt").forEach(input=>{
-  input.addEventListener("input", function(){
-
-  if(parseFloat(this.value) < 0){
-   this.value = 0;
-}
-    updateSummary(); // 🔥 ye missing tha
-  });
-});
-
-function highlightSummary(){
-
- let balance = parseFloat(document.getElementById("balance").innerText) || 0;
- let ret = parseFloat(document.getElementById("returnAmt").innerText) || 0;
-
- let balEl = document.getElementById("balance").parentElement;
- let retEl = document.getElementById("returnAmt").parentElement;
-
- balEl.style.color = balance > 0 ? "red" : "#333";
- retEl.style.color = ret > 0 ? "green" : "#333";
-}
-
-highlightSummary();
-
-function validateCustomer(){
-
-  let cust   = document.querySelector("select[name='customer_id']").value;
-  let name   = document.querySelector("input[name='manual_name']").value.trim();
-  let phone  = document.querySelector("input[name='manual_phone']").value.trim();
-
-  if(cust == "" && name == "" && phone == ""){
-    alert("⚠️ Please select customer OR enter name & contact");
-    return false;
-  }
-
-  return true;
-}
-
-/* TERMS TEMPLATE */
-
-document.getElementById("termsTemplate")
-
-.addEventListener("change", function(){
-
-document.getElementById("termsBox").value =
-this.value;
-
-});
-
-/* EXISTING ITEMS CALCULATE */
-
-document.querySelectorAll("#billBody tr").forEach(r=>{
-   calculate(r);
-});
-
+};
 </script>
+</body>
+</html>
