@@ -93,7 +93,7 @@ if($current_stock <= $reorder){
 
 if($current_stock <= ($reorder / 2)){
 
-    $status = "Critical Low";
+    $status = "Critically Low";
     $color  = "#f4cccc";
 }
 ?>
