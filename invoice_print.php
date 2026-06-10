@@ -1,4 +1,6 @@
 <?php
+die("PRODUCTION PRINT FILE");
+
 require_once('includes/load.php');
 $system = $_GET['system'] ?? 'billing';
 //page_require_level(2);
