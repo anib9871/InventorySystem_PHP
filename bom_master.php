@@ -274,7 +274,7 @@ BOM Details
 <th>GST %</th>
 <th>Current Stock</th>
 <th>Status</th>
-<th>Line Total</th>
+<th>Total Costing</th>
 </tr>
 
 <?php
