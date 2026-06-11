@@ -95,6 +95,7 @@ if(!empty($config)){
          <li><a href="payments.php">Manage Payments</a></li>
         <li><a href="payment_report.php">Payments Report</a></li>
         <li><a href="supplier_advance.php">Supplier Advance</a></li>
+        <li><a href="return_master.php">Return</a></li>
 
       </ul>
     </li>
