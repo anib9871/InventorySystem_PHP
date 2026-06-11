@@ -25,6 +25,28 @@ if($edit_id > 0)
     }
 }
 
+
+$view_id = isset($_GET['view']) ? (int)$_GET['view'] : 0;
+$view_return = null;
+
+if($view_id > 0)
+{
+    $view_data = find_by_sql("
+    SELECT tm.*,
+           p.name product_name
+    FROM transaction_master tm
+    LEFT JOIN products p
+    ON p.id = tm.product_id
+    WHERE tm.transaction_id='{$view_id}'
+    LIMIT 1
+    ");
+
+    if(!empty($view_data))
+    {
+        $view_return = $view_data[0];
+    }
+}
+
 /* SAVE RETURN */
 
 if(isset($_POST['save_return']))
@@ -336,7 +358,16 @@ include_once('layouts/header.php');
 ?>
 
 <div class="row">
-<div class="col-md-8">
+
+<div class="panel panel-default">
+
+<div class="panel-heading">
+<strong>Return History</strong>
+</div>
+
+<div class="panel-body">
+
+<div class="col-md-6">
 
 <div class="panel panel-default">
 
@@ -604,7 +635,8 @@ Save Return
 </div>
 </div>
 </div>
-</div>
+
+<div class="col-md-6">
 <script>
 
 document.getElementById('return_type')
@@ -662,10 +694,6 @@ if(val == '2')
 
 </script>
 
-<hr>
-
-<h3>Return History</h3>
-
 <?php
 
 $returns = find_by_sql("
@@ -685,7 +713,7 @@ ORDER BY tm.transaction_id DESC
 <thead>
 
 <tr>
-<th>ID</th>
+<th>#</th>
 <th>Product</th>
 <th>Qty</th>
 <th>Type</th>
@@ -697,11 +725,14 @@ ORDER BY tm.transaction_id DESC
 
 <tbody>
 
-<?php foreach($returns as $r): ?>
+<?php
+$i = 1;
+foreach($returns as $r):
+?>
 
 <tr>
 
-<td><?php echo $r['transaction_id']; ?></td>
+<td><?php echo $i++; ?></td>
 
 <td><?php echo $r['product_name']; ?></td>
 
@@ -728,6 +759,11 @@ Edit
 
 </a>
 
+<a href="return_master.php?view=<?php echo $r['transaction_id']; ?>"
+class="btn btn-info btn-xs">
+View
+</a>
+
 </td>
 
 </tr>
@@ -737,5 +773,87 @@ Edit
 </tbody>
 
 </table>
+
+</div>
+</div>
+
+</div>
+</div>
+
+<?php if($view_return): ?>
+
+<div class="row">
+<div class="col-md-12">
+
+<div class="panel panel-info">
+
+<div class="panel-heading">
+<strong>Return Details</strong>
+</div>
+
+<div class="panel-body">
+
+<table class="table table-bordered">
+
+<tr>
+<th>Product</th>
+<td><?php echo $view_return['product_name']; ?></td>
+</tr>
+
+<tr>
+<th>Quantity</th>
+<td><?php echo $view_return['quantity']; ?></td>
+</tr>
+
+<tr>
+<th>Type</th>
+<td>
+<?php
+echo ($view_return['transaction_type']==3)
+? 'Supplier Return'
+: 'Customer Return';
+?>
+</td>
+</tr>
+
+<tr>
+<th>Date</th>
+<td><?php echo $view_return['entry_date']; ?></td>
+</tr>
+
+<tr>
+<th>Remarks</th>
+<td><?php echo $view_return['comments']; ?></td>
+</tr>
+
+<tr>
+<th>Refund Required</th>
+<td><?php echo $view_return['refund_required'] ? 'Yes' : 'No'; ?></td>
+</tr>
+
+<tr>
+<th>Credit Note Required</th>
+<td><?php echo $view_return['credit_note_required'] ? 'Yes' : 'No'; ?></td>
+</tr>
+
+<tr>
+<th>Discarded</th>
+<td><?php echo $view_return['discarded'] ? 'Yes' : 'No'; ?></td>
+</tr>
+
+</table>
+
+<a href="return_master.php"
+class="btn btn-default">
+Close
+</a>
+
+</div>
+</div>
+
+</div>
+</div>
+
+<?php endif; ?>
 
 <?php include_once('layouts/footer.php'); ?>
