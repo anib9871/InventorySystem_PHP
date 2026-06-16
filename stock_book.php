@@ -3,9 +3,70 @@ require_once('includes/load.php');
 // page_require_level(2);
 
 $products = find_all('products');
+
+
+
 ?>
 
 <?php include_once('layouts/header.php'); ?>
+
+<style>
+
+@media print {
+
+    @page{
+    size: A4 portrait;
+    margin: 10mm;
+}
+
+    /* Sab kuch hide */
+    body *{
+        visibility:hidden;
+    }
+
+    /* Sirf report dikhao */
+    .panel,
+    .panel *{
+        visibility:visible;
+    }
+
+.panel{
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    box-shadow:none !important;
+    border:1px solid #000 !important;
+}
+
+   body{
+    font-size:12px;
+}
+
+    .btn{
+        display:none !important;
+    }
+
+    table{
+        width:100% !important;
+        border-collapse:collapse !important;
+    }
+
+    th, td{
+        border:1px solid #000 !important;
+        padding:8px !important;
+        text-align:center;
+    }
+
+    .panel-heading{
+        font-size:22px;
+        font-weight:bold;
+        text-align:center;
+        margin-bottom:15px;
+    }
+}
+
+</style>
 
 <div class="panel panel-default">
 <div class="panel-heading">
@@ -13,6 +74,19 @@ $products = find_all('products');
 </div>
 
 <div class="panel-body">
+
+<div style="margin-bottom:15px; text-align:right;">
+
+<button
+type="button"
+onclick="window.print();"
+class="btn btn-danger">
+
+<i class="fa fa-file-pdf-o"></i> Export PDF
+
+</button>
+
+</div>
 
 <?php
 
