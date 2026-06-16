@@ -18,10 +18,21 @@ if(isset($_POST['save_quotation'])){
   $db->query("START TRANSACTION");
 /* ===== GET NEXT QUOTATION NUMBER FROM SEQUENCE ===== */
 
+$fy = find_by_sql("
+SELECT fy_id, fy_name
+FROM financial_year_master
+WHERE is_active = 1
+LIMIT 1
+");
+
+$fy_id = $fy[0]['fy_id'];
+
 $seq = find_by_sql("
 SELECT last_no, fy_id
 FROM sequence_master
 WHERE sequence_category='quotation'
+AND fy_id = '$fy_id'
+LIMIT 1
 FOR UPDATE
 ");
 
