@@ -28,27 +28,63 @@ if($check){
 
 $db->query("START TRANSACTION");
 /* Generate Invoice No */
+/* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
+
+$fy = find_by_sql("
+SELECT fy_id, fy_name
+FROM financial_year_master
+WHERE is_active = 1
+LIMIT 1
+");
+
+if(empty($fy)){
+    throw new Exception("Active Financial Year not found");
+}
+
+$fy_id   = $fy[0]['fy_id'];
+$fy_name = $fy[0]['fy_name'];
+
 $seq = find_by_sql("
 SELECT last_no
 FROM sequence_master
 WHERE sequence_category='invoice'
+AND fy_id='$fy_id'
 LIMIT 1
+FOR UPDATE
 ");
 
-$next = $seq[0]['last_no'] + 1;
+if($seq){
 
-if(empty($seq)){
+    $next = $seq[0]['last_no'] + 1;
 
     $db->query("
-    INSERT INTO sequence_master
-    (sequence_category,last_no)
-    VALUES
-    ('invoice',0)
+    UPDATE sequence_master
+    SET last_no = '$next'
+    WHERE sequence_category='invoice'
+    AND fy_id = '$fy_id'
     ");
+
+}else{
 
     $next = 1;
 
+    $db->query("
+    INSERT INTO sequence_master
+    (
+        sequence_category,
+        fy_id,
+        last_no
+    )
+    VALUES
+    (
+        'invoice',
+        '$fy_id',
+        1
+    )
+    ");
 }
+
+$invoice_no = $fy_name.'/'.$next;
 
 $fy = find_by_sql("
 SELECT fy_name
