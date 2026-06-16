@@ -69,49 +69,60 @@ try {
 
 
 /* 🔒 LOCK sequence row */
-if($seq){
-
-    $next = $seq['last_no'] + 1;
-    $fy_id = $seq['fy_id'];
-
-}else{
-
-    // sequence nahi hai to active FY lo
-    $fy = find_by_sql("
-        SELECT fy_id, fy_name
-        FROM financial_year_master
-        LIMIT 1
-    ");
-
-    $fy_id = $fy[0]['fy_id'];
-
-    $db->query("
-        INSERT INTO sequence_master
-        (sequence_category, fy_id, last_no)
-        VALUES
-        ('invoice', '$fy_id', 0)
-    ");
-
-    $next = 1;
-}
+/* 🔒 LOCK sequence row */
 
 $fy = find_by_sql("
-SELECT fy_name
+SELECT fy_id, fy_name
 FROM financial_year_master
-WHERE fy_id = '$fy_id'
 LIMIT 1
 ");
 
-$fy_name = substr($fy[0]['fy_name'], 2);
+$fy_id = $fy[0]['fy_id'];
 
-$inv_no = $fy_name . "/" . $next;
+$seq = find_by_sql("
+SELECT *
+FROM sequence_master
+WHERE sequence_category='invoice'
+AND fy_id='$fy_id'
+LIMIT 1
+");
+
+if($seq){
+
+    $seq = $seq[0];
+
+    $next = $seq['last_no'] + 1;
 
 $db->query("
 UPDATE sequence_master
 SET last_no = '$next'
-WHERE sequence_category='invoice'
+WHERE sequence_category = 'invoice'
 AND fy_id = '$fy_id'
 ");
+
+}else{
+
+    $next = 1;
+
+    $db->query("
+    INSERT INTO sequence_master
+    (
+        sequence_category,
+        fy_id,
+        last_no
+    )
+    VALUES
+    (
+        'invoice',
+        '$fy_id',
+        1
+    )
+    ");
+}
+
+$fy_name = substr($fy[0]['fy_name'], 2);
+
+$inv_no = $fy_name . "/" . $next;
 
 
 $cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
