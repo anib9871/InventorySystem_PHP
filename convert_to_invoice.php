@@ -42,7 +42,7 @@ if(empty($fy)){
 }
 
 $fy_id   = $fy[0]['fy_id'];
-$fy_name = $fy[0]['fy_name'];
+$fy_name = substr($fy[0]['fy_name'], 2);
 
 $seq = find_by_sql("
 SELECT last_no
@@ -86,21 +86,21 @@ if($seq){
 
 $invoice_no = $fy_name.'/'.$next;
 
-$fy = find_by_sql("
-SELECT fy_name
-FROM financial_year_master
-WHERE is_active = 1
-LIMIT 1
-");
+// $fy = find_by_sql("
+// SELECT fy_name
+// FROM financial_year_master
+// WHERE is_active = 1
+// LIMIT 1
+// ");
 
-$fy_name = $fy[0]['fy_name'];
+// $fy_name = $fy[0]['fy_name'];
 
-$invoice_no = $fy_name.'/'.$next;
-$db->query("
-UPDATE sequence_master 
-SET last_no = $next
-WHERE sequence_category='invoice'
-");
+// $invoice_no = $fy_name.'/'.$next;
+// $db->query("
+// UPDATE sequence_master 
+// SET last_no = $next
+// WHERE sequence_category='invoice'
+// ");
 
 
 try{
