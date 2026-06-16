@@ -69,39 +69,48 @@ try {
 
 
 /* 🔒 LOCK sequence row */
-$seq = $db->query("
-SELECT last_no,fy_id
-FROM sequence_master 
-WHERE sequence_category='invoice'
-FOR UPDATE
-")->fetch_assoc();
+if($seq){
 
-if(!$seq){
-  throw new Exception("Invoice sequence not found");
+    $next = $seq['last_no'] + 1;
+    $fy_id = $seq['fy_id'];
+
+}else{
+
+    // sequence nahi hai to active FY lo
+    $fy = find_by_sql("
+        SELECT fy_id, fy_name
+        FROM financial_year_master
+        LIMIT 1
+    ");
+
+    $fy_id = $fy[0]['fy_id'];
+
+    $db->query("
+        INSERT INTO sequence_master
+        (sequence_category, fy_id, last_no)
+        VALUES
+        ('invoice', '$fy_id', 0)
+    ");
+
+    $next = 1;
 }
 
-/* NEXT NUMBER */
-$next = $seq['last_no'] + 1;
-
-/* FY SHORT FORMAT */
 $fy = find_by_sql("
 SELECT fy_name
 FROM financial_year_master
-WHERE fy_id = '{$seq['fy_id']}'
+WHERE fy_id = '$fy_id'
 LIMIT 1
 ");
 
 $fy_name = substr($fy[0]['fy_name'], 2);
 
-/* GENERATE INVOICE NO */
 $inv_no = $fy_name . "/" . $next;
 
-/* UPDATE sequence */
 $db->query("
-UPDATE sequence_master 
-SET last_no = $next 
+UPDATE sequence_master
+SET last_no = '$next'
 WHERE sequence_category='invoice'
-AND fy_id = '{$seq['fy_id']}'
+AND fy_id = '$fy_id'
 ");
 
 
