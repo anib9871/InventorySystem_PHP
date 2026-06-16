@@ -19,25 +19,61 @@ if(isset($_POST['save_quotation'])){
 /* ===== GET NEXT QUOTATION NUMBER FROM SEQUENCE ===== */
 
 $seq = find_by_sql("
-SELECT last_no,fy_id
-FROM sequence_master 
+SELECT last_no, fy_id
+FROM sequence_master
 WHERE sequence_category='quotation'
 FOR UPDATE
 ");
 
-if(!$seq){
-   die("Quotation sequence not found");
+if($seq){
+
+    $seq = $seq[0];
+
+    $fy_id = $seq['fy_id'];
+
+    $next = $seq['last_no'] + 1;
+
+    $db->query("
+        UPDATE sequence_master
+        SET last_no = '$next'
+        WHERE sequence_category='quotation'
+        AND fy_id = '$fy_id'
+    ");
+
+}else{
+
+    // sequence nahi mili to auto create karo
+    $fy = find_by_sql("
+        SELECT fy_id, fy_name
+        FROM financial_year_master
+        LIMIT 1
+    ");
+
+    $fy_id = $fy[0]['fy_id'];
+
+    $db->query("
+        INSERT INTO sequence_master
+        (
+            sequence_category,
+            fy_id,
+            last_no
+        )
+        VALUES
+        (
+            'quotation',
+            '$fy_id',
+            1
+        )
+    ");
+
+    $next = 1;
 }
-
-$seq = $seq[0];
-
-$next = $seq['last_no'] + 1;
 
 /* FY SHORT FORMAT */
 $fy = find_by_sql("
 SELECT fy_name
 FROM financial_year_master
-WHERE fy_id = '{$seq['fy_id']}'
+WHERE fy_id = '$fy_id'
 LIMIT 1
 ");
 
@@ -45,12 +81,6 @@ $fy_name = substr($fy[0]['fy_name'], 2);
 
 /* Generate quotation number */
 $qno = $fy_name . "/" . $next;
-/* Update sequence table */
-$db->query("
-UPDATE sequence_master 
-SET last_no = $next
-WHERE sequence_category='quotation'
-");
   $cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
  $org_id = $_SESSION['org_id'];
 
