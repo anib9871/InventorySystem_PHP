@@ -201,7 +201,9 @@ else{
 
 </td>
 
-<?= $r['reference_no']; ?>
+<td style="min-width:180px; white-space:nowrap;">
+
+<?= $r['reference_no'] ?: '-'; ?>
 
 </td>
 
