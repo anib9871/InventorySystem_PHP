@@ -15,6 +15,9 @@ if($id <= 0){
 
 /* ================= FETCH QUOTATION ================= */
 
+echo "ID = ".$id;
+exit;
+
 $qdata = find_by_sql("
 SELECT *
 FROM quotation_master
