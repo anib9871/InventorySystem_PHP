@@ -203,7 +203,7 @@ else{
 
 <td style="min-width:180px; white-space:nowrap; font-weight:bold; color:#333;">
 
-<?= htmlspecialchars($r['reference_no'] ?? '-') ?>
+<?= htmlspecialchars($r['ref_no'] ?? '-') ?>
 
 </td>
 
