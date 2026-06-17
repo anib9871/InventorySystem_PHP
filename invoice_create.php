@@ -1393,12 +1393,14 @@ No Product Selected
 
             <td>
 
-              <input type="number"
-              name="payment_amount[<?=$pm['id'];?>]"
-              class="form-control form-control-sm payAmt"
-              disabled
-              data-mode="<?=$pm['id'];?>"
-              value="0">
+             <input type="number"
+                step="0.01"
+                min="0"
+                name="payment_amount[<?=$pm['id'];?>]"
+                class="form-control form-control-sm payAmt"
+                disabled
+                data-mode="<?=$pm['id'];?>"
+                value="0">
 
               <?php if(strtolower($pm['mode_name']) != 'cash'): ?>
 
