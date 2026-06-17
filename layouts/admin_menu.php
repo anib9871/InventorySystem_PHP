@@ -9,6 +9,10 @@ $billingOnly  = (isset($_SESSION['billing_access'])   && $_SESSION['billing_acce
 $showInventory = $combined || $inventoryOnly;
 $showBilling   = $combined || $billingOnly;
 
+echo "showInventory = ".$showInventory."<br>";
+echo "showBilling = ".$showBilling."<br>";
+exit;
+
 $gst_enabled = "Yes";
 
 $config = find_by_sql("
