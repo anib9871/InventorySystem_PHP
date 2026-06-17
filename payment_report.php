@@ -183,27 +183,23 @@ strtotime($r['payment_date'])
 
 <td>
 
-<?php if($r['payment_status']==1): ?>
+<?php
 
-<span class="label label-success">
+$status = strtolower(trim($r['payment_status']));
 
-Paid
+if($status == 'paid'){
+    echo '<span class="label label-success">Paid</span>';
+}
+elseif($status == 'partial'){
+    echo '<span class="label label-warning">Partial</span>';
+}
+else{
+    echo '<span class="label label-danger">Unpaid</span>';
+}
 
-</span>
-
-<?php else: ?>
-
-<span class="label label-warning">
-
-Partial
-
-</span>
-
-<?php endif; ?>
+?>
 
 </td>
-
-<td>
 
 <?= $r['reference_no']; ?>
 
