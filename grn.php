@@ -50,7 +50,10 @@ if (isset($_POST['save_grn']) || isset($_POST['update_grn'])) {
 
   $supplier_id  = (int)$_POST['supplier_id'];
   $bill_no      = $_POST['bill_no'];
-  $bill_date    = $_POST['bill_date'];
+  $bill_date = DateTime::createFromFormat(
+    'd-m-Y',
+    $_POST['bill_date']
+)->format('Y-m-d');
   $payment_mode = $_POST['payment_mode'] ?? '';
   $payments = json_decode($_POST['payments_json'], true);
   $total_paid = 0;
@@ -418,14 +421,15 @@ $remaining = 0;
 }
 
 
-    $db->query("COMMIT");
-    if(isset($_POST['update_grn'])){
+$db->query("COMMIT");
 
-$session->msg("s", "GRN Updated Successfully");
+if(isset($_POST['update_grn'])){
+
+    redirect('grn.php?updated=1');
 
 } else {
 
-$session->msg("s", "GRN Created Successfully");
+    redirect('grn.php?created=1');
 
 }
 
@@ -513,6 +517,28 @@ $grn_info = $grn_info ? $grn_info[0] : [];
 include_once('layouts/header.php');
 ?>
 
+<?php if(isset($_GET['created'])){ ?>
+<script>
+Swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: 'GRN Created Successfully',
+    confirmButtonColor: '#28a745'
+});
+</script>
+<?php } ?>
+
+<?php if(isset($_GET['updated'])){ ?>
+<script>
+Swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: 'GRN Updated Successfully',
+    confirmButtonColor: '#28a745'
+});
+</script>
+<?php } ?>
+
 <!-- ================= UI ================= -->
 
 <div class="row">
@@ -558,11 +584,12 @@ required>
 <br>
 
 <label>Bill Date</label>
-<input type="date"
+<input type="text"
 name="bill_date"
-value="<?= $edit_mode 
-? date('Y-m-d', strtotime($grn_info['bill_indent_date'])) 
-: date('Y-m-d'); ?>"
+id="bill_date"
+value="<?= $edit_mode
+? date('d-m-Y', strtotime($grn_info['bill_indent_date']))
+: date('d-m-Y'); ?>"
 class="form-control"
 form="grnForm"
 required>
@@ -739,16 +766,38 @@ value="<?= $edit_bill; ?>">
 <div class="row">
 
 <div class="col-md-3">
+
+<div class="input-group">
+
 <select id="charge_type" class="form-control">
 <option value="">Select Type</option>
+
 <?php
-$shipping_types = find_by_sql("SELECT * FROM shipping_type_master WHERE is_active = 1");
+$shipping_types = find_by_sql("
+SELECT * FROM shipping_type_master
+WHERE is_active = 1
+");
+
 foreach($shipping_types as $st){ ?>
   <option value="<?= $st['id']; ?>">
     <?= $st['type_name']; ?>
   </option>
 <?php } ?>
+
 </select>
+
+<span class="input-group-btn">
+<button type="button"
+class="btn btn-info"
+onclick="refreshShippingTypes()">
+
+<i class="fa fa-refresh"></i>
+
+</button>
+</span>
+
+</div>
+
 </div>
 
 <div class="col-md-2">
@@ -1196,8 +1245,36 @@ function addItem() {
   let gst_id = gstSel.value;
   let gstp   = parseFloat(gstSel.options[gstSel.selectedIndex]?.dataset.gst || 0);
 
-if (!pid || qty <= 0 || !gst_id) {
-    alert("Please fill all item fields");
+let errors = [];
+
+if(!pid){
+    errors.push("Product");
+}
+
+if(qty <= 0){
+    errors.push("Quantity");
+}
+
+if(rate <= 0){
+    errors.push("Rate");
+}
+
+if(!gst_id){
+    errors.push("GST");
+}
+
+if(mrp <= 0){
+    errors.push("MRP");
+}
+
+if(errors.length > 0){
+
+Swal.fire({
+    icon: 'warning',
+    title: 'Required Fields',
+    html: errors.join("<br>")
+});
+
     return;
 }
 
@@ -1401,10 +1478,16 @@ function addCharge() {
   );
   let gst_type = document.getElementById("charge_gst_type").value;
 
-  if (amount <= 0) {
-    alert("Enter valid amount");
+if (amount <= 0) {
+
+    Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Amount',
+        text: 'Please enter a valid amount.'
+    });
+
     return;
-  }
+}
 
   let taxable, gst_amount, total;
 
@@ -1579,7 +1662,11 @@ if(errors.length > 0){
 
 e.preventDefault();
 
-alert(errors.join("\n"));
+Swal.fire({
+    icon: 'warning',
+    title: 'Validation Error',
+    html: errors.join("<br>")
+});
 
 return false;
 
@@ -1650,9 +1737,11 @@ if(enteredPaymentTotal > roundedUp){
 
 e.preventDefault();
 
-alert(
-"Payment amount cannot be greater than Grand Total."
-);
+Swal.fire({
+    icon: 'error',
+    title: 'Invalid Payment',
+    text: 'Payment amount cannot be greater than Grand Total.'
+});
 
 return false;
 
@@ -1667,15 +1756,25 @@ let finalMsg =
 warningMessages.join("\n\n") +
 "\n\nDo you still want to continue?";
 
-if(confirm(finalMsg)){
+Swal.fire({
+    title: 'Continue?',
+    html: finalMsg.replace(/\n/g,'<br>'),
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Continue',
+    cancelButtonText: 'Cancel'
+}).then((result) => {
 
-document.getElementById("grnForm").submit();
+if(result.isConfirmed){
 
-}else{
+    document.getElementById("grnForm")
+            .removeEventListener("submit", arguments.callee);
 
-return false;
+    document.getElementById("grnForm").submit();
 
 }
+
+});
 
 }
 
@@ -1996,6 +2095,44 @@ document.getElementById("used_advance")
 updateGrandTotal();
 
 });
+
+function refreshShippingTypes(){
+
+    $.ajax({
+        url: "get_shipping_types.php",
+        type: "GET",
+        dataType: "json",
+
+        success: function(data){
+
+            let html =
+            '<option value="">Select Type</option>';
+
+            data.forEach(function(row){
+
+                html +=
+                '<option value="'+row.id+'">'+
+                row.type_name+
+                '</option>';
+
+            });
+
+            $("#charge_type").html(html);
+
+        },
+
+        error: function(){
+
+            Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: 'Unable to refresh shipping types.'
+});
+
+        }
+    });
+
+}
 
 </script>
 
