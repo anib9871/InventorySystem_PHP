@@ -11,7 +11,7 @@ p.id,
 p.payment_date,
 p.payment_mode,
 p.amount,
-p.reference_no,
+p.reference_no AS ref_no,
 
 i.invoice_no,
 
@@ -201,9 +201,9 @@ else{
 
 </td>
 
-<td style="min-width:180px; white-space:nowrap;">
+<td style="min-width:180px; white-space:nowrap; font-weight:bold; color:#333;">
 
-<?= $r['reference_no'] ?: '-'; ?>
+<?= htmlspecialchars($r['reference_no'] ?? '-') ?>
 
 </td>
 
