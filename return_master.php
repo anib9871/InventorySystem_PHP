@@ -15,7 +15,7 @@ if($edit_id > 0)
     SELECT *
     FROM transaction_master
     WHERE transaction_id='{$edit_id}'
-    AND transaction_type IN (3,4)
+    AND transaction_type IN (3,4,5)
     LIMIT 1
     ");
 
@@ -73,8 +73,7 @@ if(isset($_POST['save_return']))
     $credit_note_required =
     isset($_POST['credit_note_required']) ? 1 : 0;
 
-    $discarded =
-    isset($_POST['discarded']) ? 1 : 0;
+   $discarded = 0;
 
     if($product_id <= 0 || $qty <= 0)
     {
@@ -196,12 +195,69 @@ if(isset($_POST['save_return']))
 
     /* RETURN FROM CUSTOMER */
 
-    else
+    elseif($return_type == 2)
     {
         $transaction_type = 4;
 
         $from_dept = 'CUSTOMER';
         $to_dept   = 'STORE';
+
+        $discarded = 0;
+    }
+    elseif($return_type == 3)
+    {
+        $transaction_type = 5;
+
+        $from_dept = 'STORE';
+        $to_dept   = 'DISCARD';
+
+        $discarded = 1;
+
+    $db->query("
+    INSERT INTO transaction_master
+    (
+        product_id,
+        quantity,
+        gst_id,
+        transaction_type,
+        from_dept,
+        to_dept,
+        comments,
+        refund_required,
+        credit_note_required,
+        discarded,
+        entry_date
+    )
+    VALUES
+    (
+        '{$product_id}',
+        '{$qty}',
+        '{$gst_id}',
+        '{$transaction_type}',
+        '{$from_dept}',
+        '{$to_dept}',
+        '{$remarks}',
+        0,
+        0,
+        1,
+        NOW()
+    )
+    ");
+
+    $transaction_id = $db->insert_id();
+
+    $db->query("
+    UPDATE inventory
+    SET quantity = quantity - {$qty}
+    WHERE product_id = '{$product_id}'
+    ORDER BY inventory_id DESC
+    LIMIT 1
+    ");
+
+    $session->msg('s','Discard Saved Successfully');
+    redirect('return_master.php',false);
+
+    }
 
         $db->query("
         INSERT INTO transaction_master
@@ -264,7 +320,7 @@ if($discarded == 0)
     ");
 }
 
-}
+
 
     /* CREDIT NOTE */
 
@@ -328,8 +384,7 @@ if(isset($_POST['update_return']))
     $credit_note_required =
     isset($_POST['credit_note_required']) ? 1 : 0;
 
-    $discarded =
-    isset($_POST['discarded']) ? 1 : 0;
+    $discarded = ($edit_return && $edit_return['transaction_type']==5) ? 1 : 0;
 
     $db->query("
     UPDATE transaction_master
@@ -415,6 +470,15 @@ $edit_return['transaction_type']==4)
 echo 'selected';
 ?>>
 Return From Customer
+</option>
+
+<option value="3"
+<?php
+if($edit_return &&
+$edit_return['transaction_type']==5)
+echo 'selected';
+?>>
+Discard
 </option>
 
 </select>
@@ -563,28 +627,6 @@ Credit Note Required
 </div>
 
 
-<div class="checkbox"
-id="discard_div"
-style="display:none;">
-
-<label>
-
-<input type="checkbox"
-name="discarded"
-value="1"
-<?php
-if(
-$edit_return &&
-$edit_return['discarded']==1
-)
-echo 'checked';
-?>>
-
-Discard Item
-</label>
-
-</div>
-
 
 <div class="form-group">
 
@@ -650,9 +692,6 @@ document.getElementById('supplier_div')
 document.getElementById('customer_div')
 .style.display = 'none';
 
-document.getElementById('discard_div')
-.style.display = 'none';
-
 if(val == '1')
 {
     document.getElementById('supplier_div')
@@ -664,8 +703,7 @@ if(val == '2')
     document.getElementById('customer_div')
     .style.display = 'block';
 
-    document.getElementById('discard_div')
-    .style.display = 'block';
+   
 }
 
 });
@@ -685,9 +723,6 @@ if(val == '2')
 {
     document.getElementById('customer_div')
     .style.display = 'block';
-
-    document.getElementById('discard_div')
-    .style.display = 'block';
 }
 
 };
@@ -702,7 +737,7 @@ p.name product_name
 FROM transaction_master tm
 LEFT JOIN products p
 ON p.id = tm.product_id
-WHERE tm.transaction_type IN (3,4)
+WHERE tm.transaction_type IN (3,4,5)
 ORDER BY tm.transaction_id DESC
 ");
 
@@ -741,9 +776,12 @@ foreach($returns as $r):
 <td>
 
 <?php
-echo ($r['transaction_type']==3)
-? 'Supplier Return'
-: 'Customer Return';
+if($r['transaction_type']==3)
+    echo 'Supplier Return';
+elseif($r['transaction_type']==4)
+    echo 'Customer Return';
+else
+    echo 'Discard';
 ?>
 
 </td>
@@ -809,9 +847,12 @@ View
 <th>Type</th>
 <td>
 <?php
-echo ($view_return['transaction_type']==3)
-? 'Supplier Return'
-: 'Customer Return';
+if($view_return['transaction_type']==3)
+    echo 'Supplier Return';
+elseif($view_return['transaction_type']==4)
+    echo 'Customer Return';
+else
+    echo 'Discard';
 ?>
 </td>
 </tr>
