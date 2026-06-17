@@ -1,6 +1,10 @@
 
 <?php
 require_once('includes/load.php');
+
+echo "EDIT DB : ".$_SESSION['db_name']."<br>";
+echo "ORG : ".$_SESSION['org_id']."<br>";
+die();
 $db->db_disconnect();
 $db->db_connect();
 
