@@ -1,9 +1,6 @@
 <?php
 $page_title = 'Quotation List';
 require_once('includes/load.php');
-
-echo "LIST DB : ".$_SESSION['db_name']."<br>";
-echo "ORG : ".$_SESSION['org_id']."<br>";
 //page_require_level(2);
 
 /* fetch quotation list */
