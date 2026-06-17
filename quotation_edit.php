@@ -1,11 +1,9 @@
 
 <?php
 require_once('includes/load.php');
-echo "<pre>";
-print_r($_SESSION);
-exit;
-// $db->db_disconnect();
-// $db->db_connect();
+
+$db->db_disconnect();
+$db->db_connect();
 
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
