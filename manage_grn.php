@@ -59,7 +59,7 @@ include_once('layouts/header.php');
 <th>Supplier</th>
 <th>Date</th>
 <th>Total</th>
-<th>Action</th>
+<th width="150">Action</th>
 </tr>
 </thead>
 
@@ -98,11 +98,11 @@ Edit
 
 </a>
 
-<a href="delete_grn.php?bill=<?= $g['bill_indent_no']; ?>"
-class="btn btn-xs btn-danger"
-onclick="return confirm('Are you sure you want to delete this GRN?')">
+<a href="print_grn.php?bill=<?= urlencode($g['bill_indent_no']); ?>"
+class="btn btn-xs btn-success"
+target="_blank">
 
-Delete
+Print
 
 </a>
 
