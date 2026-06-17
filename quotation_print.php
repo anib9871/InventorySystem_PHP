@@ -257,7 +257,7 @@ Phone: <?= $org['phone'] ?>
 <td width="45%" class="section">
 <b>PROFORMA QUOTATION</b><br><br>
 
-Invoice No: <?= $quotation['quotation_no'] ?><br>
+Quotation No: <?= $quotation['quotation_no'] ?><br>
 
 Date: <?= date("d-m-Y", strtotime($quotation['quotation_date'])) ?><br>
 
