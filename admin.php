@@ -2,6 +2,11 @@
 $page_title = 'Admin Dashboard';
 require_once('includes/load.php');
 
+echo "<pre>";
+print_r($_SESSION);
+exit;
+?>
+
 /* LAST 7 DAYS SALES */
 
 $sales_chart = find_by_sql("
