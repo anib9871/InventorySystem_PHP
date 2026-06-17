@@ -609,56 +609,64 @@ required>
 </div>
 <br>
 
+<label>Quantity</label>
 <input
 id="qty"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Quantity">
 <br>
 
+<label>Free Qty</label>
 <input
 id="free_qty"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Free Qty">
 <br>
 
+<label>Rate</label>
 <input
 id="rate"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Rate"><br>
 
+<label>Discount</label>
 <input
 id="discount"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Discount"><br>
 
+
+<label>Misc</label>
 <input
 id="misc"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Misc"><br>
 
+<label>MRP</label>
 <input
 id="mrp"
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="MRP"><br>
 
+<label>GST</label>
 <select id="gst" class="form-control">
 <option value="">Select GST</option>
 <?php foreach ($gst_list as $g) { ?>
@@ -668,6 +676,7 @@ placeholder="MRP"><br>
 <?php } ?>
 </select><br>
 
+<label>GST Type</label>
 <select id="buy_type" class="form-control">
   <option value="exclusive">GST Exclusive</option>
   <option value="inclusive">GST Inclusive</option>
@@ -765,7 +774,7 @@ value="<?= $edit_bill; ?>">
 
 <div class="row">
 
-<div class="col-md-3">
+<div class="col-md-4">
 
 <div class="input-group">
 
@@ -804,7 +813,7 @@ onclick="refreshShippingTypes()">
 <input
 type="number"
 id="charge_amount"
-step="0.01"
+step="1"
 min="0"
 class="form-control"
 placeholder="Amount">
@@ -921,7 +930,7 @@ class="form-control"
 style="margin-top:8px;display:none;"
 placeholder="Enter Advance Amount"
 min="0"
-step="0.01">
+step="1">
 
 </div>
 
@@ -979,7 +988,7 @@ font-size:12px;
 
 <input
 type="number"
-step="0.01"
+step="1"
 min="0"
 class="form-control pay-amount"
 style="
@@ -1101,7 +1110,16 @@ charges = <?= json_encode($edit_charges); ?>;
 
 charges.forEach(c => {
 
-c.total = parseFloat(c.total_amount);
+    c.amount = parseFloat(c.amount || 0);
+
+    c.gst_percent =
+    parseFloat(c.gst_percent || 0);
+
+    c.gst_amount =
+    parseFloat(c.gst_amount || 0);
+
+    c.total =
+    parseFloat(c.total_amount || 0);
 
 });
 
@@ -1513,7 +1531,10 @@ if (amount <= 0) {
   });
 
   renderCharges();
-
+document.getElementById("charge_type").value = "";
+document.getElementById("charge_amount").value = "";
+document.getElementById("charge_gst_id").value = "";
+document.getElementById("charge_gst_type").value = "EXCLUSIVE";
   
 }
 
@@ -1530,10 +1551,25 @@ function renderCharges() {
         <td>${c.gst_percent}%</td>
         <td>${c.gst_amount.toFixed(2)}</td>
         <td>${c.total.toFixed(2)}</td>
-        <td>
-          <button type="button"
-          onclick="charges.splice(${i},1);renderCharges()">X</button>
-        </td>
+       <td>
+
+<button type="button"
+class="btn btn-xs btn-info"
+onclick="editCharge(${i})">
+
+Edit
+
+</button>
+
+<button type="button"
+class="btn btn-xs btn-danger"
+onclick="charges.splice(${i},1);renderCharges()">
+
+X
+
+</button>
+
+</td>
       </tr>
     `;
   });
@@ -2131,6 +2167,28 @@ function refreshShippingTypes(){
 
         }
     });
+
+}
+
+function editCharge(index){
+
+    let c = charges[index];
+
+    document.getElementById("charge_type").value =
+    c.shipping_type_id;
+
+    document.getElementById("charge_amount").value =
+    c.amount;
+
+    document.getElementById("charge_gst_id").value =
+    c.gst_id;
+
+    document.getElementById("charge_gst_type").value =
+    c.gst_type;
+
+    charges.splice(index,1);
+
+    renderCharges();
 
 }
 
