@@ -151,6 +151,106 @@ elseif($user['role_id'] == 3){
 
 }else{
 
+/* CHECK TENANT USERS */
+
+$get_orgs = $db->query("
+SELECT org_id,db_name,org_name
+FROM master_inventory.master_organization
+");
+
+while($org = $db->fetch_assoc($get_orgs)){
+
+    $tenant_conn = mysqli_connect(
+        getenv('MYSQLHOST'),
+        getenv('MYSQLUSER'),
+        getenv('MYSQLPASSWORD'),
+        $org['db_name'],
+        getenv('MYSQLPORT')
+    );
+
+    if(!$tenant_conn){
+        continue;
+    }
+
+    $username_safe = mysqli_real_escape_string($tenant_conn,$username);
+
+    $check_user = mysqli_query($tenant_conn,"
+    SELECT *
+    FROM users
+    WHERE username='{$username_safe}'
+    LIMIT 1
+    ");
+
+    if(mysqli_num_rows($check_user)==1){
+
+        $user = mysqli_fetch_assoc($check_user);
+
+        if($password != $user['password']){
+            continue;
+        }
+
+        $_SESSION['db_name']    = $org['db_name'];
+        $_SESSION['org_id']     = $org['org_id'];
+        $_SESSION['org_name']   = $org['org_name'];
+        $_SESSION['center_id']  = $user['center_id'];
+        $_SESSION['user_level'] = $user['user_level'];
+        $_SESSION['username']   = $user['username'];
+        $_SESSION['user_id']    = $user['id'];
+
+        $db->db_disconnect();
+        $db->db_connect();
+
+        $session->login($user['id']);
+
+        /* PLAN ACCESS */
+
+        $_SESSION['inventory_access'] = 0;
+        $_SESSION['billing_access'] = 0;
+        $_SESSION['combined_mode'] = 0;
+
+        $sub = $db->query("
+        SELECT os.*, sp.plan_type
+        FROM master_inventory.organization_subscriptions os
+        JOIN master_inventory.subscription_plans sp
+        ON os.plan_id = sp.plan_id
+        WHERE os.org_id='{$org['org_id']}'
+        AND os.status=1
+        ORDER BY os.sub_id DESC
+        LIMIT 1
+        ");
+
+        if($db->num_rows($sub)>0){
+
+            $plan_row = $db->fetch_assoc($sub);
+
+            if($plan_row['plan_type']=='inventory'){
+                $_SESSION['inventory_access']=1;
+            }
+            elseif($plan_row['plan_type']=='billing'){
+                $_SESSION['billing_access']=1;
+            }
+            elseif($plan_row['plan_type']=='combined'){
+                $_SESSION['inventory_access']=1;
+                $_SESSION['billing_access']=1;
+                $_SESSION['combined_mode']=1;
+            }
+        }
+
+        if($user['user_level']==1){
+
+            redirect('admin.php');
+            exit;
+
+        }else{
+
+            redirect('home.php');
+            exit;
+        }
+    }
+}
+
+/* INVALID LOGIN */
+
 $session->msg("d","Invalid Username or Password");
 redirect('login_v2.php');
 exit;
