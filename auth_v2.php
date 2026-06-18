@@ -71,6 +71,19 @@ $_SESSION['username'] = $user['username'];
 $_SESSION['role_id'] = $user['role_id'];
 $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
+
+
+        $center = mysqli_query($tenant_conn,"
+SELECT center_name
+FROM master_center
+WHERE center_id = '{$user['center_id']}'
+LIMIT 1
+");
+
+if(mysqli_num_rows($center)>0){
+    $center_row = mysqli_fetch_assoc($center);
+    $_SESSION['center_name'] = $center_row['center_name'];
+}
 $_SESSION['db_name'] = $user['db_name'];
 $_SESSION['user_level'] = 1;
 $_SESSION['org_name'] = $user['org_name'];
@@ -193,6 +206,19 @@ while($org = $db->fetch_assoc($get_orgs)){
         $_SESSION['org_id']     = $org['org_id'];
         $_SESSION['org_name']   = $org['org_name'];
         $_SESSION['center_id']  = $user['center_id'];
+        
+        $center = mysqli_query($tenant_conn,"
+SELECT center_name
+FROM master_center
+WHERE center_id = '{$user['center_id']}'
+LIMIT 1
+");
+
+if(mysqli_num_rows($center)>0){
+    $center_row = mysqli_fetch_assoc($center);
+    $_SESSION['center_name'] = $center_row['center_name'];
+}
+        
         $_SESSION['user_level'] = $user['user_level'];
         $_SESSION['username']   = $user['username'];
         $_SESSION['user_id']    = $user['id'];
