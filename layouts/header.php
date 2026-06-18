@@ -79,8 +79,31 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 <img src="uploads/users/no_image.png" class="img-circle img-inline">
 
 <span>
-Logout
+
+<?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1): ?>
+
+    Logout
+
+<?php else: ?>
+
+    <?php
+    if(
+        strtolower($_SESSION['username']) != strtolower($_SESSION['org_name'])
+    ){
+        echo $_SESSION['username'];
+
+        if(!empty($_SESSION['center_name'])){
+            echo " | ".$_SESSION['center_name'];
+        }
+    }else{
+        echo "Logout";
+    }
+    ?>
+
+<?php endif; ?>
+
 <i class="caret"></i>
+
 </span>
 
 </a>
