@@ -37,9 +37,9 @@ redirect('home.php', false);
             <input type="password" class="form-control" name="password" required>
         </div>
 
-        <div class="form-group">
-            <button type="submit" class="btn btn-info pull-right">Login</button>
-        </div>
+            <div class="text-center">
+    <button type="submit" class="btn btn-info">Login</button>
+     </div>
 
     </form>
 
