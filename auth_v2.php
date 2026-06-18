@@ -73,15 +73,20 @@ $_SESSION['org_id'] = $user['org_id'];
 $_SESSION['center_id'] = $user['center_id'];
 
 
-        $center = mysqli_query($tenant_conn,"
+$_SESSION['db_name'] = $user['db_name'];
+
+$db->db_disconnect();
+$db->db_connect();
+
+$center = $db->query("
 SELECT center_name
 FROM master_center
 WHERE center_id = '{$user['center_id']}'
 LIMIT 1
 ");
 
-if(mysqli_num_rows($center)>0){
-    $center_row = mysqli_fetch_assoc($center);
+if($db->num_rows($center) > 0){
+    $center_row = $db->fetch_assoc($center);
     $_SESSION['center_name'] = $center_row['center_name'];
 }
 $_SESSION['db_name'] = $user['db_name'];
