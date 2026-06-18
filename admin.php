@@ -185,11 +185,12 @@ GROUP BY p.payment_mode
     min-height:145px;
 }
 .rev-left{
-    width:65%;
+    flex:1;
+    min-width:0;
 }
 
 .rev-right{
-    width:35%;
+    min-width:180px;
     text-align:right;
 }
 
@@ -197,7 +198,8 @@ GROUP BY p.payment_mode
     font-size:12px;
     color:#fff;
     margin-bottom:5px;
-    white-space:nowrap;
+    white-space:normal;
+    word-break:break-word;
 }
 
 .rev-mode span{
@@ -338,15 +340,18 @@ GROUP BY p.payment_mode
 
 <div class="rev-right">
 
-<?php foreach($month_modes as $mm): ?>
+<?php
+$month_mode_text = [];
+
+foreach($month_modes as $mm){
+    $month_mode_text[] =
+    strtoupper($mm['mode_name']).' : ₹'.number_format($mm['total']);
+}
+?>
 
 <div class="rev-mode">
-<?= strtoupper($mm['mode_name']); ?> :
-<span>₹<?= number_format($mm['total']); ?></span>
+<?= implode('<br>', $month_mode_text); ?>
 </div>
-
-<?php endforeach; ?>
-
 </div>
 
 </div>
