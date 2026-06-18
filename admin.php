@@ -6,7 +6,7 @@ require_once('includes/load.php');
 
 $sales_chart = find_by_sql("
 SELECT 
-DATE(t.entry_date) as date,
+DATE_FORMAT(MIN(t.entry_date),'%b %Y') as month_name,
 SUM(t.sale_net) as total,
 GROUP_CONCAT(DISTINCT mc.center_name SEPARATOR ', ') as centers
 
@@ -17,11 +17,9 @@ ON mc.center_id = t.center_id
 
 WHERE t.transaction_type = 2
 
-GROUP BY DATE(t.entry_date)
+GROUP BY YEAR(t.entry_date), MONTH(t.entry_date)
 
-ORDER BY DATE(t.entry_date) ASC
-
-LIMIT 7
+ORDER BY YEAR(t.entry_date), MONTH(t.entry_date)
 ");
 
 $centers = [];
@@ -37,7 +35,7 @@ $totals = [];
 
 foreach($sales_chart as $s){
 
-   $dates[]  = $s['date'];
+   $dates[]  = $s['month_name'];
    $totals[] = $s['total'];
 
 }
@@ -56,7 +54,8 @@ ON p.id = t.product_id
 
 WHERE t.transaction_type = 2
 
-AND DATE(t.entry_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+AND MONTH(t.entry_date)=MONTH(CURDATE())
+AND YEAR(t.entry_date)=YEAR(CURDATE())
 
 GROUP BY t.product_id
 
@@ -392,7 +391,7 @@ SALES :
     <div class="dh-panel">
 
         <div class="dh-sec">
-            Sales Overview — Last 7 Days
+            Sales Overview — Monthly Sales
         </div>
 
         <div class="dh-chart-wrap">
@@ -404,7 +403,7 @@ SALES :
     <div class="dh-panel">
 
         <div class="dh-sec">
-            Top 5 Sales Contributors — Last 7 Days
+            Top 5 Sales Contributors — This Month
         </div>
 
         <div class="dh-chart-wrap">
@@ -466,18 +465,33 @@ options:{
     responsive:true,
     maintainAspectRatio:false,
 
+    scales:{
+        x:{
+            ticks:{
+                autoSkip:true,
+                maxTicksLimit:6,
+                maxRotation:0,
+                minRotation:0
+            }
+        },
+        y:{
+            beginAtZero:true
+        }
+    },
+
     plugins:{
-    tooltip:{
-        callbacks:{
-            afterLabel:function(context){
+        tooltip:{
+            callbacks:{
+                afterLabel:function(context){
 
-                return 'Centers: ' + context.dataset.centerNames[context.dataIndex];
+                    return 'Centers: ' +
+                    context.dataset.centerNames[context.dataIndex];
 
+                }
             }
         }
     }
-},
-    }
+}
 
 });
 }
