@@ -47,12 +47,6 @@ redirect('home.php', false);
 
 <div class="text-center">
 
-<a href="user_login.php" class="btn btn-default">
-
-Employee / Staff Login
-
-</a>
-
 </div>
 </div>
 
