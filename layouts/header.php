@@ -80,13 +80,17 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <span>
 
-<?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1): ?>
+<?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2): ?>
 
     Logout
 
 <?php else: ?>
 
-    Logout
+    <?php echo $_SESSION['username']; ?>
+
+    <?php if(!empty($_SESSION['center_name'])): ?>
+        | <?php echo $_SESSION['center_name']; ?>
+    <?php endif; ?>
 
 <?php endif; ?>
 
