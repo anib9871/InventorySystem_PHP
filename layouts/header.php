@@ -86,19 +86,7 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <?php else: ?>
 
-    <?php
-    if(
-        strtolower($_SESSION['username']) != strtolower($_SESSION['org_name'])
-    ){
-        echo $_SESSION['username'];
-
-        if(!empty($_SESSION['center_name'])){
-            echo " | ".$_SESSION['center_name'];
-        }
-    }else{
-        echo "Logout";
-    }
-    ?>
+    Logout
 
 <?php endif; ?>
 
