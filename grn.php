@@ -2104,7 +2104,7 @@ input.value = Math.round(payable);
 
 }else{
 
-input.value = payable.toFixed(2);
+input.value = payable;
 
 }
 
@@ -2573,7 +2573,7 @@ input.value = Math.round(total);
 
 }else{
 
-input.value = total.toFixed(2);
+input.value = Math.round(total);
 
 }
 
