@@ -517,13 +517,137 @@ $grn_info = $grn_info ? $grn_info[0] : [];
 include_once('layouts/header.php');
 ?>
 
+<style>
+
+#itemEntryBox .form-control{
+height:26px !important;
+padding:2px 6px !important;
+font-size:11px !important;
+}
+
+#itemEntryBox label{
+font-size:11px !important;
+margin-bottom:1px !important;
+font-weight:600;
+}
+
+#itemEntryBox .row{
+margin-bottom:2px !important;
+}
+
+.panel-heading{
+padding:8px 12px !important;
+font-size:14px !important;
+}
+
+#previousRateBox{
+padding:5px !important;
+font-size:11px !important;
+margin-top:5px !important;
+}
+
+#itemBody tr{
+height:42px;
+}
+
+.table thead th{
+position:sticky;
+top:0;
+background:#f5f5f5;
+z-index:99;
+}
+
+#grnItemsTable thead th{
+    background:#0B1736 !important;
+    color:#fff !important;
+    border-color:#0B1736 !important;
+}
+
+#grnItemsTable td{
+    font-size:10px !important;
+    padding:2px 4px !important;
+    vertical-align:middle;
+}
+
+#grnItemsTable input,
+#grnItemsTable select{
+    height:22px !important;
+    font-size:10px !important;
+    padding:1px 4px !important;
+}
+
+#grnItemsTable .btn{
+    height:20px !important;
+    padding:0 5px !important;
+    font-size:9px !important;
+    line-height:18px !important;
+}
+
+.panel-heading strong{
+    font-size:13px;
+}
+
+.form-col-1{
+    width:100px;
+    display:inline-block;
+    vertical-align:top;
+    margin-right:8px;
+}
+
+.form-col-2{
+    width:200px;
+    display:inline-block;
+    vertical-align:top;
+    margin-right:8px;
+}
+
+.form-col-3{
+    width:250px;
+    display:inline-block;
+    vertical-align:top;
+    margin-right:8px;
+}
+
+.form-col-80{
+    width:80px;
+    display:inline-block;
+    vertical-align:top;
+    margin-right:8px;
+}
+
+.form-col-120{
+    width:120px;
+    display:inline-block;
+    vertical-align:top;
+    margin-right:8px;
+}
+
+.item-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    gap:10px;
+    padding-left:15px;
+}
+
+.form-col-supplier{width:210px;}
+.form-col-bill{width:110px;}
+.form-col-date{width:110px;}
+.form-col-product{width:250px;}
+.form-col-small{width:80px;}
+.form-col-gst{width:90px;}
+.form-col-gsttype{width:120px;}
+
+</style>
+
 <?php if(isset($_GET['created'])){ ?>
 <script>
 Swal.fire({
     icon: 'success',
-    title: 'GRN Created Successfully',
+    title: 'Success',
+    text: 'GRN Created Successfully',
     showConfirmButton: false,
-    timer: 1800
+    timer: 2000
 });
 </script>
 <?php } ?>
@@ -532,9 +656,10 @@ Swal.fire({
 <script>
 Swal.fire({
     icon: 'success',
-    title: 'GRN Updated Successfully',
+    title: 'Success',
+    text: 'GRN Updated Successfully',
     showConfirmButton: false,
-    timer: 1800
+    timer: 2000
 });
 </script>
 <?php } ?>
@@ -548,11 +673,20 @@ Swal.fire({
 <div class="row">
 
 <!-- LEFT : ITEM ENTRY -->
-<div class="col-md-4">
+<div class="col-md-12">
 <div class="panel panel-default">
 <div class="panel-heading"><strong>Item Entry</strong></div>
-<div class="panel-body">
+<div class="panel-body" id="itemEntryBox">
 
+<input type="hidden" id="product">
+<input type="hidden" id="hsn_code">
+<input type="hidden" id="sac_code">
+
+<!-- Row 1 -->
+<div class="item-row">
+
+<!-- Supplier -->
+<div class="form-col-supplier">
 <label>Supplier</label>
 <select
 name="supplier_id"
@@ -560,31 +694,51 @@ id="supplier_id"
 form="grnForm"
 class="form-control"
 required>
+
 <option value="">Select Supplier</option>
+
 <?php foreach ($suppliers as $s) { ?>
+
 <option value="<?= $s['id']; ?>"
 <?php
 if($edit_mode && $grn_info['supplier_id'] == $s['id']){
 echo 'selected';
 }
-?>
->
-<?= $s['supplier_name']; ?>
-</option>
-<?php } ?>
-</select><br>
+?>>
 
-<label>Bill / GRN No</label>
-<input type="text"
+<?= $s['supplier_name']; ?>
+
+</option>
+
+<?php } ?>
+
+</select>
+</div>
+
+
+<!-- Bill No -->
+<div class="form-col-bill">
+
+<label>Bill No</label>
+
+<input
+type="text"
 name="bill_no"
 value="<?= $edit_mode ? $grn_info['bill_indent_no'] : ''; ?>"
 class="form-control"
 form="grnForm"
 required>
-<br>
+
+</div>
+
+
+<!-- Bill Date -->
+<div class="form-col-date">
 
 <label>Bill Date</label>
-<input type="text"
+
+<input
+type="text"
 name="bill_date"
 id="bill_date"
 value="<?= $edit_mode
@@ -593,129 +747,126 @@ value="<?= $edit_mode
 class="form-control"
 form="grnForm"
 required>
-<br>
 
-<input type="hidden" id="product">
-<input type="hidden" id="hsn_code">
-<input type="hidden" id="sac_code">
+</div>
+
+<div id="previousRateBox"
+style="
+display:none;
+flex:1;
+margin-left:15px;
+padding:6px 10px;
+background:#f8f9fa;
+border-left:4px solid #2196F3;
+border-radius:4px;
+font-size:11px;
+height:30px;
+line-height:18px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+align-items:center;
+">
+
+</div>
+
+</div>
+
+
+<div class="item-row" style="margin-top:10px;">
+
+<div class="form-col-product">
+
+<label>Product</label>
 
 <div class="input-group">
-  <input type="text" id="product_name" class="form-control" placeholder="Select Product" readonly>
-  <span class="input-group-btn">
-    <button
+
+<input
+type="text"
+id="product_name"
+class="form-control"
+placeholder="Select Product"
+readonly>
+
+<span class="input-group-btn">
+
+<button
 type="button"
 class="btn btn-primary"
-onclick="openProductModal()">
-Choose
-</button>
-  </span>
-</div>
-<br>
+data-toggle="modal"
+data-target="#productModal"
+style="
+height:26px;
+padding:2px 8px;
+font-size:11px;
+line-height:18px;
+min-width:60px;
+">
 
-<label>Quantity</label>
+Choose
+
+</button>
+
+</span>
+
+</div>
+
+</div>
+
+<div class="form-col-small">
+
+<label>Qty</label>
+
 <input
 id="qty"
 type="number"
-step="any"
-min="0"
 class="form-control"
-placeholder="Quantity">
-<br>
+oninput="calculateDiscount()">
+
+</div>
+
+<div class="form-col-small">
 
 <label>Free Qty</label>
+
 <input
 id="free_qty"
 type="number"
-step="any"
-min="0"
-class="form-control"
-placeholder="Free Qty">
-<br>
+class="form-control">
 
-<label>Rate</label>
-<input
-id="rate"
-type="number"
-step="any"
-min="0"
-class="form-control"
-placeholder="Rate"><br>
-
-<label>Discount</label>
-<input
-id="discount"
-type="number"
-step="any"
-min="0"
-class="form-control"
-placeholder="Discount"><br>
-
-
-<label>Misc</label>
-<input
-id="misc"
-type="number"
-step="any"
-min="0"
-class="form-control"
-placeholder="Misc"><br>
-
-<label>MRP</label>
-<input
-id="mrp"
-type="number"
-step="any"
-min="0"
-class="form-control"
-placeholder="MRP"><br>
-
-<label>GST</label>
-<select id="gst" class="form-control">
-<option value="">Select GST</option>
-<?php foreach ($gst_list as $g) { ?>
-<option value="<?= $g['id']; ?>" data-gst="<?= $g['gst_percent']; ?>">
-<?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)
-</option>
-<?php } ?>
-</select><br>
-
-<label>GST Type</label>
-<select id="buy_type" class="form-control">
-  <option value="exclusive">GST Exclusive</option>
-  <option value="inclusive">GST Inclusive</option>
-</select>
-<br>
-
-<div id="previousRateBox"
-     style="display:none; margin-top:8px; padding:8px;
-            background:#f5f5f5; border-left:4px solid #2196F3;
-            font-size:12px;">
 </div>
 
-
-<br>
-
-<div class="row">
-
-<div class="col-md-6">
+<div style="
+display:flex;
+align-items:flex-end;
+gap:6px;
+margin-left:10px;
+flex-shrink:0;
+">
 
 <button
 type="button"
 onclick="addItem()"
-class="btn btn-info btn-block">
+class="btn btn-success"
+style="
+height:30px;
+padding:3px 12px;
+font-size:12px;
+">
 
 Add Item
 
 </button>
 
-</div>
-
-<div class="col-md-6">
-
 <button
 type="button"
 onclick="cancelEditItem()"
-class="btn btn-danger btn-block">
+class="btn btn-danger"
+style="
+height:30px;
+padding:3px 12px;
+font-size:12px;
+">
 
 Cancel
 
@@ -725,13 +876,153 @@ Cancel
 
 </div>
 
+
+<!-- Row 3 -->
+<div class="item-row" style="margin-top:10px;">
+
+<!-- Rate -->
+<div class="form-col-small">
+
+<label>Rate</label>
+
+<input
+id="rate"
+type="number"
+step="any"
+min="0"
+class="form-control"
+oninput="calculateDiscount()"
+placeholder="Rate">
+
 </div>
+
+<!-- Disc % -->
+<div class="form-col-small">
+
+<label>Disc %</label>
+
+<input
+id="disc_percent"
+type="number"
+step="any"
+class="form-control"
+oninput="calculateDiscount()"
+placeholder="%">
+
 </div>
+
+<!-- Disc Amt -->
+<div class="form-col-small">
+
+<label>Disc Amt</label>
+
+<input
+id="discount"
+type="number"
+step="any"
+class="form-control"
+oninput="calculateDiscountFromAmount()"
+placeholder="Amount">
+
 </div>
+
+<!-- Misc -->
+<div class="form-col-small">
+
+<label>Misc</label>
+
+<input
+id="misc"
+type="number"
+step="any"
+class="form-control"
+placeholder="Misc">
+
+</div>
+
+<!-- MRP -->
+<div class="form-col-small">
+
+<label>MRP</label>
+
+<input
+id="mrp"
+type="number"
+step="any"
+min="0"
+class="form-control"
+placeholder="MRP">
+
+</div>
+
+<!-- GST -->
+<div class="form-col-gst">
+
+<label>GST</label>
+
+<select
+id="gst"
+class="form-control">
+
+<option value="">Select GST</option>
+
+<?php foreach ($gst_list as $g) { ?>
+
+<option
+value="<?= $g['id']; ?>"
+data-gst="<?= $g['gst_percent']; ?>">
+
+<?= $g['gst_name']; ?>
+(<?= $g['gst_percent']; ?>%)
+
+</option>
+
+<?php } ?>
+
+</select>
+
+</div>
+
+<!-- GST Type -->
+<div class="form-col-gsttype">
+
+<label>GST Type</label>
+
+<select
+id="buy_type"
+class="form-control">
+
+<option value="exclusive">
+GST Exclusive
+</option>
+
+<option value="inclusive">
+GST Inclusive
+</option>
+
+</select>
+
+</div>
+
+<!-- Net Amt -->
+<div class="form-col-small">
+
+<label>Net Amt</label>
+
+<input
+id="net_amount"
+type="number"
+class="form-control"
+readonly>
+
+</div>
+
+</div>
+<hr style="margin:8px 0;">
 
 <!-- RIGHT SIDE -->
 <!-- RIGHT : ITEM LIST + PAYMENT -->
-<div class="col-md-8">
+<div class="col-md-12">
 <form method="post" id="grnForm">
 
 <input type="hidden" name="charges_json" id="charges_json">
@@ -746,42 +1037,100 @@ value="<?= $edit_bill; ?>">
 
 <input type="hidden" name="items_json" id="items_json">
 
-<div class="panel panel-default">
-<div class="panel-heading">
-<strong>GRN ITEMS</strong>
-</div>
+<div class="panel panel-default" style="border-top:none;">
 
-<div class="panel-body">
+<div class="panel-body" style="padding-top:0;">
 
-<table class="table table-bordered table-striped">
-<thead>
+<div style="
+max-height:170px;
+overflow-y:auto;
+overflow-x:auto;
+border:1px solid #ddd;
+">
+
+<table id="grnItemsTable" class="table table-bordered table-striped" style="margin-bottom:0;">
+<thead style="
+position:sticky;
+top:0;
+background:#0B1736;
+color:#fff;
+z-index:10;
+font-size:11px;
+">
+
 <tr>
-<th width="5%">#</th>
-<th width="10%">Product</th>
-<th width="10%">HSN Code</th>
-<th width="10%">Qty</th>
-<th width="10%">Rate</th>
-<th width="12%">Amount</th>
-<th width="10%">GST%</th>
-<th width="10%">GST Amt</th>
-<th width="15%">Total</th>
-<th width="5%">X</th>
+<th style="padding:5px 4px;">#</th>
+<th style="padding:5px 4px;">Product</th>
+<th style="padding:5px 4px;">HSN</th>
+<th style="padding:5px 4px;">Qty</th>
+<th style="padding:5px 4px;">Rate</th>
+<th style="padding:5px 4px;">Total Amt</th>
+<th style="padding:5px 4px;">Disc %</th>
+<th style="padding:5px 4px;">Disc Amt</th>
+<th style="padding:5px 4px;">Net Amt</th>
+<th style="padding:5px 4px;">GST %</th>
+<th style="padding:5px 4px;">GST Amt</th>
+<th style="padding:5px 4px;">Net Total</th>
+<th style="padding:5px 4px;">Action</th>
 </tr>
+
 </thead>
+
 <tbody id="itemBody"></tbody>
+
 </table>
+
+</div>
 
 <hr>
 
-<h4><strong>Shipping / Additional Charges</strong></h4>
+<div class="col-md-6">
 
-<div class="row">
+<div style="
+display:flex;
+align-items:center;
+gap:12px;
+margin-bottom:10px;
+">
 
-<div class="col-md-4">
+<button
+type="button"
+class="btn btn-primary btn-sm"
+data-toggle="modal"
+data-target="#shippingModal">
 
-<div class="input-group">
+<i class="fa fa-plus"></i>
+Add Shipping Charge
+
+</button>
+
+<div
+id="shippingSummary"
+style="
+display:none;
+flex:1;
+padding:6px 10px;
+background:#f8f9fa;
+border-left:4px solid #2196F3;
+border-radius:4px;
+font-size:11px;
+height:30px;
+line-height:18px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+">
+
+</div>
+
+</div>
+
+<!-- Hidden Controls (JS ke liye) -->
+
+<div style="display:none;">
 
 <select id="charge_type" class="form-control">
+
 <option value="">Select Type</option>
 
 <?php
@@ -791,110 +1140,55 @@ WHERE is_active = 1
 ");
 
 foreach($shipping_types as $st){ ?>
-  <option value="<?= $st['id']; ?>">
-    <?= $st['type_name']; ?>
-  </option>
+<option value="<?= $st['id']; ?>">
+<?= $st['type_name']; ?>
+</option>
 <?php } ?>
 
 </select>
 
-<span class="input-group-btn">
-<button type="button"
-class="btn btn-info"
-onclick="refreshShippingTypes()">
-
-<i class="fa fa-refresh"></i>
-
-</button>
-</span>
-
-</div>
-
-</div>
-
-<div class="col-md-2">
 <input
 type="number"
 id="charge_amount"
 step="1"
 min="0"
-class="form-control"
-placeholder="Amount">
-</div>
+class="form-control">
 
-<div class="col-md-2">
 <select id="charge_gst_type" class="form-control">
 <option value="EXCLUSIVE">Exclusive</option>
 <option value="INCLUSIVE">Inclusive</option>
 </select>
-</div>
 
-<div class="col-md-2">
 <select id="charge_gst_id" class="form-control">
-  <option value="">Select GST</option>
-  <?php foreach ($gst_list as $g) { ?>
-    <option value="<?= $g['id']; ?>" 
-            data-gst="<?= $g['gst_percent']; ?>">
-      <?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)
-    </option>
-  <?php } ?>
+
+<option value="">Select GST</option>
+
+<?php foreach ($gst_list as $g) { ?>
+
+<option value="<?= $g['id']; ?>"
+data-gst="<?= $g['gst_percent']; ?>">
+
+<?= $g['gst_name']; ?>
+(<?= $g['gst_percent']; ?>%)
+
+</option>
+
+<?php } ?>
+
 </select>
-</div>
 
-<div class="col-md-2">
-<button type="button" onclick="addCharge()" class="btn btn-warning">
+<button
+type="button"
+onclick="addCharge()"
+class="btn btn-warning">
+
 Add
+
 </button>
-</div>
 
 </div>
 
-<br>
-
-<table class="table table-bordered">
-<thead>
-<tr>
-<th>Type</th>
-<th>Amount</th>
-<th>GST %</th>
-<th>GST Amt</th>
-<th>Total</th>
-<th>X</th>
-</tr>
-</thead>
-<tbody id="chargeBody"></tbody>
-</table>
-
-
-<div
-style="
-display:flex;
-justify-content:flex-end;
-align-items:center;
-gap:15px;
-margin-top:10px;
-">
-
-<label style="margin:0; font-weight:normal;">
-
-<input
-type="checkbox"
-id="roundOffToggle"
-onchange="updateGrandTotal()"
->
-
-Round Off
-
-</label>
-
-<h4 style="margin:0;">
-Grand Total ₹
-<span id="grandTotal">0.00</span>
-</h4>
-
-</div>
-
-<hr>
+<div id="chargeBody"></div>
 
 <?php
 
@@ -902,9 +1196,19 @@ $advance_amount = 0;
 
 ?>
 
-<div class="alert alert-info" id="advanceSection" style="display:none;">
+<div
+class="alert alert-info"
+id="advanceSection"
+style="
+display:none;
+padding:8px 12px;
+width:260px;
+min-height:auto;
+margin-bottom:8px;
+font-size:12px;
+">
 
-<strong>
+<strong style="font-size:13px;">
 
 Available Advance :
 ₹ <span id="advanceAmount">
@@ -933,38 +1237,110 @@ class="form-control"
 style="margin-top:8px;display:none;"
 placeholder="Enter Advance Amount"
 min="0"
-step="any">
+step="1">
 
 </div>
 
-<h4><strong>Payments</strong></h4>
+<div
+style="
+display:flex;
+justify-content:flex-end;
+align-items:center;
+gap:15px;
+margin-top:10px;
+">
+
+</div>
+
+<div style="
+display:flex;
+justify-content:flex-end;
+align-items:center;
+gap:18px;
+margin-top:10px;
+padding-right:20px;
+">
+
+<label style="
+margin:0;
+font-size:11px;
+font-weight:600;
+display:flex;
+align-items:center;
+gap:4px;
+">
+
+<input
+type="checkbox"
+id="roundOffToggle"
+onchange="updateGrandTotal()">
+
+Round Off
+
+</label>
+
+<div style="
+font-size:15px;
+font-weight:700;
+">
+
+Grand Total ₹
+<span id="grandTotal">0.00</span>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="row">
+<div class="col-md-6">
+
+<h5 style="margin:0 0 8px 0;font-size:14px;">
+<strong>Payments</strong>
+</h5>
+
+<div style="
+border:1px solid #ddd;
+border-radius:15px;
+padding:10px;
+background:#f8f8f8;
+max-height:220px;
+overflow:hidden;
+">
 
 <div class="row" style="
 margin-left:-8px;
 margin-right:-8px;
 margin-top:10px;
+max-height:140px;
+overflow-y:auto;
+overflow-x:hidden;
+padding-right:5px;
 ">
 
 <?php foreach($payment_modes as $pm){ ?>
 
-<div class="col-md-4" style="
-margin-bottom:15px;
-padding-left:8px;
-padding-right:8px;
+<div class="col-md-12" style="
+margin-bottom:8px;
+padding-left:0;
+padding-right:0;
 ">
 
 <div style="
-border:1px solid #ddd;
-padding:6px 8px;
-border-radius:5px;
-background:#fafafa;
-">
-
-<div style="
+border-bottom:1px solid #eee;
+padding:4px 0;
+background:none;
 display:flex;
 align-items:center;
 gap:8px;
-margin-bottom:6px;
+">
+
+<div style="
+width:120px;
+display:flex;
+align-items:center;
+gap:4px;
 ">
 
 <input
@@ -980,7 +1356,7 @@ for="pay_<?= $pm['id']; ?>"
 style="
 margin:0;
 font-weight:600;
-font-size:12px;
+font-size:10px;
 ">
 
 <?= strtoupper($pm['mode_name']); ?>
@@ -996,9 +1372,10 @@ min="0"
 class="form-control pay-amount"
 style="
 display:none;
-height:28px;
-font-size:11px;
-padding:2px 6px;
+height:32px;
+font-size:12px;
+width:80px;
+margin-left:auto;
 "
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="Enter Amount"
@@ -1010,10 +1387,11 @@ type="text"
 class="form-control pay-utr"
 style="
 display:none;
-height:28px;
-font-size:11px;
-padding:2px 6px;
-margin-top:5px;
+height:32px;
+font-size:12px;
+width:100px;
+margin-top:4px;
+margin-left:auto;
 "
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="Enter UTR No"
@@ -1023,30 +1401,70 @@ placeholder="Enter UTR No"
 </div>
 
 <?php } ?>
+</div>
 
 </div>
 
-
 <input type="hidden" name="payments_json" id="payments_json">
+</div>
+</div>
 
+</div>
+
+<hr>
 <input
 type="hidden"
 name="used_advance"
 id="used_advance"
 value="0">
 
-<br>
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:flex-end;
+padding:15px 20px;
+">
 
-<label><strong>Comments</strong></label>
-<textarea name="comments"
+<div>
+
+<label style="
+font-size:13px;
+font-weight:600;
+margin-bottom:5px;
+display:block;
+margin-top:-60px;
+">
+Comments
+</label>
+
+<textarea
+name="comments"
 class="form-control"
-rows="3"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
-<br>
+placeholder="Enter Remarks / Comments..."
+rows="4"
+style="
+width:280px;
+height:100px;
+padding:12px;
+font-size:13px;
+border-radius:8px;
+resize:none;
+box-sizing:border-box;
+"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
+
+</div>
+
+<div>
 
 <?php if($edit_mode){ ?>
 
-<button name="update_grn"
-class="btn btn-primary pull-right">
+<button
+name="update_grn"
+class="btn btn-primary"
+style="
+padding:6px 14px;
+font-size:12px;
+">
 
 Update GRN
 
@@ -1054,8 +1472,13 @@ Update GRN
 
 <?php } else { ?>
 
-<button name="save_grn"
-class="btn btn-success pull-right">
+<button
+name="save_grn"
+class="btn btn-success"
+style="
+padding:6px 14px;
+font-size:12px;
+">
 
 Create GRN
 
@@ -1064,6 +1487,120 @@ Create GRN
 <?php } ?>
 
 </div>
+
+</div>
+
+<div class="modal fade" id="shippingModal">
+
+<div class="modal-dialog">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+<button
+type="button"
+class="close"
+data-dismiss="modal">
+
+&times;
+
+</button>
+
+<h4 class="modal-title">
+Add Shipping Charge
+</h4>
+
+</div>
+
+<div class="modal-body">
+
+<label>Charge Type</label>
+
+<select
+id="modal_charge_type"
+class="form-control">
+
+<option value="">Select Type</option>
+
+<?php foreach($shipping_types as $st){ ?>
+<option value="<?= $st['id']; ?>">
+<?= $st['type_name']; ?>
+</option>
+<?php } ?>
+
+</select>
+
+<br>
+
+<label>Amount</label>
+
+<input
+type="number"
+id="modal_charge_amount"
+class="form-control">
+
+<br>
+
+<label>GST Type</label>
+
+<select
+id="modal_charge_gst_type"
+class="form-control">
+
+<option value="EXCLUSIVE">
+Exclusive
+</option>
+
+<option value="INCLUSIVE">
+Inclusive
+</option>
+
+</select>
+
+<br>
+
+<label>GST</label>
+
+<select
+id="modal_charge_gst_id"
+class="form-control">
+
+<option value="">Select GST</option>
+
+<?php foreach ($gst_list as $g) { ?>
+
+<option value="<?= $g['id']; ?>"
+data-gst="<?= $g['gst_percent']; ?>">
+
+<?= $g['gst_name']; ?>
+(<?= $g['gst_percent']; ?>%)
+
+</option>
+
+<?php } ?>
+
+</select>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+type="button"
+class="btn btn-success"
+onclick="saveShippingModal()">
+
+Add Charge
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
 </div>
 
 </form>
@@ -1192,27 +1729,6 @@ utrInput.style.display = 'block';
 
 <?php } ?>
 
-function openProductModal(){
-
-    $('#productModal').modal('show');
-
-    setTimeout(function(){
-
-        let search = document.getElementById("searchProduct");
-
-        search.value = "";
-
-        document.querySelectorAll("#productTable tr").forEach(function(row){
-            row.style.display = "";
-        });
-
-        search.focus();
-        search.select();
-
-    },300);
-
-}
-
 </script>
 <!-- ================= SCRIPT ================= -->
 
@@ -1229,9 +1745,6 @@ if(typeof charges === 'undefined'){
 let sno = items.length + 1;
 
 let payments = [];
-
-// 👇 YAHI ADD KARNA HAI
-let backupItem = null;
 
 function collectPayments(){
 
@@ -1274,6 +1787,66 @@ JSON.stringify(payments);
 
 }
 
+function calculateDiscount(){
+
+let qty =
+parseFloat(document.getElementById("qty").value) || 0;
+
+let rate =
+parseFloat(document.getElementById("rate").value) || 0;
+
+let discPercent =
+parseFloat(document.getElementById("disc_percent").value) || 0;
+
+let totalAmt = qty * rate;
+
+let discAmt =
+(totalAmt * discPercent) / 100;
+
+let netAmt =
+totalAmt - discAmt;
+
+document.getElementById("discount").value =
+Math.round(discAmt);
+
+document.getElementById("net_amount").value =
+Math.round(netAmt);
+
+}
+
+function calculateDiscountFromAmount(){
+
+let qty =
+parseFloat(document.getElementById("qty").value) || 0;
+
+let rate =
+parseFloat(document.getElementById("rate").value) || 0;
+
+let totalAmt = qty * rate;
+
+let discAmt =
+parseFloat(document.getElementById("discount").value) || 0;
+
+let discPercent = 0;
+
+if(totalAmt > 0){
+
+discPercent =
+(discAmt * 100) / totalAmt;
+
+}
+
+document.getElementById("disc_percent").value =
+Math.round(discPercent);
+
+let netAmt =
+totalAmt - discAmt;
+
+document.getElementById("net_amount").value =
+Math.round(netAmt);
+
+}
+
 function addItem() {
 
   let pid = document.getElementById("product").value;
@@ -1282,6 +1855,7 @@ function addItem() {
   let qty   = parseFloat(document.getElementById("qty").value) || 0;
   let free  = parseFloat(document.getElementById("free_qty").value) || 0;
   let rate  = parseFloat(document.getElementById("rate").value) || 0;
+  let disc_percent =parseFloat(document.getElementById("disc_percent").value) || 0;
   let disc  = parseFloat(document.getElementById("discount").value) || 0;
   let misc  = parseFloat(document.getElementById("misc").value) || 0;
   let mrp   = parseFloat(document.getElementById("mrp").value) || 0;
@@ -1300,7 +1874,6 @@ if(document.getElementById("supplier_id").value == ""){
 if(document.querySelector('[name="bill_no"]').value.trim() == ""){
     errors.push("Bill / GRN No");
 }
-
 
 if(!pid){
     errors.push("Product");
@@ -1334,6 +1907,17 @@ Swal.fire({
 }
 
 let buyType = document.getElementById("buy_type").value;
+
+let total_amt = qty * rate;
+
+if(disc_percent > 0){
+
+disc =
+Math.round(
+(total_amt * disc_percent) / 100
+);
+
+}
 
 let base = 0;
 let gst = 0;
@@ -1370,6 +1954,7 @@ items.push({
   buy_type: buyType,
   base_amount: base,
   gst_amount: gst,
+  disc_percent: disc_percent,
   discount: disc,
   misc: misc,
   mrp: mrp,
@@ -1417,16 +2002,28 @@ tb.innerHTML += `
 <td>${it.hsn_code || '-'}</td>
 <td>${parseFloat(it.qty).toFixed(2)} (+${parseFloat(it.free_qty).toFixed(2)})</td>
 <td>${it.rate}</td>
+
+<td>${(it.qty * it.rate).toFixed(2)}</td>
+
+<td>${it.disc_percent || 0}</td>
+
+<td>${it.discount.toFixed(2)}</td>
+
 <td>${it.base_amount.toFixed(2)}</td>
+
 <td>${it.gst_percent}%</td>
+
 <td>${it.gst_amount.toFixed(2)}</td>
+
 <td>${it.total.toFixed(2)}</td>
+
 <td>
+
 <button type="button"
 onclick="editItem(${i})"
 class="btn btn-xs btn-info">
 
-Edit
+<i class="fa fa-pencil"></i>
 
 </button>
 
@@ -1434,9 +2031,10 @@ Edit
 onclick="items.splice(${i},1);renderItems()"
 class="btn btn-xs btn-danger">
 
-X
+<i class="fa fa-trash"></i>
 
 </button>
+
 </td>
 </tr>`;
   });
@@ -1506,7 +2104,7 @@ input.value = Math.round(payable);
 
 }else{
 
-input.value = payable;
+input.value = payable.toFixed(2);
 
 }
 
@@ -1517,6 +2115,28 @@ input.value = payable;
 });
 
 }
+
+}
+
+function saveShippingModal(){
+
+document.getElementById("charge_type").value =
+document.getElementById("modal_charge_type").value;
+
+document.getElementById("charge_amount").value =
+document.getElementById("modal_charge_amount").value;
+
+document.getElementById("charge_gst_type").value =
+document.getElementById("modal_charge_gst_type").value;
+
+document.getElementById("charge_gst_id").value =
+document.getElementById("modal_charge_gst_id").value;
+
+console.log("Amount =", document.getElementById("charge_amount").value);
+
+addCharge();
+
+$('#shippingModal').modal('hide');
 
 }
 
@@ -1577,41 +2197,69 @@ document.getElementById("charge_gst_type").value = "EXCLUSIVE";
 
 function renderCharges() {
 
-  let body = document.getElementById("chargeBody");
-  body.innerHTML = "";
+let body = document.getElementById("chargeBody");
+body.innerHTML = "";
 
-  charges.forEach((c, i) => {
-    body.innerHTML += `
-      <tr>
-        <td>${c.type_name}</td>
-        <td>${c.amount}</td>
-        <td>${c.gst_percent}%</td>
-        <td>${c.gst_amount.toFixed(2)}</td>
-        <td>${c.total.toFixed(2)}</td>
-       <td>
+let summary = document.getElementById("shippingSummary");
 
-<button type="button"
-class="btn btn-xs btn-info"
-onclick="editCharge(${i})">
+if(charges.length == 0){
 
-Edit
+    summary.style.display = "none";
+    updateGrandTotal();
+    return;
 
-</button>
+}
 
-<button type="button"
-class="btn btn-xs btn-danger"
-onclick="charges.splice(${i},1);renderCharges()">
+summary.style.display = "block";
 
-X
+charges.forEach((c, i) => {
 
-</button>
+    summary.innerHTML += `
+    <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:4px 0;
+    border-bottom:1px solid #eee;
+    ">
 
-</td>
-      </tr>
+        <div style="font-size:11px;">
+
+            <b>Total :</b> ₹ ${c.total.toFixed(2)}
+            &nbsp; | &nbsp;
+            <b>${c.gst_type} GST</b>
+
+        </div>
+
+        <div>
+
+            <button
+            type="button"
+            class="btn btn-xs btn-info"
+            onclick="editCharge(${i})">
+
+            <i class="fa fa-pencil"></i>
+
+            </button>
+
+            <button
+            type="button"
+            class="btn btn-xs btn-danger"
+            onclick="charges.splice(${i},1);renderCharges()">
+
+            <i class="fa fa-trash"></i>
+
+            </button>
+
+        </div>
+
+    </div>
     `;
-  });
 
-  updateGrandTotal();
+});
+
+updateGrandTotal();
+
 }
 
 
@@ -1620,17 +2268,24 @@ function selectProduct(id, name, hsn) {
   document.getElementById("product").value = id;
   document.getElementById("product_name").value = name;
   document.getElementById("hsn_code").value = hsn;
-  
-  // Clear search box
-document.getElementById("searchProduct").value = "";
 
-// Show all products again
-document.querySelectorAll("#productTable tr").forEach(function(row){
-    row.style.display = "";
-});
-
+  $('#searchProduct').val('');
+$("#productTable tr").show();
 
   $('#productModal').modal('hide');
+
+  $('#productModal').one('hidden.bs.modal', function () {
+
+    setTimeout(function () {
+
+        document.getElementById("qty").focus();
+        document.getElementById("qty").select();
+
+    }, 50);
+
+});
+
+  
 
   fetch("get_product_rate.php?product_id=" + id)
     .then(res => res.json())
@@ -1650,18 +2305,21 @@ document.querySelectorAll("#productTable tr").forEach(function(row){
       if (data.buy_type)
         document.getElementById("buy_type").value = data.buy_type;
 
-   if (data.last_rate !== undefined) {
+if (data.last_rate !== undefined) {
 
-  let box = document.getElementById("previousRateBox");
-  box.style.display = "block";
+    let box = document.getElementById("previousRateBox");
+    box.style.display = "block";
 
-box.innerHTML = `
-    <strong>Last Purchase Details:</strong><br>
-    Rate (Inclusive GST): ₹ ${data.last_rate}<br>
-    GST Applied: ${data.gst_percent}%<br>
-    MRP: ₹ ${data.mrp}<br>
-    Price Date: ${data.price_date}
-  `;
+    box.innerHTML = `
+        <strong>Last Purchase :</strong>
+        &nbsp; Rate (Inc GST): <b>₹ ${data.last_rate}</b>
+        &nbsp; | &nbsp;
+        GST: <b>${data.gst_percent}%</b>
+        &nbsp; | &nbsp;
+        MRP: <b>₹ ${data.mrp}</b>
+        &nbsp; | &nbsp;
+        Date: <b>${data.price_date}</b>
+    `;
 }
 
 
@@ -1689,25 +2347,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
-$('#productModal').on('shown.bs.modal', function () {
-
-    const search = document.getElementById("searchProduct");
-
-    // Clear previous search
-    search.value = "";
-
-    // Show all rows
-    document.querySelectorAll("#productTable tr").forEach(function(row){
-        row.style.display = "";
-    });
-
-    // Force cursor
-    setTimeout(function () {
-        search.focus();
-        search.select();   // Cursor guaranteed
-    }, 300);
-
-});
 document.getElementById("grnForm")
 .addEventListener("submit", function(e){
 
@@ -1934,7 +2573,7 @@ input.value = Math.round(total);
 
 }else{
 
-input.value = total;
+input.value = total.toFixed(2);
 
 }
 
@@ -2005,6 +2644,8 @@ document.getElementById("free_qty").value = it.free_qty;
 
 document.getElementById("rate").value = it.rate;
 
+document.getElementById("disc_percent").value = it.disc_percent || 0;
+
 document.getElementById("discount").value = it.discount;
 
 document.getElementById("misc").value = it.misc;
@@ -2020,7 +2661,7 @@ items.splice(index,1);
 renderItems();
 }
 
-//let backupItem = null;
+let backupItem = null;
 
 function cancelEditItem(){
 
@@ -2035,26 +2676,30 @@ renderItems();
 }
 
 document.getElementById("product").value = "";
-
 document.getElementById("product_name").value = "";
-
 document.getElementById("hsn_code").value = "";
 
 document.getElementById("qty").value = "";
-
 document.getElementById("free_qty").value = "";
-
 document.getElementById("rate").value = "";
 
+document.getElementById("disc_percent").value = "";
 document.getElementById("discount").value = "";
 
+let netBox =
+document.getElementById("net_amount");
+
+if(netBox){
+netBox.value = "";
+}
+
 document.getElementById("misc").value = "";
-
 document.getElementById("mrp").value = "";
-
 document.getElementById("gst").value = "";
-
 document.getElementById("buy_type").value = "exclusive";
+
+document.getElementById("previousRateBox").style.display = "none";
+document.getElementById("previousRateBox").innerHTML = "";
 
 }
 
@@ -2257,6 +2902,24 @@ function editCharge(index){
     renderCharges();
 
 }
+
+$(document).on('shown.bs.modal', '#productModal', function () {
+
+    var box = document.getElementById("searchProduct");
+
+    box.value = "";
+
+    $("#productTable tr").show();
+
+    setTimeout(function () {
+
+        $(box).trigger("focus");
+        box.focus();
+        box.select();
+
+    }, 100);
+
+});
 
 </script>
 
