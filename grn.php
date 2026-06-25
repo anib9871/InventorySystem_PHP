@@ -1583,6 +1583,11 @@ function selectProduct(id, name, hsn) {
   document.getElementById("product").value = id;
   document.getElementById("product_name").value = name;
   document.getElementById("hsn_code").value = hsn;
+  document.getElementById("searchProduct").value = "";
+
+document.querySelectorAll("#productTable tr").forEach(function(row){
+    row.style.display = "";
+});
   $('#productModal').modal('hide');
 
   fetch("get_product_rate.php?product_id=" + id)
@@ -1639,6 +1644,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     });
   }
+
+});
+
+$('#productModal').on('shown.bs.modal', function () {
+
+    let search = document.getElementById("searchProduct");
+
+    search.value = "";
+    search.focus();
+
+    document.querySelectorAll("#productTable tr").forEach(function(row){
+        row.style.display = "";
+    });
+
+});
+
+$('#productModal').on('hidden.bs.modal', function () {
+
+    let search = document.getElementById("searchProduct");
+
+    search.value = "";
+
+    document.querySelectorAll("#productTable tr").forEach(function(row){
+        row.style.display = "";
+    });
 
 });
 
