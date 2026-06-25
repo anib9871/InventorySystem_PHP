@@ -258,7 +258,7 @@ include_once('layouts/header.php');
 <div class="input-group">
 
 <input type="number"
-step="0.01"
+step="any"
 min="0"
 inputmode="decimal"
 oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
@@ -287,10 +287,9 @@ id="buy_price"
 <div class="input-group">
 
 <input type="number"
-step="0.01"
+step="any"
 min="0"
 inputmode="decimal"
-oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
 id="sell_price"
  name="saleing-price"
  class="form-control"
