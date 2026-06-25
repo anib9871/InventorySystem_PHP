@@ -1281,7 +1281,7 @@ if(!gst_id){
     errors.push("GST");
 }
 
-if(mrp <= 0){
+if(mrp < 0){
     errors.push("MRP");
 }
 
