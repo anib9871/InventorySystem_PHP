@@ -521,9 +521,9 @@ include_once('layouts/header.php');
 <script>
 Swal.fire({
     icon: 'success',
-    title: 'Success',
-    text: 'GRN Created Successfully',
-    confirmButtonColor: '#28a745'
+    title: 'GRN Created Successfully',
+    showConfirmButton: false,
+    timer: 1800
 });
 </script>
 <?php } ?>
@@ -532,9 +532,9 @@ Swal.fire({
 <script>
 Swal.fire({
     icon: 'success',
-    title: 'Success',
-    text: 'GRN Updated Successfully',
-    confirmButtonColor: '#28a745'
+    title: 'GRN Updated Successfully',
+    showConfirmButton: false,
+    timer: 1800
 });
 </script>
 <?php } ?>
@@ -602,9 +602,12 @@ required>
 <div class="input-group">
   <input type="text" id="product_name" class="form-control" placeholder="Select Product" readonly>
   <span class="input-group-btn">
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#productModal">
-      Choose
-    </button>
+    <button
+type="button"
+class="btn btn-primary"
+onclick="openProductModal()">
+Choose
+</button>
   </span>
 </div>
 <br>
@@ -988,7 +991,7 @@ font-size:12px;
 
 <input
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control pay-amount"
 style="
@@ -1189,6 +1192,27 @@ utrInput.style.display = 'block';
 
 <?php } ?>
 
+function openProductModal(){
+
+    $('#productModal').modal('show');
+
+    setTimeout(function(){
+
+        let search = document.getElementById("searchProduct");
+
+        search.value = "";
+
+        document.querySelectorAll("#productTable tr").forEach(function(row){
+            row.style.display = "";
+        });
+
+        search.focus();
+        search.select();
+
+    },300);
+
+}
+
 </script>
 <!-- ================= SCRIPT ================= -->
 
@@ -1205,6 +1229,9 @@ if(typeof charges === 'undefined'){
 let sno = items.length + 1;
 
 let payments = [];
+
+// 👇 YAHI ADD KARNA HAI
+let backupItem = null;
 
 function collectPayments(){
 
@@ -1264,6 +1291,16 @@ function addItem() {
   let gstp   = parseFloat(gstSel.options[gstSel.selectedIndex]?.dataset.gst || 0);
 
 let errors = [];
+
+// NEW VALIDATION
+if(document.getElementById("supplier_id").value == ""){
+    errors.push("Supplier");
+}
+
+if(document.querySelector('[name="bill_no"]').value.trim() == ""){
+    errors.push("Bill / GRN No");
+}
+
 
 if(!pid){
     errors.push("Product");
@@ -1469,7 +1506,7 @@ input.value = Math.round(payable);
 
 }else{
 
-input.value = payable.toFixed(2);
+input.value = payable;
 
 }
 
@@ -1583,11 +1620,16 @@ function selectProduct(id, name, hsn) {
   document.getElementById("product").value = id;
   document.getElementById("product_name").value = name;
   document.getElementById("hsn_code").value = hsn;
-  document.getElementById("searchProduct").value = "";
+  
+  // Clear search box
+document.getElementById("searchProduct").value = "";
 
+// Show all products again
 document.querySelectorAll("#productTable tr").forEach(function(row){
     row.style.display = "";
 });
+
+
   $('#productModal').modal('hide');
 
   fetch("get_product_rate.php?product_id=" + id)
@@ -1649,29 +1691,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
 $('#productModal').on('shown.bs.modal', function () {
 
-    let search = document.getElementById("searchProduct");
+    const search = document.getElementById("searchProduct");
 
+    // Clear previous search
     search.value = "";
-    search.focus();
 
+    // Show all rows
     document.querySelectorAll("#productTable tr").forEach(function(row){
         row.style.display = "";
     });
 
-});
-
-$('#productModal').on('hidden.bs.modal', function () {
-
-    let search = document.getElementById("searchProduct");
-
-    search.value = "";
-
-    document.querySelectorAll("#productTable tr").forEach(function(row){
-        row.style.display = "";
-    });
+    // Force cursor
+    setTimeout(function () {
+        search.focus();
+        search.select();   // Cursor guaranteed
+    }, 300);
 
 });
-
 document.getElementById("grnForm")
 .addEventListener("submit", function(e){
 
@@ -1898,7 +1934,7 @@ input.value = Math.round(total);
 
 }else{
 
-input.value = total.toFixed(2);
+input.value = total;
 
 }
 
@@ -1984,7 +2020,7 @@ items.splice(index,1);
 renderItems();
 }
 
-let backupItem = null;
+//let backupItem = null;
 
 function cancelEditItem(){
 
