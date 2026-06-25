@@ -613,7 +613,7 @@ required>
 <input
 id="qty"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="Quantity">
@@ -623,7 +623,7 @@ placeholder="Quantity">
 <input
 id="free_qty"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="Free Qty">
@@ -633,7 +633,7 @@ placeholder="Free Qty">
 <input
 id="rate"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="Rate"><br>
@@ -642,7 +642,7 @@ placeholder="Rate"><br>
 <input
 id="discount"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="Discount"><br>
@@ -652,7 +652,7 @@ placeholder="Discount"><br>
 <input
 id="misc"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="Misc"><br>
@@ -661,7 +661,7 @@ placeholder="Misc"><br>
 <input
 id="mrp"
 type="number"
-step="1"
+step="any"
 min="0"
 class="form-control"
 placeholder="MRP"><br>
@@ -930,7 +930,7 @@ class="form-control"
 style="margin-top:8px;display:none;"
 placeholder="Enter Advance Amount"
 min="0"
-step="1">
+step="any">
 
 </div>
 
@@ -1273,7 +1273,7 @@ if(qty <= 0){
     errors.push("Quantity");
 }
 
-if(rate <= 0){
+if(rate < 0){
     errors.push("Rate");
 }
 
