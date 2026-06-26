@@ -75,6 +75,17 @@ $products = find_all('products');
 
 <div class="panel-body">
 
+<div class="row" style="margin-bottom:15px;">
+    <div class="col-md-4 pull-right">
+        <input
+            type="text"
+            id="stockSearch"
+            class="form-control"
+            placeholder="Search Product Name..."
+        >
+    </div>
+</div>
+
 <div style="margin-bottom:15px; text-align:right;">
 
 <button
@@ -118,6 +129,8 @@ FROM products p
 LEFT JOIN transaction_master t
 ON p.id = t.product_id
 
+WHERE p.product_type = 'Product'
+
 GROUP BY p.id
 
 ORDER BY p.name ASC
@@ -126,7 +139,7 @@ ORDER BY p.name ASC
 
 ?>
 
-<table class="table table-bordered table-striped">
+<table class="table table-bordered table-striped" id="stockTable">
 
 <thead>
 
@@ -204,5 +217,26 @@ text-align:center;
 
 </div>
 </div>
+
+<script>
+document.getElementById("stockSearch").addEventListener("keyup", function () {
+
+    var value = this.value.toLowerCase();
+    var rows = document.querySelectorAll("#stockTable tbody tr");
+
+    rows.forEach(function(row){
+
+        var text = row.innerText.toLowerCase();
+
+        if(text.indexOf(value) > -1){
+            row.style.display = "";
+        }else{
+            row.style.display = "none";
+        }
+
+    });
+
+});
+</script>
 
 <?php include_once('layouts/footer.php'); ?>
