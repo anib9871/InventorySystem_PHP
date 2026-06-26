@@ -129,7 +129,7 @@ FROM products p
 LEFT JOIN transaction_master t
 ON p.id = t.product_id
 
-WHERE p.product_type = 'Product'
+WHERE p.type =1
 
 GROUP BY p.id
 
