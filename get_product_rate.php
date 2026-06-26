@@ -15,7 +15,7 @@ $sql = "
         rm.rate,
         rm.mrp,
         rm.gst_id,
-        rm.price_date,
+        DATE_FORMAT(rm.price_date,'%d-%m-%Y') AS price_date,
         gm.gst_percent
     FROM rate_master rm
     LEFT JOIN gst_master gm ON gm.id = rm.gst_id
