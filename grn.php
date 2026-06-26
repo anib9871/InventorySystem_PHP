@@ -633,7 +633,7 @@ z-index:99;
 .form-col-supplier{width:210px;}
 .form-col-bill{width:110px;}
 .form-col-date{width:110px;}
-.form-col-product{width:250px;}
+.form-col-product{width:220px;}
 .form-col-small{width:80px;}
 .form-col-gst{width:90px;}
 .form-col-gsttype{width:120px;}
@@ -675,7 +675,7 @@ Swal.fire({
 <!-- LEFT : ITEM ENTRY -->
 <div class="col-md-12">
 <div class="panel panel-default">
-<div class="panel-heading"><strong>Item Entry</strong></div>
+<div class="panel-heading"><strong>GRN</strong></div>
 <div class="panel-body" id="itemEntryBox">
 
 <input type="hidden" id="product">
@@ -683,7 +683,7 @@ Swal.fire({
 <input type="hidden" id="sac_code">
 
 <!-- Row 1 -->
-<div class="item-row">
+<div class="item-row" style="padding-left:20px;">
 
 <!-- Supplier -->
 <div class="form-col-supplier">
@@ -773,7 +773,7 @@ align-items:center;
 </div>
 
 
-<div class="item-row" style="margin-top:10px;">
+<div class="item-row" style="margin-top:4px;padding-left:20px;">
 
 <div class="form-col-product">
 
@@ -793,8 +793,7 @@ readonly>
 <button
 type="button"
 class="btn btn-primary"
-data-toggle="modal"
-data-target="#productModal"
+onclick="openProductModal()"
 style="
 height:26px;
 padding:2px 8px;
@@ -802,11 +801,8 @@ font-size:11px;
 line-height:18px;
 min-width:60px;
 ">
-
 Choose
-
 </button>
-
 </span>
 
 </div>
@@ -848,37 +844,53 @@ flex-shrink:0;
 type="button"
 onclick="addItem()"
 class="btn btn-success"
-style="
-height:30px;
-padding:3px 12px;
-font-size:12px;
-">
-
+style="height:30px;padding:3px 12px;font-size:12px;">
 Add Item
-
 </button>
 
 <button
 type="button"
 onclick="cancelEditItem()"
 class="btn btn-danger"
-style="
-height:30px;
-padding:3px 12px;
-font-size:12px;
-">
-
+style="height:30px;padding:3px 12px;font-size:12px;">
 Cancel
-
 </button>
 
+<button
+type="button"
+class="btn btn-primary btn-sm"
+data-toggle="modal"
+data-target="#shippingModal"
+style="height:30px;padding:3px 10px;font-size:12px;">
+<i class="fa fa-plus"></i> Shipping
+</button>
+
+<div
+id="shippingSummary"
+style="
+display:none;
+width:220px;
+height:30px;
+padding:5px 8px;
+background:#f8f9fa;
+border-left:3px solid #2196F3;
+font-size:11px;
+line-height:20px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+">
 </div>
 
 </div>
+
+</div>
+
+
 
 
 <!-- Row 3 -->
-<div class="item-row" style="margin-top:10px;">
+<div class="item-row" style="margin-top:10px;padding-left:20px;">
 
 <!-- Rate -->
 <div class="form-col-small">
@@ -1084,47 +1096,6 @@ font-size:11px;
 
 <hr>
 
-<div class="col-md-6">
-
-<div style="
-display:flex;
-align-items:center;
-gap:12px;
-margin-bottom:10px;
-">
-
-<button
-type="button"
-class="btn btn-primary btn-sm"
-data-toggle="modal"
-data-target="#shippingModal">
-
-<i class="fa fa-plus"></i>
-Add Shipping Charge
-
-</button>
-
-<div
-id="shippingSummary"
-style="
-display:none;
-flex:1;
-padding:6px 10px;
-background:#f8f9fa;
-border-left:4px solid #2196F3;
-border-radius:4px;
-font-size:11px;
-height:30px;
-line-height:18px;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-">
-
-</div>
-
-</div>
-
 <!-- Hidden Controls (JS ke liye) -->
 
 <div style="display:none;">
@@ -1213,6 +1184,13 @@ font-size:12px;
 Available Advance :
 ₹ <span id="advanceAmount">
 
+<br>
+
+<strong style="font-size:13px;">
+Balance Advance :
+₹ <span id="balanceAdvance">0.00</span>
+</strong>
+
 <?= number_format($advance_amount,2); ?>
 
 </span>
@@ -1244,27 +1222,78 @@ step="1">
 <div
 style="
 display:flex;
-justify-content:flex-end;
 align-items:center;
-gap:15px;
-margin-top:10px;
+justify-content:flex-start;
+margin-top:12px;
+margin-left:200px;
+gap:20px;
 ">
 
 </div>
 
+
+</br>
+</br>
+</br>
+<div>
+
+<label style="
+font-size:13px;
+font-weight:600;
+margin-bottom:5px;
+display:block;
+margin-top:-60px;
+">
+Comments
+</label>
+
+<textarea
+name="comments"
+class="form-control"
+placeholder="Enter Remarks / Comments..."
+rows="4"
+style="
+width:280px;
+height:100px;
+padding:12px;
+font-size:13px;
+border-radius:8px;
+resize:none;
+box-sizing:border-box;
+"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
+
+</div>
+
+
+<br>
+<br>
+
+<div class="row" style="margin-top:-150px;">
+
+    <div class="col-md-6 col-md-offset-6">
+
+
 <div style="
 display:flex;
-justify-content:flex-end;
+justify-content:space-between;
 align-items:center;
-gap:18px;
-margin-top:10px;
-padding-right:20px;
+width:340px;
+margin-bottom:8px;
+">
+
+<div>
+    <strong style="font-size:14px;">Payments</strong>
+</div>
+
+<div style="
+display:flex;
+align-items:center;
+gap:8px;
 ">
 
 <label style="
 margin:0;
 font-size:11px;
-font-weight:600;
 display:flex;
 align-items:center;
 gap:4px;
@@ -1280,30 +1309,42 @@ Round Off
 </label>
 
 <div style="
-font-size:15px;
-font-weight:700;
+font-size:13px;
+font-weight:bold;
 ">
 
-Grand Total ₹
+Total ₹
 <span id="grandTotal">0.00</span>
 
 </div>
 
-</div>
+<?php if($edit_mode){ ?>
+
+<button
+name="update_grn"
+class="btn btn-primary btn-sm">
+Update GRN
+</button>
+
+<?php } else { ?>
+
+<button
+name="save_grn"
+class="btn btn-success btn-sm">
+Create GRN
+</button>
+
+<?php } ?>
 
 </div>
 
-<div class="row">
-<div class="col-md-6">
-
-<h5 style="margin:0 0 8px 0;font-size:14px;">
-<strong>Payments</strong>
-</h5>
+</div>
 
 <div style="
+width:340px;
 border:1px solid #ddd;
-border-radius:15px;
-padding:10px;
+border-radius:12px;
+padding:8px;
 background:#f8f8f8;
 max-height:220px;
 overflow:hidden;
@@ -1329,18 +1370,21 @@ padding-right:0;
 
 <div style="
 border-bottom:1px solid #eee;
-padding:4px 0;
+height:30px;
+padding:2px 6px;
 background:none;
 display:flex;
 align-items:center;
-gap:8px;
+gap:5px;
+box-sizing:border-box;
 ">
 
 <div style="
 width:120px;
 display:flex;
-align-items:center;
-gap:4px;
+align-items:flex-start;
+gap:6px;
+padding-left:10px;
 ">
 
 <input
@@ -1372,10 +1416,11 @@ min="0"
 class="form-control pay-amount"
 style="
 display:none;
-height:32px;
-font-size:12px;
-width:80px;
-margin-left:auto;
+height:26px;
+font-size:11px;
+width:70px;
+margin-left:5px;
+margin-top:0;
 "
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="Enter Amount"
@@ -1387,11 +1432,11 @@ type="text"
 class="form-control pay-utr"
 style="
 display:none;
-height:32px;
-font-size:12px;
-width:100px;
-margin-top:4px;
-margin-left:auto;
+height:26px;
+font-size:11px;
+width:90px;
+margin-top:0;
+margin-left:5px;
 "
 data-mode="<?= $pm['mode_name']; ?>"
 placeholder="Enter UTR No"
@@ -1407,11 +1452,11 @@ placeholder="Enter UTR No"
 
 <input type="hidden" name="payments_json" id="payments_json">
 </div>
-</div>
 
 </div>
 
-<hr>
+</div>
+
 <input
 type="hidden"
 name="used_advance"
@@ -1425,68 +1470,9 @@ align-items:flex-end;
 padding:15px 20px;
 ">
 
-<div>
 
-<label style="
-font-size:13px;
-font-weight:600;
-margin-bottom:5px;
-display:block;
-margin-top:-60px;
-">
-Comments
-</label>
 
-<textarea
-name="comments"
-class="form-control"
-placeholder="Enter Remarks / Comments..."
-rows="4"
-style="
-width:280px;
-height:100px;
-padding:12px;
-font-size:13px;
-border-radius:8px;
-resize:none;
-box-sizing:border-box;
-"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
 
-</div>
-
-<div>
-
-<?php if($edit_mode){ ?>
-
-<button
-name="update_grn"
-class="btn btn-primary"
-style="
-padding:6px 14px;
-font-size:12px;
-">
-
-Update GRN
-
-</button>
-
-<?php } else { ?>
-
-<button
-name="save_grn"
-class="btn btn-success"
-style="
-padding:6px 14px;
-font-size:12px;
-">
-
-Create GRN
-
-</button>
-
-<?php } ?>
-
-</div>
 
 </div>
 
@@ -2227,7 +2213,7 @@ charges.forEach((c, i) => {
 
             <b>Total :</b> ₹ ${c.total.toFixed(2)}
             &nbsp; | &nbsp;
-            <b>${c.gst_type} GST</b>
+            <b>${c.gst_type == "EXCLUSIVE" ? "EXCL. GST" : "INCL."}</b>
 
         </div>
 
@@ -2564,16 +2550,26 @@ utrInput.value = '';
 
 if(checkedBoxes.length == 1){
 
+let advanceUsed = parseFloat(
+document.getElementById("used_advance").value
+) || 0;
+
+let payable = total - advanceUsed;
+
+if(payable < 0){
+    payable = 0;
+}
+
 let roundChecked =
 document.getElementById("roundOffToggle").checked;
 
 if(roundChecked){
 
-input.value = Math.round(total);
+    input.value = Math.round(payable);
 
 }else{
 
-input.value = Math.round(total);
+    input.value = payable.toFixed(2);
 
 }
 
@@ -2741,8 +2737,11 @@ let adv = parseFloat(data.advance || 0);
 document.getElementById("advanceAmount")
 .innerText = adv.toFixed(2);
 
+
 document.getElementById("advanceSection")
 .style.display = "block";
+
+
 
 if(adv > 0){
 
@@ -2839,6 +2838,9 @@ this.value = total;
 document.getElementById("used_advance")
 .value = entered;
 
+document.getElementById("balanceAdvance").innerText =
+(available - entered).toFixed(2);
+
 updateGrandTotal();
 
 });
@@ -2885,41 +2887,46 @@ function editCharge(index){
 
     let c = charges[index];
 
-    document.getElementById("charge_type").value =
-    c.shipping_type_id;
-
-    document.getElementById("charge_amount").value =
-    c.amount;
-
-    document.getElementById("charge_gst_id").value =
-    c.gst_id;
-
-    document.getElementById("charge_gst_type").value =
-    c.gst_type;
+    document.getElementById("modal_charge_type").value = c.shipping_type_id;
+    document.getElementById("modal_charge_amount").value = c.amount;
+    document.getElementById("modal_charge_gst_id").value = c.gst_id;
+    document.getElementById("modal_charge_gst_type").value = c.gst_type;
 
     charges.splice(index,1);
 
     renderCharges();
 
+    $('#shippingModal').modal('show');
 }
 
-$(document).on('shown.bs.modal', '#productModal', function () {
+$('#productModal').on('shown.bs.modal', function () {
 
-    var box = document.getElementById("searchProduct");
-
-    box.value = "";
+    $('#searchProduct').val('');
 
     $("#productTable tr").show();
 
     setTimeout(function () {
-
-        $(box).trigger("focus");
-        box.focus();
-        box.select();
-
-    }, 100);
+        $('#searchProduct').focus();
+        $('#searchProduct').select();
+    }, 200);
 
 });
+
+function openProductModal(){
+
+    $('#productModal').modal('show');
+
+    setTimeout(function(){
+
+        $('#searchProduct').val('');
+        $("#productTable tr").show();
+
+        document.getElementById("searchProduct").focus();
+        document.getElementById("searchProduct").select();
+
+    },300);
+
+}
 
 </script>
 
@@ -2938,7 +2945,7 @@ $(document).on('shown.bs.modal', '#productModal', function () {
 
       <div class="modal-body">
 
-        <input type="text" id="searchProduct" class="form-control" placeholder="Search product..."><br>
+        <input type="text" id="searchProduct" class="form-control" placeholder="Search product..." autofocus>
 
         <div style="max-height:350px; overflow-y:auto;">
           <table class="table table-bordered table-hover">
