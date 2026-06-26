@@ -345,7 +345,7 @@ $total_igst += $it['igst_amount'];
 <?php if($gst_enabled == "Yes"): ?>
 <td class="right"><?= $it['gst_percent'] ?>%</td>
 <?php endif; ?>
-<td class="right"><?= number_format($it['line_total'],2) ?></td>
+<td class="right"><?= number_format($taxable,2) ?></td>
 </tr>
 
 <?php } ?>
@@ -353,7 +353,7 @@ $total_igst += $it['igst_amount'];
 <!-- TOTAL ROWS -->
 <tr>
 <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Sub Total</b></td>
-<td class="right"><?= number_format($invoice['subtotal'],2) ?></td>
+<td class="right"><?= number_format($total_taxable,2) ?></td>
 </tr>
 
 <?php if($gst_enabled == "Yes"){ ?>
