@@ -203,6 +203,7 @@ include_once('layouts/header.php');
 
 
 <!-- CATEGORY -->
+<!-- CATEGORY -->
 <select name="product-categorie" class="form-control" required>
 <option value="">Select Category</option>
 
@@ -213,12 +214,11 @@ include_once('layouts/header.php');
 if($edit){
     if($edit['categorie_id'] == $c['id']) echo "selected";
 }else{
-    if(strtolower(trim($c['name'])) == 'products') echo "selected";
+    if($c['id'] == 1) echo "selected";
 }
-?>>
-
+?>
+>
 <?php echo $c['name']; ?>
-
 </option>
 
 <?php endforeach; ?>
