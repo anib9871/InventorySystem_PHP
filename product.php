@@ -205,11 +205,22 @@ include_once('layouts/header.php');
 <!-- CATEGORY -->
 <select name="product-categorie" class="form-control" required>
 <option value="">Select Category</option>
+
 <?php foreach($categories as $c): ?>
-<option value="<?php echo $c['id']; ?>" 
-<?php if($edit && $edit['categorie_id']==$c['id']) echo "selected"; ?>>
+
+<option value="<?php echo $c['id']; ?>"
+<?php
+if($edit){
+    if($edit['categorie_id'] == $c['id']) echo "selected";
+}else{
+    if(strtolower(trim($c['name'])) == 'products') echo "selected";
+}
+?>>
+
 <?php echo $c['name']; ?>
+
 </option>
+
 <?php endforeach; ?>
 </select>
 <br>
@@ -257,16 +268,16 @@ include_once('layouts/header.php');
 
 <div class="input-group">
 
-<input type="number"
-step="any"
-min="0"
+<input
+type="text"
 inputmode="decimal"
-oninput="this.value=this.value.replace(/[^0-9.]/g,'')"
+autocomplete="off"
 id="buy_price"
- name="buying-price"
- class="form-control"
- style="width:100%;"
- value="<?php echo $edit['buy_price'] ?? ''; ?>">
+name="buying-price"
+class="form-control"
+style="width:150%;"
+oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1');"
+value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
 
@@ -286,15 +297,16 @@ id="buy_price"
 
 <div class="input-group">
 
-<input type="number"
-step="any"
-min="0"
+<input
+type="text"
 inputmode="decimal"
+autocomplete="off"
 id="sell_price"
- name="saleing-price"
- class="form-control"
- style="width:100%;"
- value="<?php echo $edit['sale_price'] ?? ''; ?>">
+name="saleing-price"
+class="form-control"
+style="width:150%;"
+oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1');"
+value="<?php echo $edit['sale_price'] ?? ''; ?>">
 
 <?php if($gst_enabled == "Yes"): ?>
 
