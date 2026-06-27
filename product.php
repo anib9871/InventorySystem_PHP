@@ -65,8 +65,8 @@ $sell_type = ($gst_enabled == "Yes")
 
   $check = find_by_sql("SELECT id FROM products WHERE name='{$name}' LIMIT 1");
   if($check){
-    $session->msg("d","Product already exists");
-    redirect('product.php',false);
+$_SESSION['swal_error'] = "Product already exists!";
+redirect('product.php',false);
   }
 
 $db->query("
@@ -107,7 +107,7 @@ VALUES
 )
 ");
 
-$session->msg("s","Product added successfully");
+$_SESSION['swal_success'] = "Product added successfully";
 redirect('product.php',false);
 }
 
@@ -170,8 +170,8 @@ UPDATE rate_master SET
 WHERE product_id = '{$id}'
 ");
 
-  $session->msg("s","Product updated");
-  redirect('product.php',false);
+$_SESSION['swal_success'] = "Product updated successfully";
+redirect('product.php',false);
 }
 
 
@@ -516,6 +516,39 @@ document.getElementById("search").addEventListener("keyup", function() {
    r.style.display = r.textContent.toLowerCase().includes(val) ? "" : "none";
  });
 });
+
+<?php if(isset($_SESSION['swal_success'])): ?>
+
+
+Swal.fire({
+    icon: 'success',
+    title: '<?php echo $_SESSION['swal_success']; ?>',
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+});
+
+<?php unset($_SESSION['swal_success']); ?>
+<?php endif; ?>
+
+
+<?php if(isset($_SESSION['swal_error'])): ?>
+
+
+Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: '<?php echo $_SESSION['swal_error']; ?>',
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#d33'
+});
+
+
+<?php unset($_SESSION['swal_error']); ?>
+<?php endif; ?>
+
+
+
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
