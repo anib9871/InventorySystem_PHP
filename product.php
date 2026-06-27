@@ -18,6 +18,15 @@ if(isset($_GET['check_name'])){
 $products   = join_product_table();
 $categories = find_all('categories');
 
+$product_category_id = 0;
+
+foreach($categories as $cat){
+    if(strtolower(trim($cat['name'])) == 'product' || strtolower(trim($cat['name'])) == 'products'){
+        $product_category_id = $cat['id'];
+        break;
+    }
+}
+
 
 /* ========= EDIT MODE LOAD ========= */
 $edit = null;
@@ -214,7 +223,7 @@ include_once('layouts/header.php');
 if($edit){
     if($edit['categorie_id'] == $c['id']) echo "selected";
 }else{
-    if($c['id'] == 1) echo "selected";
+    if($c['id'] == $product_category_id) echo "selected";
 }
 ?>
 >
