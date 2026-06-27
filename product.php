@@ -275,7 +275,7 @@ autocomplete="off"
 id="buy_price"
 name="buying-price"
 class="form-control"
-style="width:150%;"
+style="width:100%;"
 oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1');"
 value="<?php echo $edit['buy_price'] ?? ''; ?>">
 
@@ -304,7 +304,7 @@ autocomplete="off"
 id="sell_price"
 name="saleing-price"
 class="form-control"
-style="width:150%;"
+style="width:100%;"
 oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1');"
 value="<?php echo $edit['sale_price'] ?? ''; ?>">
 
