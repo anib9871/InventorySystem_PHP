@@ -204,15 +204,22 @@ include_once('layouts/header.php');
 
 <input type="hidden" name="product_id" value="<?php echo $edit['id'] ?? ''; ?>">
 
-<input id="product_title" name="product-title" class="form-control"
- placeholder="Product Name" value="<?php echo $edit['name'] ?? ''; ?>" required>
+<label>Product Name</label>
+
+<input id="product_title"
+name="product-title"
+class="form-control"
+value="<?php echo $edit['name'] ?? ''; ?>"
+required>
+
+<br>
 
 <small id="name_status"></small>
 <br>
 
 
 <!-- CATEGORY -->
-<!-- CATEGORY -->
+<label>Category</label>
 <select name="product-categorie" class="form-control" required>
 <option value="">Select Category</option>
 
@@ -245,6 +252,7 @@ if($edit){
 <?php if($gst_enabled == "Yes"): ?>
 
 <!-- GST -->
+<label>Category</label>
 <select name="gst_id" id="gst_id" class="form-control">
 <option value="">Select GST</option>
 <?php foreach(find_all("gst_master") as $g): ?>
@@ -261,11 +269,14 @@ if($edit){
 <?php if($gst_enabled == "Yes"): ?>
 
 <!-- HSN CODE -->
+<label>HSN Code</label>
+
 <input type="text"
        name="hsn_code"
        class="form-control"
-       placeholder="HSN Code"
        value="<?php echo $edit['hsn_code'] ?? ''; ?>">
+
+<br>
 
 <?php endif; ?>
 
