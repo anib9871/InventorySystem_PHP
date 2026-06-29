@@ -739,7 +739,7 @@ exit;
 echo "
 <script>
 
-window.location.href = 'invoice_print.php?id=".$qid."&direct=1';
+window.location.href = 'invoice_print.php?id=".$qid."';
 
 </script>
 ";
