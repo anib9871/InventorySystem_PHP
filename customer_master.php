@@ -219,7 +219,7 @@ placeholder="Contact No"><br>
 
 <input type="text" id="email" name="email" class="form-control"
 value="<?php echo $edit ? $edit['email'] : ''; ?>"
-placeholder="Email" required><br>
+placeholder="Email"><br>
 
 <textarea name="address" class="form-control"
 placeholder="Address"><?php echo $edit ? $edit['address'] : ''; ?></textarea><br>
