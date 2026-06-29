@@ -248,7 +248,7 @@ foreach($_POST['product_id'] as $pid){
 
   $product = find_by_id('products', $pid);
 
-if($product['type'] == 1){ // product
+if(in_array($product['type'], [1,2])){// product
 
 if(trim((string)$org_state_code) !== trim((string)$cust_state_code)){
 
