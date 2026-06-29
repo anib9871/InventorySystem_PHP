@@ -264,7 +264,9 @@ break;
 }
 }
 
-$qdate = date("Y-m-d");
+$qdate = !empty($_POST['invoice_date'])
+    ? date("Y-m-d", strtotime($_POST['invoice_date']))
+    : date("Y-m-d");
 
 $gst_type = isset($_POST['gst_type'])
 ? $_POST['gst_type']
@@ -736,13 +738,7 @@ exit;
 // window.location='invoice_list.php?print_id=".$qid."';
 // </script>";
 
-echo "
-<script>
-
-window.location.href = 'invoice_print.php?id=".$qid."';
-
-</script>
-";
+header("Location: invoice_print.php?id=".$qid);
 exit;
 }
 
@@ -1197,17 +1193,27 @@ body{
 </style>
 
 <div class="card-body">
-<form method="post" onsubmit="return validateCustomer()">
+<form method="post" target="_blank" onsubmit="return validateCustomer()">
 
 <!-- CUSTOMER -->
 <div class="card p-3 mb-3 top-filter-card">
 
+<div class="col-md-1 d-flex flex-column justify-content-center" style="min-width:180px;">
+    <label>Invoice Date</label>
+
+    <input
+        type="date"
+        name="invoice_date"
+        id="invoice_date"
+        class="form-control"
+        value="<?= date('Y-m-d'); ?>">
+</div>
 
  
 <div class="row align-items-end g-2">
 
 
-   <div class="col-md-4 d-flex flex-column justify-content-center">
+   <div class="col-md-3 d-flex flex-column justify-content-center">
       <label>Customer</label>
       <select name="customer_id" class="form-control">
         <option value="">Select Customer</option>
@@ -1263,7 +1269,7 @@ foreach($centers as $c):
 
 <?php if($system != 'billing'): ?>
 
-<div class="col-md-3 d-flex flex-column justify-content-center">
+<div class="col-md-2 d-flex flex-column justify-content-center">
   <label>GST Type</label>
 
 <select name="gst_type" class="form-control">
@@ -1953,6 +1959,16 @@ this.value;
 
 document.querySelectorAll("#billBody tr").forEach(r=>{
    calculate(r);
+});
+
+$(function(){
+
+    $("#invoice_date").datepicker({
+        dateFormat: "dd-mm-yy",
+        changeMonth: true,
+        changeYear: true
+    });
+
 });
 
 </script>
