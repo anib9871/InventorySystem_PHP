@@ -234,7 +234,7 @@ h1, h2, h3{
 <body>
 
 <div class="no-print" style="width:900px;margin:auto;">
-    <button onclick="window.print()" 
+    <button onclick="printInvoice()"
         style="padding:6px 15px;cursor:pointer;">
         🖨 Print Invoice
     </button>
@@ -307,7 +307,7 @@ Phone: <?= $invoice['contact_no'] ?>
 <th>Qty</th>
 <th>Unit</th>
 <th>Price/Unit</th>
-<th>Discount</th>
+<th> Total Discount</th>
 <?php if($gst_enabled == "Yes"): ?>
 <th>GST %</th>
 <?php endif; ?>
@@ -618,15 +618,13 @@ padding:0;
 </div>
 
 <script>
-window.onload = function() {
 
-  window.print();
+function printInvoice(){
 
-  window.onafterprint = function(){
-      window.location.href = 'invoice_create.php';
-  };
+    window.print();
 
-};
+}
+
 </script>
 </body>
 </html>
