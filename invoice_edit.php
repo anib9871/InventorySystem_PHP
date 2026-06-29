@@ -834,8 +834,19 @@ body{
  
 <div class="row align-items-end g-2">
 
+   <div class="col-md-2 d-flex flex-column justify-content-center" style="min-width:120px;">
+    <label>Invoice Date</label>
 
-   <div class="col-md-4 d-flex flex-column justify-content-center">
+    <input
+        type="text"
+        id="invoice_date"
+        name="invoice_date"
+        class="form-control"
+        value="<?= date('d-m-Y', strtotime($quote['invoice_date'])); ?>">
+</div>
+
+
+   <div class="col-md-3 d-flex flex-column justify-content-center">
       <label>Customer</label>
       <select name="customer_id" class="form-control">
         <option value="">Select Customer</option>
@@ -1029,6 +1040,7 @@ data-mode="<?=$pm['id'];?>"
 
 <input
 type="number"
+step="0.0001"
 name="payment_amount[<?=$pm['id'];?>]"
 class="form-control form-control-sm payAmt"
 data-mode="<?=$pm['id'];?>"
@@ -1114,6 +1126,7 @@ value="<?= $it['qty']; ?>">
 
 <td>
 <input type="number"
+step="0.0001"
 name="rate[]"
 class="form-control form-control-sm base"
 value="<?= $it['rate_excl_gst']; ?>">
@@ -1123,6 +1136,7 @@ value="<?= $it['rate_excl_gst']; ?>">
 
 <td>
 <input type="number"
+step="0.0001"
 name="gst[]"
 class="form-control form-control-sm gst"
 value="<?= $it['gst_percent']; ?>">
@@ -1319,7 +1333,7 @@ function addProduct(p){
 
   <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1"></td>
 
-  <td><input type="number" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}"></td>
+  <td><input type="number" step="0.0001" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}"></td>
 
   <?php if($gst_enabled == "Yes"): ?>
 
@@ -1655,6 +1669,16 @@ document.querySelectorAll(
 
    inp.removeAttribute("readonly");
    inp.removeAttribute("disabled");
+
+});
+
+$(function(){
+
+    $('#invoice_date').datepicker({
+        format: 'dd-mm-yyyy',
+        autoclose: true,
+        todayHighlight: true
+    });
 
 });
 
