@@ -48,7 +48,7 @@ foreach($invoices as $inv){
 <tr>
   <td><?php echo $i++; ?></td>
   <td><?php echo $inv['invoice_no']; ?></td>
-  <td><?php echo $inv['invoice_date']; ?></td>
+ <td><?php echo date('d-m-Y', strtotime($inv['invoice_date'])); ?></td>
   <td><?php echo $inv['customer_name']; ?></td>
   <td><?php echo number_format($inv['net_total'],2); ?></td>
 
