@@ -1,0 +1,432 @@
+<?php
+$page_title = 'Ledger Report';
+require_once('includes/load.php');
+
+
+
+$type = isset($_GET['type']) ? $_GET['type'] : 'supplier';
+$party_id = isset($_GET['party_id']) ? (int)$_GET['party_id'] : 0;
+$from = isset($_GET['from']) ? $_GET['from'] : date('Y-m-01');
+$to   = isset($_GET['to']) ? $_GET['to'] : date('Y-m-d');
+
+$customers = find_all('customer_master');
+$suppliers = find_all('supplier_master');
+
+$rows = [];
+$totalDebit = 0;
+$totalCredit = 0;
+$balance = 0;
+
+if($party_id > 0){
+
+    if($type == 'supplier'){
+
+        $purchase = find_by_sql("
+        SELECT
+            DATE(entry_date) txn_date,
+            bill_indent_no voucher_no,
+            'Purchase (GRN)' voucher_type,
+            SUM(net_price) amount
+        FROM transaction_master
+        WHERE supplier_id='{$party_id}'
+          AND transaction_type=1
+          AND DATE(entry_date) BETWEEN '{$from}' AND '{$to}'
+        GROUP BY bill_indent_no, DATE(entry_date)
+        ORDER BY txn_date
+        ");
+
+        foreach($purchase as $p){
+            $rows[] = [
+                'date'=>$p['txn_date'],
+                'particular'=>'Purchase',
+                'type'=>$p['voucher_type'],
+                'voucher'=>$p['voucher_no'],
+                'debit'=>0,
+                'credit'=>$p['amount']
+            ];
+        }
+
+        $payments = find_by_sql("
+        SELECT
+            payment_date txn_date,
+            CONCAT('PAY-',payment_id) voucher_no,
+            payment_amount amount
+        FROM supplier_payment
+        WHERE supplier_id='{$party_id}'
+          AND payment_date BETWEEN '{$from}' AND '{$to}'
+        ");
+
+foreach($payments as $p){
+    $rows[] = [
+        'date'=>$p['txn_date'],
+        'particular'=>'Payment',
+        'type'=>'Payment',
+        'voucher'=>$p['voucher_no'],
+        'debit'=>0,
+        'credit'=>$p['amount']
+    ];
+}
+
+    } else {
+
+        $sales = find_by_sql("
+        SELECT invoice_date txn_date,
+               invoice_no,
+               net_total
+        FROM invoice
+        WHERE customer_id='{$party_id}'
+          AND invoice_date BETWEEN '{$from}' AND '{$to}'
+        ");
+
+        foreach($sales as $s){
+            $rows[] = [
+                'date'=>$s['txn_date'],
+                'particular'=>'Sale',
+                'type'=>'Invoice',
+                'voucher'=>$s['invoice_no'],
+                'debit'=>$s['net_total'],
+                'credit'=>0
+            ];
+        }
+
+$payments = find_by_sql("
+SELECT payment_date txn_date,
+       CONCAT('PAY-',id) voucher_no,
+       amount
+FROM payments
+WHERE customer_id='{$party_id}'
+  AND DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+");
+
+foreach($payments as $p){
+    $rows[] = [
+        'date'       => $p['txn_date'],
+        'particular' => 'Payment',
+        'type'       => 'Payment',
+        'voucher'    => $p['voucher_no'],
+        'debit'      => 0,
+        'credit'     => $p['amount']
+    ];
+}
+
+    }
+
+}
+
+include_once('layouts/header.php');
+?>
+
+<style>
+@media print{
+
+body{
+    margin:0;
+    padding:0;
+}
+
+.no-print,
+#screenHeader,
+.panel-heading,
+form,
+hr{
+    display:none !important;
+}
+
+.panel,
+.panel-body{
+    border:none !important;
+    box-shadow:none !important;
+    padding:0 !important;
+    margin:0 !important;
+}
+
+#printHeader{
+    display:block !important;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+table th,
+table td{
+    border:1px solid #000 !important;
+    padding:5px !important;
+}
+
+}
+
+</style>
+
+<div id="printArea">
+
+<?php
+
+$org = find_by_sql("
+SELECT *
+FROM organization_master
+WHERE id='{$_SESSION['org_id']}'
+LIMIT 1
+");
+
+if($type == 'supplier'){
+
+    $party = find_by_sql("
+    SELECT supplier_name
+    FROM supplier_master
+    WHERE id='{$party_id}'
+    LIMIT 1
+    ");
+
+    $party_name = $party ? $party[0]['supplier_name'] : '';
+
+}else{
+
+    $party = find_by_sql("
+    SELECT customer_name
+    FROM customer_master
+    WHERE id='{$party_id}'
+    LIMIT 1
+    ");
+
+    $party_name = $party ? $party[0]['customer_name'] : '';
+
+}
+
+?>
+
+<div id="printHeader" style="display:none;text-align:center;margin-bottom:20px;">
+
+<h2><?= $org[0]['org_name']; ?></h2>
+
+<p>
+
+<?= $org[0]['address']; ?><br>
+
+GST : <?= $org[0]['gst_no']; ?>
+
+</p>
+
+<h3>LEDGER REPORT</h3>
+
+
+<hr>
+
+<table class="table table-bordered" style="margin-bottom:20px;">
+<tr>
+<td><strong>Ledger Type :</strong> <?= ucfirst($type); ?></td>
+<td><strong><?= ucfirst($type); ?> :</strong> <?= $party_name; ?></td>
+<td><strong>Period :</strong>
+<?= date('d-m-Y',strtotime($from)); ?>
+To
+<?= date('d-m-Y',strtotime($to)); ?>
+</td>
+</tr>
+</table>
+
+</div>
+
+<div class="panel panel-default">
+<div class="panel-heading no-print" id="screenHeader">
+    <strong>Ledger Report</strong>
+</div>
+<div class="panel-body">
+
+<form method="get" class="row no-print">
+
+<div class="col-md-2">
+<label>Ledger Type</label>
+<select name="type" class="form-control" onchange="this.form.submit()">
+<option value="supplier" <?= $type=='supplier'?'selected':''; ?>>Supplier</option>
+<option value="customer" <?= $type=='customer'?'selected':''; ?>>Customer</option>
+</select>
+</div>
+
+<div class="col-md-2">
+<label>Party</label>
+<select name="party_id" class="form-control">
+<option value="">Select</option>
+
+<?php if($type=='supplier'): ?>
+<?php foreach($suppliers as $s): ?>
+<option value="<?= $s['id']; ?>" <?= $party_id==$s['id']?'selected':''; ?>>
+<?= $s['supplier_name']; ?>
+</option>
+<?php endforeach; ?>
+<?php else: ?>
+<?php foreach($customers as $c): ?>
+<option value="<?= $c['id']; ?>" <?= $party_id==$c['id']?'selected':''; ?>>
+<?= $c['customer_name']; ?>
+</option>
+<?php endforeach; ?>
+<?php endif; ?>
+
+</select>
+</div>
+
+<div class="col-md-2">
+<label>From</label>
+<input type="date" name="from" class="form-control" value="<?= $from; ?>">
+</div>
+
+<div class="col-md-2">
+<label>To</label>
+<input type="date" name="to" class="form-control" value="<?= $to; ?>">
+</div>
+
+<div class="col-md-3">
+
+<label>&nbsp;</label><br>
+
+<button type="submit"
+class="btn btn-primary">
+
+Show Report
+
+</button>
+
+<button
+type="button"
+class="btn btn-success no-print"
+onclick="printLedger()">
+
+<i class="fa fa-print"></i> Print / PDF
+
+</button>
+
+</div>
+
+</form>
+
+<hr class="no-print">
+
+<table class="table table-bordered table-striped">
+<thead>
+<tr>
+<th>Date</th>
+<th>Particular</th>
+<th>Voucher Type</th>
+<th>Voucher No</th>
+<th>Debit</th>
+<th>Credit</th>
+<th>Balance</th>
+</tr>
+</thead>
+<tbody>
+
+<?php foreach($rows as $r):
+
+$totalDebit += $r['debit'];
+$totalCredit += $r['credit'];
+
+if($type=='supplier'){
+    $balance += $r['credit'];
+    $balance -= $r['debit'];
+}else{
+    $balance += $r['debit'];
+    $balance -= $r['credit'];
+}
+?>
+
+<tr>
+<td><?= date('d-m-Y',strtotime($r['date'])); ?></td>
+<td><?= $r['particular']; ?></td>
+<td><?= $r['type']; ?></td>
+<td><?= $r['voucher']; ?></td>
+<td><?= $r['debit']?number_format($r['debit'],2):''; ?></td>
+<td><?= $r['credit']?number_format($r['credit'],2):''; ?></td>
+<td>
+<?php
+
+if($type=='supplier'){
+
+    if($balance > 0){
+
+        echo "<strong style='color:red;'>₹ ".number_format($balance,2)." Cr</strong>";
+
+    }elseif($balance < 0){
+
+        echo "<strong style='color:green;'>₹ ".number_format(abs($balance),2)." Adv</strong>";
+
+    }else{
+
+        echo "<strong>₹ 0.00</strong>";
+
+    }
+
+}else{
+
+    if($balance > 0){
+
+        echo "<strong style='color:red;'>₹ ".number_format($balance,2)." Dr</strong>";
+
+    }elseif($balance < 0){
+
+        echo "<strong style='color:green;'>₹ ".number_format(abs($balance),2)." Cr</strong>";
+
+    }else{
+
+        echo "<strong>₹ 0.00</strong>";
+
+    }
+
+}
+
+?>
+</td>
+</tr>
+
+<?php endforeach; ?>
+
+</tbody>
+
+<tfoot>
+<tr>
+<th colspan="4" class="text-right">Total</th>
+<th><?= number_format($totalDebit,2); ?></th>
+<th><?= number_format($totalCredit,2); ?></th>
+<th><?= number_format($balance,2); ?></th>
+</tr>
+</tfoot>
+
+</table>
+
+</div>
+</div>
+</div>
+
+<?php
+?>
+
+<script>
+
+function printLedger(){
+
+    document.getElementById("printHeader").style.display = "block";
+
+    document.querySelector("form").style.display = "none";
+    document.querySelector(".panel-heading").style.display = "none";
+    document.querySelector("hr.no-print").style.display = "none";
+
+    var printContents =
+    document.getElementById("printArea").innerHTML;
+
+    var originalContents =
+    document.body.innerHTML;
+
+    document.body.innerHTML =
+    printContents;
+
+    window.print();
+
+    document.body.innerHTML =
+    originalContents;
+
+    location.reload();
+
+}
+
+</script>
+
+<?php include_once('layouts/footer.php'); ?>
