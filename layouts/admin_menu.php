@@ -113,6 +113,7 @@ if(!empty($config)){
         <li><a href="stock_book.php">Stock Report</a></li>
         <li><a href="inventory_report.php">Sales Report</a></li>
         <li><a href="purchase_report.php">Purchase Report</a></li>
+        <li><a href="ledger_report.php">Ledger Report</a></li>
         
       </ul>
     </li>
