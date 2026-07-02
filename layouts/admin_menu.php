@@ -94,8 +94,6 @@ if(!empty($config)){
         <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
         <li><a href="invoice_list.php">Edit/Print Invoice</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
-         <li><a href="payments.php">Manage Payments</a></li>
-        <li><a href="payment_report.php">Payments Report</a></li>
         <li><a href="supplier_advance.php">Supplier Advance</a></li>
         <li><a href="return_master.php">Return</a></li>
 
