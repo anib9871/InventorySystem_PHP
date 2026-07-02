@@ -40,6 +40,15 @@ AND t.supplier_id != 0
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
+
+if($report_type=='product' && !empty($filter_id)){
+    $sale_query .= " AND t.product_id='{$filter_id}'";
+}
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $sale_query .= " AND t.supplier_id='{$filter_id}'";
+}
+
 $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
@@ -178,6 +187,10 @@ if($report_type=='product' && !empty($filter_id)){
     $pq .= " AND t.product_id='{$filter_id}'";
 }
 
+if($report_type=='supplier' && !empty($filter_id)){
+    $pq .= " AND t.supplier_id='{$filter_id}'";
+}
+
 $pq .= " GROUP BY t.product_id";
 
 $product_data   = find_by_sql($pq);
@@ -206,6 +219,10 @@ BETWEEN '{$from}' AND '{$to}'
 
 if($report_type=='supplier' && !empty($filter_id)){
     $sq .= " AND t.supplier_id='{$filter_id}'";
+}
+
+if($report_type=='product' && !empty($filter_id)){
+    $sq .= " AND t.product_id='{$filter_id}'";
 }
 
 $sq .= " GROUP BY t.supplier_id";
@@ -624,7 +641,12 @@ if(!empty($center_filter)){
 
 }else{
 
-  echo 'PRODUCT WISE PURCHASE REPORT';
+    if($report_type == 'supplier'){
+        echo 'SUPPLIER WISE PURCHASE REPORT';
+    }else{
+        echo 'PRODUCT WISE PURCHASE REPORT';
+    }
+
 }
 ?>
 
