@@ -20,6 +20,8 @@ $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
+$filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
+
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
 /* ═══════════════════════════════════════
@@ -125,6 +127,16 @@ if ($role_id == 3)
 elseif ($role_id == 2 && !empty($center_filter))
     $txn_q .= " AND t.center_id = '{$center_filter}'";
 
+if($report_type=='product' && !empty($filter_id)){
+    $txn_q .= " AND t.product_id='{$filter_id}'";
+}
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $txn_q .= " AND t.supplier_id='{$filter_id}'";
+}
+
+
+
 $txn_q .= "
 GROUP BY t.transaction_id
 ORDER BY t.entry_date DESC
@@ -162,6 +174,10 @@ if ($role_id == 3)
 elseif ($role_id == 2 && !empty($center_filter))
     $pq .= " AND t.center_id = '{$center_filter}'";
 
+if($report_type=='product' && !empty($filter_id)){
+    $pq .= " AND t.product_id='{$filter_id}'";
+}
+
 $pq .= " GROUP BY t.product_id";
 
 $product_data   = find_by_sql($pq);
@@ -186,8 +202,14 @@ AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
-GROUP BY t.supplier_id
 ";
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $sq .= " AND t.supplier_id='{$filter_id}'";
+}
+
+$sq .= " GROUP BY t.supplier_id";
+
 
 $supplier_data   = find_by_sql($sq);
 
@@ -443,11 +465,49 @@ body {
 
 </select>
 
+<?php
+$product_list = find_by_sql("SELECT id,name FROM products ORDER BY name");
+$supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER BY supplier_name");
+?>
+
+<select name="filter_id" class="form-control" style="width:220px;">
+
+    <option value="">All</option>
+
+    <?php if($report_type=='product'): ?>
+
+        <?php foreach($product_list as $p): ?>
+
+            <option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>>
+                <?= $p['name'] ?>
+            </option>
+
+        <?php endforeach; ?>
+
+    <?php else: ?>
+
+        <?php foreach($supplier_list as $s): ?>
+
+            <option value="<?= $s['id'] ?>" <?= ($filter_id==$s['id'])?'selected':'' ?>>
+                <?= $s['supplier_name'] ?>
+            </option>
+
+        <?php endforeach; ?>
+
+    <?php endif; ?>
+
+</select>
+
 <?php endif; ?>
 
 
       <button type="submit" class="btn btn-primary">Filter</button>
-      <a href="?pdf=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?><?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
+      <a href="?pdf=1
+&from=<?= urlencode($from) ?>
+&to=<?= urlencode($to) ?>
+&report_type=<?= urlencode($report_type) ?>
+&filter_id=<?= urlencode($filter_id) ?>
+<?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
          target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
     </form>
   </div>
