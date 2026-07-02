@@ -509,18 +509,6 @@ Add Payment
 
 </button>
 
-<button
-class="btn btn-info btn-xs"
-
-data-toggle="modal"
-data-target="#historyModal"
-
-onclick="loadHistory(<?= $p['id']; ?>)">
-
-History
-
-</button>
-
 </td>
 
 </tr>
@@ -576,56 +564,40 @@ Add Payment
 name="invoice_id"
 id="invoice_id">
 
-<div class="form-group">
 
-<label>
+<div class="row">
 
-<?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?>
-
-</label>
-
-<input type="text"
-id="invoice_no"
-class="form-control"
-readonly>
-
+<div class="col-md-3">
+<label><?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?></label>
+<input type="text" id="invoice_no" class="form-control input-sm" readonly>
 </div>
 
-<div class="form-group">
-
+<div class="col-md-3">
 <label>Payment Date</label>
-
-<input type="date"
-name="payment_date"
-class="form-control"
-value="<?= date('Y-m-d'); ?>"
-required>
-
+<input type="date" name="payment_date"
+class="form-control input-sm"
+value="<?= date('Y-m-d'); ?>" required>
 </div>
 
-<div class="form-group">
-
-<label>
-<?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
-</label>
-
+<div class="col-md-3">
+<label><?= ($type=='customer') ? 'Customer' : 'Supplier' ?></label>
 <input type="text"
 id="customer_name"
-class="form-control"
+class="form-control input-sm"
 readonly>
-
 </div>
 
-<div class="form-group">
-
+<div class="col-md-3">
 <label>Remaining Due</label>
-
 <input type="text"
 id="due_amount"
-class="form-control"
+class="form-control input-sm"
 readonly>
+</div>
 
 </div>
+
+<br>
 
 <div class="form-group">
 
@@ -636,57 +608,50 @@ Payment
 </label>
 
 <div style="
-max-height:250px;
+max-height:170px;
 overflow-y:auto;
 border:1px solid #ddd;
-padding:10px;
+padding:8px;
 border-radius:5px;
 ">
 
+<div class="row">
+
 <?php foreach($payment_modes as $mode): ?>
 
-<div class="row"
-style="margin-bottom:10px;">
+<div class="col-md-6" style="margin-bottom:8px;">
 
-<div class="col-md-5">
+    <div class="row">
 
-<label style="font-weight:normal;">
+        <div class="col-xs-5">
 
-<input type="checkbox"
+            <label style="font-weight:normal;font-size:12px;margin-top:6px;">
 
-class="pay-check"
+                <input type="checkbox"
+                       class="pay-check"
+                       data-target="mode_<?= $mode['id']; ?>"
+                       value="<?= $mode['mode_name']; ?>">
 
-data-target="mode_<?= $mode['id']; ?>"
+                <?= strtoupper($mode['mode_name']); ?>
 
-value="<?= $mode['mode_name']; ?>">
+            </label>
 
-&nbsp;
+        </div>
 
-<?= strtoupper($mode['mode_name']); ?>
+        <div class="col-xs-7">
 
-</label>
+            <input type="number"
+                   step="0.01"
+                   min="0"
+                   value="0"
+                   name="amounts[<?= $mode['mode_name']; ?>]"
+                   id="mode_<?= $mode['id']; ?>"
+                   class="form-control input-sm"
+                   readonly>
 
-</div>
+        </div>
 
-<div class="col-md-7">
-
-<input type="number"
-
-step="0.01"
-
-min="0"
-
-value="0"
-
-name="amounts[<?= $mode['mode_name']; ?>]"
-
-id="mode_<?= $mode['id']; ?>"
-
-class="form-control"
-
-readonly>
-
-</div>
+    </div>
 
 </div>
 
@@ -696,25 +661,28 @@ readonly>
 
 </div>
 
+</div>
 
 
-<div class="form-group">
+<div class="row">
+
+<div class="col-md-9">
 
 <label>Remarks / Ref No</label>
 
 <input type="text"
 name="remarks"
-class="form-control">
+class="form-control input-sm">
 
 </div>
 
-</div>
+<div class="col-md-3">
 
-<div class="modal-footer">
+<label>&nbsp;</label>
 
 <button type="submit"
 name="save_payment"
-class="btn btn-success">
+class="btn btn-success btn-block">
 
 Save Payment
 
@@ -722,47 +690,9 @@ Save Payment
 
 </div>
 
+</div>
+
 </form>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- ================= HISTORY MODAL ================= -->
-
-<div class="modal fade"
-id="historyModal">
-
-<div class="modal-dialog modal-lg">
-
-<div class="modal-content">
-
-<div class="modal-header">
-
-<button type="button"
-class="close"
-data-dismiss="modal">
-
-&times;
-
-</button>
-
-<h4 class="modal-title">
-
-Payment History
-
-</h4>
-
-</div>
-
-<div class="modal-body"
-id="historyContent">
-
-Loading...
-
-</div>
 
 </div>
 
@@ -815,24 +745,6 @@ document.getElementById('customer_name')
 
 document.getElementById('due_amount')
 .value = due;
-
-}
-
-/* LOAD HISTORY */
-
-function loadHistory(invoice_id){
-
-fetch('payment_history_ajax.php?invoice_id='
-+ invoice_id)
-
-.then(response => response.text())
-
-.then(data => {
-
-document.getElementById('historyContent')
-.innerHTML = data;
-
-});
 
 }
 
