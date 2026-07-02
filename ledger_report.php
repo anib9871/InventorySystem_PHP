@@ -19,66 +19,79 @@ $balance = 0;
 
 if($party_id > 0){
 
-    if($type == 'supplier'){
+if($type == 'supplier'){
 
-$ledger = find_by_sql("
-SELECT
-    ledger_id,
-    bill_date,
-    bill_no,
-    bill_amount,
-    paid_amount,
-    balance_amount,
-    entry_type
-FROM supplier_ledger
-WHERE supplier_id='{$party_id}'
-AND bill_date BETWEEN '{$from}' AND '{$to}'
-ORDER BY bill_date,ledger_id
-");
+    $ledger = find_by_sql("
+    SELECT
+        ledger_id,
+        bill_date,
+        bill_no,
+        bill_amount,
+        paid_amount,
+        balance_amount,
+        entry_type
+    FROM supplier_ledger
+    WHERE supplier_id='{$party_id}'
+      AND bill_date BETWEEN '{$from}' AND '{$to}'
+    ORDER BY bill_date ASC, ledger_id ASC
+    ");
 
-foreach($ledger as $l){
+    foreach($ledger as $l){
 
-    if($l['entry_type']=="ADVANCE"){
-
-        $rows[] = [
-            'date'=>$l['bill_date'],
-            'particular'=>'Advance',
-            'type'=>'Advance',
-            'voucher'=>'ADVANCE',
-            'debit'=>$l['paid_amount'],
-            'credit'=>0
-        ];
-
-    }else{
-
-        $rows[] = [
-            'date'=>$l['bill_date'],
-            'particular'=>'Purchase',
-            'type'=>'Purchase (GRN)',
-            'voucher'=>$l['bill_no'],
-            'debit'=>0,
-            'credit'=>$l['bill_amount']
-        ];
-
-        if($l['paid_amount']>0){
+        // Advance Entry
+        if($l['entry_type'] == 'ADVANCE'){
 
             $rows[] = [
-                'date'=>$l['bill_date'],
-                'particular'=>'Payment',
-                'type'=>'Payment',
-                'voucher'=>'PAY-'.$l['ledger_id'],
-                'debit'=>$l['paid_amount'],
-                'credit'=>0
+                'date'       => $l['bill_date'],
+                'particular' => 'Advance',
+                'type'       => 'Advance',
+                'voucher'    => 'ADVANCE',
+                'debit'      => $l['paid_amount'],
+                'credit'     => 0
             ];
+
+        }else{
+
+            // Purchase Entry
+            $rows[] = [
+                'date'       => $l['bill_date'],
+                'particular' => 'Purchase',
+                'type'       => 'Purchase (GRN)',
+                'voucher'    => $l['bill_no'],
+                'debit'      => 0,
+                'credit'     => $l['bill_amount']
+            ];
+
+            // Payments of this GRN
+            $payments = find_by_sql("
+            SELECT
+                payment_id,
+                payment_date,
+                payment_amount
+            FROM supplier_payment
+            WHERE ledger_id='{$l['ledger_id']}'
+            ORDER BY payment_date,payment_id
+            ");
+
+            foreach($payments as $p){
+
+                $rows[] = [
+                    'date'       => $p['payment_date'],
+                    'particular' => 'Payment',
+                    'type'       => 'Payment',
+                    'voucher'    => 'PAY-'.$p['payment_id'],
+                    'debit'      => $p['payment_amount'],
+                    'credit'     => 0
+                ];
+
+            }
 
         }
 
     }
 
 }
-
-    } else {
-
+else{
         $sales = find_by_sql("
         SELECT invoice_date txn_date,
                invoice_no,
@@ -122,6 +135,13 @@ foreach($payments as $p){
     }
 
 }
+
+usort($rows, function($a, $b){
+    if($a['date'] == $b['date']){
+        return strcmp($a['voucher'], $b['voucher']);
+    }
+    return strtotime($a['date']) <=> strtotime($b['date']);
+});
 
 include_once('layouts/header.php');
 ?>
