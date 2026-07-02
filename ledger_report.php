@@ -21,50 +21,60 @@ if($party_id > 0){
 
     if($type == 'supplier'){
 
-        $purchase = find_by_sql("
-        SELECT
-            DATE(entry_date) txn_date,
-            bill_indent_no voucher_no,
-            'Purchase (GRN)' voucher_type,
-            SUM(net_price) amount
-        FROM transaction_master
-        WHERE supplier_id='{$party_id}'
-          AND transaction_type=1
-          AND DATE(entry_date) BETWEEN '{$from}' AND '{$to}'
-        GROUP BY bill_indent_no, DATE(entry_date)
-        ORDER BY txn_date
-        ");
+$ledger = find_by_sql("
+SELECT
+    ledger_id,
+    bill_date,
+    bill_no,
+    bill_amount,
+    paid_amount,
+    balance_amount,
+    entry_type
+FROM supplier_ledger
+WHERE supplier_id='{$party_id}'
+AND bill_date BETWEEN '{$from}' AND '{$to}'
+ORDER BY bill_date,ledger_id
+");
 
-        foreach($purchase as $p){
+foreach($ledger as $l){
+
+    if($l['entry_type']=="ADVANCE"){
+
+        $rows[] = [
+            'date'=>$l['bill_date'],
+            'particular'=>'Advance',
+            'type'=>'Advance',
+            'voucher'=>'ADVANCE',
+            'debit'=>$l['paid_amount'],
+            'credit'=>0
+        ];
+
+    }else{
+
+        $rows[] = [
+            'date'=>$l['bill_date'],
+            'particular'=>'Purchase',
+            'type'=>'Purchase (GRN)',
+            'voucher'=>$l['bill_no'],
+            'debit'=>0,
+            'credit'=>$l['bill_amount']
+        ];
+
+        if($l['paid_amount']>0){
+
             $rows[] = [
-                'date'=>$p['txn_date'],
-                'particular'=>'Purchase',
-                'type'=>$p['voucher_type'],
-                'voucher'=>$p['voucher_no'],
-                'debit'=>0,
-                'credit'=>$p['amount']
+                'date'=>$l['bill_date'],
+                'particular'=>'Payment',
+                'type'=>'Payment',
+                'voucher'=>'PAY-'.$l['ledger_id'],
+                'debit'=>$l['paid_amount'],
+                'credit'=>0
             ];
+
         }
 
-        $payments = find_by_sql("
-        SELECT
-            payment_date txn_date,
-            CONCAT('PAY-',payment_id) voucher_no,
-            payment_amount amount
-        FROM supplier_payment
-        WHERE supplier_id='{$party_id}'
-          AND payment_date BETWEEN '{$from}' AND '{$to}'
-        ");
+    }
 
-foreach($payments as $p){
-    $rows[] = [
-        'date'=>$p['txn_date'],
-        'particular'=>'Payment',
-        'type'=>'Payment',
-        'voucher'=>$p['voucher_no'],
-        'debit'=>0,
-        'credit'=>$p['amount']
-    ];
 }
 
     } else {
