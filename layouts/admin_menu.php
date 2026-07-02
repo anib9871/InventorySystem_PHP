@@ -102,6 +102,20 @@ if(!empty($config)){
       </ul>
     </li>
 
+       <!-- REPORT -->
+    <li>
+      <a href="#" class="submenu-toggle" data-menu="inventory_payments">
+        <i class="glyphicon glyphicon-duplicate"></i>
+        Payments
+        <span class="arrow"><i class="glyphicon glyphicon-chevron-right"></i></span>
+      </a>
+      <ul class="submenu">
+         <li><a href="payments.php">Manage Payments</a></li>
+        <li><a href="payment_report.php">Payments Report</a></li>
+        
+      </ul>
+    </li>
+
     <!-- REPORT -->
     <li>
       <a href="#" class="submenu-toggle" data-menu="inventory_reports">
