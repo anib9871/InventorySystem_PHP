@@ -63,6 +63,11 @@ FROM supplier_payment
 WHERE DATE(payment_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $pay_q .= " AND supplier_id='{$filter_id}'";
+}
+
 if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
 $pay_q   .= " GROUP BY payment_mode";
