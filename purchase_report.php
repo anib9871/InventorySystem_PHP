@@ -28,15 +28,14 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(t.net_price) as total_sale
-FROM transaction_master t
-WHERE t.transaction_type = 1
-AND DATE(t.entry_date)
+SELECT SUM(sl.bill_amount) AS total_sale
+FROM supplier_ledger sl
+LEFT JOIN transaction_master t
+ON t.bill_indent_no = sl.bill_no
+
+WHERE sl.entry_type='GRN'
+AND DATE(sl.bill_date)
 BETWEEN '{$from}' AND '{$to}'
-
-AND t.supplier_id IS NOT NULL
-AND t.supplier_id != 0
-
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
@@ -143,10 +142,9 @@ BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3)
-    $txn_q .= " AND t.center_id = '{$user_center}'";
-
+    $sale_query .= " AND sl.center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter))
-    $txn_q .= " AND t.center_id = '{$center_filter}'";
+    $sale_query .= " AND sl.center_id = '{$center_filter}'";
 
 if($report_type=='product' && !empty($filter_id)){
     $txn_q .= " AND t.product_id='{$filter_id}'";
