@@ -102,13 +102,11 @@ SELECT
 
     t.unit_price AS purchase_price,
 
-    t.gst_amount,
+t.gst_amount,
 
-    (
-   (t.unit_price * t.quantity) + t.gst_amount
-) AS total_sale,
+sl.bill_amount AS total_sale,
 
-    (
+(
         (t.unit_price - p.buy_price) * t.quantity
     ) AS profit
 
@@ -122,6 +120,9 @@ LEFT JOIN supplier_master sm
 
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
+
+    LEFT JOIN supplier_ledger sl
+    ON sl.bill_no = t.bill_indent_no
 
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
@@ -147,7 +148,9 @@ if($report_type=='supplier' && !empty($filter_id)){
 
 
 $txn_q .= "
-GROUP BY t.transaction_id
+GROUP BY
+t.transaction_id,
+sl.bill_amount
 ORDER BY t.entry_date DESC
 ";
 
