@@ -28,7 +28,7 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(t.sale_net) as total_sale
+SELECT SUM(t.net_price) as total_sale
 FROM transaction_master t
 WHERE t.transaction_type = 1
 AND DATE(t.entry_date)
@@ -55,8 +55,14 @@ $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 /* ═══════════════════════════════════════
    2. PAYMENT MODE SUMMARY
 ═══════════════════════════════════════ */
-$pay_q = "SELECT payment_mode, SUM(amount) as total_amount FROM payments
-           WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'";
+$pay_q = "
+SELECT
+payment_mode,
+SUM(payment_amount) as total_amount
+FROM supplier_payment
+WHERE DATE(payment_date)
+BETWEEN '{$from}' AND '{$to}'
+";
 if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
 $pay_q   .= " GROUP BY payment_mode";
@@ -548,7 +554,7 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
 
   <div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
-      Collection Summary (Mode-wise)
+      Supplier Payment Summary (Mode-wise)
     </h4>
     <table style="width:100%; border-collapse:collapse; color:#fff; font-size:11px;">
       <tr style="font-weight:700; opacity:.7;">
@@ -578,7 +584,7 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
       <div class="s-lbl">Total Purchase</div>
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
-      <div class="s-lbl">Collection &mdash; Mode Wise</div>
+      <div class="s-lbl">Payment &mdash; Mode Wise</div>
       <table class="s-mode-tbl" style="margin-top:3px;">
         <tr style="opacity:.5;"><td style="font-size:8px; text-transform:uppercase;">Mode</td><td style="font-size:8px; text-transform:uppercase;">Amount</td></tr>
         <?php foreach ($payments as $pay): ?>
