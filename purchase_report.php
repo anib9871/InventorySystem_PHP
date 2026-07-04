@@ -173,18 +173,41 @@ foreach ($sales as $s) {
     $grand += $s['total_sale'];
 }
 
-$shipping_total = find_by_sql("
-SELECT IFNULL(SUM(total_amount),0) AS shipping_total
-FROM shipping
-WHERE DATE(created_at)
-BETWEEN '{$from}' AND '{$to}'
-");
+$shipping_query = "
+SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
+FROM shipping s
+WHERE s.bill_no IN
+(
+    SELECT DISTINCT t.bill_indent_no
+    FROM transaction_master t
+    WHERE t.transaction_type = 1
+    AND DATE(t.entry_date)
+    BETWEEN '{$from}' AND '{$to}'
+";
 
-$grand += $shipping_total[0]['shipping_total'];
+if ($role_id == 3){
+    $shipping_query .= " AND t.center_id='{$user_center}'";
+}
+elseif ($role_id == 2 && !empty($center_filter)){
+    $shipping_query .= " AND t.center_id='{$center_filter}'";
+}
 
 if($report_type=='supplier' && !empty($filter_id)){
-    $shipping_query .= " AND s.supplier_id='{$filter_id}'";
+    $shipping_query .= " AND t.supplier_id='{$filter_id}'";
 }
+
+if($report_type=='product' && !empty($filter_id)){
+    $shipping_query .= " AND t.product_id='{$filter_id}'";
+}
+
+$shipping_query .= "
+)
+";
+
+$shipping_total = find_by_sql($shipping_query);
+
+$grand += ($shipping_total[0]['shipping_total'] ?? 0);
+$total_sale += ($shipping_total[0]['shipping_total'] ?? 0);
 
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
