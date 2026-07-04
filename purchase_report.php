@@ -32,9 +32,10 @@ SELECT
 SUM(t.net_price)
 +
 IFNULL((
-    SELECT SUM(total_amount)
+    SELECT SUM(s.total_amount)
     FROM shipping s
-    WHERE DATE(s.created_at)
+    WHERE s.supplier_id = t.supplier_id
+    AND DATE(s.created_at)
     BETWEEN '{$from}' AND '{$to}'
 ),0) AS total_sale
 
@@ -121,7 +122,14 @@ SELECT
 
 t.gst_amount,
 
-t.net_price AS total_sale,
+(
+    t.net_price +
+    (
+        SELECT IFNULL(SUM(s2.total_amount),0)
+        FROM shipping s2
+        WHERE s2.supplier_id = t.supplier_id
+    )
+) AS total_sale,
 
 (
         (t.unit_price - p.buy_price) * t.quantity
@@ -137,6 +145,9 @@ LEFT JOIN supplier_master sm
 
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
+
+LEFT JOIN shipping sh
+ON sh.supplier_id = t.supplier_id
 
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
@@ -176,11 +187,18 @@ foreach ($sales as $s) {
 $shipping_query = "
 SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
 FROM shipping s
-INNER JOIN transaction_master t
-    ON t.bill_indent_no = s.bill_no
+WHERE 1=1
 WHERE t.transaction_type = 1
-AND DATE(t.entry_date)
-BETWEEN '{$from}' AND '{$to}'
+";
+
+$shipping_query .= "
+AND s.bill_no IN
+(
+    SELECT DISTINCT bill_indent_no
+    FROM transaction_master
+    WHERE transaction_type = 1
+    AND DATE(entry_date)
+    BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3){
@@ -191,17 +209,14 @@ elseif ($role_id == 2 && !empty($center_filter)){
 }
 
 if($report_type=='supplier' && !empty($filter_id)){
-    $shipping_query .= " AND t.supplier_id='{$filter_id}'";
+    $shipping_query .= " AND supplier_id='{$filter_id}'";
 }
 
 if($report_type=='product' && !empty($filter_id)){
-    $shipping_query .= " AND t.product_id='{$filter_id}'";
+
 }
 
-$shipping_total = find_by_sql($shipping_query);
 
-$grand += ($shipping_total[0]['shipping_total'] ?? 0);
-$total_sale += ($shipping_total[0]['shipping_total'] ?? 0);
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
