@@ -29,15 +29,16 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 ═══════════════════════════════════════ */
 $sale_query = "
 SELECT
-SUM(t.net_price)
-+
-IFNULL((
-    SELECT SUM(s.total_amount)
-    FROM shipping s
-    WHERE s.supplier_id = t.supplier_id
-    AND DATE(s.created_at)
-    BETWEEN '{$from}' AND '{$to}'
-),0) AS total_sale
+SUM(
+    t.net_price +
+    IFNULL(
+        (
+            SELECT SUM(s.total_amount)
+            FROM shipping s
+            WHERE s.bill_no = t.bill_indent_no
+        ),0
+    )
+) AS total_sale
 
 FROM transaction_master t
 
@@ -124,10 +125,12 @@ t.gst_amount,
 
 (
     t.net_price +
-    (
-        SELECT IFNULL(SUM(s2.total_amount),0)
-        FROM shipping s2
-        WHERE s2.supplier_id = t.supplier_id
+    IFNULL(
+        (
+            SELECT SUM(s2.total_amount)
+            FROM shipping s2
+            WHERE s2.bill_no = t.bill_indent_no
+        ),0
     )
 ) AS total_sale,
 
@@ -146,8 +149,7 @@ LEFT JOIN supplier_master sm
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
 
-LEFT JOIN shipping sh
-ON sh.supplier_id = t.supplier_id
+
 
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
