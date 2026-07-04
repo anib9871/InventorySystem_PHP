@@ -176,13 +176,11 @@ foreach ($sales as $s) {
 $shipping_query = "
 SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
 FROM shipping s
-WHERE s.bill_no IN
-(
-    SELECT DISTINCT t.bill_indent_no
-    FROM transaction_master t
-    WHERE t.transaction_type = 1
-    AND DATE(t.entry_date)
-    BETWEEN '{$from}' AND '{$to}'
+INNER JOIN transaction_master t
+    ON t.bill_indent_no = s.bill_no
+WHERE t.transaction_type = 1
+AND DATE(t.entry_date)
+BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3){
@@ -200,15 +198,10 @@ if($report_type=='product' && !empty($filter_id)){
     $shipping_query .= " AND t.product_id='{$filter_id}'";
 }
 
-$shipping_query .= "
-)
-";
-
 $shipping_total = find_by_sql($shipping_query);
 
 $grand += ($shipping_total[0]['shipping_total'] ?? 0);
 $total_sale += ($shipping_total[0]['shipping_total'] ?? 0);
-
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
