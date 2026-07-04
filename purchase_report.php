@@ -28,13 +28,11 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(sl.bill_amount) AS total_sale
-FROM supplier_ledger sl
-LEFT JOIN transaction_master t
-ON t.bill_indent_no = sl.bill_no
+SELECT SUM(t.net_price) AS total_sale
+FROM transaction_master t
 
-WHERE sl.entry_type='GRN'
-AND DATE(sl.bill_date)
+WHERE t.transaction_type = 1
+AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
@@ -114,7 +112,7 @@ SELECT
 
 t.gst_amount,
 
-sl.bill_amount AS total_sale,
+t.net_price AS total_sale,
 
 (
         (t.unit_price - p.buy_price) * t.quantity
@@ -131,9 +129,6 @@ LEFT JOIN supplier_master sm
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
 
-    LEFT JOIN supplier_ledger sl
-    ON sl.bill_no = t.bill_indent_no
-
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
@@ -142,9 +137,9 @@ BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3)
-    $sale_query .= " AND sl.center_id = '{$user_center}'";
+    $txn_q .= " AND t.center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter))
-    $sale_query .= " AND sl.center_id = '{$center_filter}'";
+    $txn_q .= " AND t.center_id = '{$center_filter}'";
 
 if($report_type=='product' && !empty($filter_id)){
     $txn_q .= " AND t.product_id='{$filter_id}'";
@@ -157,9 +152,7 @@ if($report_type=='supplier' && !empty($filter_id)){
 
 
 $txn_q .= "
-GROUP BY
-t.transaction_id,
-sl.bill_amount
+GROUP BY t.transaction_id
 ORDER BY t.entry_date DESC
 ";
 
