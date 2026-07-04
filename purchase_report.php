@@ -28,7 +28,16 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(t.net_price) AS total_sale
+SELECT
+SUM(t.net_price)
++
+IFNULL((
+    SELECT SUM(total_amount)
+    FROM shipping s
+    WHERE DATE(s.created_at)
+    BETWEEN '{$from}' AND '{$to}'
+),0) AS total_sale
+
 FROM transaction_master t
 
 WHERE t.transaction_type = 1
@@ -162,6 +171,19 @@ $grand = 0;
 
 foreach ($sales as $s) {
     $grand += $s['total_sale'];
+}
+
+$shipping_total = find_by_sql("
+SELECT IFNULL(SUM(total_amount),0) AS shipping_total
+FROM shipping
+WHERE DATE(created_at)
+BETWEEN '{$from}' AND '{$to}'
+");
+
+$grand += $shipping_total[0]['shipping_total'];
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $shipping_query .= " AND s.supplier_id='{$filter_id}'";
 }
 
 /* ═══════════════════════════════════════
