@@ -21,11 +21,14 @@ c.customer_name
 
 FROM payments p
 
-LEFT JOIN invoice i
+INNER JOIN invoice i
 ON i.id = p.invoice_id
 
-LEFT JOIN customer_master c
+INNER JOIN customer_master c
 ON c.id = p.customer_id
+
+WHERE p.customer_id IS NOT NULL
+AND p.customer_id > 0
 
 ORDER BY p.id DESC
 
