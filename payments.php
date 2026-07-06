@@ -22,23 +22,29 @@ $db->escape($_POST['payment_date']);
 
 /* FETCH INVOICE */
 
-$invoice = find_by_sql("
+if($type == 'customer'){
 
-SELECT *
+    $invoice = find_by_sql("
+    SELECT *
+    FROM invoice
+    WHERE id='{$invoice_id}'
+    LIMIT 1
+    ");
 
-FROM invoice
+}else{
 
-WHERE id='{$invoice_id}'
+    $invoice = find_by_sql("
+    SELECT *
+    FROM supplier_ledger
+    WHERE ledger_id='{$invoice_id}'
+    LIMIT 1
+    ");
 
-LIMIT 1
-
-");
+}
 
 if(!$invoice){
-
-$session->msg('d','Invoice Not Found');
-redirect('payments.php');
-
+    $session->msg('d','Record Not Found');
+    redirect('payments.php?type='.$type);
 }
 
 $invoice = $invoice[0];
@@ -63,110 +69,165 @@ redirect('payments.php');
 $new_paid =
 $invoice['paid_amount'] + $total_amount;
 
-$new_due =
-$invoice['net_total'] - $new_paid;
+if($type == 'customer'){
+    $new_due = $invoice['net_total'] - $new_paid;
+}else{
+    $new_due = $invoice['bill_amount'] - $new_paid;
+}
 
 if($new_due <= 0){
 
-$new_due = 0;
-$status = 'Paid';
+    $new_due = 0;
+
+    if($type == 'customer'){
+        $status = 'Paid';
+    }else{
+        $status = 1;
+    }
 
 }else{
 
-$status = 'Partial';
+    if($type == 'customer'){
+        $status = 'Partial';
+    }else{
+        $status = 0;
+    }
 
 }
-
 foreach($amounts as $mode => $amt){
 
-$amt = round((float)$amt);
+    $amt = round((float)$amt);
 
-if($amt > 0){
+    if($amt <= 0){
+        continue;
+    }
 
-$db->query("
+    if($type == 'customer'){
 
-INSERT INTO payments
-(
-invoice_id,
-customer_id,
-payment_mode,
-amount,
-reference_no,
-payment_date,
-center_id,
-created_at
-)
+        $db->query("
+        INSERT INTO payments
+        (
+            invoice_id,
+            customer_id,
+            payment_mode,
+            amount,
+            reference_no,
+            payment_date,
+            center_id,
+            created_at
+        )
+        VALUES
+        (
+            '{$invoice_id}',
+            '{$invoice['customer_id']}',
+            '{$mode}',
+            '{$amt}',
+            '{$remarks}',
+            '{$payment_date}',
+            '1',
+            NOW()
+        )
+        ");
 
-VALUES
-(
-'{$invoice_id}',
-'{$invoice['customer_id']}',
-'{$mode}',
-'{$amt}',
-'{$remarks}',
-'{$payment_date}',
-'1',
-NOW()
-)
+    }else{
 
-");
+        $db->query("
+        INSERT INTO supplier_payment
+        (
+            ledger_id,
+            supplier_id,
+            payment_date,
+            payment_amount,
+            payment_mode,
+            reference_no,
+            created_at,
+            organization_id,
+            center_id
+        )
+        VALUES
+        (
+            '{$invoice_id}',
+            '{$invoice['supplier_id']}',
+            '{$payment_date}',
+            '{$amt}',
+            '{$mode}',
+            '{$remarks}',
+            NOW(),
+            '1',
+            '1'
+        )
+        ");
 
-}
+    }
 
 }
 
 /* UPDATE INVOICE */
 
-$db->query("
+if($type == 'customer'){
 
-UPDATE invoice SET
+    $db->query("
+    UPDATE invoice
+    SET
+        paid_amount='{$new_paid}',
+        due_amount='{$new_due}',
+        payment_status='{$status}'
+    WHERE id='{$invoice_id}'
+    ");
 
-paid_amount = '{$new_paid}',
-due_amount = '{$new_due}',
-payment_status = '{$status}'
+}else{
 
-WHERE id='{$invoice_id}'
+    $db->query("
+    UPDATE supplier_ledger
+    SET
+        paid_amount='{$new_paid}',
+        balance_amount='{$new_due}',
+        payment_status='{$status}'
+    WHERE ledger_id='{$invoice_id}'
+    ");
 
-");
+}
 
 /* UPDATE CUSTOMER BALANCE */
 
-$db->query("
+if($type == 'customer'){
 
-UPDATE customer_master SET
+    $db->query("
+    UPDATE customer_master
+    SET balance = balance - {$total_amount}
+    WHERE id='{$invoice['customer_id']}'
+    ");
 
-balance = balance - {$total_amount}
+}else{
 
-WHERE id='{$invoice['customer_id']}'
-
-");
+}
 
 /* LEDGER ENTRY */
 
-$db->query("
+if($type == 'customer'){
 
-INSERT INTO ledger_entries
-(
-invoice_id,
-customer_id,
-account,
-type,
-amount,
-entry_date
-)
+    $db->query("
+    INSERT INTO ledger_entries
+    (
+        invoice_id,
+        customer_id,
+        account,
+        type,
+        amount,
+        entry_date
+    )
+    VALUES
+    (
+        '{$invoice_id}',
+        '{$invoice['customer_id']}',
+        'PAYMENT RECEIVED',
+        'CREDIT',
+        '{$total_amount}',
+        NOW()
+    )
+    ");
 
-VALUES
-(
-'{$invoice_id}',
-'{$invoice['customer_id']}',
-'PAYMENT RECEIVED',
-'CREDIT',
-'{$total_amount}',
-NOW()
-)
-
-");
-
+}
 $session->msg('s','Payment Added Successfully');
 
 redirect('payments.php');
@@ -274,8 +335,6 @@ include_once('layouts/header.php');
 <div class="row">
 
 <div class="col-md-12">
-
-<?php echo display_msg($msg); ?>
 
 </div>
 
@@ -639,15 +698,14 @@ border-radius:5px;
         </div>
 
         <div class="col-xs-7">
-
-            <input type="number"
-                   step="0.01"
-                   min="0"
-                   value="0"
-                   name="amounts[<?= $mode['mode_name']; ?>]"
-                   id="mode_<?= $mode['id']; ?>"
-                   class="form-control input-sm"
-                   readonly>
+<input type="number"
+       step="0.01"
+       min="0"
+       value=""
+       name="amounts[<?= $mode['mode_name']; ?>]"
+       id="mode_<?= $mode['id']; ?>"
+       class="form-control input-sm"
+       disabled>
 
         </div>
 
@@ -761,19 +819,21 @@ this.dataset.target
 
 if(this.checked){
 
-let due = parseFloat(
-document.getElementById('due_amount').value
-) || 0;
+    let due = parseFloat(
+        document.getElementById('due_amount').value
+    ) || 0;
 
-target.style.display = "block";
+    target.disabled = false;
+    target.readOnly = false;
+    target.value = due.toFixed(2);
 
-target.value = due.toFixed(2);
+    target.focus();
+    target.select();
 
 }else{
 
-target.value = "";
-
-target.style.display = "none";
+    target.disabled = true;
+    target.value = "";
 
 }
 
@@ -784,3 +844,32 @@ target.style.display = "none";
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
+
+<?php if($msg): ?>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+<?php foreach($msg as $m): ?>
+
+Swal.fire({
+
+icon: "<?= ($m['type']=='s') ? 'success' : 'error'; ?>",
+
+title: "<?= ($m['type']=='s') ? 'Success' : 'Error'; ?>",
+
+text: "<?= addslashes($m['text']); ?>",
+
+confirmButtonColor: "#28a745"
+
+});
+
+<?php endforeach; ?>
+
+});
+
+</script>
+
+<?php endif; ?>
+
