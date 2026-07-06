@@ -255,7 +255,7 @@ Phone: <?= $org['phone'] ?>
 </td>
 
 <td width="45%" class="section">
-<b>PROFORMA QUOTATION</b><br><br>
+<b>QUOTATION</b><br><br>
 
 Quotation No: <?= $quotation['quotation_no'] ?><br>
 
