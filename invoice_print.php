@@ -255,7 +255,7 @@ Phone: <?= $org['phone'] ?>
 </td>
 
 <td width="45%" class="section">
-<b>PROFORMA INVOICE</b><br><br>
+<b>INVOICE</b><br><br>
 
 Invoice No: <?= $invoice['invoice_no'] ?><br>
 
