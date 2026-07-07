@@ -21,6 +21,8 @@ $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
 $view_type = $_POST['view_type'] ?? $_GET['view_type'] ?? 'product';
+$filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
+
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE
@@ -38,23 +40,51 @@ AND t.bill_indent_no NOT LIKE 'MFG%'
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
+
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
+
+if($view_type=='product' && !empty($filter_id)){
+    $sale_query .= " AND t.product_id='{$filter_id}'";
+}
+
+if($view_type=='customer' && !empty($filter_id)){
+    $sale_query .= " AND i.customer_id='{$filter_id}'";
+}
+
 $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
 /* ═══════════════════════════════════════
    2. PAYMENT MODE SUMMARY
 ═══════════════════════════════════════ */
-$pay_q = "SELECT payment_mode, SUM(amount) as total_amount FROM payments
-           WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'";
-if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
-$pay_q   .= " GROUP BY payment_mode";
+$pay_q = "
+SELECT
+p.payment_mode,
+SUM(p.amount) as total_amount
+FROM payments p
+
+WHERE DATE(p.payment_date)
+BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3)
+    $pay_q .= " AND p.center_id = '{$user_center}'";
+elseif ($role_id == 2 && !empty($center_filter))
+    $pay_q .= " AND p.center_id = '{$center_filter}'";
+
+if($view_type=='customer' && !empty($filter_id)){
+    $pay_q .= " AND p.customer_id='{$filter_id}'";
+}
+
+$pay_q .= " GROUP BY p.payment_mode";
+
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-foreach ($payments as $pay) $total_collection += $pay['total_amount'];
+foreach ($payments as $pay){
+    $total_collection += $pay['total_amount'];
+}
 
 /* ═══════════════════════════════════════
    3. CENTER WISE SALES (admin only)
@@ -121,8 +151,6 @@ AND cm.customer_name IS NOT NULL
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 
-ORDER BY t.entry_date DESC
-
 ";
 
 if ($role_id == 3)
@@ -130,6 +158,16 @@ if ($role_id == 3)
 
 elseif ($role_id == 2 && !empty($center_filter))
     $txn_q .= " AND t.center_id = '{$center_filter}'";
+
+if($view_type=='product' && !empty($filter_id)){
+    $txn_q .= " AND t.product_id='{$filter_id}'";
+}
+
+if($view_type=='customer' && !empty($filter_id)){
+    $txn_q .= " AND i.customer_id='{$filter_id}'";
+}
+
+$txn_q .= " ORDER BY t.entry_date DESC";
 
 $sales = find_by_sql($txn_q);
 
@@ -145,11 +183,30 @@ foreach ($sales as $s) {
 $pq = "SELECT 
     p.name,
     SUM(t.quantity) as qty,
-    SUM(t.sale_net) as total FROM transaction_master t
-        LEFT JOIN products p ON p.id = t.product_id
-        WHERE t.transaction_type = 2 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
+    SUM(t.sale_net) as total
+FROM transaction_master t
+
+LEFT JOIN products p
+    ON p.id = t.product_id
+
+LEFT JOIN invoice i
+    ON i.invoice_no = t.bill_indent_no
+
+WHERE t.transaction_type = 2
+AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
+
 if ($role_id == 3)                               $pq .= " AND t.center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pq .= " AND t.center_id = '{$center_filter}'";
+
+
+if($view_type=='product' && !empty($filter_id)){
+    $pq .= " AND t.product_id='{$filter_id}'";
+}
+
+if($view_type=='customer' && !empty($filter_id)){
+    $pq .= " AND i.customer_id='{$filter_id}'";
+}
+
 $pq .= " GROUP BY t.product_id";
 $product_data   = find_by_sql($pq);
 $product_labels = array_column($product_data, 'name');
@@ -177,7 +234,17 @@ LEFT JOIN customer_master cm
 WHERE t.transaction_type = 2
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
+";
 
+if($view_type=='product' && !empty($filter_id)){
+    $cq .= " AND t.product_id='{$filter_id}'";
+}
+
+if($view_type=='customer' && !empty($filter_id)){
+    $cq .= " AND i.customer_id='{$filter_id}'";
+}
+
+$cq .= "
 GROUP BY cm.id, cm.customer_name
 ORDER BY total_sale DESC
 LIMIT 10
@@ -442,11 +509,13 @@ body {
   <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
-    <form method="post" class="rpt-filter" style="margin:0; width:100%;">
+    <form id="filterform" method="post" class="rpt-filter" style="margin:0; width:100%;">
       <input type="date" name="from" value="<?= $from ?>" class="form-control" style="width:135px;" required>
       <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
 
-<select name="view_type" class="form-control" style="width:200px;">
+<select id="view_type" name="view_type" class="form-control" style="width:200px;">
+
+
 
     <option value="product"
         <?= ($view_type=='product') ? 'selected' : '' ?>>
@@ -457,6 +526,39 @@ body {
         <?= ($view_type=='customer') ? 'selected' : '' ?>>
         By Customer Sales
     </option>
+
+</select>
+
+<?php
+$product_list = find_by_sql("SELECT id,name FROM products ORDER BY name");
+$customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER BY customer_name");
+?>
+
+<select name="filter_id" class="form-control" style="width:220px;">
+
+<option value="">All</option>
+
+<?php if($view_type=='product'){ ?>
+
+<?php foreach($product_list as $p){ ?>
+
+<option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>>
+<?= htmlspecialchars($p['name']) ?>
+</option>
+
+<?php } ?>
+
+<?php } else { ?>
+
+<?php foreach($customer_list as $c){ ?>
+
+<option value="<?= $c['id'] ?>" <?= ($filter_id==$c['id'])?'selected':'' ?>>
+<?= htmlspecialchars($c['customer_name']) ?>
+</option>
+
+<?php } ?>
+  
+<?php } ?>
 
 </select>
 
@@ -680,7 +782,7 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
 </tbody>
 <tfoot>
   <tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="6" style="text-align:right;">
+    <td colspan="7" style="text-align:right;">
       Grand Total
     </td>
 
@@ -716,27 +818,12 @@ new Chart(document.getElementById('productChart'), {
     plugins: { legend: { display: false } },
     scales: {
 x: {
-  grid: { display: false },
-
-  ticks: {
-    font: { size: 10 },
-
-    maxRotation: 0,
-    minRotation: 0,
-
-    padding: 8,
-
-    callback: function(value) {
-
-      let label = this.getLabelForValue(value);
-
-      if(label.length > 10){
-        return label.substring(0,10) + '...';
-      }
-
-      return label;
+    grid: {
+        display: false
+    },
+    ticks: {
+        display: false
     }
-  }
 },
       y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 9 } } }
     }
@@ -783,29 +870,14 @@ new Chart(customerCanvas, {
 
     scales: {
 
-      x: {
-
-        grid: { display: false },
-
-        ticks: {
-
-          font: { size: 9 },
-
-          maxRotation: 15,
-          minRotation: 15,
-
-          callback: function(value){
-
-            let label = this.getLabelForValue(value);
-
-            if(label.length > 18){
-              return label.substring(0,18) + '...';
-            }
-
-            return label;
-          }
-        }
-      },
+x: {
+    grid: {
+        display: false
+    },
+    ticks: {
+        display: false
+    }
+},
 
       y: {
         beginAtZero: true
@@ -815,6 +887,12 @@ new Chart(customerCanvas, {
 });
 
 }
+</script>
+
+<script>
+document.getElementById('view_type').addEventListener('change', function () {
+    document.getElementById('filterform').submit();
+});
 </script>
 
 <?php if ($is_pdf): ?>
