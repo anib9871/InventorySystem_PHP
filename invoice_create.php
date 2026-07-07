@@ -60,6 +60,14 @@ if($_SESSION['role_id'] == 2){
 
 $db->query("START TRANSACTION");
 
+  $debug = [];
+
+$debug[] = "========================";
+$debug[] = "INVOICE CREATE DEBUG";
+$debug[] = date("Y-m-d H:i:s");
+$debug[] = "System : ".$system;
+$debug[] = "POST : ".json_encode($_POST);
+
 try {
 
 /* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
@@ -324,6 +332,8 @@ exit;
   }
 
   $qid = $db->insert_id();   // ✅ correct method
+
+  $debug[] = "Invoice ID : ".$qid;
 
   if(!$qid){
       echo "<script>
@@ -606,9 +616,17 @@ if($system == 'billing'){
     $due_amount = 0;
     $payment_status = '';
 }
+
+$debug[] = "Net Total : ".$net_total;
+$debug[] = "Total Paid : ".$total_paid;
+$debug[] = "Due Amount : ".$due_amount;
+$debug[] = "Payment Status : ".$payment_status;
+
 $gst_total = $total_gst;
 
-$db->query("
+
+
+$update = $db->query("
 UPDATE invoice SET
 
 subtotal = '$subtotal',
@@ -621,6 +639,23 @@ payment_status = '$payment_status'
 
 WHERE id = '$qid'
 ");
+
+$debug[] = "Invoice Update : ".($update ? "SUCCESS" : "FAILED");
+
+if(!$update){
+    $debug[] = "DB Error : ".$db->error;
+}
+
+$check = find_by_sql("
+SELECT
+paid_amount,
+due_amount,
+payment_status
+FROM invoice
+WHERE id = '$qid'
+");
+
+$debug[] = "DB After Update : ".json_encode($check);
 
 if($system == 'billing' && isset($_POST['payment_amount'])){
 
@@ -722,9 +757,34 @@ if($system == 'billing' && isset($_POST['payment_amount'])){
 
 $db->query("COMMIT");  // 🔥 FINAL COMMIT
 
+$check2 = find_by_sql("
+SELECT
+paid_amount,
+due_amount,
+payment_status
+FROM invoice
+WHERE id = '$qid'
+");
+
+$debug[] = "DB After Commit : ".json_encode($check2);
+
+file_put_contents(
+    __DIR__.'/invoice_debug.log',
+    implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
+    FILE_APPEND
+);
+
 } catch(Exception $e){
 
   $db->query("ROLLBACK");
+
+  $debug[] = "EXCEPTION : ".$e->getMessage();
+
+file_put_contents(
+    __DIR__.'/invoice_debug.log',
+    implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
+    FILE_APPEND
+);
 
   echo "<script>
 alert(" . json_encode($e->getMessage()) . ");
