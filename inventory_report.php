@@ -28,7 +28,7 @@ $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(t.sale_net) as total_sale
+SELECT SUM(t.sale_net - IFNULL(t.discount_amount,0)) as total_sale
 FROM transaction_master t
 
 LEFT JOIN invoice i
@@ -127,7 +127,9 @@ SELECT
 
     t.gst_amount,
 
-    t.sale_net AS total_sale
+    (
+    t.sale_net - IFNULL(t.discount_amount,0)
+) AS total_sale
 
 FROM transaction_master t
 
@@ -206,7 +208,7 @@ $grand = $grand_row[0]['grand_total'] ?? 0;
 $pq = "SELECT 
     p.name,
     SUM(t.quantity) as qty,
-    SUM(t.sale_net) as total
+    SUM(t.sale_net - IFNULL(t.discount_amount,0)) as total
 FROM transaction_master t
 
 LEFT JOIN products p
