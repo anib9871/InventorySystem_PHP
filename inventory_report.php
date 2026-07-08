@@ -12,8 +12,23 @@ $is_pdf = isset($_GET['pdf']);
 
 /* ── DATE FILTER ── */
 $today = date('Y-m-d');
-$from  = $_POST['from'] ?? $_GET['from'] ?? $today;
-$to    = $_POST['to']   ?? $_GET['to']   ?? $today;
+
+$from = $_POST['from'] ?? $_GET['from'] ?? $today;
+$to   = $_POST['to']   ?? $_GET['to']   ?? $today;
+
+if (strpos($from, '-') !== false && strlen($from) == 10) {
+    $d = DateTime::createFromFormat('d-m-Y', $from);
+    if ($d) {
+        $from = $d->format('Y-m-d');
+    }
+}
+
+if (strpos($to, '-') !== false && strlen($to) == 10) {
+    $d = DateTime::createFromFormat('d-m-Y', $to);
+    if ($d) {
+        $to = $d->format('Y-m-d');
+    }
+}
 
 /* ── SESSION ── */
 $role_id     = $_SESSION['role_id'];
@@ -512,8 +527,23 @@ body {
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
     <form id="filterform" method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input type="date" name="from" value="<?= $from ?>" class="form-control" style="width:135px;" required>
-      <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
+<input
+type="text"
+name="from"
+value="<?= date('d-m-Y', strtotime($from)) ?>"
+class="form-control datepicker"
+style="width:135px;"
+autocomplete="off"
+required>
+
+<input
+type="text"
+name="to"
+value="<?= date('d-m-Y', strtotime($to)) ?>"
+class="form-control datepicker"
+style="width:135px;"
+autocomplete="off"
+required>
 
 <select id="view_type" name="view_type" class="form-control" style="width:200px;">
 
@@ -901,6 +931,15 @@ x: {
 document.getElementById('view_type').addEventListener('change', function () {
     document.getElementById('filterform').submit();
 });
+
+$('.datepicker').datepicker({
+    format: "dd-mm-yyyy",
+    autoclose: true,
+    todayHighlight: true,
+    assumeNearbyYear: true,
+    forceParse: false
+});
+
 </script>
 
 <?php if ($is_pdf): ?>
