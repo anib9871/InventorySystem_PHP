@@ -16,20 +16,19 @@ $today = date('Y-m-d');
 $from = $_POST['from'] ?? $_GET['from'] ?? $today;
 $to   = $_POST['to']   ?? $_GET['to']   ?? $today;
 
-if (strpos($from, '-') !== false && strlen($from) == 10) {
-    $d = DateTime::createFromFormat('d-m-Y', $from);
-    if ($d) {
-        $from = $d->format('Y-m-d');
-    }
+$today = date('Y-m-d');
+
+$from = $_POST['from'] ?? $_GET['from'] ?? $today;
+$to   = $_POST['to'] ?? $_GET['to'] ?? $today;
+
+/* Sirf user ne dd-mm-yyyy bheja ho tabhi convert karo */
+if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
+    $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
 }
 
-if (strpos($to, '-') !== false && strlen($to) == 10) {
-    $d = DateTime::createFromFormat('d-m-Y', $to);
-    if ($d) {
-        $to = $d->format('Y-m-d');
-    }
+if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $to)) {
+    $to = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
 }
-
 /* ── SESSION ── */
 $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
@@ -932,12 +931,10 @@ document.getElementById('view_type').addEventListener('change', function () {
     document.getElementById('filterform').submit();
 });
 
-$('.datepicker').datepicker({
-    format: "dd-mm-yyyy",
-    autoclose: true,
-    todayHighlight: true,
-    assumeNearbyYear: true,
-    forceParse: false
+flatpickr(".datepicker", {
+    dateFormat: "d-m-Y",
+    allowInput: true,
+    disableMobile: true
 });
 
 </script>
