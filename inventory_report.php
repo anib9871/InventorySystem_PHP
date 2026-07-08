@@ -123,7 +123,7 @@ SELECT
 
     t.quantity AS sold_qty,
 
-    t.unit_price AS sell_price,
+    (t.unit_price - t.discount_amount) AS sell_price,
 
     t.gst_amount,
 
