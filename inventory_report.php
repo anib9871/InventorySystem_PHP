@@ -171,11 +171,7 @@ $txn_q .= " ORDER BY t.entry_date DESC";
 
 $sales = find_by_sql($txn_q);
 
-$grand = 0;
-
-foreach ($sales as $s) {
-    $grand += $s['total_sale'];
-}
+$grand = $total_collection;
 
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
@@ -579,7 +575,7 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
 
 <div class="pdf-total-box" style="display:none;">
   <b>Total Collection:</b>
-  ₹ <?= number_format($grand, 2) ?>
+  ₹ <?= number_format($total_collection, 2) ?>
 </div>
 
   <div class="pdf-collection-box" style="display:none;">
@@ -612,7 +608,9 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
     <!-- 1. Summary Card -->
     <div class="rpt-summary">
       <div class="s-lbl">Total Sale</div>
-      <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
+      <div class="s-big">
+    ₹ <?= number_format($total_collection, 2) ?>
+</div>
       <div class="s-div"></div>
       <div class="s-lbl">Collection &mdash; Mode Wise</div>
       <table class="s-mode-tbl" style="margin-top:3px;">
@@ -787,7 +785,7 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
     </td>
 
     <td>
-      <b>₹ <?= number_format($grand, 2) ?></b>
+      <b>₹ <?= number_format($total_collection, 2) ?></b>
     </td>
   </tr>
 </tfoot>
