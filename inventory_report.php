@@ -28,7 +28,7 @@ $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT SUM(t.sale_net - IFNULL(t.discount_amount,0)) as total_sale
+SELECT SUM(t.sale_net) as total_sale
 FROM transaction_master t
 
 LEFT JOIN invoice i
@@ -127,9 +127,7 @@ SELECT
 
     t.gst_amount,
 
-    (
-    t.sale_net - IFNULL(t.discount_amount,0)
-) AS total_sale
+    t.sale_net AS total_sale
 
 FROM transaction_master t
 
@@ -173,34 +171,11 @@ $txn_q .= " ORDER BY t.entry_date DESC";
 
 $sales = find_by_sql($txn_q);
 
-$grand_q = "
-SELECT IFNULL(SUM(inv.net_total),0) AS grand_total
-FROM invoice inv
-WHERE DATE(inv.invoice_date)
-BETWEEN '{$from}' AND '{$to}'
-";
+$grand = 0;
 
-if ($role_id == 3)
-    $grand_q .= " AND inv.center_id='{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter))
-    $grand_q .= " AND inv.center_id='{$center_filter}'";
-
-if($view_type=='customer' && !empty($filter_id)){
-    $grand_q .= " AND inv.customer_id='{$filter_id}'";
+foreach ($sales as $s) {
+    $grand += $s['total_sale'];
 }
-
-if($view_type=='product' && !empty($filter_id)){
-    $grand_q .= "
-    AND inv.invoice_no IN(
-        SELECT DISTINCT bill_indent_no
-        FROM transaction_master
-        WHERE transaction_type = 2
-        AND product_id = '{$filter_id}'
-    )";
-}
-
-$grand_row = find_by_sql($grand_q);
-$grand = $grand_row[0]['grand_total'] ?? 0;
 
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
@@ -208,7 +183,7 @@ $grand = $grand_row[0]['grand_total'] ?? 0;
 $pq = "SELECT 
     p.name,
     SUM(t.quantity) as qty,
-    SUM(t.sale_net - IFNULL(t.discount_amount,0)) as total
+    SUM(t.sale_net) as total
 FROM transaction_master t
 
 LEFT JOIN products p
