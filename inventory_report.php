@@ -171,7 +171,34 @@ $txn_q .= " ORDER BY t.entry_date DESC";
 
 $sales = find_by_sql($txn_q);
 
-$grand = $total_collection;
+$grand_q = "
+SELECT IFNULL(SUM(inv.net_total),0) AS grand_total
+FROM invoice inv
+WHERE DATE(inv.invoice_date)
+BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3)
+    $grand_q .= " AND inv.center_id='{$user_center}'";
+elseif ($role_id == 2 && !empty($center_filter))
+    $grand_q .= " AND inv.center_id='{$center_filter}'";
+
+if($view_type=='customer' && !empty($filter_id)){
+    $grand_q .= " AND inv.customer_id='{$filter_id}'";
+}
+
+if($view_type=='product' && !empty($filter_id)){
+    $grand_q .= "
+    AND inv.invoice_no IN(
+        SELECT DISTINCT bill_indent_no
+        FROM transaction_master
+        WHERE transaction_type = 2
+        AND product_id = '{$filter_id}'
+    )";
+}
+
+$grand_row = find_by_sql($grand_q);
+$grand = $grand_row[0]['grand_total'] ?? 0;
 
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
@@ -575,7 +602,7 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
 
 <div class="pdf-total-box" style="display:none;">
   <b>Total Collection:</b>
-  ₹ <?= number_format($total_collection, 2) ?>
+  ₹ <?= number_format($grand, 2) ?>
 </div>
 
   <div class="pdf-collection-box" style="display:none;">
@@ -608,9 +635,7 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
     <!-- 1. Summary Card -->
     <div class="rpt-summary">
       <div class="s-lbl">Total Sale</div>
-      <div class="s-big">
-    ₹ <?= number_format($total_collection, 2) ?>
-</div>
+      <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
       <div class="s-lbl">Collection &mdash; Mode Wise</div>
       <table class="s-mode-tbl" style="margin-top:3px;">
@@ -785,7 +810,7 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
     </td>
 
     <td>
-      <b>₹ <?= number_format($total_collection, 2) ?></b>
+      <b>₹ <?= number_format($grand, 2) ?></b>
     </td>
   </tr>
 </tfoot>
