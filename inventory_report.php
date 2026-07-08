@@ -667,7 +667,7 @@ margin-bottom:25px;
 ">
       <div class="rpt-card-title">Product Wise Sale (Qty)</div>
       <div class="rpt-chart-box" style="height:155px;">
-<div style="height:165px; padding-bottom:1px;">
+<div style="height:160px; padding:8px 0;">
    <canvas id="productChart"></canvas>
 </div>
       </div>
@@ -859,7 +859,20 @@ x: {
         display: false
     }
 },
-      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 9 } } }
+y: {
+    beginAtZero: true,
+    grace: '5%',
+    ticks: {
+        stepSize: 1,
+        precision: 0,
+        font: {
+            size: 9
+        }
+    },
+    grid: {
+        color: 'rgba(0,0,0,.04)'
+    }
+}
     }
   }
 });
@@ -913,9 +926,13 @@ x: {
     }
 },
 
-      y: {
-        beginAtZero: true
-      }
+y: {
+    beginAtZero: true,
+    grace: '5%',
+    ticks: {
+        precision: 0
+    }
+}
     }
   }
 });
