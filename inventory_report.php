@@ -123,7 +123,9 @@ SELECT
 
     t.quantity AS sold_qty,
 
-    (t.unit_price - t.discount_amount) AS sell_price,
+    t.unit_price AS sell_price,
+
+    t.discount_amount,
 
     t.gst_amount,
 
@@ -726,6 +728,8 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
 
 <th>Price</th>
 
+<th>Discount</th>
+
 <th>GST</th>
 
 <th>Total</th>
@@ -761,6 +765,10 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
 
 <td>
     ₹ <?= number_format($s['sell_price'],2) ?>
+</td>
+
+<td>
+    ₹ <?= number_format($s['discount_amount'],2) ?>
 </td>
 
 <td>
