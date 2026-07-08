@@ -18,17 +18,14 @@ $to   = $_POST['to']   ?? $_GET['to']   ?? $today;
 
 $today = date('Y-m-d');
 
-$from = $_POST['from'] ?? $_GET['from'] ?? $today;
-$to   = $_POST['to'] ?? $_GET['to'] ?? $today;
+$from_input = $_POST['from'] ?? $_GET['from'] ?? date('d-m-Y');
+$to_input   = $_POST['to']   ?? $_GET['to']   ?? date('d-m-Y');
 
-/* Sirf user ne dd-mm-yyyy bheja ho tabhi convert karo */
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
-    $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
-}
+$from = DateTime::createFromFormat('d-m-Y', $from_input);
+$to   = DateTime::createFromFormat('d-m-Y', $to_input);
 
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $to)) {
-    $to = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
-}
+$from = $from ? $from->format('Y-m-d') : date('Y-m-d');
+$to   = $to ? $to->format('Y-m-d') : date('Y-m-d');
 /* ── SESSION ── */
 $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
