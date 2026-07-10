@@ -526,8 +526,23 @@ body {
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
     <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input type="date" name="from" value="<?= $from ?>" class="form-control" style="width:135px;" required>
-      <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
+<input
+type="text"
+name="from"
+value="<?= date('d/M/Y', strtotime($from)) ?>"
+class="form-control datepicker"
+style="width:135px;"
+autocomplete="off"
+required>
+
+<input
+type="text"
+name="to"
+value="<?= date('d/M/Y', strtotime($to)) ?>"
+class="form-control datepicker"
+style="width:135px;"
+autocomplete="off"
+required>
 
       <?php if ($role_id == 2): ?>
       <select name="report_type" class="form-control" style="width:170px;" onchange="this.form.submit();">
