@@ -12,17 +12,8 @@ $is_pdf = isset($_GET['pdf']);
 
 /* ── DATE FILTER ── */
 $today = date('Y-m-d');
-
-$from = $_POST['from'] ?? $_GET['from'] ?? $today;
-$to   = $_POST['to']   ?? $_GET['to']   ?? $today;
-
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
-    $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
-}
-
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $to)) {
-    $to = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
-}
+$from  = $_POST['from'] ?? $_GET['from'] ?? $today;
+$to    = $_POST['to']   ?? $_GET['to']   ?? $today;
 
 /* ── SESSION ── */
 $role_id     = $_SESSION['role_id'];
@@ -535,23 +526,8 @@ body {
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
     <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input
-type="text"
-name="from"
-value="<?= date('d/M/Y', strtotime($from)) ?>"
-class="form-control datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
-
-<input
-type="text"
-name="to"
-value="<?= date('d/M/Y', strtotime($to)) ?>"
-class="form-control datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
+      <input type="date" name="from" value="<?= $from ?>" class="form-control" style="width:135px;" required>
+      <input type="date" name="to"   value="<?= $to ?>"   class="form-control" style="width:135px;" required>
 
       <?php if ($role_id == 2): ?>
       <select name="report_type" class="form-control" style="width:170px;" onchange="this.form.submit();">
@@ -618,8 +594,8 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
 
   <div class="pdf-period-box" style="display:none;">
   <b>Period:</b>
-  From <?= date('d/M/Y', strtotime($from)) ?>
-  To <?= date('d/M/Y', strtotime($to)) ?>
+  From <?= date('d-M-Y', strtotime($from)) ?>
+  To <?= date('d-M-Y', strtotime($to)) ?>
 </div>
 
 <div class="pdf-total-box" style="display:none;">
@@ -770,7 +746,7 @@ if(!empty($center_filter)){
 
 <tr>
 <td>
-    <?= date('d/M/Y', strtotime($s['sale_date'])) ?>
+    <?= date('d-m-Y', strtotime($s['sale_date'])) ?>
 </td>
 
 <td>
@@ -897,20 +873,13 @@ new Chart(document.getElementById('productChart'), {
         }
       },
 
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        stepSize: 1,
-        precision: 0,
-        font: {
-            size: 9
-        }
-    },
-    grid: {
-        color: 'rgba(0,0,0,.04)'
-    }
-}
+      y: {
+
+        beginAtZero:true,
+
+        ticks:{ font:{ size:9 } }
+
+      }
     }
   }
 });
@@ -984,25 +953,17 @@ new Chart(document.getElementById('supplierChart'), {
         }
       },
 
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        precision: 0
-    }
-}
+      y: {
+
+        beginAtZero:true,
+
+        ticks:{ font:{ size:9 } }
+
+      }
     }
   }
 });
 
-</script>
-
-<script>
-flatpickr(".datepicker", {
-    dateFormat: "d/M/Y",
-    allowInput: true,
-    disableMobile: true
-});
 </script>
 
 <?php if ($is_pdf): ?>
