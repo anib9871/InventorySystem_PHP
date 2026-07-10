@@ -594,8 +594,8 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
 
   <div class="pdf-period-box" style="display:none;">
   <b>Period:</b>
-  From <?= date('d-M-Y', strtotime($from)) ?>
-  To <?= date('d-M-Y', strtotime($to)) ?>
+  From <?= date('d/M/Y', strtotime($from)) ?>
+  To <?= date('d/M/Y', strtotime($to)) ?>
 </div>
 
 <div class="pdf-total-box" style="display:none;">
@@ -746,7 +746,7 @@ if(!empty($center_filter)){
 
 <tr>
 <td>
-    <?= date('d-m-Y', strtotime($s['sale_date'])) ?>
+    <?= date('d/M/Y', strtotime($s['sale_date'])) ?>
 </td>
 
 <td>
@@ -964,6 +964,13 @@ new Chart(document.getElementById('supplierChart'), {
   }
 });
 
+</script>
+<script>
+flatpickr(".datepicker", {
+    dateFormat: "d/M/Y",
+    allowInput: true,
+    disableMobile: true
+});
 </script>
 
 <?php if ($is_pdf): ?>
