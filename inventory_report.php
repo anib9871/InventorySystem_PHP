@@ -21,8 +21,8 @@ $today = date('Y-m-d');
 $from_input = $_POST['from'] ?? $_GET['from'] ?? date('d-m-Y');
 $to_input   = $_POST['to']   ?? $_GET['to']   ?? date('d-m-Y');
 
-$from = DateTime::createFromFormat('d-m-Y', $from_input);
-$to   = DateTime::createFromFormat('d-m-Y', $to_input);
+$from = DateTime::createFromFormat('d/M/Y', $from_input);
+$to   = DateTime::createFromFormat('d/M/Y', $to_input);
 
 $from = $from ? $from->format('Y-m-d') : date('Y-m-d');
 $to   = $to ? $to->format('Y-m-d') : date('Y-m-d');
@@ -526,7 +526,7 @@ body {
 <input
 type="text"
 name="from"
-value="<?= date('d-m-Y', strtotime($from)) ?>"
+value="<?= date('d/M/Y', strtotime($from)) ?>"
 class="form-control datepicker"
 style="width:135px;"
 autocomplete="off"
@@ -535,7 +535,7 @@ required>
 <input
 type="text"
 name="to"
-value="<?= date('d-m-Y', strtotime($to)) ?>"
+value="<?= date('d/M/Y', strtotime($to)) ?>"
 class="form-control datepicker"
 style="width:135px;"
 autocomplete="off"
@@ -769,7 +769,7 @@ box-shadow:0 2px 8px rgba(0,0,0,.05);
 
 <tr>
 <td>
-    <?= date('d-m-Y', strtotime($s['sale_date'])) ?>
+    <?= date('d/M/Y', strtotime($s['sale_date'])) ?>
 </td>
 
 <td>
@@ -946,7 +946,7 @@ document.getElementById('view_type').addEventListener('change', function () {
 });
 
 flatpickr(".datepicker", {
-    dateFormat: "d-m-Y",
+    dateFormat: "d/M/Y",
     allowInput: true,
     disableMobile: true
 });
