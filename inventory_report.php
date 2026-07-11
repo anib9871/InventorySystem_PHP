@@ -571,16 +571,12 @@ required>
 <?php
 $product_list = find_by_sql("
 SELECT DISTINCT
-p.id,
-p.name
-
-FROM transaction_master t
+    p.id,
+    p.name
+FROM invoice_items ii
 
 INNER JOIN products p
-ON p.id = t.product_id
-
-WHERE t.transaction_type = 2
-AND p.is_bom = 1
+    ON p.id = ii.product_id
 
 ORDER BY p.name
 ");
