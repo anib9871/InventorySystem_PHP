@@ -198,52 +198,62 @@ foreach ($sales as $s) {
 $pq = "
 SELECT
 
-    p.id,
+    t.product_id,
     p.name,
 
-    SUM(ii.qty) AS qty,
+    SUM(t.quantity) AS qty,
 
-    SUM(ii.line_total) AS total
+    SUM(t.sale_net) AS total
 
-FROM invoice_items ii
+FROM transaction_master t
 
-INNER JOIN invoice i
-    ON i.id = ii.invoice_id
+LEFT JOIN products p
+    ON p.id = t.product_id
 
-INNER JOIN products p
-    ON p.id = ii.product_id
+WHERE t.transaction_type = 2
 
-WHERE DATE(i.invoice_date)
+AND t.sale_net > 0
+
+AND t.bill_indent_no IS NOT NULL
+AND t.bill_indent_no <> ''
+
+AND t.bill_indent_no NOT LIKE 'MFG%'
+
+AND DATE(t.bill_indent_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3){
-    $pq .= " AND ii.center_id='{$user_center}'";
+    $pq .= " AND t.center_id='{$user_center}'";
 }
 elseif ($role_id == 2 && !empty($center_filter)){
-    $pq .= " AND ii.center_id='{$center_filter}'";
+    $pq .= " AND t.center_id='{$center_filter}'";
 }
 
 if($view_type=='product' && !empty($filter_id)){
-    $pq .= " AND ii.product_id='{$filter_id}'";
+    $pq .= " AND t.product_id='{$filter_id}'";
 }
 
 if($view_type=='customer' && !empty($filter_id)){
-    $pq .= " AND i.customer_id='{$filter_id}'";
+    $pq .= "
+    AND EXISTS(
+        SELECT 1
+        FROM invoice i
+        WHERE i.invoice_no = t.bill_indent_no
+        AND i.customer_id='{$filter_id}'
+    )";
 }
 
 $pq .= "
-GROUP BY p.id,p.name
+GROUP BY t.product_id, p.name
 ORDER BY qty DESC
 ";
 
 $product_data = find_by_sql($pq);
 
 $product_labels = array_column($product_data,'name');
-
-$product_qty = array_column($product_data,'qty');
-
-$product_total = array_column($product_data,'total');
+$product_qty    = array_column($product_data,'qty');
+$product_total  = array_column($product_data,'total');
 
 
 /* ═══════════════════════════════════════
