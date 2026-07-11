@@ -103,7 +103,17 @@ if(!isset($_SESSION['org_id'])){
       die("Invalid Customer Selected");
   }
 
-  $qdate    = date("Y-m-d");
+  $qdate = $_POST['quotation_date'] ?? date('d/M/Y');
+
+$formats = ['d/M/Y','d-m-Y','Y-m-d'];
+
+foreach($formats as $format){
+    $dt = DateTime::createFromFormat($format, $qdate);
+    if($dt){
+        $qdate = $dt->format('Y-m-d');
+        break;
+    }
+}
   $gst_type = ($gst_enabled == "Yes")
             ? ($_POST['gst_type'] ?? 'exclusive')
             : 'exclusive';
@@ -720,6 +730,20 @@ placeholder="Search Product...">
 
 <div class="row g-3 align-items-center top-row-fix">
 
+<div class="col-md-2">
+
+<label>Quotation Date</label>
+
+<input
+type="text"
+id="quotation_date"
+name="quotation_date"
+class="form-control"
+value="<?= date('d/M/Y'); ?>"
+autocomplete="off">
+
+</div>
+
 <div class="col-md-5">
 
 <label>Customer</label>
@@ -766,7 +790,7 @@ No GST
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-2">
 
 <button
 type="submit"
@@ -1215,5 +1239,17 @@ document.getElementById("termsTemplate")
 </script>
 
 </form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    flatpickr("#quotation_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
+    });
+
+});
+</script>
 
 <?php include_once('layouts/footer.php'); ?>
