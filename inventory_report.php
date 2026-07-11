@@ -72,7 +72,8 @@ $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 $pay_q = "
 SELECT
 p.payment_mode,
-SUM(p.amount) as total_amount
+MAX(p.payment_date) AS payment_date,
+SUM(p.amount) AS total_amount
 FROM payments p
 
 WHERE DATE(p.payment_date)
@@ -245,6 +246,7 @@ LEFT JOIN customer_master cm
     ON cm.id = i.customer_id
 
 WHERE t.transaction_type = 2
+AND t.sale_net > 0
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
@@ -558,7 +560,20 @@ required>
 </select>
 
 <?php
-$product_list = find_by_sql("SELECT id,name FROM products ORDER BY name");
+$product_list = find_by_sql("
+SELECT DISTINCT
+p.id,
+p.name
+
+FROM transaction_master t
+
+INNER JOIN products p
+ON p.id=t.product_id
+
+WHERE t.transaction_type=2
+
+ORDER BY p.name
+");
 $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER BY customer_name");
 ?>
 
@@ -590,7 +605,9 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
 
 </select>
 
-      <button type="submit" class="btn btn-primary">Filter</button>
+     <button type="submit" class="btn btn-primary">
+Generate Report
+</button>
       <a href="?pdf=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?><?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
          target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
     </form>
@@ -642,20 +659,52 @@ $customer_list = find_by_sql("SELECT id,customer_name FROM customer_master ORDER
       <div class="s-lbl">Total Sale</div>
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
-      <div class="s-lbl">Collection &mdash; Mode Wise</div>
-      <table class="s-mode-tbl" style="margin-top:3px;">
-        <tr style="opacity:.5;"><td style="font-size:8px; text-transform:uppercase;">Mode</td><td style="font-size:8px; text-transform:uppercase;">Amount</td></tr>
-        <?php foreach ($payments as $pay): ?>
-        <tr>
-          <td><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-          <td>&#8377; <?= number_format($pay['total_amount'], 2) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <tr class="grand">
-          <td>Grand Total</td>
-          <td>&#8377; <?= number_format($total_collection, 2) ?></td>
-        </tr>
-      </table>
+<?php if($view_type=='customer'){ ?>
+
+<div class="s-lbl">Collection &mdash; Mode Wise</div>
+
+<table class="s-mode-tbl" style="margin-top:3px;">
+
+<tr style="opacity:.5;">
+<td style="font-size:8px;">Mode</td>
+<td style="font-size:8px;">Date</td>
+<td style="font-size:8px;text-align:right;">Amount</td>
+</tr>
+
+<?php foreach($payments as $pay){ ?>
+
+<tr>
+
+<td><?= strtoupper($pay['payment_mode']) ?></td>
+
+<td><?= date('d/M/Y',strtotime($pay['payment_date'])) ?></td>
+
+<td style="text-align:right;">
+₹ <?= number_format($pay['total_amount'],2) ?>
+</td>
+
+</tr>
+
+<?php } ?>
+
+<tr class="grand">
+<td colspan="2">Grand Total</td>
+<td style="text-align:right;">
+₹ <?= number_format($total_collection,2) ?>
+</td>
+</tr>
+
+</table>
+
+<?php } else { ?>
+
+<div class="s-lbl">Product Wise Sale</div>
+
+<div class="s-big">
+₹ <?= number_format($grand,2) ?>
+</div>
+
+<?php } ?>
     </div>
 
     <!-- 2. Product Bar Chart -->
