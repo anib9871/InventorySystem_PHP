@@ -786,7 +786,7 @@ else
 
 </td>
 
-<td><?php echo $r['entry_date']; ?></td>
+<td><?php echo date('d/M/Y', strtotime($r['entry_date'])); ?></td>
 
 <td>
 
@@ -859,7 +859,7 @@ else
 
 <tr>
 <th>Date</th>
-<td><?php echo $view_return['entry_date']; ?></td>
+<td><?php echo date('d/M/Y', strtotime($view_return['entry_date'])); ?></td>
 </tr>
 
 <tr>
