@@ -12,8 +12,17 @@ $is_pdf = isset($_GET['pdf']);
 
 /* ── DATE FILTER ── */
 $today = date('Y-m-d');
-$from  = $_POST['from'] ?? $_GET['from'] ?? $today;
-$to    = $_POST['to']   ?? $_GET['to']   ?? $today;
+
+$from = $_POST['from'] ?? $_GET['from'] ?? $today;
+$to   = $_POST['to']   ?? $_GET['to']   ?? $today;
+
+if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
+    $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
+}
+
+if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $to)) {
+    $to = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
+}
 
 /* ── SESSION ── */
 $role_id     = $_SESSION['role_id'];
@@ -526,7 +535,7 @@ body {
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
     <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-<input
+      <input
 type="text"
 name="from"
 value="<?= date('d/M/Y', strtotime($from)) ?>"
@@ -888,13 +897,20 @@ new Chart(document.getElementById('productChart'), {
         }
       },
 
-      y: {
-
-        beginAtZero:true,
-
-        ticks:{ font:{ size:9 } }
-
-      }
+y: {
+    beginAtZero: true,
+    grace: '5%',
+    ticks: {
+        stepSize: 1,
+        precision: 0,
+        font: {
+            size: 9
+        }
+    },
+    grid: {
+        color: 'rgba(0,0,0,.04)'
+    }
+}
     }
   }
 });
@@ -968,18 +984,19 @@ new Chart(document.getElementById('supplierChart'), {
         }
       },
 
-      y: {
-
-        beginAtZero:true,
-
-        ticks:{ font:{ size:9 } }
-
-      }
+y: {
+    beginAtZero: true,
+    grace: '5%',
+    ticks: {
+        precision: 0
+    }
+}
     }
   }
 });
 
 </script>
+
 <script>
 flatpickr(".datepicker", {
     dateFormat: "d/M/Y",
