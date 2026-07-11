@@ -85,7 +85,7 @@ No GRN Found
 
 <td><?= $g['supplier_name']; ?></td>
 
-<td><?= date('d-m-Y', strtotime($g['bill_indent_date'])); ?></td>
+<td><?= date('d/M/Y', strtotime($g['bill_indent_date'])); ?></td>
 
 <td><?= number_format($g['total'],2); ?></td>
 
