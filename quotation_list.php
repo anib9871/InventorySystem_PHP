@@ -55,7 +55,7 @@ foreach($quotes as $q){
 <tr>
   <td><?php echo $i++; ?></td>
   <td><?php echo $q['quotation_no']; ?></td>
-  <td><?php echo $q['quotation_date']; ?></td>
+  <td><?php echo date('d/M/Y', strtotime($q['quotation_date'])); ?></td>
   <td><?php echo $q['customer_name']; ?></td>
   <td><?php echo number_format($q['net_total'],2); ?></td>
 
