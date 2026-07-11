@@ -16,15 +16,22 @@ $today = date('Y-m-d');
 $from = $_POST['from'] ?? $_GET['from'] ?? $today;
 $to   = $_POST['to']   ?? $_GET['to']   ?? $today;
 
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
 
-
-
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
-    $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $from);
+    if ($dt instanceof DateTime) {
+        $from = $dt->format('Y-m-d');
+        break;
+    }
 }
 
-if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $to)) {
-    $to = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $to);
+    if ($dt instanceof DateTime) {
+        $to = $dt->format('Y-m-d');
+        break;
+    }
 }
 
 /* ── SESSION ── */
@@ -542,7 +549,7 @@ body {
 type="text"
 name="from"
 value="<?= date('d/M/Y', strtotime($from)) ?>"
-class="form-control datepicker"
+class="form-control purchase-datepicker"
 style="width:135px;"
 autocomplete="off"
 required>
@@ -551,7 +558,7 @@ required>
 type="text"
 name="to"
 value="<?= date('d/M/Y', strtotime($to)) ?>"
-class="form-control datepicker"
+class="form-control purchase-datepicker"
 style="width:135px;"
 autocomplete="off"
 required>
@@ -1001,19 +1008,10 @@ y: {
 </script>
 
 <script>
-var fp = flatpickr(".datepicker", {
+flatpickr(".purchase-datepicker", {
     dateFormat: "d/M/Y",
-    allowInput: true,
+    allowInput: false,
     disableMobile: true
-});
-
-$('form').on('submit', function () {
-
-    alert(
-        'FROM = ' + $('input[name="from"]').val() +
-        '\nTO = ' + $('input[name="to"]').val()
-    );
-
 });
 </script>
 
