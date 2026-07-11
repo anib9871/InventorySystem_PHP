@@ -744,7 +744,7 @@ autocomplete="off">
 
 </div>
 
-<div class="col-md-5">
+<div class="col-md-3">
 
 <label>Customer</label>
 
