@@ -259,7 +259,7 @@ Phone: <?= $org['phone'] ?>
 
 Invoice No: <?= $invoice['invoice_no'] ?><br>
 
-Date: <?= date("d-m-Y", strtotime($invoice['invoice_date'])) ?><br>
+Date: <?= date("d/M/Y", strtotime($invoice['invoice_date'])) ?><br>
 
 </td>
 </tr>
