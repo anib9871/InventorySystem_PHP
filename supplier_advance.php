@@ -19,7 +19,19 @@ $supplier_id = (int)$_POST['supplier_id'];
 $amount = (float)$_POST['amount'];
 $mode = $db->escape($_POST['payment_mode']);
 $ref = $db->escape($_POST['reference_no']);
-$payment_date = $db->escape($_POST['payment_date']);
+$payment_date = $_POST['payment_date'];
+
+$formats = ['d/M/Y','d-m-Y','Y-m-d'];
+
+foreach($formats as $format){
+    $dt = DateTime::createFromFormat($format,$payment_date);
+    if($dt){
+        $payment_date = $dt->format('Y-m-d');
+        break;
+    }
+}
+
+$payment_date = $db->escape($payment_date);
 
 if($supplier_id <= 0 || $amount <= 0){
 
@@ -98,7 +110,19 @@ $supplier_id = (int)$_POST['supplier_id'];
 $amount = (float)$_POST['amount'];
 $mode = $db->escape($_POST['payment_mode']);
 $ref = $db->escape($_POST['reference_no']);
-$payment_date = $db->escape($_POST['payment_date']);
+$payment_date = $_POST['payment_date'];
+
+$formats = ['d/M/Y','d-m-Y','Y-m-d'];
+
+foreach($formats as $format){
+    $dt = DateTime::createFromFormat($format,$payment_date);
+    if($dt){
+        $payment_date = $dt->format('Y-m-d');
+        break;
+    }
+}
+
+$payment_date = $db->escape($payment_date);
 $remarks = $db->escape($_POST['remarks']);
 
 $db->query("
@@ -264,10 +288,12 @@ Select Supplier
 <label>Payment Date</label>
 
 <input
-type="date"
+type="text"
 name="payment_date"
+id="payment_date"
 class="form-control"
-value="<?= $edit_data['bill_date'] ?? date('Y-m-d'); ?>"
+value="<?= isset($edit_data['bill_date']) ? date('d/M/Y', strtotime($edit_data['bill_date'])) : date('d/M/Y'); ?>"
+autocomplete="off"
 required>
 
 </div>
@@ -447,7 +473,7 @@ $a['payment_mode']
 <td>
 
 <?= date(
-'d-m-Y',
+'d/M/Y',
 strtotime($a['bill_date'])
 ); ?>
 
@@ -509,6 +535,18 @@ row.innerText.toLowerCase()
 
 });
 
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    flatpickr("#payment_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
+    });
+
+});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
