@@ -17,8 +17,19 @@ $total_amount = 0;
 $remarks =
 $db->escape($_POST['remarks']);
 
-$payment_date =
-$db->escape($_POST['payment_date']);
+$payment_date = $_POST['payment_date'];
+
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $payment_date);
+    if ($dt instanceof DateTime) {
+        $payment_date = $dt->format('Y-m-d');
+        break;
+    }
+}
+
+$payment_date = $db->escape($payment_date);
 
 /* FETCH INVOICE */
 
@@ -542,8 +553,7 @@ Unpaid
 
 <td>
 
-<?= date('d-m-Y',
-strtotime($p['created_at'])); ?>
+<?= date('d/M/Y', strtotime($p['created_at'])); ?>
 
 </td>
 
@@ -633,9 +643,13 @@ id="invoice_id">
 
 <div class="col-md-3">
 <label>Payment Date</label>
-<input type="date" name="payment_date"
-class="form-control input-sm"
-value="<?= date('Y-m-d'); ?>" required>
+<input
+type="text"
+name="payment_date"
+class="form-control input-sm payment-datepicker"
+value="<?= date('d/M/Y'); ?>"
+autocomplete="off"
+required>
 </div>
 
 <div class="col-md-3">
@@ -843,6 +857,7 @@ if(this.checked){
 
 </script>
 
+
 <?php include_once('layouts/footer.php'); ?>
 
 <?php if($msg): ?>
@@ -870,6 +885,12 @@ confirmButtonColor: "#28a745"
 });
 
 </script>
-
 <?php endif; ?>
 
+<script>
+flatpickr(".payment-datepicker", {
+    dateFormat: "d/M/Y",
+    allowInput: false,
+    disableMobile: true
+});
+</script>
