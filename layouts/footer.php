@@ -63,12 +63,12 @@ $(document).ready(function(){
 </script>
 
 <script>
-$(document).ready(function(){
+document.addEventListener("DOMContentLoaded", function () {
 
-    $('#bill_date').datepicker({
-        format: 'dd-mm-yyyy',
-        autoclose: true,
-        todayHighlight: true
+    flatpickr("#bill_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
     });
 
 });
