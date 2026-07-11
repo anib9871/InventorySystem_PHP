@@ -15,9 +15,6 @@ if($id <= 0){
 
 /* ================= FETCH QUOTATION ================= */
 
-echo "ID = ".$id;
-exit;
-
 $qdata = find_by_sql("
 SELECT *
 FROM quotation_master
@@ -56,7 +53,19 @@ global $db;
 $db->query("START TRANSACTION");
 
 try{
+$quotation_date = $_POST['quotation_date'];
 
+$formats = ['d/M/Y','d-m-Y','Y-m-d'];
+
+foreach($formats as $format){
+
+    $dt = DateTime::createFromFormat($format, $quotation_date);
+
+    if($dt){
+        $quotation_date = $dt->format('Y-m-d');
+        break;
+    }
+}
 $cust = (int)$_POST['customer_id'];
 
 $gst_type = $_POST['gst_type'] ?? 'exclusive';
@@ -184,7 +193,7 @@ UPDATE quotation_master SET
 
 customer_id = '$cust',
 gst_type = '$gst_type',
-
+quotation_date = '$quotation_date',
 subtotal = '$subtotal',
 gst_total = '$total_gst',
 net_total = '$net_total',
@@ -643,8 +652,22 @@ placeholder="Search Product...">
 <div class="card p-3 mb-3">
 
 <div class="row g-3 align-items-center top-row-fix">
+<div class="col-md-2">
 
-<div class="col-md-5">
+<label>Quotation Date</label>
+
+<input
+type="text"
+id="quotation_date"
+name="quotation_date"
+class="form-control"
+value="<?= date('d/M/Y', strtotime($quote['quotation_date'])); ?>"
+autocomplete="off">
+
+</div>
+
+
+<div class="col-md-3">
 
 <label>Customer</label>
 
@@ -691,7 +714,7 @@ No GST
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-2">
 
 <button
 type="submit"
@@ -1188,6 +1211,18 @@ window.addEventListener("load", function(){
 
 });
 
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    flatpickr("#quotation_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
+    });
+
+});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
