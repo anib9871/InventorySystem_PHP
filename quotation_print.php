@@ -259,8 +259,7 @@ Phone: <?= $org['phone'] ?>
 
 Quotation No: <?= $quotation['quotation_no'] ?><br>
 
-Date: <?= date("d-m-Y", strtotime($quotation['quotation_date'])) ?><br>
-
+Date: <?= date("d/M/Y", strtotime($quotation['quotation_date'])) ?><br>
 </td>
 </tr>
 </table>
