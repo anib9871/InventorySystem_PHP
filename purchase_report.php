@@ -38,8 +38,8 @@ foreach ($formats as $format) {
 $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
-/* ── CENTER FILTER (admin only) ── */
-$filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
+/* ── CENTER  (admin only) ── */
+$_id = $_POST['_id'] ?? $_GET['_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
@@ -66,7 +66,7 @@ AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
+elseif ($role_id == 2 && !empty($center_)) $sale_query .= " AND center_id = '{$center_}'";
 
 if($report_type=='product' && !empty($filter_id)){
     $sale_query .= " AND t.product_id='{$filter_id}'";
@@ -626,7 +626,9 @@ ORDER BY supplier_name
 <?php endif; ?>
 
 
-      <button type="submit" class="btn btn-primary">Filter</button>
+      <button type="submit" class="btn btn-primary">
+    <i class="fa fa-file-text-o"></i> Generate Report
+</button>
       <a href="?pdf=1
 &from=<?= urlencode($from) ?>
 &to=<?= urlencode($to) ?>
