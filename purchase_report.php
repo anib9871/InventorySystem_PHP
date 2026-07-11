@@ -76,27 +76,6 @@ if($report_type=='supplier' && !empty($filter_id)){
     $sale_query .= " AND t.supplier_id='{$filter_id}'";
 }
 
-if($report_type=='product' && !empty($filter_id)){
-
-    $sale_query = "
-    SELECT
-        SUM(t.net_price) AS total_sale
-
-    FROM transaction_master t
-
-    WHERE t.transaction_type = 1
-    AND DATE(t.entry_date)
-    BETWEEN '{$from}' AND '{$to}'
-    AND t.product_id='{$filter_id}'
-    ";
-
-    if ($role_id == 3)
-        $sale_query .= " AND t.center_id='{$user_center}'";
-
-    elseif ($role_id == 2 && !empty($center_filter))
-        $sale_query .= " AND t.center_id='{$center_filter}'";
-}
-
 $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
@@ -116,52 +95,9 @@ if($report_type=='supplier' && !empty($filter_id)){
     $pay_q .= " AND supplier_id='{$filter_id}'";
 }
 
-if($report_type=='product' && !empty($filter_id)){
-
-    $pay_q = "
-    SELECT
-        sp.payment_mode,
-        SUM(
-            (t.net_price / sl.bill_amount) * sp.payment_amount
-        ) AS total_amount
-
-    FROM supplier_payment sp
-
-    INNER JOIN supplier_ledger sl
-        ON sl.ledger_id = sp.ledger_id
-
-    INNER JOIN transaction_master t
-        ON t.bill_indent_no = sl.bill_no
-
-    WHERE DATE(sp.payment_date)
-    BETWEEN '{$from}' AND '{$to}'
-
-    AND t.transaction_type = 1
-    AND t.product_id = '{$filter_id}'
-    ";
-
-}
-
-if($report_type=='product' && !empty($filter_id)){
-
-    if ($role_id == 3)
-        $pay_q .= " AND sp.center_id='{$user_center}'";
-
-    elseif ($role_id == 2 && !empty($center_filter))
-        $pay_q .= " AND sp.center_id='{$center_filter}'";
-
-    $pay_q .= " GROUP BY sp.payment_mode";
-
-}else{
-
-    if ($role_id == 3)
-        $pay_q .= " AND center_id='{$user_center}'";
-
-    elseif ($role_id == 2 && !empty($center_filter))
-        $pay_q .= " AND center_id='{$center_filter}'";
-
-    $pay_q .= " GROUP BY payment_mode";
-}
+if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
+elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
+$pay_q   .= " GROUP BY payment_mode";
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
@@ -676,7 +612,7 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
 <?php endif; ?>
 
 
-      <button type="submit" class="btn btn-primary">Generate Report</button>
+      <button type="submit" class="btn btn-primary">Filter</button>
       <a href="?pdf=1
 &from=<?= urlencode($from) ?>
 &to=<?= urlencode($to) ?>
