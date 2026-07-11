@@ -253,6 +253,7 @@ ON p.id = t.product_id
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
+AND p.type = 1
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
@@ -578,8 +579,20 @@ required>
 </select>
 
 <?php
-$product_list = find_by_sql("SELECT id,name FROM products ORDER BY name");
-$supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER BY supplier_name");
+
+$product_list = find_by_sql("
+SELECT id, name
+FROM products
+WHERE type = 1
+ORDER BY name
+");
+
+$supplier_list = find_by_sql("
+SELECT id, supplier_name
+FROM supplier_master
+ORDER BY supplier_name
+");
+
 ?>
 
 <select name="filter_id" class="form-control" style="width:220px;">
