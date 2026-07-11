@@ -221,7 +221,10 @@ if($view_type=='customer' && !empty($filter_id)){
     $pq .= " AND i.customer_id='{$filter_id}'";
 }
 
-$pq .= " GROUP BY t.product_id";
+$pq .= "
+GROUP BY t.product_id
+ORDER BY total DESC
+";
 $product_data   = find_by_sql($pq);
 $product_labels = array_column($product_data, 'name');
 $product_qty    = array_column($product_data, 'qty');
