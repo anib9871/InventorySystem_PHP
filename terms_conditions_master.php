@@ -405,8 +405,8 @@ value="<?= ($edit) ? $edit['template_name'] : ''; ?>">
 
 
                                 <td>
-                                    <?= $t['updated_at']; ?>
-                                </td>
+    <?= !empty($t['updated_at']) ? date('d/M/Y h:i A', strtotime($t['updated_at'])) : '-'; ?>
+</td>
 
 
                                 <td>
