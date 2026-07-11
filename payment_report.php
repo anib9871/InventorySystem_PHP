@@ -154,7 +154,7 @@ $total += $r['amount'];
 <td>
 
 <?= date(
-'d-m-Y',
+'d/M/Y',
 strtotime($r['payment_date'])
 ); ?>
 
@@ -392,7 +392,7 @@ $supplier_total += $s['payment_amount'];
 <td>
 
 <?= date(
-'d-m-Y',
+'d/M/Y',
 strtotime($s['payment_date'])
 ); ?>
 
