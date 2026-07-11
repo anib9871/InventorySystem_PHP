@@ -46,6 +46,12 @@ LEFT JOIN invoice i
 ON i.invoice_no = t.bill_indent_no
 WHERE t.transaction_type = 2
 AND i.customer_id IS NOT NULL
+AND EXISTS (
+    SELECT 1
+    FROM products p
+    WHERE p.id = t.product_id
+    AND p.is_bom = 1
+)
 AND t.sale_net > 0
 AND t.bill_indent_no NOT LIKE 'MFG%'
 AND DATE(t.entry_date)
@@ -156,6 +162,8 @@ LEFT JOIN products p
 
 WHERE t.transaction_type = 2
 
+AND p.is_bom = 1
+
 AND i.customer_id IS NOT NULL
 
 AND t.sale_net > 0
@@ -207,6 +215,7 @@ LEFT JOIN invoice i
     ON i.invoice_no = t.bill_indent_no
 
 WHERE t.transaction_type = 2
+AND p.is_bom = 1
 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
 
 if ($role_id == 3)                               $pq .= " AND t.center_id = '{$user_center}'";
@@ -568,9 +577,10 @@ p.name
 FROM transaction_master t
 
 INNER JOIN products p
-ON p.id=t.product_id
+ON p.id = t.product_id
 
-WHERE t.transaction_type=2
+WHERE t.transaction_type = 2
+AND p.is_bom = 1
 
 ORDER BY p.name
 ");
