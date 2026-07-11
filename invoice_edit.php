@@ -63,9 +63,20 @@ global $db;
 $db->query("START TRANSACTION");
 
 try{
+$invoice_date = $_POST['invoice_date'];
 
-$cust = (int)$_POST['customer_id'];
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
 
+foreach ($formats as $format) {
+
+    $dt = DateTime::createFromFormat($format, $invoice_date);
+
+    if ($dt) {
+        $invoice_date = $dt->format('Y-m-d');
+        break;
+    }
+}
+    
 $cust = (int)$_POST['customer_id'];
 
 /* ================= TAX MODE ================= */
@@ -322,6 +333,7 @@ UPDATE invoice SET
 
 customer_id = '$cust',
 gst_type = '$gst_type',
+invoice_date = '$invoice_date',
 
 subtotal = '$subtotal',
 gst_total = '$total_gst',
@@ -842,7 +854,8 @@ body{
         id="invoice_date"
         name="invoice_date"
         class="form-control"
-        value="<?= date('d-m-Y', strtotime($quote['invoice_date'])); ?>">
+        value="<?= date('d/M/Y', strtotime($quote['invoice_date'])); ?>"
+autocomplete="off">
 </div>
 
 
@@ -1672,12 +1685,12 @@ document.querySelectorAll(
 
 });
 
-$(function(){
+document.addEventListener("DOMContentLoaded", function () {
 
-    $('#invoice_date').datepicker({
-        format: 'dd-mm-yyyy',
-        autoclose: true,
-        todayHighlight: true
+    flatpickr("#invoice_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
     });
 
 });
