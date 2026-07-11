@@ -9,6 +9,24 @@ $party_id = isset($_GET['party_id']) ? (int)$_GET['party_id'] : 0;
 $from = isset($_GET['from']) ? $_GET['from'] : date('Y-m-01');
 $to   = isset($_GET['to']) ? $_GET['to'] : date('Y-m-d');
 
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $from);
+    if ($dt instanceof DateTime) {
+        $from = $dt->format('Y-m-d');
+        break;
+    }
+}
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $to);
+    if ($dt instanceof DateTime) {
+        $to = $dt->format('Y-m-d');
+        break;
+    }
+}
+
 $customers = find_all('customer_master');
 $suppliers = find_all('supplier_master');
 
@@ -248,9 +266,9 @@ GST : <?= $org[0]['gst_no']; ?>
 <td><strong>Ledger Type :</strong> <?= ucfirst($type); ?></td>
 <td><strong><?= ucfirst($type); ?> :</strong> <?= $party_name; ?></td>
 <td><strong>Period :</strong>
-<?= date('d-m-Y',strtotime($from)); ?>
+<?= date('d/M/Y',strtotime($from)); ?>
 To
-<?= date('d-m-Y',strtotime($to)); ?>
+<?= date('d/M/Y',strtotime($to)); ?>
 </td>
 </tr>
 </table>
@@ -297,12 +315,22 @@ To
 
 <div class="col-md-2">
 <label>From</label>
-<input type="date" name="from" class="form-control" value="<?= $from; ?>">
+<input
+type="text"
+name="from"
+class="form-control ledger-datepicker"
+value="<?= date('d/M/Y', strtotime($from)); ?>"
+autocomplete="off">
 </div>
 
 <div class="col-md-2">
 <label>To</label>
-<input type="date" name="to" class="form-control" value="<?= $to; ?>">
+<input
+type="text"
+name="to"
+class="form-control ledger-datepicker"
+value="<?= date('d/M/Y', strtotime($to)); ?>"
+autocomplete="off">
 </div>
 
 <div class="col-md-3">
@@ -360,7 +388,7 @@ if($type=='supplier'){
 ?>
 
 <tr>
-<td><?= date('d-m-Y',strtotime($r['date'])); ?></td>
+<td><?= date('d/M/Y', strtotime($r['date'])); ?></td>
 <td><?= $r['particular']; ?></td>
 <td><?= $r['type']; ?></td>
 <td><?= $r['voucher']; ?></td>
@@ -457,6 +485,14 @@ function printLedger(){
 
 }
 
+</script>
+
+<script>
+flatpickr(".ledger-datepicker", {
+    dateFormat: "d/M/Y",
+    allowInput: false,
+    disableMobile: true
+});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
