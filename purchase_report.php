@@ -669,20 +669,44 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
       <div class="s-lbl">Total Purchase</div>
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
-      <div class="s-lbl">Payment &mdash; Mode Wise</div>
-      <table class="s-mode-tbl" style="margin-top:3px;">
-        <tr style="opacity:.5;"><td style="font-size:8px; text-transform:uppercase;">Mode</td><td style="font-size:8px; text-transform:uppercase;">Amount</td></tr>
-        <?php foreach ($payments as $pay): ?>
-        <tr>
-          <td><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-          <td>&#8377; <?= number_format($pay['total_amount'], 2) ?></td>
-        </tr>
-        <?php endforeach; ?>
-        <tr class="grand">
-          <td>Grand Total</td>
-          <td>&#8377; <?= number_format($total_collection, 2) ?></td>
-        </tr>
-      </table>
+<?php if($report_type=='supplier'){ ?>
+
+<div class="s-lbl">Payment &mdash; Mode Wise</div>
+
+<table class="s-mode-tbl" style="margin-top:3px;">
+    <tr style="opacity:.5;">
+        <td style="font-size:8px; text-transform:uppercase;">Mode</td>
+        <td style="font-size:8px; text-transform:uppercase;">Amount</td>
+    </tr>
+
+    <?php foreach ($payments as $pay): ?>
+    <tr>
+        <td><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
+        <td>&#8377; <?= number_format($pay['total_amount'],2) ?></td>
+    </tr>
+    <?php endforeach; ?>
+
+    <tr class="grand">
+        <td>Grand Total</td>
+        <td>&#8377; <?= number_format($total_collection,2) ?></td>
+    </tr>
+</table>
+
+<?php } else { ?>
+
+<div class="s-lbl">Collected</div>
+<div class="s-big">
+    ₹ <?= number_format($total_collection,2) ?>
+</div>
+
+<div class="s-div"></div>
+
+<div class="s-lbl">Outstanding</div>
+<div class="s-big">
+    ₹ <?= number_format($total_sale - $total_collection,2) ?>
+</div>
+
+<?php } ?>
     </div>
 
 <!-- Product Chart -->
