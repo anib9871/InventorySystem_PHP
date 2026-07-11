@@ -15,6 +15,13 @@ $today = date('Y-m-d');
 
 $from = $_POST['from'] ?? $_GET['from'] ?? $today;
 $to   = $_POST['to']   ?? $_GET['to']   ?? $today;
+echo "<pre>";
+echo "POST:\n";
+print_r($_POST);
+
+echo "\nRAW FROM = ".$from;
+echo "\nRAW TO   = ".$to;
+die;
 
 if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $from)) {
     $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
