@@ -194,27 +194,38 @@ foreach ($sales as $s) {
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
-$pq = "SELECT 
+
+$pq = "
+SELECT
+
+    p.id,
     p.name,
-    SUM(t.quantity) as qty,
-    SUM(t.sale_net) as total
-FROM transaction_master t
 
-LEFT JOIN products p
-    ON p.id = t.product_id
+    SUM(ii.qty) AS qty,
 
-LEFT JOIN invoice i
-    ON i.invoice_no = t.bill_indent_no
+    SUM(ii.line_total) AS total
 
-WHERE t.transaction_type = 2
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'";
+FROM invoice_items ii
 
-if ($role_id == 3)                               $pq .= " AND t.center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $pq .= " AND t.center_id = '{$center_filter}'";
+INNER JOIN invoice i
+    ON i.id = ii.invoice_id
 
+INNER JOIN products p
+    ON p.id = ii.product_id
+
+WHERE DATE(i.invoice_date)
+BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3){
+    $pq .= " AND ii.center_id='{$user_center}'";
+}
+elseif ($role_id == 2 && !empty($center_filter)){
+    $pq .= " AND ii.center_id='{$center_filter}'";
+}
 
 if($view_type=='product' && !empty($filter_id)){
-    $pq .= " AND t.product_id='{$filter_id}'";
+    $pq .= " AND ii.product_id='{$filter_id}'";
 }
 
 if($view_type=='customer' && !empty($filter_id)){
@@ -222,13 +233,17 @@ if($view_type=='customer' && !empty($filter_id)){
 }
 
 $pq .= "
-GROUP BY t.product_id
-ORDER BY total DESC
+GROUP BY p.id,p.name
+ORDER BY qty DESC
 ";
-$product_data   = find_by_sql($pq);
-$product_labels = array_column($product_data, 'name');
-$product_qty    = array_column($product_data, 'qty');
-$product_total = array_column($product_data, 'total');
+
+$product_data = find_by_sql($pq);
+
+$product_labels = array_column($product_data,'name');
+
+$product_qty = array_column($product_data,'qty');
+
+$product_total = array_column($product_data,'total');
 
 
 /* ═══════════════════════════════════════
