@@ -50,10 +50,17 @@ if (isset($_POST['save_grn']) || isset($_POST['update_grn'])) {
 
   $supplier_id  = (int)$_POST['supplier_id'];
   $bill_no      = $_POST['bill_no'];
-  $bill_date = DateTime::createFromFormat(
-    'd-m-Y',
-    $_POST['bill_date']
-)->format('Y-m-d');
+$bill_date = $_POST['bill_date'];
+
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $bill_date);
+    if ($dt instanceof DateTime) {
+        $bill_date = $dt->format('Y-m-d');
+        break;
+    }
+}
   $payment_mode = $_POST['payment_mode'] ?? '';
   $payments = json_decode($_POST['payments_json'], true);
   $total_paid = 0;
@@ -742,8 +749,8 @@ type="text"
 name="bill_date"
 id="bill_date"
 value="<?= $edit_mode
-? date('d-m-Y', strtotime($grn_info['bill_indent_date']))
-: date('d-m-Y'); ?>"
+? date('d/M/Y', strtotime($grn_info['bill_indent_date']))
+: date('d/M/Y'); ?>"
 class="form-control"
 form="grnForm"
 required>
@@ -2807,7 +2814,7 @@ updateGrandTotal();
 }
 
 document.getElementById("advanceInput")
-.addEventListener("input", function(){
+.addEventListener("change", function(){
 
 let available = parseFloat(
 document.getElementById("advanceAmount")
@@ -2822,21 +2829,16 @@ document.getElementById("grandTotal")
 let entered = parseFloat(this.value) || 0;
 
 if(entered > available){
-
-entered = available;
-this.value = available;
-
+    entered = available;
 }
 
 if(entered > total){
-
-entered = total;
-this.value = total;
-
+    entered = total;
 }
 
-document.getElementById("used_advance")
-.value = entered;
+this.value = entered;
+
+document.getElementById("used_advance").value = entered;
 
 document.getElementById("balanceAdvance").innerText =
 (available - entered).toFixed(2);
