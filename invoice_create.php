@@ -272,9 +272,25 @@ break;
 }
 }
 
-$qdate = !empty($_POST['invoice_date'])
-    ? date("Y-m-d", strtotime($_POST['invoice_date']))
-    : date("Y-m-d");
+if (!empty($_POST['invoice_date'])) {
+
+    $qdate = $_POST['invoice_date'];
+
+    $formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+
+    foreach ($formats as $format) {
+        $dt = DateTime::createFromFormat($format, $qdate);
+        if ($dt instanceof DateTime) {
+            $qdate = $dt->format('Y-m-d');
+            break;
+        }
+    }
+
+} else {
+
+    $qdate = date('Y-m-d');
+
+}
 
 $gst_type = isset($_POST['gst_type'])
 ? $_POST['gst_type']
@@ -1261,12 +1277,13 @@ body{
 <div class="col-md-1 d-flex flex-column justify-content-center" style="min-width:180px;">
     <label>Invoice Date</label>
 
-    <input
-        type="date"
-        name="invoice_date"
-        id="invoice_date"
-        class="form-control"
-        value="<?= date('Y-m-d'); ?>">
+<input
+    type="text"
+    name="invoice_date"
+    id="invoice_date"
+    class="form-control"
+    value="<?= date('d/M/Y'); ?>"
+    autocomplete="off">
 </div>
 
  
@@ -2021,12 +2038,12 @@ document.querySelectorAll("#billBody tr").forEach(r=>{
    calculate(r);
 });
 
-$(function(){
+document.addEventListener("DOMContentLoaded", function () {
 
-    $("#invoice_date").datepicker({
-        dateFormat: "dd-mm-yy",
-        changeMonth: true,
-        changeYear: true
+    flatpickr("#invoice_date", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
     });
 
 });
