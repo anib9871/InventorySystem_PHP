@@ -85,7 +85,8 @@ $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 $pay_q = "
 SELECT
 payment_mode,
-SUM(payment_amount) as total_amount
+MAX(payment_date) AS payment_date,
+SUM(payment_amount) AS total_amount
 FROM supplier_payment
 WHERE DATE(payment_date)
 BETWEEN '{$from}' AND '{$to}'
@@ -674,36 +675,44 @@ $supplier_list = find_by_sql("SELECT id,supplier_name FROM supplier_master ORDER
 <div class="s-lbl">Payment &mdash; Mode Wise</div>
 
 <table class="s-mode-tbl" style="margin-top:3px;">
-    <tr style="opacity:.5;">
-        <td style="font-size:8px; text-transform:uppercase;">Mode</td>
-        <td style="font-size:8px; text-transform:uppercase;">Amount</td>
-    </tr>
+<tr style="opacity:.5;">
+    <td style="font-size:8px;text-transform:uppercase;">Mode</td>
+    <td style="font-size:8px;text-transform:uppercase;">Date</td>
+    <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amount</td>
+</tr>
 
-    <?php foreach ($payments as $pay): ?>
-    <tr>
-        <td><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-        <td>&#8377; <?= number_format($pay['total_amount'],2) ?></td>
-    </tr>
-    <?php endforeach; ?>
+<?php foreach ($payments as $pay): ?>
+<tr>
 
-    <tr class="grand">
-        <td>Grand Total</td>
-        <td>&#8377; <?= number_format($total_collection,2) ?></td>
-    </tr>
+    <td>
+        <?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?>
+    </td>
+
+    <td>
+        <?= date('d/M/Y', strtotime($pay['payment_date'])) ?>
+    </td>
+
+    <td style="text-align:right;">
+        &#8377; <?= number_format($pay['total_amount'],2) ?>
+    </td>
+
+</tr>
+<?php endforeach; ?>
+
+<tr class="grand">
+    <td colspan="2">Grand Total</td>
+
+    <td style="text-align:right;">
+        &#8377; <?= number_format($total_collection,2) ?>
+    </td>
+</tr>
 </table>
 
 <?php } else { ?>
 
-<div class="s-lbl">Collected</div>
+<div class="s-lbl">Product Wise Sale</div>
 <div class="s-big">
-    ₹ <?= number_format($total_collection,2) ?>
-</div>
-
-<div class="s-div"></div>
-
-<div class="s-lbl">Outstanding</div>
-<div class="s-big">
-    ₹ <?= number_format($total_sale - $total_collection,2) ?>
+    &#8377; <?= number_format($grand,2) ?>
 </div>
 
 <?php } ?>
