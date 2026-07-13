@@ -3,6 +3,35 @@
 $page_title = 'Payment Report';
 require_once('includes/load.php');
 
+/* ================= DATE FILTER ================= */
+
+$from = isset($_GET['from'])
+    ? $_GET['from']
+    : date('Y-m-01');
+
+$to = isset($_GET['to'])
+    ? $_GET['to']
+    : date('Y-m-d');
+
+
+$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $from);
+    if ($dt instanceof DateTime) {
+        $from = $dt->format('Y-m-d');
+        break;
+    }
+}
+
+foreach ($formats as $format) {
+    $dt = DateTime::createFromFormat($format, $to);
+    if ($dt instanceof DateTime) {
+        $to = $dt->format('Y-m-d');
+        break;
+    }
+}
+
 $reports = find_by_sql("
 
 SELECT
@@ -29,6 +58,8 @@ ON c.id = p.customer_id
 
 WHERE p.customer_id IS NOT NULL
 AND p.customer_id > 0
+AND DATE(p.payment_date)
+BETWEEN '{$from}' AND '{$to}'
 
 ORDER BY p.id DESC
 
@@ -64,17 +95,49 @@ isset($_SESSION['combined_mode'])
 name="reportType"
 value="customer"
 checked>
-
 Customer Payments
 </label>
 
-<label class="radio-inline">
+<label class="radio-inline" style="margin-left:15px;">
 <input type="radio"
 name="reportType"
 value="supplier">
-
 Supplier Payments
 </label>
+
+<hr style="margin:15px 0;">
+
+<div class="row">
+
+    <div class="col-md-2">
+        <label>From Date</label>
+        <input
+        type="text"
+        id="fromDate"
+        class="form-control"
+        value="<?= date('d/M/Y', strtotime($from)); ?>"
+        autocomplete="off">
+    </div>
+
+    <div class="col-md-2">
+        <label>To Date</label>
+        <input
+        type="text"
+        id="toDate"
+        class="form-control"
+        value="<?= date('d/M/Y', strtotime($to)); ?>"
+        autocomplete="off">
+    </div>
+<div class="col-md-2">
+<label>&nbsp;</label>
+<button type="button"
+class="btn btn-primary btn-block"
+onclick="filterReport()">
+Generate Report
+</button>
+</div>
+
+</div>
 
 </div>
 </div>
@@ -313,6 +376,9 @@ ON sl.ledger_id = sp.ledger_id
 
 LEFT JOIN supplier_master sm
 ON sm.id = sp.supplier_id
+
+WHERE DATE(sp.payment_date)
+BETWEEN '{$from}' AND '{$to}'
 
 ORDER BY sp.payment_id DESC
 
@@ -607,6 +673,38 @@ document.getElementById(
 
 <?php endif; ?>
 
+<script>
+
+function filterReport(){
+
+    let from = document.getElementById("fromDate").value;
+    let to   = document.getElementById("toDate").value;
+
+    window.location =
+        "?from=" + from + "&to=" + to;
+
+}
+
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    flatpickr("#fromDate", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
+    });
+
+    flatpickr("#toDate", {
+        dateFormat: "d/M/Y",
+        allowInput: false,
+        disableMobile: true
+    });
+
+});
+</script>
 
 
 <?php include_once('layouts/footer.php'); ?>
