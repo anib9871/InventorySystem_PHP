@@ -444,7 +444,9 @@ if($type=='supplier'){
 <th colspan="4" class="text-right">Total</th>
 <th><?= number_format($totalDebit,2); ?></th>
 <th><?= number_format($totalCredit,2); ?></th>
-<th><?= number_format($balance,2); ?></th>
+<th style="color:<?= ($balance > 0) ? 'red' : 'black'; ?>;font-weight:bold;">
+    <?= number_format($balance,2); ?>
+</th>
 </tr>
 </tfoot>
 
