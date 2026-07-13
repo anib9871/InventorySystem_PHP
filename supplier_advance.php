@@ -189,29 +189,31 @@ $edit_data = $edit[0];
 
     /* ================= ADVANCE LIST ================= */
 
-    $advances = find_by_sql("
+$advances = find_by_sql("
 
-    SELECT
+SELECT
 
-    sl.*,
-    sm.supplier_name,
+sl.*,
+sm.supplier_name,
 
-    sp.payment_mode,
-    sp.reference_no
+sp.payment_mode,
+sp.reference_no
 
-    FROM supplier_ledger sl
+FROM supplier_ledger sl
 
-    LEFT JOIN supplier_master sm
-    ON sm.id = sl.supplier_id
+LEFT JOIN supplier_master sm
+ON sm.id = sl.supplier_id
 
-    LEFT JOIN supplier_payment sp
-    ON sp.ledger_id = sl.ledger_id
+LEFT JOIN supplier_payment sp
+ON sp.ledger_id = sl.ledger_id
 
-    WHERE sl.entry_type='ADVANCE'
+WHERE
+    sl.entry_type='ADVANCE'
+    AND sl.balance_amount < 0
 
-    ORDER BY sl.ledger_id DESC
+ORDER BY sl.ledger_id DESC
 
-    ");
+");
 
     include_once('layouts/header.php');
 
