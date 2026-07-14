@@ -75,34 +75,30 @@ function suggetion() {
     });
   }
 
-  $(document).ready(function() {
+$(document).ready(function() {
 
     //tooltip
     $('[data-toggle="tooltip"]').tooltip();
 
-    $('.submenu-toggle').click(function () {
-       $(this).parent().children('ul.submenu').toggle(200);
-    });
     //suggetion for finding product names
     suggetion();
-    // Callculate total ammont
+
+    // Calculate total amount
     total();
 
-    $('.datepicker')
-        .datepicker({
-            format: 'yyyy-mm-dd',
-            todayHighlight: true,
-            autoclose: true
-        });
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        todayHighlight: true,
+        autoclose: true
+    });
 
-         // 👇 BOM LOGIC YAHI
-  $('#is_bom').on('change', function () {
-    if ($(this).is(':checked')) {
-      $('#bom_section').slideDown(200);
-    } else {
-      $('#bom_section').slideUp(200);
-    }
-  });
+    $('#is_bom').on('change', function () {
+        if ($(this).is(':checked')) {
+            $('#bom_section').slideDown(200);
+        } else {
+            $('#bom_section').slideUp(200);
+        }
+    });
 
 });
 
