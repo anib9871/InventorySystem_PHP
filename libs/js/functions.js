@@ -59,7 +59,9 @@ function suggetion() {
                 //console.log(data);
                 $('#product_info').html(data).show();
                 total();
-                $('.datePicker').datepicker('update', new Date());
+               if ($.fn.datepicker) {
+    $('.datePicker').datepicker('update', new Date());
+}
 
             }).fail(function() {
                 $('#product_info').html(data).show();
@@ -86,11 +88,13 @@ $(document).ready(function() {
     // Calculate total amount
     total();
 
+if ($.fn.datepicker) {
     $('.datepicker').datepicker({
         format: 'yyyy-mm-dd',
         todayHighlight: true,
         autoclose: true
     });
+}
 
     $('#is_bom').on('change', function () {
         if ($(this).is(':checked')) {
