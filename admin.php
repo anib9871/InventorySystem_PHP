@@ -172,7 +172,7 @@ GROUP BY p.payment_mode
     background:linear-gradient(135deg,#a10805,#7f1d1d);
     border:none;
     border-radius:14px;
-    padding:18px;
+    padding:14px 16px;      /* Pehle 18px tha */
     box-shadow:0 10px 30px rgba(0,0,0,0.12);
     overflow:hidden;
     position:relative;
@@ -181,7 +181,7 @@ GROUP BY p.payment_mode
     justify-content:space-between;
     align-items:center;
 
-    min-height:145px;
+    min-height:120px;        /* Pehle 145px tha */
 }
 .rev-left{
     flex:1;
@@ -189,7 +189,8 @@ GROUP BY p.payment_mode
 }
 
 .rev-right{
-    min-width:180px;
+    min-width:120px;
+    max-width:120px;
     text-align:right;
 }
 
@@ -218,24 +219,24 @@ GROUP BY p.payment_mode
 }
 
 .rev-label{
-    font-size:11px;
-    letter-spacing:2px;
+    font-size:10px;
+    letter-spacing:1px;
     color:#fff;
-    margin-bottom:12px;
+    margin-bottom:8px;
     font-weight:600;
 }
 
 .rev-value{
-    font-size:34px;
-    font-weight:800;
+    font-size:26px;
+    font-weight:700;
     color:#fff;
     line-height:1;
 }
 
 .rev-growth{
-    margin-top:12px;
+    margin-top:8px;
     color:#fff;
-    font-size:13px;
+    font-size:11px;
     font-weight:600;
 }
 
