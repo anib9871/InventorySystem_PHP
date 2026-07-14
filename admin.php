@@ -194,15 +194,17 @@ GROUP BY p.payment_mode
 }
 
 .rev-mode{
-    font-size:12px;
+    font-size:10px;          /* Pehle 12px tha */
     color:#fff;
-    margin-bottom:5px;
+    margin-bottom:4px;
+    line-height:1.3;
     white-space:normal;
     word-break:break-word;
 }
 
 .rev-mode span{
-    font-weight:700;
+    font-size:10px;
+    font-weight:600;
 }
 
 .rev-card:before{
