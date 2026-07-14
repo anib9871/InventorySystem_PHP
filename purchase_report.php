@@ -38,8 +38,8 @@ foreach ($formats as $format) {
 $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
-/* ── CENTER  (admin only) ── */
-$_id = $_POST['_id'] ?? $_GET['_id'] ?? '';
+/* ── CENTER FILTER (admin only) ── */
+$filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
@@ -66,7 +66,7 @@ AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_)) $sale_query .= " AND center_id = '{$center_}'";
+elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
 
 if($report_type=='product' && !empty($filter_id)){
     $sale_query .= " AND t.product_id='{$filter_id}'";
@@ -376,6 +376,34 @@ if (!$is_pdf) include_once('layouts/header.php');
 .s-mode-tbl td      { font-size: 10px; color: #fff; padding: 2px 2px; }
 .s-mode-tbl td:last-child { text-align: right; }
 .s-mode-tbl .grand td { border-top: 1px solid rgba(255,255,255,.22); padding-top: 4px; font-weight: 700; font-size: 10px; }
+
+
+.payment-scroll{
+    max-height:95px;
+    overflow-y:auto;
+    margin-top:3px;
+    padding-right:4px;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.35) transparent;
+}
+
+/* Chrome / Edge */
+.payment-scroll::-webkit-scrollbar{
+    width:4px;
+}
+
+.payment-scroll::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+.payment-scroll::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.30);
+    border-radius:20px;
+}
+
+.payment-scroll::-webkit-scrollbar-thumb:hover{
+    background:rgba(255,255,255,.55);
+}
 
 /* ── Chart Cards ── */
 .rpt-card {
@@ -689,7 +717,9 @@ ORDER BY supplier_name
 
 <div class="s-lbl">Payment &mdash; Mode Wise</div>
 
-<table class="s-mode-tbl" style="margin-top:3px;">
+<div class="payment-scroll">
+
+<table class="s-mode-tbl">
 <tr style="opacity:.5;">
     <td style="font-size:8px;text-transform:uppercase;">Mode</td>
     <td style="font-size:8px;text-transform:uppercase;">Date</td>
@@ -722,6 +752,8 @@ ORDER BY supplier_name
     </td>
 </tr>
 </table>
+
+</div>
 
 <?php } else { ?>
 
