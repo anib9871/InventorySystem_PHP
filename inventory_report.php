@@ -383,6 +383,33 @@ if (!$is_pdf) include_once('layouts/header.php');
 .s-mode-tbl td:last-child { text-align: right; }
 .s-mode-tbl .grand td { border-top: 1px solid rgba(255,255,255,.22); padding-top: 4px; font-weight: 700; font-size: 10px; }
 
+.payment-scroll{
+    max-height:95px;
+    overflow-y:auto;
+    margin-top:3px;
+    padding-right:4px;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.35) transparent;
+}
+
+/* Chrome / Edge */
+.payment-scroll::-webkit-scrollbar{
+    width:4px;
+}
+
+.payment-scroll::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+.payment-scroll::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.30);
+    border-radius:20px;
+}
+
+.payment-scroll::-webkit-scrollbar-thumb:hover{
+    background:rgba(255,255,255,.55);
+}
+
 /* ── Chart Cards ── */
 .rpt-card {
   background: #fff; border-radius: 8px; padding: 10px 12px;
@@ -686,9 +713,9 @@ Generate Report
       <div class="s-div"></div>
 <?php if($view_type=='customer'){ ?>
 
-<div class="s-lbl">Collection &mdash; Mode Wise</div>
+<div class="payment-scroll">
 
-<table class="s-mode-tbl" style="margin-top:3px;">
+<table class="s-mode-tbl">
 
 <tr style="opacity:.5;">
 <td style="font-size:8px;">Mode</td>
@@ -720,6 +747,8 @@ Generate Report
 </tr>
 
 </table>
+
+</div>
 
 <?php } else { ?>
 
