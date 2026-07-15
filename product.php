@@ -499,33 +499,52 @@ Clear
 document.getElementById("product_title").focus();
 
 /* duplicate check */
-let title=document.getElementById("product_title");
-let saveBtn=document.getElementById("save_btn");
+let title = document.getElementById("product_title");
+let saveBtn = document.getElementById("save_btn");
 
-title.addEventListener("keyup",()=>{
- let name=title.value.trim();
- if(name===""){ saveBtn.disabled=false; return; }
+title.addEventListener("input", function () {
 
- fetch("product.php?check_name="+name)
- .then(r=>r.text())
- .then(d=>{
-   if(d.includes("exists")){
-     saveBtn.disabled=true;
-     document.getElementById("name_status").innerHTML="❌ Already exists";
-   } else {
-     saveBtn.disabled=false;
-     document.getElementById("name_status").innerHTML="✔ Available";
-   }
- })
+    let name = this.value.trim();
+
+    if(name === ""){
+        saveBtn.disabled = false;
+        document.getElementById("name_status").innerHTML = "";
+        return;
+    }
+
+    fetch("product.php?check_name=" + encodeURIComponent(name))
+    .then(r => r.text())
+    .then(d => {
+
+        d = d.trim();
+
+        if(d === "exists"){
+            saveBtn.disabled = true;
+            document.getElementById("name_status").innerHTML = "❌ Already exists";
+        }else{
+            saveBtn.disabled = false;
+            document.getElementById("name_status").innerHTML = "✔ Available";
+        }
+
+    });
+
 });
 
 
 /* search filter */
-document.getElementById("search").addEventListener("keyup", function() {
- let val = this.value.toLowerCase();
- document.querySelectorAll("#productTable tr").forEach(function(r){
-   r.style.display = r.textContent.toLowerCase().includes(val) ? "" : "none";
- });
+document.getElementById("search").addEventListener("keyup", function () {
+
+    let val = this.value.toLowerCase();
+
+    document.querySelectorAll("#productTable tbody tr").forEach(function(row){
+
+        row.style.display =
+            row.textContent.toLowerCase().includes(val)
+            ? ""
+            : "none";
+
+    });
+
 });
 
 <?php if(isset($_SESSION['swal_success'])): ?>
