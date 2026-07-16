@@ -235,7 +235,13 @@ exit;
 
 <div class="form-group">
 <label>Quantity</label>
-<input type="number" name="qty" step="0.01" class="form-control" required>
+<input type="number"
+       name="qty"
+       class="form-control"
+       min="1"
+       value="1"
+       step="1"
+       required>
 </div>
 
 <br>
