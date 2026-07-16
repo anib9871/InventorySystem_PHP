@@ -86,6 +86,18 @@ if($type == 'customer'){
     $new_due = $invoice['bill_amount'] - $new_paid;
 }
 
+// Calculate Due
+if($type == 'customer'){
+    $new_due = round($invoice['net_total'] - $new_paid, 2);
+}else{
+    $new_due = round($invoice['bill_amount'] - $new_paid, 2);
+}
+
+// Round Off Adjustment
+if(abs($new_due) <= 0.21){
+    $new_due = 0;
+}
+
 if($new_due <= 0){
 
     $new_due = 0;
