@@ -66,6 +66,30 @@ $products = find_all('products');
     }
 }
 
+#stockTable th{
+    cursor:pointer;
+    position:relative;
+    padding-right:22px;
+}
+
+#stockTable th:after{
+    font-family:FontAwesome;
+    content:"\f0dc";   /* sort */
+    position:absolute;
+    right:8px;
+    color:#c5c5c5;
+}
+
+#stockTable th.asc:after{
+    content:"\f0de";   /* sort-up */
+    color:#007bff;
+}
+
+#stockTable th.desc:after{
+    content:"\f0dd";   /* sort-down */
+    color:#007bff;
+}
+
 </style>
 
 <div class="panel panel-default">
@@ -142,17 +166,13 @@ ORDER BY p.name ASC
 <table class="table table-bordered table-striped" id="stockTable">
 
 <thead>
-
 <tr style="background:#f2f2f2;">
-
-<th>#</th>
-<th>Product Name</th>
-<th>Current Stock</th>
-<th>Reorder Level</th>
-<th>Status</th>
-
+    <th style="cursor:pointer;">#</th>
+    <th style="cursor:pointer;">Product Name</th>
+    <th style="cursor:pointer;">Current Stock</th>
+    <th style="cursor:pointer;">Reorder Level</th>
+    <th style="cursor:pointer;">Status</th>
 </tr>
-
 </thead>
 
 <tbody>
@@ -237,6 +257,61 @@ document.getElementById("stockSearch").addEventListener("keyup", function () {
     });
 
 });
+
+
+const table = document.getElementById("stockTable");
+const headers = table.querySelectorAll("th");
+
+headers.forEach((header, index) => {
+
+    let asc = true;
+
+    header.addEventListener("click", function () {
+
+        // Sab headers se arrow class hata do
+        headers.forEach(h=>{
+            if(h!==header){
+                h.classList.remove("asc","desc");
+            }
+        });
+
+        const tbody = table.querySelector("tbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+
+        rows.sort(function(a,b){
+
+            let x = a.cells[index].innerText.trim();
+            let y = b.cells[index].innerText.trim();
+
+            if(!isNaN(parseFloat(x)) && !isNaN(parseFloat(y))){
+                return asc
+                    ? parseFloat(x)-parseFloat(y)
+                    : parseFloat(y)-parseFloat(x);
+            }
+
+            return asc
+                ? x.localeCompare(y)
+                : y.localeCompare(x);
+
+        });
+
+        rows.forEach(row=>tbody.appendChild(row));
+
+        if(asc){
+            header.classList.remove("desc");
+            header.classList.add("asc");
+        }else{
+            header.classList.remove("asc");
+            header.classList.add("desc");
+        }
+
+        asc=!asc;
+
+    });
+
+});
+
+
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
