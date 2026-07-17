@@ -233,11 +233,38 @@ h1, h2, h3{
 
 <body>
 
-<div class="no-print" style="width:900px;margin:auto;">
-    <button onclick="window.print()" 
-        style="padding:6px 15px;cursor:pointer;">
+<div class="no-print" style="width:900px;margin:15px auto;display:flex;justify-content:space-between;align-items:center;">
+
+    <div>
+
+        <a href="quotation_create.php"
+           style="padding:6px 15px;
+                  border:1px solid #000;
+                  background:#f5f5f5;
+                  text-decoration:none;
+                  color:#000;
+                  border-radius:3px;
+                  margin-right:8px;">
+            ← Back to Create Quotation
+        </a>
+
+        <a href="quotation_list.php"
+           style="padding:6px 15px;
+                  border:1px solid #000;
+                  background:#f5f5f5;
+                  text-decoration:none;
+                  color:#000;
+                  border-radius:3px;">
+            ← Back to Quotation List
+        </a>
+
+    </div>
+
+    <button onclick="window.print()"
+            style="padding:6px 15px;cursor:pointer;">
         🖨 Print Quotation
     </button>
+
 </div>
 
 <div class="wrapper">
