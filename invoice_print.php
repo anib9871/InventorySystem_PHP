@@ -233,20 +233,35 @@ h1, h2, h3{
 
 <body>
 
-<div class="no-print" style="width:900px;margin:15px auto; display:flex; justify-content:space-between;">
+<div class="no-print" style="width:900px;margin:15px auto;display:flex;justify-content:space-between;align-items:center;">
 
-    <a href="invoice_list.php"
-       style="padding:6px 15px;
-              border:1px solid #000;
-              background:#f5f5f5;
-              text-decoration:none;
-              color:#000;
-              border-radius:3px;">
-        ← Back to Invoice List
-    </a>
+    <div>
+
+        <a href="invoice_create.php"
+           style="padding:6px 15px;
+                  border:1px solid #000;
+                  background:#f5f5f5;
+                  text-decoration:none;
+                  color:#000;
+                  border-radius:3px;
+                  margin-right:8px;">
+            ← Back to Create Invoice
+        </a>
+
+        <a href="invoice_list.php"
+           style="padding:6px 15px;
+                  border:1px solid #000;
+                  background:#f5f5f5;
+                  text-decoration:none;
+                  color:#000;
+                  border-radius:3px;">
+            ← Back to Invoice List
+        </a>
+
+    </div>
 
     <button onclick="printInvoice()"
-        style="padding:6px 15px;cursor:pointer;">
+            style="padding:6px 15px;cursor:pointer;">
         🖨 Print Invoice
     </button>
 
