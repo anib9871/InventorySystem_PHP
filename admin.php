@@ -16,8 +16,14 @@ LEFT JOIN master_center mc
 ON mc.center_id = t.center_id
 
 WHERE t.transaction_type = 2
-AND t.bill_indent_no IS NOT NULL
-AND t.bill_indent_no <> ''
+AND t.sale_net > 0
+AND t.bill_indent_no NOT LIKE 'MFG%'
+AND EXISTS (
+    SELECT 1
+    FROM invoice i
+    WHERE i.invoice_no = t.bill_indent_no
+    AND i.customer_id IS NOT NULL
+)
 
 GROUP BY YEAR(t.entry_date), MONTH(t.entry_date)
 
@@ -55,9 +61,14 @@ LEFT JOIN products p
 ON p.id = t.product_id
 
 WHERE t.transaction_type = 2
-AND t.bill_indent_no IS NOT NULL
-AND t.bill_indent_no <> ''
-
+AND t.sale_net > 0
+AND t.bill_indent_no NOT LIKE 'MFG%'
+AND EXISTS (
+    SELECT 1
+    FROM invoice i
+    WHERE i.invoice_no = t.bill_indent_no
+    AND i.customer_id IS NOT NULL
+)
 AND MONTH(t.entry_date)=MONTH(CURDATE())
 AND YEAR(t.entry_date)=YEAR(CURDATE())
 
