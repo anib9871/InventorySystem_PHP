@@ -237,7 +237,7 @@ h1, h2, h3{
 
     <div>
 
-        <a href="quotation_create.php"
+        <a href="create_quotation.php"
            style="padding:6px 15px;
                   border:1px solid #000;
                   background:#f5f5f5;
