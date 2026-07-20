@@ -241,7 +241,10 @@ data-code="<?php echo $s['state_code']; ?>"
 value="<?php echo $edit ? $edit['state_code'] : ''; ?>"
 placeholder="State Code" readonly><br>
 
-<input type="text" name="gst_no" class="form-control"
+<input type="text"
+id="gst_no"
+name="gst_no"
+class="form-control"
 value="<?php echo $edit ? $edit['gst_no'] : ''; ?>"
 placeholder="GST Number"><br>
 
@@ -372,6 +375,15 @@ document.getElementById("search").addEventListener("keyup", function(){
     row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
   });
 });
+
+/* GST Auto Uppercase */
+document.getElementById("gst_no").addEventListener("input", function () {
+    this.value = this.value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 15);
+});
+
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
