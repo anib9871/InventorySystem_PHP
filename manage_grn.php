@@ -5,26 +5,18 @@ require_once('includes/load.php');
 $grn_list = find_by_sql("
 
 SELECT
-tm.bill_indent_no,
-MAX(tm.bill_indent_date) as bill_indent_date,
-
-(
-SUM(tm.net_price)
-+
-IFNULL(
-(
-SELECT SUM(total_amount)
-FROM shipping s
-WHERE s.bill_no = tm.bill_indent_no
-),0)
-) as total,
-
-MAX(s.supplier_name) as supplier_name
+    tm.bill_indent_no,
+    MAX(tm.bill_indent_date) AS bill_indent_date,
+    MAX(sl.bill_amount) AS total,
+    MAX(s.supplier_name) AS supplier_name
 
 FROM transaction_master tm
 
 LEFT JOIN supplier_master s
-ON s.id = tm.supplier_id
+    ON s.id = tm.supplier_id
+
+LEFT JOIN supplier_ledger sl
+    ON sl.bill_no = tm.bill_indent_no
 
 WHERE tm.transaction_type = 1
 AND tm.from_dept = 'SUPPLIER'
