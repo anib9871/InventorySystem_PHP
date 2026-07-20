@@ -262,6 +262,13 @@ document.getElementById("search").addEventListener("keyup", function(){
   });
 });
 
+/* GST Auto Uppercase */
+document.getElementById("gst").addEventListener("input", function () {
+    this.value = this.value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 15);
+});
 
 </script>
 
