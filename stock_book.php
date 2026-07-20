@@ -132,21 +132,21 @@ SELECT
     p.name,
     p.reorder_level,
 
-    SUM(
-        CASE 
-        WHEN t.transaction_type = 1 
-        THEN t.quantity 
-        ELSE 0 
-        END
-    ) as total_in,
+SUM(
+    CASE
+        WHEN t.transaction_type IN (1,4)
+        THEN t.quantity
+        ELSE 0
+    END
+) AS total_in,
 
-    SUM(
-        CASE 
-        WHEN t.transaction_type = 2 
-        THEN t.quantity 
-        ELSE 0 
-        END
-    ) as total_out
+SUM(
+    CASE
+        WHEN t.transaction_type IN (2,3,5)
+        THEN t.quantity
+        ELSE 0
+    END
+) AS total_out
 
 FROM products p
 
@@ -155,7 +155,10 @@ ON p.id = t.product_id
 
 WHERE p.type =1
 
-GROUP BY p.id
+GROUP BY
+    p.id,
+    p.name,
+    p.reorder_level
 
 ORDER BY p.name ASC
 
