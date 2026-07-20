@@ -311,6 +311,15 @@ if (is_array($charges)) {
   }
 }
 
+$round_off = isset($_POST['round_off']) ? (int)$_POST['round_off'] : 0;
+
+
+if ($round_off == 1) {
+    $grand_total = round($grand_total);
+} else {
+    $grand_total = round($grand_total, 2);
+}
+
 if (is_array($payments)) {
 
 if (is_array($payments)) {
@@ -648,6 +657,8 @@ z-index:99;
 </style>
 
 <?php if(isset($_GET['created'])){ ?>
+
+
 <script>
 Swal.fire({
     icon: 'success',
@@ -1043,6 +1054,8 @@ readonly>
 <!-- RIGHT : ITEM LIST + PAYMENT -->
 <div class="col-md-12">
 <form method="post" id="grnForm">
+
+<input type="hidden" name="round_off" id="round_off" value="0">
 
 <input type="hidden" name="charges_json" id="charges_json">
 
@@ -1529,9 +1542,10 @@ class="form-control">
 <label>Amount</label>
 
 <input
-type="number"
-id="modal_charge_amount"
-class="form-control">
+    type="text"
+    inputmode="decimal"
+    id="modal_charge_amount"
+    class="form-control">
 
 <br>
 
@@ -1599,6 +1613,8 @@ Add Charge
 </form>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 
 <?php if($edit_mode){ ?>
@@ -2049,6 +2065,8 @@ let finalTotal = itemTotal + chargeTotal;
 let roundChecked =
 document.getElementById("roundOffToggle").checked;
 
+document.getElementById("round_off").value = roundChecked ? 1 : 0;
+
 if(roundChecked){
 
 finalTotal = Math.round(finalTotal);
@@ -2343,7 +2361,12 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("grnForm")
 .addEventListener("submit", function(e){
 
-collectPayments();
+    updateGrandTotal();
+
+    document.getElementById("round_off").value =
+        document.getElementById("roundOffToggle").checked ? 1 : 0;
+
+    collectPayments();
 
 /* ================= REQUIRED FIELD VALIDATION ================= */
 
