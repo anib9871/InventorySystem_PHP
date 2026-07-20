@@ -23,7 +23,8 @@ if(isset($_GET['edit'])){
 $raw_products = find_by_sql("
 SELECT id,name,buy_price,gst_id,buy_type
 FROM products
-WHERE is_bom='0' OR id='{$edit_pid}'
+WHERE (is_bom = 0 AND type = 1)
+   OR id = '{$edit_pid}'
 ORDER BY name ASC
 ");
 
