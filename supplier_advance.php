@@ -35,7 +35,7 @@ $payment_date = $db->escape($payment_date);
 
 if($supplier_id <= 0 || $amount <= 0){
 
-$session->msg('d','Invalid Details');
+$_SESSION['swal_error'] = 'Invalid Details';
 redirect('supplier_advance.php');
 
 }
@@ -96,7 +96,7 @@ NOW()
 
 ");
 
-$session->msg('s','Advance Added Successfully');
+$_SESSION['swal_success'] = 'Advance Added Successfully';
 redirect('supplier_advance.php');
 
 }
@@ -146,7 +146,7 @@ reference_no='{$ref}'
 WHERE ledger_id='{$ledger_id}'
 ");
 
-$session->msg('s','Advance Updated Successfully');
+$_SESSION['swal_success'] = 'Advance Updated Successfully';
 redirect('supplier_advance.php');
 
 }
@@ -223,25 +223,23 @@ ORDER BY sl.ledger_id DESC
 
     <div class="col-md-12">
 
-    <?php echo display_msg($msg); ?>
-
     </div>
 
     </div>
 
 <div class="row">
 
-<!-- ================= LEFT ================= -->
-
-<div class="col-md-4">
+<div class="col-md-12">
 
 <div class="panel panel-default">
 
-<div class="panel-heading">
+<div class="panel-heading text-center">
 
 <strong>
 
-Add Supplier Advance
+<i class="fa fa-money text-primary"></i>
+
+SUPPLIER ADVANCE
 
 </strong>
 
@@ -251,9 +249,13 @@ Add Supplier Advance
 
 <form method="post">
 
+<div class="row">
+
 <input type="hidden"
 name="ledger_id"
 value="<?= $edit_data['ledger_id'] ?? ''; ?>">
+
+<div class="col-md-4">
 
 <div class="form-group">
 
@@ -284,6 +286,9 @@ Select Supplier
 </select>
 
 </div>
+</div>
+
+<div class="col-md-4">
 
 <div class="form-group">
 
@@ -299,6 +304,9 @@ autocomplete="off"
 required>
 
 </div>
+</div>
+
+<div class="col-md-4">
 
 <div class="form-group">
 
@@ -314,6 +322,9 @@ value="<?= $edit_data['paid_amount'] ?? ''; ?>"
 required>
 
 </div>
+</div>
+
+<div class="col-md-4">
 
 <div class="form-group">
 
@@ -345,6 +356,10 @@ Select Mode
 
 </div>
 
+</div>
+
+<div class="col-md-4">
+
 <div class="form-group">
 
 <label>Reference No</label>
@@ -357,6 +372,10 @@ value="<?= $edit_data['reference_no'] ?? ''; ?>">
 
 </div>
 
+</div>
+
+<div class="col-md-12">
+
 <div class="form-group">
 
 <label>Remarks</label>
@@ -367,15 +386,23 @@ class="form-control"
 rows="3"><?= $edit_data['remarks'] ?? ''; ?></textarea>
 
 </div>
+</div>
+
+<div class="col-md-12 text-right">
 
 <button
 type="submit"
 name="<?= $edit_data ? 'update_advance' : 'save_advance'; ?>"
-class="btn btn-success btn-block">
+class="btn btn-success"
+style="min-width:180px;">
 
 <?= $edit_data ? 'Update Advance' : 'Save Advance'; ?>
 
 </button>
+
+</div> <!-- button column -->
+
+</div> <!-- row -->
 
 </form>
 
@@ -385,17 +412,17 @@ class="btn btn-success btn-block">
 
 </div>
 
-<!-- ================= RIGHT ================= -->
+<div class="row">
 
-<div class="col-md-8">
+<div class="col-md-12">
 
 <div class="panel panel-default">
 
 <div class="panel-heading">
 
-<strong>
+<strong style="font-size:22px;">
 
-Supplier Advance History
+SUPPLIER ADVANCE HISTORY
 
 </strong>
 
@@ -403,20 +430,29 @@ Supplier Advance History
 
 <div class="panel-body">
 
-<input
-type="text"
-id="searchAdvance"
-class="form-control"
-placeholder="Search Supplier">
+<div class="col-md-4" style="padding-left:0;">
+    <div class="input-group">
+        <span class="input-group-addon">
+            <i class="fa fa-search"></i>
+        </span>
+        <input
+            type="text"
+            id="searchAdvance"
+            class="form-control"
+            placeholder="Search Supplier...">
+    </div>
+</div>
+
+<div class="clearfix"></div>
+<br>
 
 <br>
 
 <div class="table-responsive">
 
-<table
-class="table table-bordered table-striped">
+<table class="table table-bordered table-hover" style="width:100%; margin-bottom:0;">
 
-<thead>
+<thead style="background:#1f2a44;color:#fff;">
 
 <tr>
 
@@ -440,22 +476,12 @@ class="table table-bordered table-striped">
 
 <td><?= $i+1; ?></td>
 
+<td><?= $a['supplier_name']; ?></td>
+
 <td>
-
-<?= $a['supplier_name']; ?>
-
-</td>
-
-<td style="
-color:green;
-font-weight:bold;
-">
-
-₹ <?= number_format(
-abs($a['balance_amount']),
-2
-); ?>
-
+    <span style="color:#008000;font-weight:600;">
+        ₹ <?= number_format(abs($a['balance_amount']),2); ?>
+    </span>
 </td>
 
 <td>
@@ -484,7 +510,8 @@ strtotime($a['bill_date'])
 <td>
 
 <a href="supplier_advance.php?edit=<?= $a['ledger_id']; ?>"
-class="btn btn-warning btn-xs">
+class="btn btn-warning btn-xs"
+style="font-weight:600;">
 
 Edit
 
@@ -549,6 +576,33 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
+<?php if(isset($_SESSION['swal_success'])): ?>
+
+Swal.fire({
+    icon: 'success',
+    title: '<?php echo $_SESSION['swal_success']; ?>',
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+});
+
+<?php unset($_SESSION['swal_success']); ?>
+<?php endif; ?>
+
+
+<?php if(isset($_SESSION['swal_error'])): ?>
+
+Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: '<?php echo $_SESSION['swal_error']; ?>',
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#d33'
+});
+
+<?php unset($_SESSION['swal_error']); ?>
+<?php endif; ?>
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
