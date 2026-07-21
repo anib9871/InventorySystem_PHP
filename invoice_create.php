@@ -652,11 +652,8 @@ payment_status = '$payment_status'
 WHERE id = '$qid'
 ");
 
-$debug[] = "Invoice Update : ".($update ? "SUCCESS" : "FAILED");
 
-if(!$update){
-    $debug[] = "DB Error : ".$db->error;
-}
+
 
 $check = find_by_sql("
 SELECT
