@@ -419,6 +419,28 @@ WHERE ledger_id = '{$adv['ledger_id']}'
 
 $remaining -= $currentAdvance;
 
+$db->query("
+INSERT INTO supplier_payment
+(
+    ledger_id,
+    supplier_id,
+    payment_date,
+    payment_amount,
+    payment_mode,
+    reference_no,
+    created_at
+)
+VALUES
+(
+    '$ledger_id',
+    '$supplier_id',
+    CURDATE(),
+    '$currentAdvance',
+    'ADVANCE',
+    'Advance Adjusted',
+    NOW()
+)");
+
 }else{
 
 $newBalance = -($currentAdvance - $remaining);
@@ -428,6 +450,30 @@ UPDATE supplier_ledger
 SET balance_amount = '$newBalance'
 WHERE ledger_id = '{$adv['ledger_id']}'
 ");
+
+$adjustAmount = $remaining;
+
+$db->query("
+INSERT INTO supplier_payment
+(
+    ledger_id,
+    supplier_id,
+    payment_date,
+    payment_amount,
+    payment_mode,
+    reference_no,
+    created_at
+)
+VALUES
+(
+    '$ledger_id',
+    '$supplier_id',
+    CURDATE(),
+    '$adjustAmount',
+    'ADVANCE',
+    'Advance Adjusted',
+    NOW()
+)");
 
 $remaining = 0;
 }
