@@ -652,19 +652,10 @@ payment_status = '$payment_status'
 WHERE id = '$qid'
 ");
 
-
-
-
-$check = find_by_sql("
-SELECT
-paid_amount,
-due_amount,
-payment_status
-FROM invoice
-WHERE id = '$qid'
-");
-
-$debug[] = "DB After Update : ".json_encode($check);
+/* 👇 YE CODE YAHI INSERT KARO */
+if(!$update){
+    throw new Exception("Invoice Update Failed : ".$db->error);
+}
 
 if($system == 'billing' && isset($_POST['payment_amount'])){
 
@@ -765,17 +756,6 @@ if($system == 'billing' && isset($_POST['payment_amount'])){
 }
 
 $db->query("COMMIT");  // 🔥 FINAL COMMIT
-
-$check2 = find_by_sql("
-SELECT
-paid_amount,
-due_amount,
-payment_status
-FROM invoice
-WHERE id = '$qid'
-");
-
-$debug[] = "DB After Commit : ".json_encode($check2);
 
 file_put_contents(
     __DIR__.'/invoice_debug.log',
