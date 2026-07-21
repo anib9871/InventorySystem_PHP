@@ -353,9 +353,56 @@ ORDER BY mode_name ASC
 ");
 
 include_once('layouts/header.php');
-
 ?>
 
+<style>
+
+body{
+    background:#f4f7fb;
+}
+
+.report-card{
+    background:#fff;
+    border:none;
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+    margin-bottom:20px;
+}
+
+.report-card .panel-heading{
+    background:#fff !important;
+    border:none !important;
+    padding:18px 22px 10px;
+}
+
+.report-card .panel-body{
+    padding:18px;
+}
+
+.table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.table thead th{
+    background:#111827 !important;
+    color:#fff !important;
+    border:none !important;
+}
+
+.table-responsive{
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid #e5e7eb;
+}
+
+.search-box{
+    height:40px;
+    border-radius:10px;
+}
+
+</style>
+
 <div class="row">
 
 <div class="col-md-12">
@@ -368,7 +415,7 @@ include_once('layouts/header.php');
 
 <div class="col-md-12">
 
-<div class="panel panel-default">
+<div class="report-card">
 
 <div class="panel-heading">
 
@@ -426,20 +473,45 @@ $total_due += $d['due_amount'];
 
 ?>
 
-<div class="alert alert-danger">
+<div style="
+background:#ffffff;
+border:1px solid #e5e7eb;
+border-left:5px solid #2563eb;
+border-radius:10px;
+padding:14px 18px;
+margin-bottom:18px;
+box-shadow:0 2px 8px rgba(0,0,0,.05);
+">
 
-<strong>
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+">
 
-Total Outstanding :
+<span style="
+font-size:15px;
+font-weight:600;
+color:#374151;
+">
+Total Outstanding
+</span>
+
+<span style="
+font-size:22px;
+font-weight:700;
+color:#2563eb;
+">
 ₹ <?= number_format($total_due,2); ?>
+</span>
 
-</strong>
+</div>
 
 </div>
 
 <input type="text"
 id="search"
-class="form-control"
+class="form-control search-box"
 placeholder="Search Customer / Invoice">
 
 <br>
