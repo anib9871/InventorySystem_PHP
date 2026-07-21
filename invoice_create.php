@@ -786,7 +786,10 @@ exit;
 // echo "<script>
 // window.location='invoice_list.php?print_id=".$qid."';
 // </script>";
-
+$row = find_by_sql("SELECT * FROM invoice WHERE id='$qid'");
+echo "<pre>";
+print_r($row);
+exit;
 header("Location: invoice_print.php?id=".$qid);
 exit;
 }
