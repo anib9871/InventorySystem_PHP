@@ -81,62 +81,261 @@ isset($_SESSION['combined_mode'])
 
 <?php include_once('layouts/header.php'); ?>
 
+<style>
+
+body{
+    background:#f4f7fb;
+}
+
+/* ---------- CARD ---------- */
+
+.report-card{
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+    border:none;
+    margin-bottom:20px;
+}
+
+.report-card .panel-heading{
+    background:#fff !important;
+    border:none !important;
+    padding:18px 22px 0;
+    font-size:18px;
+    font-weight:600;
+}
+
+.report-card .panel-body{
+    padding:12px 18px;
+}
+
+/* ---------- FILTER ---------- */
+
+.filter-box{
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,.06);
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.filter-box .form-control{
+    height:42px;
+    border-radius:10px;
+    border:1px solid #dfe6ee;
+    box-shadow:none;
+}
+
+.filter-box .btn{
+    height:42px;
+    border-radius:10px;
+    font-weight:600;
+}
+
+/* ---------- SEARCH ---------- */
+
+.search-box{
+    height:42px;
+    border-radius:10px;
+    border:1px solid #dfe6ee;
+    margin-bottom:15px;
+}
+
+/* ---------- TABLE ---------- */
+
+.table{
+    margin-bottom:0;
+}
+
+.table thead th{
+    background:#111827 !important;
+    color:#fff !important;
+    border:none !important;
+    padding:12px 10px !important;
+    font-size:13px;
+}
+
+.table tbody td{
+    padding:11px 10px;
+    vertical-align:middle !important;
+    font-size:13px;
+}
+
+.table tbody tr:hover{
+    background:#f8fbff;
+}
+
+/* ---------- BADGES ---------- */
+
+.label-success{
+    background:#16a34a !important;
+    border-radius:30px;
+    padding:6px 12px;
+}
+
+.label-warning{
+    background:#f59e0b !important;
+    border-radius:30px;
+    padding:6px 12px;
+}
+
+.label-danger{
+    background:#dc2626 !important;
+    border-radius:30px;
+    padding:6px 12px;
+}
+
+.label-info{
+    background:#0ea5e9 !important;
+    border-radius:30px;
+    padding:6px 12px;
+}
+
+/* ---------- TOTAL ---------- */
+
+tfoot{
+    background:#fafafa;
+}
+
+tfoot th{
+    font-size:15px;
+}
+
+/* ---------- PANEL REMOVE ---------- */
+
+.panel{
+    border:none;
+    box-shadow:none;
+    background:transparent;
+}
+
+.table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.table tbody tr{
+    transition:.2s;
+}
+
+.table tbody tr:hover{
+    transform:scale(1.002);
+}
+
+.table td{
+    border-color:#eef2f7 !important;
+}
+
+.table thead th:first-child{
+    border-top-left-radius:10px;
+}
+
+.table thead th:last-child{
+    border-top-right-radius:10px;
+}
+
+.panel-heading strong{
+    font-size:18px;
+    color:#111827;
+}
+
+.search-box:focus,
+.form-control:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+
+.report-card hr{
+    margin:10px 0 12px !important;
+}
+
+.report-card label{
+    margin-bottom:4px;
+    font-size:12px;
+    font-weight:600;
+    color:#555;
+}
+
+.report-card .radio-inline{
+    font-size:13px;
+    font-weight:500;
+    margin-bottom:0;
+}
+
+.report-card .form-control{
+    height:34px;
+    font-size:13px;
+    border-radius:6px;
+    padding:6px 10px;
+}
+
+.report-card .btn{
+    height:34px;
+    font-size:13px;
+    border-radius:6px;
+    padding:6px 14px;
+}
+
+</style>
+
 
 <?php if($is_inventory || $is_combined): ?>
 
 <div class="row">
 <div class="col-md-12">
 
-<div class="panel panel-default">
+<div class="report-card">
 <div class="panel-body">
 
-<label class="radio-inline">
-<input type="radio"
-name="reportType"
-value="customer"
-checked>
-Customer Payments
-</label>
+<div class="row" style="display:flex;align-items:center;min-height:40px;">
 
-<label class="radio-inline" style="margin-left:15px;">
-<input type="radio"
-name="reportType"
-value="supplier">
-Supplier Payments
-</label>
+<div class="col-md-2" style="display:flex;align-items:center;height:40px;">
+    <label class="radio-inline" style="margin:0;">
+        <input type="radio" name="reportType" value="customer" checked>
+        Customer
+    </label>
+</div>
 
-<hr style="margin:15px 0;">
+<div class="col-md-2" style="display:flex;align-items:center;height:40px;">
+    <label class="radio-inline" style="margin:0;">
+        <input type="radio" name="reportType" value="supplier">
+        Supplier
+    </label>
+</div>
 
-<div class="row">
+<div class="col-md-2" style="display:flex;align-items:center;">
+    <label style="margin:0 8px 0 0;white-space:nowrap;">
+        From Date
+    </label>
 
-    <div class="col-md-2">
-        <label>From Date</label>
-        <input
+    <input
         type="text"
         id="fromDate"
         class="form-control"
         value="<?= date('d/M/Y', strtotime($from)); ?>"
         autocomplete="off">
-    </div>
+</div>
 
-    <div class="col-md-2">
-        <label>To Date</label>
-        <input
+<div class="col-md-2" style="display:flex;align-items:center;">
+    <label style="margin:0 8px 0 0;white-space:nowrap;">
+        To Date
+    </label>
+
+    <input
         type="text"
         id="toDate"
         class="form-control"
         value="<?= date('d/M/Y', strtotime($to)); ?>"
         autocomplete="off">
-    </div>
-<div class="col-md-2">
-<label>&nbsp;</label>
-<button type="button"
-class="btn btn-primary btn-block"
-onclick="filterReport()">
-Generate Report
-</button>
 </div>
 
+<div class="col-md-4">
+    <button
+        type="button"
+        class="btn btn-primary btn-block"
+        onclick="filterReport()">
+        <i class="fa fa-search"></i> Generate Report
+    </button>
 </div>
 
 </div>
@@ -154,7 +353,7 @@ Generate Report
 <?php if($is_billing || $is_inventory || $is_combined): ?>
 
 <div
-class="panel panel-default"
+class="report-card"
 id="customerPanel"
 >
 
@@ -170,9 +369,10 @@ Payment Collection Report
 
 <div class="panel-body">
 
-<input type="text"
+<input
+type="text"
 id="searchPayment"
-class="form-control"
+class="form-control search-box"
 placeholder="Search Customer / Invoice / Mode">
 
 <br>
@@ -386,14 +586,12 @@ ORDER BY sp.payment_id DESC
 
 ?>
 
-<br><br>
-
-<div class="row">
+<div class="row" style="margin-top:10px;">
 
 <div class="col-md-12">
 
 <div
-class="panel panel-danger"
+class="report-card"
 id="supplierPanel"
 >
 
@@ -409,14 +607,21 @@ Supplier Payment Report
 
 <div class="panel-body">
 
-<input type="text"
+<input
+type="text"
 id="searchSupplier"
-class="form-control"
+class="form-control search-box"
 placeholder="Search Supplier / Bill / Payment Mode">
 
 <br>
 
-<div class="table-responsive">
+<div
+class="table-responsive"
+style="
+border-radius:12px;
+overflow:hidden;
+border:1px solid #e5e7eb;
+">
 
 <table class="table table-bordered table-striped">
 
@@ -466,7 +671,13 @@ strtotime($s['payment_date'])
 
 <td>
 
-<?= $s['bill_no']; ?>
+<?php
+if($s['bill_no'] == 'ADVANCE'){
+    echo '<span class="label label-info">Advance Paid</span>';
+}else{
+    echo htmlspecialchars($s['bill_no']);
+}
+?>
 
 </td>
 
@@ -480,10 +691,7 @@ strtotime($s['payment_date'])
 
 <?php if($s['bill_no'] == 'ADVANCE'){ ?>
 
-₹ <?= number_format(
-abs($s['paid_amount']) - abs($s['balance_amount']),
-2
-); ?>
+₹ <?= number_format(abs($s['paid_amount']),2); ?>
 
 <?php } else { ?>
 
@@ -509,9 +717,23 @@ Outstanding ₹ <?= number_format($s['balance_amount'],2); ?>
 
 <?php } elseif($s['balance_amount'] < 0){ ?>
 
+<?php
+if($s['bill_no'] == 'ADVANCE'){
+?>
+
 <span style="color:green;">
-Advance ₹ <?= number_format(abs($s['balance_amount']),2); ?>
+Remaining Advance ₹ <?= number_format(abs($s['balance_amount']),2); ?>
 </span>
+
+<?php
+}else{
+?>
+
+<span style="color:green;">
+Advance Used
+</span>
+
+<?php } ?>
 
 <?php } else { ?>
 
