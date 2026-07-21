@@ -600,37 +600,33 @@ exit;
 
 $total_paid = 0;
 
-if($system == 'billing'){
+/* Payment Amount Calculate */
+if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
 
-    if(isset($_POST['payment_amount'])){
+    foreach($_POST['payment_amount'] as $amt){
 
-        foreach($_POST['payment_amount'] as $amt){
+        $total_paid += (float)$amt;
 
-            $total_paid += (float)$amt;
-        }
     }
 
-    $due_amount = $net_total - $total_paid;
+}
 
-    if($due_amount <= 0){
+/* Due Amount */
+$due_amount = round($net_total - $total_paid,2);
 
-        $payment_status = "Paid";
-        $due_amount = 0;
+if($due_amount <= 0){
 
-    }elseif($total_paid > 0){
+    $due_amount = 0;
+    $payment_status = "Paid";
 
-        $payment_status = "Partial";
+}elseif($total_paid > 0){
 
-    }else{
-
-        $payment_status = "Unpaid";
-    }
+    $payment_status = "Partial";
 
 }else{
 
-    $total_paid = 0;
-    $due_amount = 0;
-    $payment_status = '';
+    $payment_status = "Unpaid";
+
 }
 
 $debug[] = "Net Total : ".$net_total;
