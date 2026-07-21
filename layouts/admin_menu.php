@@ -55,6 +55,10 @@ if(!empty($config)){
         <li><a href="organization_master.php">Organization Master</a></li>
         <li><a href="master_center.php">Centers</a></li>
         <li><a href="payment_mode_master.php">Paymode</a></li>
+        <li><a href="supplier_master.php">Supplier Master</a></li>
+        <li><a href="customer_master.php">Customer Master</a></li>
+        <li><a href="product.php">Products</a></li>
+        <li><a href="bom_master.php">BOM Master</a></li>
         <li><a href="group.php">User Role</a></li>
         <li><a href="users.php">Users</a></li>
         <li><a href="categorie.php">Categories</a></li>
@@ -66,11 +70,7 @@ if(!empty($config)){
         <?php endif; ?>
         <li><a href="shipping_type_master.php">Shipping Type Master</a></li>
         <li><a href="configuration_master.php">Configuration Master</a></li>
-        <li><a href="product.php">Products</a></li>
-        <li><a href="bom_master.php">BOM Master</a></li>
         <!-- <li><a href="rate_master.php">Rate Master</a></li> -->
-        <li><a href="supplier_master.php">Supplier Master</a></li>
-        <li><a href="customer_master.php">Customer Master</a></li>
         <li><a href="financial_year_master.php">Financial Year Master</a></li>
         <li><a href="master_sequence.php">Sequence Master</a></li>
         <li><a href="bank_master.php">Bank Master</a></li>
