@@ -85,8 +85,8 @@ $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 $pay_q = "
 SELECT
 payment_mode,
-MAX(payment_date) AS payment_date,
-SUM(payment_amount) AS total_amount
+payment_date,
+payment_amount
 FROM supplier_payment
 WHERE DATE(payment_date)
 BETWEEN '{$from}' AND '{$to}'
@@ -98,11 +98,14 @@ if($report_type=='supplier' && !empty($filter_id)){
 
 if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
-$pay_q   .= " GROUP BY payment_mode";
+$pay_q .= " ORDER BY payment_date DESC, payment_id DESC";
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-foreach ($payments as $pay) $total_collection += $pay['total_amount'];
+
+foreach ($payments as $pay){
+    $total_collection += $pay['payment_amount'];
+}
 
 /* ═══════════════════════════════════════
    3. CENTER WISE SALES (admin only)
@@ -766,7 +769,7 @@ ORDER BY supplier_name
     </td>
 
     <td style="text-align:right;">
-        &#8377; <?= number_format($pay['total_amount'],2) ?>
+        &#8377; <?= number_format($pay['payment_amount'],2) ?>
     </td>
 
 </tr>
