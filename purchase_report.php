@@ -68,9 +68,9 @@ BETWEEN '{$from}' AND '{$to}'
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
 
-if($report_type=='product' && !empty($filter_id)){
-    $sale_query .= " AND t.product_id='{$filter_id}'";
-}
+// if($report_type=='product' && !empty($filter_id)){
+//     $sale_query .= " AND t.product_id='{$filter_id}'";
+// }
 
 if($report_type=='supplier' && !empty($filter_id)){
     $sale_query .= " AND t.supplier_id='{$filter_id}'";
@@ -622,7 +622,7 @@ autocomplete="off"
 required>
 
       <?php if ($role_id == 2): ?>
-      <select name="report_type" class="form-control" style="width:170px;" onchange="this.form.submit();">
+     <select name="report_type" class="form-control" style="width:170px;">
 
   <option value="product" <?= ($report_type=='product')?'selected':'' ?>>
     By Product
