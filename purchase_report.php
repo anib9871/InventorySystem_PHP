@@ -225,6 +225,9 @@ foreach ($sales as $s) {
     $grand += $s['total_sale'];
 }
 
+$grand_round = round($grand);
+$round_off   = $grand_round - $grand;
+
 $shipping_query = "
 SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
 FROM shipping s
@@ -777,6 +780,12 @@ ORDER BY supplier_name
       <div class="s-lbl">Total Purchase</div>
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
+
+   <div style="font-size:11px;line-height:18px;margin-bottom:8px;">
+    Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+    <b>Net Total : ₹ <?= number_format($grand_round,2) ?></b>
+</div>
+
 <?php if($report_type=='supplier'){ ?>
 
 <div class="s-lbl">Payment &mdash; Mode Wise</div>
@@ -967,15 +976,19 @@ if(!empty($center_filter)){
 
 </tbody>
 <tfoot>
-  <tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="6" style="text-align:right;">
-      Grand Total
+<tr style="background:#e2e8f0;font-weight:700;">
+    <td colspan="7" style="text-align:right;">
+        Grand Total<br>
+        Round Off<br>
+        Net Total
     </td>
 
-    <td>
-      <b>₹ <?= number_format($grand, 2) ?></b>
+    <td style="text-align:right;">
+        ₹ <?= number_format($grand,2) ?><br>
+        <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+        <b>₹ <?= number_format($grand_round,2) ?></b>
     </td>
-  </tr>
+</tr>
 </tfoot>
       </table>
     </div>
