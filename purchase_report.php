@@ -47,18 +47,24 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT
 SUM(
     t.net_price +
-    IFNULL(
-        (
-            SELECT SUM(s.total_amount)
-            FROM shipping s
-            WHERE s.bill_no = t.bill_indent_no
-        ),0
-    )
+    CASE
+        WHEN t.transaction_id = (
+            SELECT MIN(tm.transaction_id)
+            FROM transaction_master tm
+            WHERE tm.bill_indent_no = t.bill_indent_no
+        )
+        THEN IFNULL(
+            (
+                SELECT SUM(s.total_amount)
+                FROM shipping s
+                WHERE s.bill_no = t.bill_indent_no
+            ),0
+        )
+        ELSE 0
+    END
 ) AS total_sale
-
 FROM transaction_master t
 
 WHERE t.transaction_type = 1
@@ -148,13 +154,21 @@ t.gst_amount,
 
 (
     t.net_price +
-    IFNULL(
-        (
-            SELECT SUM(s2.total_amount)
-            FROM shipping s2
-            WHERE s2.bill_no = t.bill_indent_no
-        ),0
-    )
+    CASE
+        WHEN t.transaction_id = (
+            SELECT MIN(tm.transaction_id)
+            FROM transaction_master tm
+            WHERE tm.bill_indent_no = t.bill_indent_no
+        )
+        THEN IFNULL(
+            (
+                SELECT SUM(s2.total_amount)
+                FROM shipping s2
+                WHERE s2.bill_no = t.bill_indent_no
+            ),0
+        )
+        ELSE 0
+    END
 ) AS total_sale,
 
 (
@@ -253,14 +267,22 @@ SUM(t.quantity) AS qty,
 
 SUM(
     t.net_price +
-    IFNULL(
-    (
-        SELECT SUM(s.total_amount)
-        FROM shipping s
-        WHERE s.bill_no=t.bill_indent_no
-    ),0)
+    CASE
+        WHEN t.transaction_id = (
+            SELECT MIN(tm.transaction_id)
+            FROM transaction_master tm
+            WHERE tm.bill_indent_no = t.bill_indent_no
+        )
+        THEN IFNULL(
+            (
+                SELECT SUM(s.total_amount)
+                FROM shipping s
+                WHERE s.bill_no = t.bill_indent_no
+            ),0
+        )
+        ELSE 0
+    END
 ) AS price
-
 FROM transaction_master t
 
 LEFT JOIN products p
@@ -309,12 +331,21 @@ sm.supplier_name,
 
 SUM(
     t.net_price +
-    IFNULL(
-    (
-        SELECT SUM(s.total_amount)
-        FROM shipping s
-        WHERE s.bill_no=t.bill_indent_no
-    ),0)
+    CASE
+        WHEN t.transaction_id = (
+            SELECT MIN(tm.transaction_id)
+            FROM transaction_master tm
+            WHERE tm.bill_indent_no = t.bill_indent_no
+        )
+        THEN IFNULL(
+            (
+                SELECT SUM(s.total_amount)
+                FROM shipping s
+                WHERE s.bill_no = t.bill_indent_no
+            ),0
+        )
+        ELSE 0
+    END
 ) AS price
 
 FROM transaction_master t
