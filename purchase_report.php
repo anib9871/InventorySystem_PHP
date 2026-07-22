@@ -47,6 +47,7 @@ $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
    1. TOTAL SALE
 ═══════════════════════════════════════ */
 $sale_query = "
+SELECT
 SUM(
     t.net_price +
     CASE
@@ -65,6 +66,7 @@ SUM(
         ELSE 0
     END
 ) AS total_sale
+
 FROM transaction_master t
 
 WHERE t.transaction_type = 1
