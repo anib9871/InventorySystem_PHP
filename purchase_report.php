@@ -244,7 +244,20 @@ if($report_type=='product' && !empty($filter_id)){
 ═══════════════════════════════════════ */
 
 $pq = "
-SELECT p.name, SUM(t.quantity) as qty
+SELECT
+p.name,
+SUM(t.quantity) AS qty,
+
+SUM(
+    t.net_price +
+    IFNULL(
+    (
+        SELECT SUM(s.total_amount)
+        FROM shipping s
+        WHERE s.bill_no=t.bill_indent_no
+    ),0)
+) AS price
+
 FROM transaction_master t
 
 LEFT JOIN products p
@@ -280,12 +293,27 @@ $product_labels = array_column($product_data, 'name');
 
 $product_qty    = array_column($product_data, 'qty');
 
+$product_price = array_column($product_data,'price');
+
 /* ═══════════════════════════════════════
    6. SUPPLIER CHART DATA
 ═══════════════════════════════════════ */
 
 $sq = "
-SELECT sm.supplier_name, SUM(t.quantity) as qty
+SELECT
+
+sm.supplier_name,
+
+SUM(
+    t.net_price +
+    IFNULL(
+    (
+        SELECT SUM(s.total_amount)
+        FROM shipping s
+        WHERE s.bill_no=t.bill_indent_no
+    ),0)
+) AS price
+
 FROM transaction_master t
 
 LEFT JOIN supplier_master sm
@@ -311,9 +339,9 @@ $sq .= " GROUP BY t.supplier_id";
 
 $supplier_data   = find_by_sql($sq);
 
-$supplier_labels = array_column($supplier_data, 'supplier_name');
+$supplier_labels = array_column($supplier_data,'supplier_name');
 
-$supplier_qty    = array_column($supplier_data, 'qty');
+$supplier_price = array_column($supplier_data,'price');
 
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
@@ -757,10 +785,12 @@ ORDER BY supplier_name
 
 <?php } else { ?>
 
-<div class="s-lbl">Product Wise Sale</div>
-<div class="s-big">
-    &#8377; <?= number_format($grand,2) ?>
-</div>
+<?php if(!empty($filter_id)){ ?>
+    <div class="s-lbl">Product Wise Purchase</div>
+    <div class="s-big">
+        &#8377; <?= number_format($grand,2) ?>
+    </div>
+<?php } ?>
 
 <?php } ?>
     </div>
@@ -966,11 +996,19 @@ new Chart(document.getElementById('productChart'), {
 
           },
 
-          label: function(context){
+        label: function(context){
 
-            return ' Qty : ' + context.raw;
+            var price = <?= json_encode($product_price) ?>[context.dataIndex];
 
-          }
+            return [
+                'Qty : ' + context.raw,
+                'Price : ₹ ' + Number(price).toLocaleString('en-IN',{
+                    minimumFractionDigits:2,
+                    maximumFractionDigits:2
+                })
+            ];
+
+        }
         }
       }
     },
@@ -1018,7 +1056,7 @@ new Chart(document.getElementById('supplierChart'), {
 
       label: 'Purchase Qty',
 
-      data: <?= json_encode($supplier_qty) ?>,
+      data: <?= json_encode($supplier_price) ?>,
 
       borderWidth: 1,
 
@@ -1051,11 +1089,15 @@ new Chart(document.getElementById('supplierChart'), {
 
           },
 
-          label: function(context){
+        label: function(context){
 
-            return ' Qty : ' + context.raw;
+            return 'Price : ₹ ' +
+            Number(context.raw).toLocaleString('en-IN',{
+                minimumFractionDigits:2,
+                maximumFractionDigits:2
+            });
 
-          }
+        }
         }
       }
     },
