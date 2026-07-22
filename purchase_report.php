@@ -781,10 +781,12 @@ ORDER BY supplier_name
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
 
-   <div style="font-size:11px;line-height:18px;margin-bottom:8px;">
+<?php if(abs($round_off) > 0.001){ ?>
+<div style="font-size:11px;line-height:18px;margin-bottom:8px;">
     Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
     <b>Net Total : ₹ <?= number_format($grand_round,2) ?></b>
 </div>
+<?php } ?>
 
 <?php if($report_type=='supplier'){ ?>
 
@@ -976,6 +978,9 @@ if(!empty($center_filter)){
 
 </tbody>
 <tfoot>
+<?php if(abs($round_off) > 0.001){ ?>
+
+<tfoot>
 <tr style="background:#e2e8f0;font-weight:700;">
     <td colspan="7" style="text-align:right;">
         Grand Total<br>
@@ -988,6 +993,21 @@ if(!empty($center_filter)){
         <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
         <b>₹ <?= number_format($grand_round,2) ?></b>
     </td>
+</tr>
+</tfoot>
+
+<?php } else { ?>
+
+<tfoot>
+<tr style="background:#e2e8f0;font-weight:700;">
+    <td colspan="7" style="text-align:right;">Grand Total</td>
+    <td style="text-align:right;">
+        <b>₹ <?= number_format($grand,2) ?></b>
+    </td>
+</tr>
+</tfoot>
+
+<?php } ?>
 </tr>
 </tfoot>
       </table>
