@@ -43,6 +43,12 @@ $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
+echo "<pre>";
+echo "Report Type : ".$report_type."<br>";
+echo "Filter ID : '".$filter_id."'<br>";
+print_r($_GET);
+exit;
+
 /* ═══════════════════════════════════════
    1. TOTAL SALE
 ═══════════════════════════════════════ */
