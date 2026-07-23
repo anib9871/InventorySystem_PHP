@@ -760,7 +760,9 @@ ORDER BY supplier_name
       <?php foreach ($payments as $pay): ?>
       <tr>
         <td style="padding:3px 4px;"><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-        <td style="padding:3px 4px; text-align:right;">&#8377; <?= number_format($pay['total_amount'], 2) ?></td>
+        <td style="padding:3px 4px; text-align:right;">
+    &#8377; <?= number_format($pay['payment_amount'], 2) ?>
+</td>
       </tr>
       <?php endforeach; ?>
       <tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
@@ -977,7 +979,7 @@ if(!empty($center_filter)){
 
 
 </tbody>
-<tfoot>
+
 <?php if(abs($round_off) > 0.001){ ?>
 
 <tfoot>
@@ -994,7 +996,7 @@ if(!empty($center_filter)){
         <b>₹ <?= number_format($grand_round,2) ?></b>
     </td>
 </tr>
-</tfoot>
+
 
 <?php } else { ?>
 
