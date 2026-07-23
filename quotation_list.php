@@ -19,8 +19,17 @@ include_once('layouts/header.php');
 ?>
 
 <div class="panel panel-default">
-<div class="panel-heading">
-<strong>Quotation List</strong>
+<div class="panel-heading clearfix">
+
+    <strong class="pull-left" style="margin-top:6px;">
+        Quotation List
+    </strong>
+
+    <a href="quotation.php"
+       class="btn btn-success btn-sm pull-right">
+        <i class="fa fa-plus"></i> Create Quotation
+    </a>
+
 </div>
 
 <div class="panel-body">
