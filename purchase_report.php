@@ -220,6 +220,12 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
+if (isset($_GET['pdf'])) {
+    echo "<pre>";
+    echo "Rows = ".count($sales)."\n\n";
+    echo $txn_q;
+    exit;
+}
 
 
 $grand = 0;
