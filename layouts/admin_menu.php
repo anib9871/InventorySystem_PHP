@@ -89,8 +89,8 @@ if(!empty($config)){
       <ul class="submenu">
         <!-- <li><a href="grn.php">GRN</a></li> -->
         <li><a href="manage_grn.php">GRN</a></li>
-        <li><a href="create_quotation.php">Quotation</a></li>
-        <li><a href="quotation_list.php">Edit/Print Quotation</a></li>
+        <!-- <li><a href="create_quotation.php">Quotation</a></li> -->
+        <li><a href="quotation_list.php">Quotation</a></li>
         <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
         <li><a href="invoice_list.php">Edit/Print Invoice</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
