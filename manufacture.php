@@ -223,7 +223,7 @@ exit;
 
 <div class="form-group">
 <label>Select Device</label>
-<select name="product_id" class="form-control" required>
+<select name="product_id" id="product_id" class="form-control" required>
 <option value="">Select</option>
 <?php foreach($products as $p){ ?>
 <option value="<?= $p['id']; ?>">
@@ -232,6 +232,30 @@ exit;
 <?php } ?>
 </select>
 </div>
+
+<div id="bom_container" style="display:none; margin-bottom:15px;">
+
+    <label><strong>BOM Items</strong></label>
+
+    <table class="table table-bordered table-condensed">
+        <thead>
+            <tr>
+                <th>Raw Material</th>
+                <th>Qty / Unit</th>
+                <th>Current Stock</th>
+            </tr>
+        </thead>
+
+        <tbody id="bom_body"></tbody>
+    </table>
+
+    <div class="alert alert-info">
+        Maximum Manufacturable :
+        <strong id="max_qty">0</strong>
+    </div>
+
+</div>
+
 
 <div class="form-group">
 <label>Quantity</label>
@@ -258,3 +282,56 @@ Manufacture
 </div>
 
 <?php include_once('layouts/footer.php'); ?>
+
+<script>
+$(document).ready(function () {
+
+    $('#product_id').on('change', function () {
+
+        var product_id = $(this).val();
+
+        if(product_id==''){
+            $('#bom_container').hide();
+            $('#bom_body').html('');
+            $('#max_qty').text('0');
+            return;
+        }
+
+        $.ajax({
+            url:'get_bom.php',
+            type:'GET',
+            data:{product_id:product_id},
+            dataType:'json',
+
+            success:function(response){
+
+                var html='';
+
+                $.each(response.items,function(i,item){
+
+                    html += '<tr>';
+                    html += '<td>'+item.name+'</td>';
+                    html += '<td>'+item.quantity+'</td>';
+                    html += '<td>'+Number(item.stock).toFixed(2)+'</td>';
+                    html += '</tr>';
+
+                });
+
+                $('#bom_body').html(html);
+                $('#max_qty').text(response.max);
+                $('#bom_container').show();
+
+            },
+
+            error:function(xhr){
+
+                console.log(xhr.responseText);
+
+            }
+
+        });
+
+    });
+
+});
+</script>
