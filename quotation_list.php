@@ -25,7 +25,7 @@ include_once('layouts/header.php');
         Quotation List
     </strong>
 
-    <a href="quotation.php"
+    <a href="create_quotation.php"
        class="btn btn-success btn-sm pull-right">
         <i class="fa fa-plus"></i> Create Quotation
     </a>
