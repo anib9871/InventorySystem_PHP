@@ -43,11 +43,6 @@ $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
-echo "<pre>";
-echo "Report Type : ".$report_type."<br>";
-echo "Filter ID : '".$filter_id."'<br>";
-print_r($_GET);
-exit;
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE
@@ -224,6 +219,12 @@ ORDER BY t.entry_date DESC
 ";
 
 $sales = find_by_sql($txn_q);
+
+echo "<pre>";
+print_r($sales);
+echo "<hr>";
+echo mysqli_error($db);
+exit;
 
 $grand = 0;
 
