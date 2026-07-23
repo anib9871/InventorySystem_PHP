@@ -219,6 +219,10 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
+echo "<pre>";
+echo $txn_q;
+exit;
+
 $grand = 0;
 
 foreach ($sales as $s) {
