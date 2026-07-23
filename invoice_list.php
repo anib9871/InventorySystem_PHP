@@ -19,8 +19,15 @@ include_once('layouts/header.php');
 ?>
 
 <div class="panel panel-default">
-<div class="panel-heading">
-<strong>Invoice List</strong>
+<div class="panel-heading"
+     style="display:flex;justify-content:space-between;align-items:center;">
+
+    <strong>Invoice List</strong>
+
+    <a href="invoice_create.php" class="btn btn-success btn-sm">
+        <i class="fa fa-plus"></i> Create Invoice
+    </a>
+
 </div>
 
 <div class="panel-body">
