@@ -39,7 +39,9 @@ $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
+/* ── CENTER FILTER (admin only) ── */
 $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
+$center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
 
@@ -220,12 +222,6 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
-if (isset($_GET['pdf'])) {
-    echo "<pre>";
-    echo "Rows = ".count($sales)."\n\n";
-    echo $txn_q;
-    exit;
-}
 
 
 $grand = 0;
@@ -733,13 +729,19 @@ ORDER BY supplier_name
       <button type="submit" class="btn btn-primary">
     <i class="fa fa-file-text-o"></i> Generate Report
 </button>
-      <a href="?pdf=1
-&from=<?= urlencode($from) ?>
-&to=<?= urlencode($to) ?>
-&report_type=<?= urlencode($report_type) ?>
-&filter_id=<?= urlencode($filter_id) ?>
-<?= ($role_id == 2 && $center_filter) ? '&center_id='.urlencode($center_filter) : '' ?>"
-         target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
+<?php
+$pdf_params = [
+    'pdf'         => 1,
+    'from'        => $from,
+    'to'          => $to,
+    'report_type' => $report_type,
+    'filter_id'   => $filter_id,
+];
+if ($role_id == 2 && !empty($center_filter)) {
+    $pdf_params['center_id'] = $center_filter;
+}
+?>
+<a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
     </form>
   </div>
   <?php endif; ?>
