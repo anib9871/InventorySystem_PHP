@@ -192,8 +192,7 @@ LEFT JOIN master_center mc
 
 
 WHERE t.transaction_type = 1
-AND t.supplier_id IS NOT NULL
-AND t.supplier_id != 0
+
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
@@ -297,8 +296,7 @@ LEFT JOIN products p
 ON p.id = t.product_id
 
 WHERE t.transaction_type = 1
-AND t.supplier_id IS NOT NULL
-AND t.supplier_id != 0
+
 AND p.type = 1
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
@@ -362,8 +360,7 @@ LEFT JOIN supplier_master sm
 ON sm.id = t.supplier_id
 
 WHERE t.transaction_type = 1
-AND t.supplier_id IS NOT NULL
-AND t.supplier_id != 0
+
 AND DATE(t.entry_date)
 BETWEEN '{$from}' AND '{$to}'
 ";
