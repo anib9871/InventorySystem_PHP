@@ -220,10 +220,7 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
-echo "<pre>";
-echo $txn_q;
-echo "<br><br>Rows = ".count($sales);
-exit;
+
 
 $grand = 0;
 
