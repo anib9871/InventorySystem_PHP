@@ -218,13 +218,11 @@ GROUP BY t.transaction_id
 ORDER BY t.entry_date DESC
 ";
 
-$sales = find_by_sql($txn_q);
-
 echo "<pre>";
-print_r($sales);
-echo "<hr>";
-echo mysqli_error($db);
+echo $txn_q;
 exit;
+
+$sales = find_by_sql($txn_q);
 
 $grand = 0;
 
