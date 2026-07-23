@@ -44,7 +44,7 @@ $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-
+$show_report = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE
@@ -95,21 +95,29 @@ $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 ═══════════════════════════════════════ */
 $pay_q = "
 SELECT
-payment_mode,
-payment_date,
-payment_amount
-FROM supplier_payment
-WHERE DATE(payment_date)
+    sp.supplier_id,
+    sm.supplier_name,
+    sp.payment_mode,
+    MAX(sp.payment_date) AS payment_date,
+    SUM(sp.payment_amount) AS payment_amount
+FROM supplier_payment sp
+LEFT JOIN supplier_master sm
+    ON sm.id = sp.supplier_id
+WHERE DATE(sp.payment_date)
 BETWEEN '{$from}' AND '{$to}'
+AND (sp.reference_no IS NULL OR sp.reference_no <> 'Advance Adjusted')
 ";
 
 if($report_type=='supplier' && !empty($filter_id)){
-    $pay_q .= " AND supplier_id='{$filter_id}'";
+    $pay_q .= " AND sp.supplier_id='{$filter_id}'";
 }
 
 if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
-$pay_q .= " ORDER BY payment_date DESC, payment_id DESC";
+$pay_q .= "
+GROUP BY sp.supplier_id, sp.payment_mode
+ORDER BY sm.supplier_name ASC
+";
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
@@ -666,7 +674,7 @@ autocomplete="off"
 required>
 
       <?php if ($role_id == 2): ?>
-     <select name="report_type" class="form-control" style="width:170px;">
+     <select name="report_type" id="report_type" class="form-control" style="width:170px;">
 
   <option value="product" <?= ($report_type=='product')?'selected':'' ?>>
     By Product
@@ -726,7 +734,7 @@ ORDER BY supplier_name
 <?php endif; ?>
 
 
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" name="generate_report" value="1" class="btn btn-primary">
     <i class="fa fa-file-text-o"></i> Generate Report
 </button>
 <?php
@@ -741,22 +749,77 @@ if ($role_id == 2 && !empty($center_filter)) {
     $pdf_params['center_id'] = $center_filter;
 }
 ?>
-<a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
-    </form>
+<a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">
+    &#8659; Download PDF
+</a>
+
+<input type="hidden" name="change_type" id="change_type" value="0">
+
+</form>
   </div>
-  <?php endif; ?>
+<?php endif; ?>
 
-  <!-- ── PDF COLLECTION BOX (print only) ── -->
+<script>
+document.getElementById('report_type').addEventListener('change', function () {
+    document.getElementById('change_type').value = "1";
+    this.form.submit();
+});
+</script>
 
-  <div class="pdf-period-box" style="display:none;">
-  <b>Period:</b>
-  From <?= date('d/M/Y', strtotime($from)) ?>
-  To <?= date('d/M/Y', strtotime($to)) ?>
+<?php if($show_report){ ?>
+
+<!-- ── PDF COLLECTION BOX (print only) ── -->
+
+<?php
+$selected_supplier = '';
+
+if($report_type=='supplier' && !empty($filter_id)){
+    $sup = find_by_sql("
+        SELECT supplier_name
+        FROM supplier_master
+        WHERE id='{$filter_id}'
+        LIMIT 1
+    ");
+
+    $selected_supplier = $sup[0]['supplier_name'] ?? '';
+}
+?>
+
+<div class="pdf-period-box" style="display:none;">
+
+    <table style="width:100%; border-collapse:collapse; color:#fff;">
+        <tr>
+
+            <td style="text-align:left;">
+                <?php if(!empty($selected_supplier)){ ?>
+                    <b>Supplier :</b> <?= htmlspecialchars($selected_supplier) ?>
+                <?php } ?>
+            </td>
+
+            <td style="text-align:right;">
+                <b>Period :</b>
+                <?= date('d/M/Y', strtotime($from)) ?>
+                To
+                <?= date('d/M/Y', strtotime($to)) ?>
+            </td>
+
+        </tr>
+    </table>
+
 </div>
 
 <div class="pdf-total-box" style="display:none;">
-  <b>Total Collection:</b>
-  ₹ <?= number_format($grand, 2) ?>
+  <b>Total Purchase Amount :</b><br>
+
+  ₹ <?= number_format($grand,2) ?><br>
+
+  <?php if(abs($round_off) > 0.001){ ?>
+      Round Off :
+      <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+
+      <b>Net Total :
+      ₹ <?= number_format($grand_round,2) ?></b>
+  <?php } ?>
 </div>
 
   <div class="pdf-collection-box" style="display:none;">
@@ -764,22 +827,51 @@ if ($role_id == 2 && !empty($center_filter)) {
       Supplier Payment Summary (Mode-wise)
     </h4>
     <table style="width:100%; border-collapse:collapse; color:#fff; font-size:11px;">
-      <tr style="font-weight:700; opacity:.7;">
-        <td style="padding:2px 4px;">MODE</td>
-        <td style="padding:2px 4px; text-align:right;">COLLECTION</td>
-      </tr>
-      <?php foreach ($payments as $pay): ?>
-      <tr>
-        <td style="padding:3px 4px;"><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-        <td style="padding:3px 4px; text-align:right;">
-    &#8377; <?= number_format($pay['payment_amount'], 2) ?>
+<tr style="font-weight:700; opacity:.7;">
+
+<?php if(empty($filter_id)){ ?>
+<td style="padding:2px 4px;">SUPPLIER</td>
+<?php } ?>
+
+<td style="padding:2px 4px;">MODE</td>
+<td style="padding:2px 4px; text-align:right;">AMOUNT</td>
+
+</tr>
+
+<?php foreach ($payments as $pay): ?>
+<tr>
+
+<?php if(empty($filter_id)){ ?>
+<td style="padding:3px 4px;">
+<?= htmlspecialchars($pay['supplier_name']) ?>
 </td>
-      </tr>
-      <?php endforeach; ?>
-      <tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
-        <td style="padding:5px 4px 2px;">GRAND TOTAL</td>
-        <td style="padding:5px 4px 2px; text-align:right;">&#8377; <?= number_format($total_collection, 2) ?></td>
-      </tr>
+<?php } ?>
+
+<td style="padding:3px 4px;">
+<?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?>
+</td>
+
+<td style="padding:3px 4px;text-align:right;">
+₹ <?= number_format($pay['payment_amount'],2) ?>
+</td>
+
+</tr>
+<?php endforeach; ?>
+
+
+<tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
+
+<?php if(empty($filter_id)){ ?>
+<td colspan="2">GRAND TOTAL</td>
+<?php } else { ?>
+<td>GRAND TOTAL</td>
+<?php } ?>
+
+<td style="text-align:right;">
+₹ <?= number_format($total_collection,2) ?>
+</td>
+
+</tr>
     </table>
   </div>
 
@@ -1029,6 +1121,8 @@ if(!empty($center_filter)){
   </div>
 
 </div><!-- /.rpt -->
+
+<?php } ?>
 
 <script>
 /* ── Product Bar ── */
