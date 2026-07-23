@@ -87,8 +87,8 @@ if(!empty($config)){
         <span class="arrow"><i class="glyphicon glyphicon-chevron-right"></i></span>
       </a>
       <ul class="submenu">
-        <li><a href="grn.php">GRN</a></li>
-        <li><a href="manage_grn.php">Edit/Print GRN</a></li>
+        <!-- <li><a href="grn.php">GRN</a></li> -->
+        <li><a href="manage_grn.php">GRN</a></li>
         <li><a href="create_quotation.php">Quotation</a></li>
         <li><a href="quotation_list.php">Edit/Print Quotation</a></li>
         <li><a href="invoice_create.php?system=inventory">Invoice</a></li>
