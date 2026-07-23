@@ -887,9 +887,11 @@ if($report_type=='supplier' && !empty($filter_id)){
       <div class="s-div"></div>
 
 <?php if(abs($round_off) > 0.001){ ?>
-<div style="font-size:11px;line-height:18px;margin-bottom:8px;">
+<div style="font-size:9px;line-height:14px;margin-bottom:6px;">
     Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
-    <b>Net Total : ₹ <?= number_format($grand_round,2) ?></b>
+    <span style="font-size:10px;font-weight:700;">
+        Net Total : ₹ <?= number_format($grand_round,2) ?>
+    </span>
 </div>
 <?php } ?>
 
