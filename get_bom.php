@@ -3,26 +3,66 @@ require_once('includes/load.php');
 
 $product_id = (int)$_GET['product_id'];
 
-$bom = find_by_sql("
-  SELECT p.name, b.quantity
-  FROM bom b
-  JOIN products p ON p.id = b.raw_product_id
-  WHERE b.product_id = $product_id
-");
+$response = [
+    'items' => [],
+    'max'   => 0
+];
 
-if(!$bom){
-    echo "No BOM found";
+if($product_id <= 0){
+    echo json_encode($response);
     exit;
 }
 
-echo "<table class='table table-sm table-bordered'>";
-echo "<tr><th>Raw Material</th><th>Qty</th></tr>";
+$bom = find_by_sql("
+SELECT
+    b.raw_product_id,
+    b.quantity,
+    p.name
+FROM bom b
+JOIN products p
+ON p.id = b.raw_product_id
+WHERE b.product_id = {$product_id}
+");
 
-foreach($bom as $b){
-    echo "<tr>
-            <td>".$b['name']."</td>
-            <td>".$b['quantity']."</td>
-          </tr>";
+if(!$bom){
+    echo json_encode($response);
+    exit;
 }
 
-echo "</table>";
+$max = PHP_INT_MAX;
+
+foreach($bom as $b){
+
+    $stock = find_by_sql("
+        SELECT
+        IFNULL(SUM(CASE WHEN transaction_type=1 THEN quantity ELSE 0 END),0)
+        -
+        IFNULL(SUM(CASE WHEN transaction_type=2 THEN quantity ELSE 0 END),0)
+        AS stock
+        FROM transaction_master
+        WHERE product_id=".$b['raw_product_id']
+    );
+
+    $current_stock = (float)$stock[0]['stock'];
+
+    $possible = 0;
+
+    if($b['quantity'] > 0){
+        $possible = floor($current_stock / $b['quantity']);
+    }
+
+    if($possible < $max){
+        $max = $possible;
+    }
+
+    $response['items'][] = [
+        'name'     => $b['name'],
+        'quantity' => $b['quantity'],
+        'stock'    => $current_stock
+    ];
+}
+
+$response['max'] = ($max == PHP_INT_MAX) ? 0 : $max;
+
+header('Content-Type: application/json');
+echo json_encode($response);
