@@ -153,7 +153,8 @@ FROM products p
 LEFT JOIN transaction_master t
 ON p.id = t.product_id
 
-WHERE p.type =1
+WHERE p.type = 1
+AND p.is_active = 1
 
 GROUP BY
     p.id,
