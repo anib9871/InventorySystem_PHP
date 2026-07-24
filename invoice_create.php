@@ -20,7 +20,9 @@ WHERE center_id = '$center_id'
 $customers = find_all('customer_master');
 
 }
-$products  = join_product_table();
+$products = array_values(array_filter(join_product_table(), function($p){
+    return $p['is_active'] == 1;
+}));
 $payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
 
 /* TERMS & CONDITIONS */
