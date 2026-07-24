@@ -388,6 +388,8 @@ function join_product_table(){
            LEFT JOIN transaction_master t
            ON t.product_id = p.id
 
+		   WHERE p.is_active = 1
+
            GROUP BY p.id
 
            ORDER BY p.id ASC";
