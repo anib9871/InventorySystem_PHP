@@ -2856,65 +2856,72 @@ document.getElementById("useAdvance");
 
 if(useAdvance){
 
-useAdvance.onchange = function(){
+    document.getElementById("advanceInput")
+    .addEventListener("input", function(){
 
-if(this.checked){
+        let available = parseFloat(
+            document.getElementById("advanceAmount")
+            .innerText.replace(/,/g,'')
+        ) || 0;
 
-document.getElementById("advanceInput")
-.style.display = "block";
+        let total = parseFloat(
+            document.getElementById("grandTotal")
+            .innerText.replace(/,/g,'')
+        ) || 0;
 
-}else{
+        let entered = parseFloat(this.value) || 0;
 
-document.getElementById("advanceInput")
-.style.display = "none";
+        if (entered > available) entered = available;
+        if (entered > total) entered = total;
 
-document.getElementById("advanceInput")
-.value = "";
+        this.value = entered.toFixed(2);
 
-document.getElementById("used_advance")
-.value = 0;
+        document.getElementById("used_advance").value = entered;
 
-updateGrandTotal();
+        document.getElementById("balanceAdvance").innerText =
+            (available - entered).toFixed(2);
+
+        updateGrandTotal();
+    });
+
+    // 👇 YE CODE YAHI PASTE KARO
+    useAdvance.addEventListener("change", function(){
+
+        let available = parseFloat(
+            document.getElementById("advanceAmount")
+            .innerText.replace(/,/g,'')
+        ) || 0;
+
+        let total = parseFloat(
+            document.getElementById("grandTotal")
+            .innerText.replace(/,/g,'')
+        ) || 0;
+
+        if(this.checked){
+
+            let amount = Math.min(available,total);
+
+            document.getElementById("advanceInput").style.display = "block";
+            document.getElementById("advanceInput").value = amount.toFixed(2);
+            document.getElementById("used_advance").value = amount;
+
+            document.getElementById("balanceAdvance").innerText =
+                (available-amount).toFixed(2);
+
+        }else{
+
+            document.getElementById("advanceInput").style.display = "none";
+            document.getElementById("advanceInput").value = "";
+            document.getElementById("used_advance").value = 0;
+
+            document.getElementById("balanceAdvance").innerText =
+                available.toFixed(2);
+        }
+
+        updateGrandTotal();
+    });
 
 }
-
-};
-
-}
-
-document.getElementById("advanceInput")
-.addEventListener("change", function(){
-
-let available = parseFloat(
-document.getElementById("advanceAmount")
-.innerText.replace(/,/g,'')
-) || 0;
-
-let total = parseFloat(
-document.getElementById("grandTotal")
-.innerText.replace(/,/g,'')
-) || 0;
-
-let entered = parseFloat(this.value) || 0;
-
-if(entered > available){
-    entered = available;
-}
-
-if(entered > total){
-    entered = total;
-}
-
-this.value = entered;
-
-document.getElementById("used_advance").value = entered;
-
-document.getElementById("balanceAdvance").innerText =
-(available - entered).toFixed(2);
-
-updateGrandTotal();
-
-});
 
 function refreshShippingTypes(){
 
