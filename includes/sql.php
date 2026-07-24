@@ -357,6 +357,8 @@ function join_product_table(){
               p.date,
               p.is_bom,
               p.reorder_level,
+              p.is_active,
+              p.website_link,
               c.name AS categorie,
               m.file_name AS image,
               g.gst_percent,
