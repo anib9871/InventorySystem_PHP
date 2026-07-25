@@ -93,565 +93,619 @@ function numberToWords($num){
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>
-<?= $invoice['customer_name'] ?>_Invoice_<?= $invoice['invoice_no'] ?>
-</title>
+<meta charset="UTF-8">
+<title><?= htmlspecialchars($invoice['customer_name']) ?>_Invoice_<?= htmlspecialchars($invoice['invoice_no']) ?></title>
 <style>
-/* ===== RESET ===== */
-*{
-  box-sizing:border-box;
+/* ===== GLOBAL RESET & VARIABLES ===== */
+:root {
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #eff6ff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --table-header-bg: #f8fafc;
 }
 
-body{
-  font-family: Arial, Helvetica, sans-serif;
-  font-size:13px;
-  margin:0;
-  padding:0;
-  background:#f2f2f2;
-  color:#000;
+* {
+  box-sizing: border-box;
 }
 
-/* ===== PRINT BUTTON ===== */
-.no-print{
-  max-width:900px;
-  margin:20px auto 0;
-  text-align:right;
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: var(--text-main);
 }
 
-.no-print button{
-  padding:8px 18px;
-  font-size:13px;
-  cursor:pointer;
-  border:1px solid #000;
-  background:#fff;
+/* ===== ACTION BAR (NO PRINT) ===== */
+.no-print-bar {
+  max-width: 850px;
+  margin: 15px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* ===== MAIN WRAPPER ===== */
-.wrapper{
-  width:100%;
-  max-width:900px;      /* A4 safe width */
-  margin:15px auto;
-  background:#fff;
-  border:2px solid #000;
-  padding:20px;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-main);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-/* ===== SECTION BOXES ===== */
-.section{
-  border:1px solid #000;
-  padding:10px;
+.btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* ===== MAIN INVOICE WRAPPER ===== */
+.wrapper {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto 20px auto;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative Header Bar */
+.wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--primary-color);
+}
+
+/* ===== HEADER & META ===== */
+.header-grid {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.org-brand {
+  flex: 1;
+}
+
+.org-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+  margin: 0 0 4px 0;
+}
+
+.invoice-badge-box {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 4px 0;
+}
+
+.meta-info-table {
+  width: auto;
+  margin-left: auto;
+  border-collapse: collapse;
+}
+
+.meta-info-table td {
+  padding: 1px 0 1px 10px;
+  font-size: 11px;
+}
+
+.meta-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: right;
+}
+
+.meta-value {
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: right;
+}
+
+/* ===== CUSTOMER CARD ===== */
+.info-card {
+  background: var(--primary-light);
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary-color);
+  margin-bottom: 2px;
+}
+
+.customer-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2px;
 }
 
 /* ===== TABLES ===== */
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
 }
 
-th, td{
-  border:1px solid #000;
-  padding:7px;
-  vertical-align:top;
+table.data-table th {
+  background: var(--table-header-bg);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
-th{
-  background:#eaeaea;
-  font-weight:600;
-  text-align:center;
+table.data-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  font-size: 11px;
 }
 
-.right{
-  text-align:right;
+table.data-table tr:nth-child(even):not(.summary-row) {
+  background-color: #fafafa;
 }
 
-.center{
-  text-align:center;
+.right { text-align: right; }
+.center { text-align: center; }
+.bold { font-weight: 600; }
+
+/* Table Summary Section */
+.summary-row td {
+  border-bottom: none;
+  padding: 3px 8px;
 }
 
-/* ===== HEADINGS ===== */
-h1, h2, h3{
-  margin:0 0 5px 0;
+.summary-row.grand-total td {
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--primary-light);
+  font-size: 12px;
+  color: var(--primary-dark);
 }
 
-/* ===== TOTAL ROWS ===== */
-.total-row td{
-  font-weight:600;
+/* Amount in words bar */
+.amount-words-box {
+  background: #f8fafc;
+  border: 1px dashed var(--border-color);
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  font-size: 11px;
 }
 
-/* ===== A4 PRINT SETTINGS ===== */
-@page{
-  size:A4;
-  margin:15mm;
+/* ===== DUAL FOOTER SECTION ===== */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
 }
 
-@media print{
-
-  body{
-    background:#fff;
-  }
-
-  .wrapper{
-    border:none;
-    margin:0;
-    max-width:100%;
-    padding:0;
-  }
-
-  .no-print{
-    display:none;
-  }
-
-  th{
-    background:#f5f5f5 !important;
-  }
-
-.section{
-  border:1px solid #000;
-  padding:8px;
-  vertical-align:top;
+.footer-card {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
 }
 
+.footer-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 2px;
+}
+
+.terms-box {
+  white-space: pre-line;
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.signature-space {
+  height: 28px;
+}
+
+/* ===== PRINT STYLES ===== */
+@page {
+  size: A4;
+  margin: 6mm 8mm; /* Reduced print margin for 1 page fit */
+}
 
 @media print {
-
-  @page {
-    margin: 10mm;
+  html, body {
+    height: 100%;
+    background: #ffffff;
+    color: #000000;
   }
 
-  body {
+  .no-print-bar {
+    display: none !important;
+  }
+
+  .wrapper {
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+    border-radius: 0;
     margin: 0;
   }
 
-}
+  table.data-table th {
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
+  .info-card, .summary-row.grand-total td {
+    background: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .wrapper::before {
+    display: none;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="no-print" style="width:900px;margin:15px auto;display:flex;justify-content:space-between;align-items:center;">
-
+<!-- PRINT / NAVIGATION BUTTONS -->
+<div class="no-print-bar">
     <div>
-
-        <a href="invoice_create.php"
-           style="padding:6px 15px;
-                  border:1px solid #000;
-                  background:#f5f5f5;
-                  text-decoration:none;
-                  color:#000;
-                  border-radius:3px;
-                  margin-right:8px;">
-            ← Back to Create Invoice
-        </a>
-
-        <a href="invoice_list.php"
-           style="padding:6px 15px;
-                  border:1px solid #000;
-                  background:#f5f5f5;
-                  text-decoration:none;
-                  color:#000;
-                  border-radius:3px;">
-            ← Back to Invoice List
-        </a>
-
+        <a href="invoice_create.php" class="btn">← Back to Create Invoice</a>
+        <a href="invoice_list.php" class="btn">← Back to Invoice List</a>
     </div>
-
-    <button onclick="printInvoice()"
-            style="padding:6px 15px;cursor:pointer;">
-        🖨 Print Invoice
-    </button>
-
+    <button onclick="window.print()" class="btn btn-primary">🖨 Print Invoice</button>
 </div>
 
 <div class="wrapper">
 
-<!-- HEADER -->
-<table>
-<tr>
-<td width="55%" class="section">
-<b style="font-size:16px;"><?= strtoupper($org_master['org_name']) ?></b><br>
-<?= $org['address'] ?><br>
-<?php if($gst_enabled == "Yes"): ?>
-GSTIN: <?= $org['gst_no'] ?><br>
-<?php endif; ?>
-Phone: <?= $org['phone'] ?>
-</td>
-
-<td width="45%" class="section">
-<b>INVOICE</b><br><br>
-
-Invoice No: <?= $invoice['invoice_no'] ?><br>
-
-Date: <?= date("d/M/Y", strtotime($invoice['invoice_date'])) ?><br>
-
-</td>
-</tr>
-</table>
-
-<br>
-
-<!-- BILL TO -->
-<!-- CUSTOMER DETAILS -->
-
-<table>
-
-<tr>
-
-<td width="100%" class="section">
-
-<b>Customer Details</b><br><br>
-
-<b><?= strtoupper($invoice['customer_name']) ?></b><br>
-
-<?= $invoice['address'] ?><br>
-
-<?php if($gst_enabled == "Yes"): ?>
-GSTIN: <?= $invoice['gst_no'] ?><br>
-<?php endif; ?>
-
-<?php if(!empty($invoice['contact_no'])): ?>
-Phone: <?= $invoice['contact_no'] ?>
-<?php endif; ?>
-
-</td>
-
-</tr>
-
-</table>
-
-<br>
-
-<!-- ITEMS TABLE -->
-<table>
-<tr>
-<th>#</th>
-<th>Item Name</th>
-<th>HSN/SAC</th>
-<th>Qty</th>
-<th>Unit</th>
-<th>Price/Unit</th>
-<th> Total Discount</th>
-<?php if($gst_enabled == "Yes"): ?>
-<th>GST %</th>
-<?php endif; ?>
-<th>Amount</th>
-</tr>
-
-<?php
-$i = 1;
-
-$total_taxable = 0;
-$total_cgst = 0;
-$total_sgst = 0;
-$total_igst = 0;
-
-
-foreach($items as $it){
-
-$taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
-
-$total_taxable += $taxable;
-$total_cgst += $it['cgst_amount'];
-$total_sgst += $it['sgst_amount'];
-$total_igst += $it['igst_amount'];
-
-?>
-
-<tr>
-<td class="center"><?= $i++ ?></td>
-<td><?= $it['name'] ?></td>
-<td><?= $it['hsn_code'] ?></td>
-<td class="right"><?= $it['qty'] ?></td>
-<td class="center">Nos</td>
-<td class="right"><?= number_format($it['rate_excl_gst'],2) ?></td>
-<td class="right"><?= number_format($it['discount_amount'],2) ?></td>
-<?php if($gst_enabled == "Yes"): ?>
-<td class="right"><?= $it['gst_percent'] ?>%</td>
-<?php endif; ?>
-<td class="right"><?= number_format($taxable,2) ?></td>
-</tr>
-
-<?php } ?>
-
-<!-- TOTAL ROWS -->
-<tr>
-<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Sub Total</b></td>
-<td class="right"><?= number_format($total_taxable,2) ?></td>
-</tr>
-
-<?php if($gst_enabled == "Yes"){ ?>
-
-    <?php if($tax_mode == 'IGST'){ ?>
-    
-    <tr>
-    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
-        <b>Total IGST</b>
-    </td>
-    <td class="right"><?= number_format($total_igst,2) ?></td>
-    </tr>
-
-    <?php } else { ?>
-
-    <tr>
-    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
-        <b>Total CGST</b>
-    </td>
-    <td class="right"><?= number_format($total_cgst,2) ?></td>
-    </tr>
-
-    <tr>
-    <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right">
-        <b>Total SGST</b>
-    </td>
-    <td class="right"><?= number_format($total_sgst,2) ?></td>
-    </tr>
-
-    <?php } ?>
-
-<?php } ?>
-
-<tr>
-<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Total</b></td>
-<td class="right"><b><?= number_format($invoice['net_total'],2) ?></b></td>
-</tr>
-
-<tr>
-<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Advance</b></td>
-<td class="right"><?= number_format($invoice['advance_paid'] ?? 0,2) ?></td>
-</tr>
-
-<tr>
-<td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" align="right"><b>Balance</b></td>
-<td class="right">
-<b><?= number_format($invoice['net_total'] - ($invoice['advance_paid'] ?? 0),2) ?></b>
-</td>
-</tr>
-
-<tr>
-<td colspan="<?= ($gst_enabled == 'Yes') ? '9' : '8' ?>">
-<b>Amount in Words:</b>
-<?= numberToWords(round($invoice['net_total'])) ?> Only
-</td>
-</tr>
-
-</table>
-
-<br>
-
-<?php if($gst_enabled == "Yes"): ?>
-
-<!-- GST SUMMARY -->
-<!-- ================= GST SUMMARY ================= -->
-
-<table>
-<tr>
-<th rowspan="2">HSN / SAC</th>
-<th rowspan="2">Taxable Amount</th>
-<th rowspan="2">Rate</th>
-
-<?php if($tax_mode == 'IGST'){ ?>
-    <th colspan="2">IGST</th>
-<?php } else { ?>
-    <th colspan="2">CGST</th>
-    <th colspan="2">SGST</th>
-<?php } ?>
-
-<th rowspan="2">Total Tax</th>
-</tr>
-
-<tr>
-<?php if($tax_mode == 'IGST'){ ?>
-    <th>Rate</th>
-    <th>Amount</th>
-<?php } else { ?>
-    <th>Rate</th>
-    <th>Amount</th>
-    <th>Rate</th>
-    <th>Amount</th>
-<?php } ?>
-</tr>
-
-<?php
-$gst_summary = [];
-
-foreach($items as $it){
-
-    $hsn  = $it['hsn_code'] ?? 'NA';
-$rate = $it['gst_percent'];
-
-$key = $hsn . '_' . $rate;
-
-if(!isset($gst_summary[$key])){
-    $gst_summary[$key] = [
-        'hsn'      => $hsn,
-        'rate'     => $rate,
-        'taxable'  => 0,
-        'cgst'     => 0,
-        'sgst'     => 0,
-        'igst'     => 0
-    ];
-}
-
-
-    $taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
-
-$gst_summary[$key]['taxable'] += $taxable;
-$gst_summary[$key]['cgst']    += $it['cgst_amount'];
-$gst_summary[$key]['sgst']    += $it['sgst_amount'];
-$gst_summary[$key]['igst']    += $it['igst_amount'];
-}
-
-$grand_taxable = 0;
-$grand_cgst = 0;
-$grand_sgst = 0;
-$grand_igst = 0;
-
-foreach($gst_summary as $key => $data):
-
-$grand_taxable += $data['taxable'];
-$grand_cgst += $data['cgst'];
-$grand_sgst += $data['sgst'];
-$grand_igst += $data['igst'];
-
-$total_tax = $data['cgst'] + $data['sgst'] + $data['igst'];
-?>
-
-<tr>
-<td class="center"><?= $data['hsn'] ?></td>
-<td class="right"><?= number_format($data['taxable'],2) ?></td>
-<td class="center"><?= $data['rate'] ?>%</td>
-
-<?php if($tax_mode == 'IGST'){ ?>
-    <td class="center"><?= $data['rate'] ?>%</td>
-    <td class="right"><?= number_format($data['igst'],2) ?></td>
-<?php } else { ?>
-    <td class="center"><?= $data['rate']/2 ?>%</td>
-    <td class="right"><?= number_format($data['cgst'],2) ?></td>
-    <td class="center"><?= $data['rate']/2 ?>%</td>
-    <td class="right"><?= number_format($data['sgst'],2) ?></td>
-<?php } ?>
-
-<td class="right"><?= number_format($total_tax,2) ?></td>
-</tr>
-
-<?php endforeach; ?>
-
-<tr>
-<td class="center"><b>Total</b></td>
-<td class="right"><b><?= number_format($grand_taxable,2) ?></b></td>
-<td></td>
-
-<?php if($tax_mode == 'IGST'){ ?>
-    <td></td>
-    <td class="right"><b><?= number_format($grand_igst,2) ?></b></td>
-<?php } else { ?>
-    <td></td>
-    <td class="right"><b><?= number_format($grand_cgst,2) ?></b></td>
-    <td></td>
-    <td class="right"><b><?= number_format($grand_sgst,2) ?></b></td>
-<?php } ?>
-
-<td class="right">
-<b><?= number_format($grand_cgst + $grand_sgst + $grand_igst,2) ?></b>
-</td>
-</tr>
-
-</table>
-
-<?php endif; ?>
-
-<br>
-
-<!-- BANK + SIGNATURE -->
-
-<table>
-
-<tr>
-
-<td width="50%" class="section">
-
-<b>Bank Details</b>
-
-<br><br>
-
-<?php if($bank){ ?>
-
-Bank: <?= $bank['bank_name'] ?><br>
-
-A/C Name: <?= $bank['account_name'] ?><br>
-
-A/C No: <?= $bank['account_number'] ?><br>
-
-IFSC: <?= $bank['ifsc_code'] ?><br>
-
-<?php } ?>
-
-</td>
-
-
-
-<td width="50%" class="section center">
-
-For: <?= $org_master['org_name'] ?>
-
-<br><br><br><br><br>
-
-<br><br>
-<small>
-This is a computer generated invoice and does not require signature.
-</small>
-
-</td>
-
-</tr>
-
-</table>
-
-
-
-<!-- TERMS & CONDITIONS -->
-
-<table style="margin-top:10px;">
-
-<tr>
-
-<td class="section">
-
-<b>Terms & Conditions</b>
-
-<div style="
-margin-top:5px;
-white-space:pre-line;
-font-size:10px;
-line-height:13px;
-word-break:break-word;
-padding:0;
-">
-
-<?= trim($invoice['terms_conditions']); ?>
+    <!-- HEADER SECTION -->
+    <div class="header-grid">
+        <div class="org-brand">
+            <h1 class="org-title"><?= strtoupper($org_master['org_name']) ?></h1>
+            <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
+                <?= $org['address'] ?><br>
+                <?php if($gst_enabled == "Yes"): ?>
+                    <b>GSTIN:</b> <?= $org['gst_no'] ?> | 
+                <?php endif; ?>
+                <b>Phone:</b> <?= $org['phone'] ?>
+            </div>
+        </div>
+
+        <div class="invoice-badge-box">
+            <div class="invoice-title">Invoice</div>
+            <table class="meta-info-table">
+                <tr>
+                    <td class="meta-label">Invoice No:</td>
+                    <td class="meta-value"><?= $invoice['invoice_no'] ?></td>
+                </tr>
+                <tr>
+                    <td class="meta-label">Date:</td>
+                    <td class="meta-value"><?= date("d/M/Y", strtotime($invoice['invoice_date'])) ?></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- CUSTOMER DETAILS -->
+    <div class="info-card">
+        <div class="card-title">Billed To</div>
+        <div class="customer-name"><?= strtoupper($invoice['customer_name']) ?></div>
+        <div style="color: var(--text-main); font-size: 11px; line-height: 1.3;">
+            <?= $invoice['address'] ?><br>
+            <?php if($gst_enabled == "Yes"): ?>
+                <b>GSTIN:</b> <?= $invoice['gst_no'] ?> | 
+            <?php endif; ?>
+            <?php if(!empty($invoice['contact_no'])): ?>
+                <b>Phone:</b> <?= $invoice['contact_no'] ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th class="center" width="5%">#</th>
+                <th width="32%">Item Name</th>
+                <th class="center" width="10%">HSN/SAC</th>
+                <th class="right" width="8%">Qty</th>
+                <th class="center" width="8%">Unit</th>
+                <th class="right" width="12%">Price/Unit</th>
+                <th class="right" width="10%">Discount</th>
+                <?php if($gst_enabled == "Yes"): ?>
+                    <th class="center" width="5%">GST</th>
+                <?php endif; ?>
+                <th class="right" width="10%">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            $i = 1;
+            $total_taxable = 0;
+            $total_cgst = 0;
+            $total_sgst = 0;
+            $total_igst = 0;
+
+            foreach($items as $it){
+                $taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
+                $total_taxable += $taxable;
+                $total_cgst += $it['cgst_amount'];
+                $total_sgst += $it['sgst_amount'];
+                $total_igst += $it['igst_amount'];
+            ?>
+            <tr>
+                <td class="center"><?= $i++ ?></td>
+                <td class="bold"><?= $it['name'] ?></td>
+                <td class="center"><?= $it['hsn_code'] ?></td>
+                <td class="right"><?= $it['qty'] ?></td>
+                <td class="center">Nos</td>
+                <td class="right"><?= number_format($it['rate_excl_gst'],2) ?></td>
+                <td class="right"><?= number_format($it['discount_amount'],2) ?></td>
+                <?php if($gst_enabled == "Yes"): ?>
+                    <td class="center"><?= $it['gst_percent'] ?>%</td>
+                <?php endif; ?>
+                <td class="right bold"><?= number_format($taxable,2) ?></td>
+            </tr>
+            <?php } ?>
+
+            <!-- SUMMARY ROWS -->
+            <tr class="summary-row">
+                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right bold">Sub Total</td>
+                <td class="right bold"><?= number_format($total_taxable,2) ?></td>
+            </tr>
+
+            <?php if($gst_enabled == "Yes"){ ?>
+                <?php if($tax_mode == 'IGST'){ ?>
+                <tr class="summary-row">
+                    <td colspan="8" class="right">Total IGST</td>
+                    <td class="right"><?= number_format($total_igst,2) ?></td>
+                </tr>
+                <?php } else { ?>
+                <tr class="summary-row">
+                    <td colspan="8" class="right">Total CGST</td>
+                    <td class="right"><?= number_format($total_cgst,2) ?></td>
+                </tr>
+                <tr class="summary-row">
+                    <td colspan="8" class="right">Total SGST</td>
+                    <td class="right"><?= number_format($total_sgst,2) ?></td>
+                </tr>
+                <?php } ?>
+            <?php } ?>
+
+            <tr class="summary-row grand-total">
+                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right bold">Total Amount</td>
+                <td class="right bold"><?= number_format($invoice['net_total'],2) ?></td>
+            </tr>
+
+            <tr class="summary-row">
+                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right">Advance Paid</td>
+                <td class="right"><?= number_format($invoice['advance_paid'] ?? 0,2) ?></td>
+            </tr>
+
+            <tr class="summary-row">
+                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right bold" style="color: var(--primary-dark);">Balance Due</td>
+                <td class="right bold" style="color: var(--primary-dark);">
+                    <?= number_format($invoice['net_total'] - ($invoice['advance_paid'] ?? 0),2) ?>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- AMOUNT IN WORDS -->
+    <div class="amount-words-box">
+        <span class="bold" style="color: var(--text-muted);">Amount in Words:</span> 
+        <span class="bold"><?= numberToWords(round($invoice['net_total'])) ?> Only</span>
+    </div>
+
+    <?php if($gst_enabled == "Yes"): ?>
+    <!-- GST BREAKDOWN TABLE -->
+    <div style="margin-top: 10px;">
+        <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">GST Tax Breakdown</div>
+        <table class="data-table" style="font-size: 10px; margin-bottom: 8px;">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="center">HSN / SAC</th>
+                    <th rowspan="2" class="right">Taxable Amount</th>
+                    <th rowspan="2" class="center">Rate</th>
+                    <?php if($tax_mode == 'IGST'){ ?>
+                        <th colspan="2" class="center">IGST</th>
+                    <?php } else { ?>
+                        <th colspan="2" class="center">CGST</th>
+                        <th colspan="2" class="center">SGST</th>
+                    <?php } ?>
+                    <th rowspan="2" class="right">Total Tax</th>
+                </tr>
+                <tr>
+                    <?php if($tax_mode == 'IGST'){ ?>
+                        <th class="center">Rate</th>
+                        <th class="right">Amount</th>
+                    <?php } else { ?>
+                        <th class="center">Rate</th>
+                        <th class="right">Amount</th>
+                        <th class="center">Rate</th>
+                        <th class="right">Amount</th>
+                    <?php } ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $gst_summary = [];
+
+                foreach($items as $it){
+                    $hsn  = $it['hsn_code'] ?? 'NA';
+                    $rate = $it['gst_percent'];
+                    $key = $hsn . '_' . $rate;
+
+                    if(!isset($gst_summary[$key])){
+                        $gst_summary[$key] = [
+                            'hsn'      => $hsn,
+                            'rate'     => $rate,
+                            'taxable'  => 0,
+                            'cgst'     => 0,
+                            'sgst'     => 0,
+                            'igst'     => 0
+                        ];
+                    }
+
+                    $taxable = ($it['qty'] * $it['rate_excl_gst']) - $it['discount_amount'];
+                    $gst_summary[$key]['taxable'] += $taxable;
+                    $gst_summary[$key]['cgst']    += $it['cgst_amount'];
+                    $gst_summary[$key]['sgst']    += $it['sgst_amount'];
+                    $gst_summary[$key]['igst']    += $it['igst_amount'];
+                }
+
+                $grand_taxable = 0;
+                $grand_cgst = 0;
+                $grand_sgst = 0;
+                $grand_igst = 0;
+
+                foreach($gst_summary as $key => $data):
+                    $grand_taxable += $data['taxable'];
+                    $grand_cgst += $data['cgst'];
+                    $grand_sgst += $data['sgst'];
+                    $grand_igst += $data['igst'];
+                    $total_tax = $data['cgst'] + $data['sgst'] + $data['igst'];
+                ?>
+                <tr>
+                    <td class="center"><?= $data['hsn'] ?></td>
+                    <td class="right"><?= number_format($data['taxable'],2) ?></td>
+                    <td class="center"><?= $data['rate'] ?>%</td>
+
+                    <?php if($tax_mode == 'IGST'){ ?>
+                        <td class="center"><?= $data['rate'] ?>%</td>
+                        <td class="right"><?= number_format($data['igst'],2) ?></td>
+                    <?php } else { ?>
+                        <td class="center"><?= $data['rate']/2 ?>%</td>
+                        <td class="right"><?= number_format($data['cgst'],2) ?></td>
+                        <td class="center"><?= $data['rate']/2 ?>%</td>
+                        <td class="right"><?= number_format($data['sgst'],2) ?></td>
+                    <?php } ?>
+
+                    <td class="right bold"><?= number_format($total_tax,2) ?></td>
+                </tr>
+                <?php endforeach; ?>
+
+                <tr class="bold" style="background: var(--table-header-bg);">
+                    <td class="center">Total</td>
+                    <td class="right"><?= number_format($grand_taxable,2) ?></td>
+                    <td></td>
+
+                    <?php if($tax_mode == 'IGST'){ ?>
+                        <td></td>
+                        <td class="right"><?= number_format($grand_igst,2) ?></td>
+                    <?php } else { ?>
+                        <td></td>
+                        <td class="right"><?= number_format($grand_cgst,2) ?></td>
+                        <td></td>
+                        <td class="right"><?= number_format($grand_sgst,2) ?></td>
+                    <?php } ?>
+
+                    <td class="right"><?= number_format($grand_cgst + $grand_sgst + $grand_igst,2) ?></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+
+    <!-- FOOTER INFO: BANK DETAILS & AUTHORIZATION -->
+    <div class="footer-grid">
+        <div class="footer-card">
+            <div class="footer-card-title">Bank Details</div>
+            <?php if($bank){ ?>
+                <div style="font-size: 11px; line-height: 1.4;">
+                    <b>Bank:</b> <?= $bank['bank_name'] ?><br>
+                    <b>A/C Name:</b> <?= $bank['account_name'] ?><br>
+                    <b>A/C No:</b> <?= $bank['account_number'] ?><br>
+                    <b>IFSC Code:</b> <?= $bank['ifsc_code'] ?>
+                </div>
+            <?php } else { ?>
+                <div style="color: var(--text-muted); font-size: 11px;">No bank details available.</div>
+            <?php } ?>
+        </div>
+
+        <div class="footer-card center" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="footer-card-title">Authorized Signatory</div>
+            <div class="bold"><?= $org_master['org_name'] ?></div>
+            <div class="signature-space"></div>
+            <div style="font-size: 9px; color: var(--text-muted);">
+                Computer-generated invoice. No physical signature required.
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMS & CONDITIONS -->
+    <?php if(!empty(trim($invoice['terms_conditions']))): ?>
+    <div class="footer-card" style="margin-top: 10px;">
+        <div class="footer-card-title">Terms & Conditions</div>
+        <div class="terms-box"><?= trim($invoice['terms_conditions']); ?></div>
+    </div>
+    <?php endif; ?>
 
 </div>
 
-</td>
-
-</tr>
-
-</table>
-
-</div>
-
-<script>
-
-function printInvoice(){
-
-    window.print();
-
-}
-
-</script>
 </body>
 </html>
