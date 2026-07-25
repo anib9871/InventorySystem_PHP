@@ -200,8 +200,43 @@ exit;
 
 <?php include_once('layouts/header.php'); ?>
 
+<style>
+#bom_container table thead{
+    background:#1f2d3d;
+}
+
+#bom_container table thead th{
+    color:#fff !important;
+    font-weight:600;
+    border-color:#31445c;
+}
+
+#bom_container table tbody td{
+    vertical-align:middle;
+    font-size:13px;
+}
+
+#bom_container .table{
+    margin-bottom:15px;
+}
+
+#bom_container .alert-info{
+    margin-bottom:0;
+}
+
+
+.btn-round{
+    border-radius:30px;
+    padding:8px 24px;
+    font-weight:600;
+}
+
+</style>
+
 <div class="row">
-<div class="col-md-6">
+
+    <!-- LEFT SIDE -->
+    <div class="col-md-4">
 <div class="panel panel-default">
 <div class="panel-heading">
 <strong>Manufacture Device</strong>
@@ -233,29 +268,6 @@ exit;
 </select>
 </div>
 
-<div id="bom_container" style="display:none; margin-bottom:15px;">
-
-    <label><strong>BOM Items</strong></label>
-
-    <table class="table table-bordered table-condensed">
-        <thead>
-            <tr>
-                <th>Raw Material</th>
-                <th>Qty / Unit</th>
-                <th>Current Stock</th>
-            </tr>
-        </thead>
-
-        <tbody id="bom_body"></tbody>
-    </table>
-
-    <div class="alert alert-info">
-        Maximum Manufacturable :
-        <strong id="max_qty">0</strong>
-    </div>
-
-</div>
-
 
 <div class="form-group">
 <label>Quantity</label>
@@ -270,8 +282,10 @@ exit;
 
 <br>
 
-<button type="submit" name="save_manufacture" class="btn btn-success">
-Manufacture
+<button type="submit"
+        name="save_manufacture"
+        class="btn btn-success btn-round">
+    Manufacture
 </button>
 
 </form>
@@ -279,8 +293,58 @@ Manufacture
 </div>
 </div>
 </div>
+
+
+<!-- RIGHT SIDE -->
+<div class="col-md-8">
+
+<div class="panel panel-default" id="bom_panel" style="display:none;">
+
+<div class="panel-heading">
+<strong>BOM Details</strong>
 </div>
 
+<div class="panel-body">
+
+<div id="bom_container" style="display:none;">
+
+<table class="table table-bordered table-hover">
+
+<thead style="background:#1f2d3d; color:#fff;">
+
+<tr>
+
+<th style="color:#fff;">Raw Material</th>
+
+<th style="color:#fff;">Qty / Unit</th>
+
+<th style="color:#fff;">Current Stock</th>
+
+</tr>
+
+</thead>
+
+<tbody id="bom_body"></tbody>
+
+</table>
+
+<div class="alert alert-info">
+
+Maximum Manufacturable :
+
+<strong id="max_qty">0</strong>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
 <?php include_once('layouts/footer.php'); ?>
 
 <script>
@@ -292,6 +356,7 @@ $(document).ready(function () {
 
         if(product_id==''){
             $('#bom_container').hide();
+            $('#bom_panel').hide();
             $('#bom_body').html('');
             $('#max_qty').text('0');
             return;
@@ -320,6 +385,7 @@ $(document).ready(function () {
                 $('#bom_body').html(html);
                 $('#max_qty').text(response.max);
                 $('#bom_container').show();
+                $('#bom_panel').show();
 
             },
 
