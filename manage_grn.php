@@ -30,6 +30,48 @@ ORDER BY MAX(tm.bill_indent_date) DESC
 include_once('layouts/header.php');
 ?>
 
+<style>
+
+#grnTable thead th{
+    background:#1f2d4d;
+    color:#fff;
+    font-weight:600;
+    border-color:#1f2d4d;
+}
+
+#grnTable tbody td{
+    vertical-align:middle;
+}
+
+#grnTable tbody tr:hover{
+    background:#f7fbff;
+}
+
+#grnSearch{
+    height:34px;
+}
+
+.btn-xs{
+    margin-right:4px;
+}
+
+.panel{
+    border-radius:8px;
+}
+
+.panel-heading{
+    font-size:24px;
+    font-weight:600;
+}
+
+.btn-round{
+    border-radius:50px;
+    padding:8px 20px;
+    font-weight:600;
+}
+
+</style>
+
 <div class="row">
 
 <div class="col-md-12">
@@ -42,26 +84,44 @@ include_once('layouts/header.php');
         Manage GRN
     </strong>
 
-    <a href="grn.php"
-       class="btn btn-success btn-sm pull-right">
-        <i class="fa fa-plus"></i> Create GRN
-    </a>
+<a href="grn.php"
+   class="btn btn-success btn-sm pull-right btn-round">
+    <i class="fa fa-plus"></i> Create GRN
+</a>
 
 </div>
 
 <div class="panel-body">
 
-<table class="table table-bordered table-striped">
+<div class="row" style="margin-bottom:15px;">
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-addon">
+                <i class="fa fa-search"></i>
+            </span>
+            <input type="text"
+                   id="grnSearch"
+                   class="form-control"
+                   placeholder="Search GRN...">
+        </div>
+    </div>
+</div>
 
-<thead>
+<div class="table-responsive">
+
+<table class="table table-bordered table-hover" id="grnTable">
+
+<thead style="background:#1f2d4d;color:#fff;">
+
 <tr>
-<th>#</th>
+<th width="50">#</th>
 <th>GRN No</th>
 <th>Supplier</th>
-<th>Date</th>
-<th>Total</th>
-<th width="150">Action</th>
+<th width="140">Date</th>
+<th width="140">Total</th>
+<th width="120">Action</th>
 </tr>
+
 </thead>
 
 <tbody>
@@ -88,23 +148,21 @@ No GRN Found
 
 <td><?= date('d/M/Y', strtotime($g['bill_indent_date'])); ?></td>
 
-<td><?= number_format($g['total'],2); ?></td>
+<td>₹ <?= number_format($g['total'],2); ?></td>
 
 <td>
 
 <a href="grn.php?edit=<?= urlencode($g['bill_indent_no']); ?>"
-class="btn btn-xs btn-primary">
-
-Edit
-
+   class="btn btn-info btn-xs"
+   title="Edit">
+    <i class="fa fa-pencil"></i>
 </a>
 
 <a href="print_grn.php?bill=<?= urlencode($g['bill_indent_no']); ?>"
-class="btn btn-xs btn-success"
-target="_blank">
-
-Print
-
+   class="btn btn-danger btn-xs"
+   target="_blank"
+   title="Print">
+    <i class="fa fa-print"></i>
 </a>
 
 </td>
@@ -121,8 +179,28 @@ Print
 
 </div>
 
-</div>
+<script>
 
-</div>
+$('#grnSearch').on('keyup', function () {
+
+    var value = $(this).val().toLowerCase();
+
+    $('#grnTable tbody tr').filter(function () {
+
+        $(this).toggle(
+            $(this).text().toLowerCase().indexOf(value) > -1
+        );
+
+    });
+
+});
+
+
+$(function () {
+    $('[title]').tooltip();
+});
+
+
+</script>
 
 <?php include_once('layouts/footer.php'); ?>
