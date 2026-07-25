@@ -243,17 +243,6 @@ exit;
 </div>
 
 <div class="panel-body">
-
-<?php if(isset($_SESSION['mfg_error'])){ ?>
-
-<div class="alert alert-danger">
-
-<?= $_SESSION['mfg_error']; ?>
-
-</div>
-
-<?php unset($_SESSION['mfg_error']); } ?>
-
 <form method="post">
 
 <div class="form-group">
@@ -401,3 +390,31 @@ $(document).ready(function () {
 
 });
 </script>
+
+<?php if(isset($_SESSION['mfg_error'])){ ?>
+
+<script>
+Swal.fire({
+    icon: 'error',
+    title: 'Manufacture Failed',
+    text: '<?= addslashes($_SESSION['mfg_error']); ?>',
+    confirmButtonColor: '#d33'
+});
+</script>
+
+<?php unset($_SESSION['mfg_error']); } ?>
+
+<?php
+$msg = $session->msg();
+if($msg){
+?>
+<script>
+Swal.fire({
+    icon: 'success',
+    title: 'Manufacturing Successful',
+    text: 'Finished goods have been created successfully.',
+    timer: 1800,
+    showConfirmButton: false
+});
+</script>
+<?php } ?>
