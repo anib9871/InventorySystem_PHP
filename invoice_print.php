@@ -52,43 +52,68 @@ LEFT JOIN products p ON p.id = ii.product_id
 WHERE ii.invoice_id = $id
 ");
 
-/* ================= NUMBER TO WORDS ================= */
+/* ================= IMPROVED NUMBER TO WORDS FUNCTION ================= */
 
-function numberToWords($num){
+function convertGroup($num) {
     $ones = array(
-        0=>"",1=>"One",2=>"Two",3=>"Three",4=>"Four",5=>"Five",
-        6=>"Six",7=>"Seven",8=>"Eight",9=>"Nine",10=>"Ten",
-        11=>"Eleven",12=>"Twelve",13=>"Thirteen",14=>"Fourteen",
-        15=>"Fifteen",16=>"Sixteen",17=>"Seventeen",
-        18=>"Eighteen",19=>"Nineteen"
+        0 => "", 1 => "One", 2 => "Two", 3 => "Three", 4 => "Four", 5 => "Five",
+        6 => "Six", 7 => "Seven", 8 => "Eight", 9 => "Nine", 10 => "Ten",
+        11 => "Eleven", 12 => "Twelve", 13 => "Thirteen", 14 => "Fourteen",
+        15 => "Fifteen", 16 => "Sixteen", 17 => "Seventeen", 18 => "Eighteen", 19 => "Nineteen"
     );
     $tens = array(
-        0=>"",2=>"Twenty",3=>"Thirty",4=>"Forty",
-        5=>"Fifty",6=>"Sixty",7=>"Seventy",
-        8=>"Eighty",9=>"Ninety"
+        0 => "", 2 => "Twenty", 3 => "Thirty", 4 => "Forty",
+        5 => "Fifty", 6 => "Sixty", 7 => "Seventy", 8 => "Eighty", 9 => "Ninety"
     );
 
-    if($num==0) return "Zero";
+    if ($num == 0) return "";
 
-    if($num<20) return $ones[$num];
-
-    if($num<100){
-        return $tens[intval($num/10)]." ".$ones[$num%10];
+    if ($num < 20) {
+        return $ones[$num];
     }
 
-    if($num<1000){
-        return $ones[intval($num/100)]." Hundred ".numberToWords($num%100);
+    if ($num < 100) {
+        $rem = $num % 10;
+        return trim($tens[intval($num / 10)] . " " . $ones[$rem]);
     }
 
-    if($num<100000){
-        return numberToWords(intval($num/1000))." Thousand ".numberToWords($num%1000);
+    if ($num < 1000) {
+        $rem = $num % 100;
+        return trim($ones[intval($num / 100)] . " Hundred " . convertGroup($rem));
     }
 
-    if($num<10000000){
-        return numberToWords(intval($num/100000))." Lakh ".numberToWords($num%100000);
+    if ($num < 100000) {
+        $rem = $num % 1000;
+        return trim(convertGroup(intval($num / 1000)) . " Thousand " . convertGroup($rem));
     }
 
-    return numberToWords(intval($num/10000000))." Crore ".numberToWords($num%10000000);
+    if ($num < 10000000) {
+        $rem = $num % 100000;
+        return trim(convertGroup(intval($num / 100000)) . " Lakh " . convertGroup($rem));
+    }
+
+    $rem = $num % 10000000;
+    return trim(convertGroup(intval($num / 10000000)) . " Crore " . convertGroup($rem));
+}
+
+function numberToWords($amount) {
+    $amount = round($amount, 2);
+    $rupees = intval($amount);
+    $paise = intval(round(($amount - $rupees) * 100));
+
+    if ($rupees == 0 && $paise == 0) {
+        return "Zero";
+    }
+
+    $rupeesInWords = ($rupees > 0) ? convertGroup($rupees) : "Zero";
+    $result = $rupeesInWords;
+
+    if ($paise > 0) {
+        $paiseInWords = convertGroup($paise);
+        $result .= " and " . $paiseInWords . " Paise";
+    }
+
+    return trim($result);
 }
 ?>
 
@@ -558,7 +583,7 @@ table.data-table tr:nth-child(even):not(.summary-row) {
     <!-- AMOUNT IN WORDS -->
     <div class="amount-words-box">
         <span class="bold" style="color: var(--text-muted);">Amount in Words:</span> 
-        <span class="bold"><?= numberToWords(round($invoice['net_total'])) ?> Only</span>
+        <span class="bold"><?= numberToWords($invoice['net_total']) ?> Only</span>
     </div>
 
     <?php if($gst_enabled == "Yes"): ?>
