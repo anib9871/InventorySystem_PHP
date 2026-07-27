@@ -785,14 +785,10 @@ window.location='invoice_create.php';
 exit;
 }
 
-// echo "<script>
-// window.location='invoice_list.php?print_id=".$qid."';
-// </script>";
-$row = find_by_sql("SELECT * FROM invoice WHERE id='$qid'");
-echo "<pre>";
-print_r($row);
-exit;
-header("Location: invoice_print.php?id=".$qid);
+// Final save hone ke baad invoice print page par redirect karein
+echo "<script>
+window.location='invoice_print.php?id=".$qid."';
+</script>";
 exit;
 }
 
@@ -1657,7 +1653,7 @@ let shortName = p.name.length > 20
 : p.name;
 
 document.getElementById("stockInfo").innerHTML =
-`${shortName} : ${Math.floor(Number(p.current_stock || 0))} PCS`;
+`Available Stock: ${Math.floor(Number(p.current_stock || 0))} PCS`;
 
 let rows = document.querySelectorAll("#billBody tr");
 
@@ -1779,11 +1775,11 @@ lastRow.querySelector(".productName").dataset.productId;
 let productObj =
 products.find(p => p.id == productId);
 
-         if(productObj){
+if(productObj){
 
-            document.getElementById("stockInfo").innerHTML =
-            `${productObj.name} : ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
-         }
+   document.getElementById("stockInfo").innerHTML =
+   `Available Stock: ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
+}
       }
    }
 
