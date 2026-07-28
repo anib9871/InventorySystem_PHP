@@ -405,6 +405,60 @@ body{
     border-radius:10px;
 }
 
+/* Compact Modal Styling */
+#paymentModal .modal-dialog {
+    width: 100% !important;
+    max-width: 580px; /* Width tight kar di */
+    margin: 30px auto;
+}
+
+#paymentModal .modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+#paymentModal .modal-header {
+    background: #111827;
+    color: #fff;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    padding: 10px 15px;
+}
+
+#paymentModal .modal-header .close {
+    color: #fff;
+    opacity: 0.8;
+}
+
+.payment-modes-wrapper {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.payment-mode-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    padding: 4px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    margin-bottom: 6px;
+}
+
+.payment-mode-item label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 </style>
 
 <div class="row">
@@ -688,177 +742,82 @@ Add Payment
 </div>
 
 <!-- ================= ADD PAYMENT MODAL ================= -->
+<div class="modal fade" id="paymentModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h5 class="modal-title" style="margin:0; font-weight:600; font-size:15px;">Add Payment</h5>
+      </div>
 
-<div class="modal fade"
-id="paymentModal">
+      <form method="post">
+        <div class="modal-body" style="padding: 12px 15px;">
+          <input type="hidden" name="invoice_id" id="invoice_id">
 
-<div class="modal-dialog">
+          <!-- Top Details Row -->
+          <div class="row" style="margin-left:-5px; margin-right:-5px;">
+            <div class="col-xs-3" style="padding:0 5px;">
+              <label style="font-size:11px; margin-bottom:2px;"><?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?></label>
+              <input type="text" id="invoice_no" class="form-control input-sm" style="font-size:12px; height:28px;" readonly>
+            </div>
 
-<div class="modal-content">
+            <div class="col-xs-3" style="padding:0 5px;">
+              <label style="font-size:11px; margin-bottom:2px;">Date</label>
+              <input type="text" name="payment_date" class="form-control input-sm payment-datepicker" value="<?= date('d/M/Y'); ?>" style="font-size:12px; height:28px;" autocomplete="off" required>
+            </div>
 
-<div class="modal-header">
+            <div class="col-xs-3" style="padding:0 5px;">
+              <label style="font-size:11px; margin-bottom:2px;"><?= ($type=='customer') ? 'Customer' : 'Supplier' ?></label>
+              <input type="text" id="customer_name" class="form-control input-sm" style="font-size:12px; height:28px;" readonly>
+            </div>
 
-<button type="button"
-class="close"
-data-dismiss="modal">
+            <div class="col-xs-3" style="padding:0 5px;">
+              <label style="font-size:11px; margin-bottom:2px;">Due</label>
+              <input type="text" id="due_amount" class="form-control input-sm" style="font-size:12px; height:28px; font-weight:bold; color:#dc2626;" readonly>
+            </div>
+          </div>
 
-&times;
+          <!-- Payment Modes Section -->
+          <div class="form-group" style="margin-top:10px; margin-bottom:10px;">
+            <label style="font-size:12px; margin-bottom:4px; font-weight:600;">Payment Mode(s)</label>
+            <div class="payment-modes-wrapper">
+              <div class="row" style="margin-left:-4px; margin-right:-4px;">
+                <?php foreach($payment_modes as $mode): ?>
+                <div class="col-xs-6" style="padding:0 4px;">
+                  <div class="payment-mode-item">
+                    <div style="flex: 1;">
+                      <label>
+                        <input type="checkbox" class="pay-check" data-target="mode_<?= $mode['id']; ?>" value="<?= $mode['mode_name']; ?>">
+                        <?= strtoupper($mode['mode_name']); ?>
+                      </label>
+                    </div>
+                    <div style="width: 85px;">
+                      <input type="number" step="0.01" min="0" value="" name="amounts[<?= $mode['mode_name']; ?>]" id="mode_<?= $mode['id']; ?>" class="form-control input-sm" style="height:26px; padding:2px 6px; font-size:12px;" placeholder="0.00" disabled>
+                    </div>
+                  </div>
+                </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          </div>
 
-</button>
+          <!-- Bottom Remarks & Action Row -->
+          <div class="row" style="margin-left:-5px; margin-right:-5px;">
+            <div class="col-xs-8" style="padding:0 5px;">
+              <input type="text" name="remarks" class="form-control input-sm" style="height:32px; font-size:12px;" placeholder="Remarks / Ref No">
+            </div>
 
-<h4 class="modal-title">
-
-Add Payment
-
-</h4>
-
-</div>
-
-<form method="post">
-
-<div class="modal-body">
-
-<input type="hidden"
-name="invoice_id"
-id="invoice_id">
-
-
-<div class="row">
-
-<div class="col-md-3">
-<label><?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?></label>
-<input type="text" id="invoice_no" class="form-control input-sm" readonly>
-</div>
-
-<div class="col-md-3">
-<label>Payment Date</label>
-<input
-type="text"
-name="payment_date"
-class="form-control input-sm payment-datepicker"
-value="<?= date('d/M/Y'); ?>"
-autocomplete="off"
-required>
-</div>
-
-<div class="col-md-3">
-<label><?= ($type=='customer') ? 'Customer' : 'Supplier' ?></label>
-<input type="text"
-id="customer_name"
-class="form-control input-sm"
-readonly>
-</div>
-
-<div class="col-md-3">
-<label>Remaining Due</label>
-<input type="text"
-id="due_amount"
-class="form-control input-sm"
-readonly>
-</div>
-
-</div>
-
-<br>
-
-<div class="form-group">
-
-<label>
-
-Payment
-
-</label>
-
-<div style="
-max-height:170px;
-overflow-y:auto;
-border:1px solid #ddd;
-padding:8px;
-border-radius:5px;
-">
-
-<div class="row">
-
-<?php foreach($payment_modes as $mode): ?>
-
-<div class="col-md-6" style="margin-bottom:8px;">
-
-    <div class="row">
-
-        <div class="col-xs-5">
-
-            <label style="font-weight:normal;font-size:12px;margin-top:6px;">
-
-                <input type="checkbox"
-                       class="pay-check"
-                       data-target="mode_<?= $mode['id']; ?>"
-                       value="<?= $mode['mode_name']; ?>">
-
-                <?= strtoupper($mode['mode_name']); ?>
-
-            </label>
+            <div class="col-xs-4" style="padding:0 5px;">
+              <button type="submit" name="save_payment" class="btn btn-success btn-block btn-sm" style="font-weight:600; height:32px; line-height:1.2;">
+                Save Payment
+              </button>
+            </div>
+          </div>
 
         </div>
-
-        <div class="col-xs-7">
-<input type="number"
-       step="0.01"
-       min="0"
-       value=""
-       name="amounts[<?= $mode['mode_name']; ?>]"
-       id="mode_<?= $mode['id']; ?>"
-       class="form-control input-sm"
-       disabled>
-
-        </div>
-
+      </form>
     </div>
-
-</div>
-
-<?php endforeach; ?>
-
-</div>
-
-</div>
-
-</div>
-
-
-<div class="row">
-
-<div class="col-md-9">
-
-<label>Remarks / Ref No</label>
-
-<input type="text"
-name="remarks"
-class="form-control input-sm">
-
-</div>
-
-<div class="col-md-3">
-
-<label>&nbsp;</label>
-
-<button type="submit"
-name="save_payment"
-class="btn btn-success btn-block">
-
-Save Payment
-
-</button>
-
-</div>
-
-</div>
-
-</form>
-
-</div>
-
-</div>
-
+  </div>
 </div>
 
 <script>
