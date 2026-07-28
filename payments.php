@@ -96,7 +96,11 @@ if($type == 'customer'){
 // Round Off Adjustment
 if(abs($new_due) <= 0.21){
     $new_due  = 0;
-    $new_paid = $invoice['bill_amount'];   // <-- ye line add karo
+    if($type == 'customer'){
+        $new_paid = $invoice['net_total'];
+    } else {
+        $new_paid = $invoice['bill_amount'];
+    }
 }
 
 if($new_due <= 0){
