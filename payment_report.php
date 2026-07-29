@@ -39,7 +39,7 @@ $supplier_reports = [];
 
 if ($action === 'generate') {
     
-    // 1. Fetch ONLY Customer Reports if type is customer
+    // 1. Fetch Customer Reports
     if ($report_type === 'customer' && ($is_billing || $is_inventory || $is_combined)) {
         $reports = find_by_sql("
             SELECT
@@ -61,7 +61,7 @@ if ($action === 'generate') {
         ");
     }
 
-    // 2. Fetch ONLY Supplier Reports if type is supplier
+    // 2. Fetch Supplier Reports
     if ($report_type === 'supplier' && ($is_inventory || $is_combined)) {
         $supplier_reports = find_by_sql("
             SELECT
@@ -70,6 +70,7 @@ if ($action === 'generate') {
                 sp.payment_mode,
                 sp.payment_amount,
                 sp.reference_no,
+                sp.supplier_id,
                 sl.bill_no,
                 sl.bill_amount,
                 sl.paid_amount,
@@ -266,32 +267,71 @@ foreach($reports as $i => $r):
 $supplier_total = 0;
 $row_index = 1;
 
+// Pre-process to map original advance modes & ref_nos to suppliers
+$advances_by_supplier = [];
+foreach ($supplier_reports as $s_item) {
+    if (trim($s_item['bill_no']) === 'ADVANCE') {
+        $advances_by_supplier[$s_item['supplier_id']] = [
+            'mode' => $s_item['payment_mode'],
+            'ref_no' => $s_item['reference_no'],
+            'amount' => $s_item['payment_amount']
+        ];
+    }
+}
+
 foreach($supplier_reports as $s):
 
     $bill_no = trim($s['bill_no']);
     $ref_no = trim($s['reference_no']);
+    $payment_mode = strtoupper(trim($s['payment_mode']));
+    $supplier_id = $s['supplier_id'];
+
     $is_advance_entry = ($bill_no === 'ADVANCE');
 
-    // Check if advance entry was later adjusted in GRN
-    $is_adjusted_in_grn = false;
-    if ($is_advance_entry) {
-        foreach ($supplier_reports as $check_grn) {
-            if (trim($check_grn['bill_no']) !== 'ADVANCE' && strtolower(trim($check_grn['payment_mode'])) === 'advance') {
-                if (!empty($ref_no) && strtolower(trim($check_grn['reference_no'])) === strtolower($ref_no)) {
-                    $is_adjusted_in_grn = true;
-                    break;
-                }
+    // 1. Check if supplier has an adjusted GRN bill in this report list
+    $has_grn_adjusted = false;
+    foreach ($supplier_reports as $check_grn) {
+        if ($check_grn['supplier_id'] == $supplier_id && trim($check_grn['bill_no']) !== 'ADVANCE') {
+            $grn_mode = strtoupper(trim($check_grn['payment_mode']));
+            $grn_ref = strtolower(trim($check_grn['reference_no']));
+            if ($grn_mode === 'ADVANCE' || strpos($grn_ref, 'advance') !== false) {
+                $has_grn_adjusted = true;
+                break;
             }
         }
     }
 
-    // Hide unadjusted advance if already linked with GRN
-    if ($is_advance_entry && $is_adjusted_in_grn) {
+    // Hide standalone 'Advance Paid' row if it was already adjusted in GRN
+    if ($is_advance_entry && $has_grn_adjusted) {
         continue;
     }
 
     $supplier_total += $s['payment_amount'];
-    $is_grn_advance_adjusted = (!$is_advance_entry && strtolower(trim($s['payment_mode'])) === 'advance');
+
+    // 2. Determine display values for Mode and Ref No
+    $display_mode = $payment_mode;
+    $is_adjusted_row = false;
+
+    if (!$is_advance_entry && ($payment_mode === 'ADVANCE' || strpos(strtolower($ref_no), 'advance') !== false)) {
+        $is_adjusted_row = true;
+        
+        // Fetch original payment mode from advance entry if mode was saved as ADVANCE
+        if (isset($advances_by_supplier[$supplier_id]['mode']) && !empty($advances_by_supplier[$supplier_id]['mode'])) {
+            $display_mode = strtoupper($advances_by_supplier[$supplier_id]['mode']);
+        } else {
+            $display_mode = 'NET BANKING'; // Default fallback
+        }
+
+        // Fetch original Ref No from advance entry if Ref No is "Advance Adjusted"
+        if (strpos(strtolower($ref_no), 'advance') !== false && isset($advances_by_supplier[$supplier_id]['ref_no'])) {
+            $display_ref = $advances_by_supplier[$supplier_id]['ref_no'];
+        } else {
+            $display_ref = $ref_no;
+        }
+    } else {
+        $display_ref = $ref_no;
+    }
+
 ?>
 
 <tr>
@@ -331,8 +371,8 @@ foreach($supplier_reports as $s):
     <?php } ?>
     </td>
     <td>
-        <?= strtoupper($s['payment_mode']); ?>
-        <?php if($is_grn_advance_adjusted): ?>
+        <?= htmlspecialchars($display_mode); ?>
+        <?php if($is_adjusted_row): ?>
             <br><small style="color:#6b7280; font-weight:bold;">(ADVANCE)</small>
         <?php endif; ?>
     </td>
@@ -344,8 +384,8 @@ foreach($supplier_reports as $s):
     <?php endif; ?>
     </td>
     <td style="min-width:180px; white-space:nowrap;">
-        <?= $s['reference_no'] ?: '-'; ?>
-        <?php if($is_grn_advance_adjusted): ?>
+        <?= htmlspecialchars($display_ref ?: '-'); ?>
+        <?php if($is_adjusted_row): ?>
             <br><small style="color:#2563eb; font-weight:bold;">(ADVANCE ADJUSTED)</small>
         <?php endif; ?>
     </td>
