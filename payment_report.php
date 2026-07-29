@@ -203,13 +203,13 @@ foreach($reports as $i => $r):
 <tr>
     <td><?= $i+1; ?></td>
     <td><?= date('d/M/Y', strtotime($r['payment_date'])); ?></td>
-    <td><?= htmlspecialchars($r['invoice_no']); ?></td>
-    <td><?= htmlspecialchars($r['customer_name']); ?></td>
-    <td><?= strtoupper($r['payment_mode']); ?></td>
+    <td><?= htmlspecialchars($r['invoice_no'] ?? ''); ?></td>
+    <td><?= htmlspecialchars($r['customer_name'] ?? ''); ?></td>
+    <td><?= strtoupper($r['payment_mode'] ?? ''); ?></td>
     <td style="color:green;font-weight:bold;">₹ <?= number_format($r['amount'],2); ?></td>
     <td>
     <?php
-    $status = strtolower(trim($r['payment_status']));
+    $status = strtolower(trim($r['payment_status'] ?? ''));
     if($status == 'paid'){ echo '<span class="label label-success">Paid</span>'; }
     elseif($status == 'partial'){ echo '<span class="label label-warning">Partial</span>'; }
     else{ echo '<span class="label label-danger">Unpaid</span>'; }
@@ -270,20 +270,20 @@ $row_index = 1;
 // Pre-process to map original advance modes & ref_nos to suppliers
 $advances_by_supplier = [];
 foreach ($supplier_reports as $s_item) {
-    if (trim($s_item['bill_no']) === 'ADVANCE') {
+    if (trim($s_item['bill_no'] ?? '') === 'ADVANCE') {
         $advances_by_supplier[$s_item['supplier_id']] = [
-            'mode' => $s_item['payment_mode'],
-            'ref_no' => $s_item['reference_no'],
-            'amount' => $s_item['payment_amount']
+            'mode' => $s_item['payment_mode'] ?? '',
+            'ref_no' => $s_item['reference_no'] ?? '',
+            'amount' => $s_item['payment_amount'] ?? 0
         ];
     }
 }
 
 foreach($supplier_reports as $s):
 
-    $bill_no = trim($s['bill_no']);
-    $ref_no = trim($s['reference_no']);
-    $payment_mode = strtoupper(trim($s['payment_mode']));
+    $bill_no = trim($s['bill_no'] ?? '');
+    $ref_no = trim($s['reference_no'] ?? '');
+    $payment_mode = strtoupper(trim($s['payment_mode'] ?? ''));
     $supplier_id = $s['supplier_id'];
 
     $is_advance_entry = ($bill_no === 'ADVANCE');
@@ -291,9 +291,9 @@ foreach($supplier_reports as $s):
     // 1. Check if supplier has an adjusted GRN bill in this report list
     $has_grn_adjusted = false;
     foreach ($supplier_reports as $check_grn) {
-        if ($check_grn['supplier_id'] == $supplier_id && trim($check_grn['bill_no']) !== 'ADVANCE') {
-            $grn_mode = strtoupper(trim($check_grn['payment_mode']));
-            $grn_ref = strtolower(trim($check_grn['reference_no']));
+        if ($check_grn['supplier_id'] == $supplier_id && trim($check_grn['bill_no'] ?? '') !== 'ADVANCE') {
+            $grn_mode = strtoupper(trim($check_grn['payment_mode'] ?? ''));
+            $grn_ref = strtolower(trim($check_grn['reference_no'] ?? ''));
             if ($grn_mode === 'ADVANCE' || strpos($grn_ref, 'advance') !== false) {
                 $has_grn_adjusted = true;
                 break;
@@ -342,25 +342,25 @@ foreach($supplier_reports as $s):
     if($is_advance_entry){
         echo '<span class="label label-info">Advance Paid</span>';
     }else{
-        echo htmlspecialchars($s['bill_no']);
+        echo htmlspecialchars($s['bill_no'] ?? '');
     }
     ?>
     </td>
-    <td><?= htmlspecialchars($s['supplier_name']); ?></td>
+    <td><?= htmlspecialchars($s['supplier_name'] ?? ''); ?></td>
     <td>
     <?php if($is_advance_entry){ ?>
-        ₹ <?= number_format(abs($s['paid_amount']),2); ?>
+        ₹ <?= number_format(abs($s['paid_amount'] ?? 0),2); ?>
     <?php } else { ?>
-        ₹ <?= number_format($s['bill_amount'],2); ?>
+        ₹ <?= number_format($s['bill_amount'] ?? 0,2); ?>
     <?php } ?>
     </td>
     <td style="color:green;font-weight:bold;">
-        ₹ <?= number_format($s['payment_amount'],2); ?>
+        ₹ <?= number_format($s['payment_amount'] ?? 0,2); ?>
     </td>
     <td style="font-weight:bold;width:180px;">
-    <?php if($s['balance_amount'] > 0){ ?>
+    <?php if(($s['balance_amount'] ?? 0) > 0){ ?>
         <span style="color:red;">Outstanding ₹ <?= number_format($s['balance_amount'],2); ?></span>
-    <?php } elseif($s['balance_amount'] < 0){ ?>
+    <?php } elseif(($s['balance_amount'] ?? 0) < 0){ ?>
         <?php if($is_advance_entry){ ?>
             <span style="color:green;">Remaining Advance ₹ <?= number_format(abs($s['balance_amount']),2); ?></span>
         <?php } else { ?>
@@ -377,7 +377,7 @@ foreach($supplier_reports as $s):
         <?php endif; ?>
     </td>
     <td>
-    <?php if($s['payment_status'] == 1): ?>
+    <?php if(($s['payment_status'] ?? 0) == 1): ?>
         <span class="label label-success">Paid</span>
     <?php else: ?>
         <span class="label label-warning">Partial</span>
