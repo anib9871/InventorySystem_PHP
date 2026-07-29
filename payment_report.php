@@ -303,7 +303,7 @@ tfoot th{
     </label>
 </div>
 
-<div class="col-md-3" style="display:flex;align-items:center;">
+<div class="col-md-2" style="display:flex;align-items:center;">
     <label style="margin:0 8px 0 0;white-space:nowrap;">
         From Date
     </label>
