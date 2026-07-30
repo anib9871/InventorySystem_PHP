@@ -2,9 +2,6 @@
 <?php
 require_once('includes/load.php');
 
-$db->db_disconnect();
-$db->db_connect();
-
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -20,6 +17,7 @@ SELECT *
 FROM quotation_master
 WHERE id = $id
 ");
+
 if(!$qdata){
     die("Quotation ID Not Found : ".$id);
 }
@@ -53,19 +51,7 @@ global $db;
 $db->query("START TRANSACTION");
 
 try{
-$quotation_date = $_POST['quotation_date'];
 
-$formats = ['d/M/Y','d-m-Y','Y-m-d'];
-
-foreach($formats as $format){
-
-    $dt = DateTime::createFromFormat($format, $quotation_date);
-
-    if($dt){
-        $quotation_date = $dt->format('Y-m-d');
-        break;
-    }
-}
 $cust = (int)$_POST['customer_id'];
 
 $gst_type = $_POST['gst_type'] ?? 'exclusive';
@@ -193,10 +179,12 @@ UPDATE quotation_master SET
 
 customer_id = '$cust',
 gst_type = '$gst_type',
-quotation_date = '$quotation_date',
+
 subtotal = '$subtotal',
 gst_total = '$total_gst',
 net_total = '$net_total',
+
+is_revised = 1,
 
 terms_conditions = '".$db->escape($_POST['terms_conditions'])."'
 
@@ -205,14 +193,26 @@ WHERE id = '$id'
 
 $db->query("COMMIT");
 
+/* ================= AUTO SEND REVISED QUOTATION EMAIL ================= */
+$c_info = find_by_sql("SELECT email, customer_name FROM customer_master WHERE id = '$cust' LIMIT 1");
+
+if (!empty($c_info) && !empty($c_info[0]['email'])) {
+    $to_email = $c_info[0]['email'];
+    $customer_name = $c_info[0]['customer_name'];
+    
+    if (function_exists('send_quotation_email')) {
+        send_quotation_email($id, $to_email, $customer_name);
+    }
+}
+
 echo "
 <script>
+alert('Quotation Updated & Revised Copy Sent to Email Successfully!');
 window.location='quotation_list.php?print_id=".$id."';
 </script>
 ";
 
 exit;
-
 }catch(Exception $e){
 
 $db->query("ROLLBACK");
@@ -652,22 +652,8 @@ placeholder="Search Product...">
 <div class="card p-3 mb-3">
 
 <div class="row g-3 align-items-center top-row-fix">
-<div class="col-md-2">
 
-<label>Quotation Date</label>
-
-<input
-type="text"
-id="quotation_date"
-name="quotation_date"
-class="form-control"
-value="<?= date('d/M/Y', strtotime($quote['quotation_date'])); ?>"
-autocomplete="off">
-
-</div>
-
-
-<div class="col-md-3">
+<div class="col-md-5">
 
 <label>Customer</label>
 
@@ -714,7 +700,7 @@ No GST
 
 </div>
 
-<div class="col-md-2">
+<div class="col-md-3">
 
 <button
 type="submit"
@@ -1211,18 +1197,6 @@ window.addEventListener("load", function(){
 
 });
 
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    flatpickr("#quotation_date", {
-        dateFormat: "d/M/Y",
-        allowInput: false,
-        disableMobile: true
-    });
-
-});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
