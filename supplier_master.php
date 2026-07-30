@@ -25,7 +25,7 @@ if(isset($_POST['add_supplier'])){
   $gst = remove_junk($db->escape($_POST['gst']));
 
   if($name==''){
-     $session->msg("d","Supplier name is required");
+     $session->msg("d","Supplier name is required!");
      redirect('supplier_master.php',false);
   }
 
@@ -34,9 +34,9 @@ if(isset($_POST['add_supplier'])){
           VALUES ('$name','$phone','$email','$contact','$address','$state_id','$state_code','$gst')";
 
   if($db->query($sql)){
-      $session->msg("s","Supplier Added");
+      $session->msg("s","Supplier added successfully!");
   }else{
-      $session->msg("d","Failed to add supplier");
+      $session->msg("d","Failed to add supplier!");
   }
   redirect('supplier_master.php',false);
 }
@@ -55,6 +55,11 @@ if(isset($_POST['update_supplier'])){
   $state_code = remove_junk($db->escape($_POST['state_code']));
   $gst = remove_junk($db->escape($_POST['gst']));
 
+  if($name==''){
+     $session->msg("d","Supplier name is required!");
+     redirect('supplier_master.php',false);
+  }
+
   $sql = "UPDATE supplier_master SET
           supplier_name='$name',
           phone='$phone',
@@ -67,9 +72,9 @@ if(isset($_POST['update_supplier'])){
           WHERE id='$id'";
 
   if($db->query($sql)){
-      $session->msg("s","Supplier Updated");
+      $session->msg("s","Supplier updated successfully!");
   } else {
-      $session->msg("d","Update Failed");
+      $session->msg("d","Update failed!");
   }
   redirect('supplier_master.php',false);
 }
@@ -84,8 +89,11 @@ if(isset($_GET['edit'])){
 /* ---------- DELETE ---------- */
 if(isset($_GET['del'])){
    $id=(int)$_GET['del'];
-   $db->query("DELETE FROM supplier_master WHERE id='$id'");
-   $session->msg("s","Supplier Deleted");
+   if($db->query("DELETE FROM supplier_master WHERE id='$id'")){
+       $session->msg("s","Supplier deleted successfully!");
+   } else {
+       $session->msg("d","Failed to delete supplier!");
+   }
    redirect('supplier_master.php',false);
 }
 
@@ -93,176 +101,438 @@ include_once('layouts/header.php');
 ?>
 
 <style>
-.equal-btn{
-  min-width:60px;   /* same width */
-  text-align:center;
+body {
+    background-color: #f4f7fb;
+}
+
+.panel {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 15px;
+    background: #ffffff;
+}
+
+.panel-heading {
+    padding: 10px 15px;
+    font-size: 13px;
+    font-weight: 700;
+    border-bottom: 1px solid #eef2f5 !important;
+    background: #ffffff !important;
+    color: #1a253f;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.title-header {
+    text-align: center;
+    border-bottom: 2px solid #2b8cff !important;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #1d3557;
+    padding: 10px 0;
+}
+
+.title-header i {
+    color: #2b8cff;
+    margin-right: 6px;
+}
+
+.panel-body {
+    padding: 15px;
+}
+
+label {
+    font-size: 11px;
+    margin-bottom: 3px;
+    font-weight: 600;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.form-group-compact {
+    margin-bottom: 10px;
+}
+
+.form-control {
+    height: 30px;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    border: 1px solid #cbd5e1;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #2b8cff;
+    box-shadow: 0 0 0 2px rgba(43, 140, 255, 0.15);
+}
+
+.form-control[readonly] {
+    background-color: #f1f5f9;
+    color: #64748b;
+}
+
+textarea.form-control {
+    height: 30px;
+    resize: none;
+    padding-top: 5px;
+}
+
+.btn-custom {
+    height: 30px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 0 15px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+
+.btn-success-custom {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff !important;
+    border: none;
+}
+
+.btn-success-custom:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #fff !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #2b8cff 0%, #1d72db 100%);
+    color: #fff !important;
+    border: none;
+}
+
+.btn-primary-custom:hover {
+    background: linear-gradient(135deg, #1d72db 0%, #155bc4 100%);
+    color: #fff !important;
+}
+
+.btn-clear {
+    background: #f1f5f9;
+    color: #64748b !important;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-clear:hover {
+    background: #e2e8f0;
+    color: #334155 !important;
+}
+
+/* Scrollable Table Container */
+.table-scrollable {
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.table {
+    margin-bottom: 0;
+    font-size: 12px;
+    width: 100%;
+}
+
+.table thead {
+    position: sticky;
+    top: 0;
+    background: #18233b;
+    color: #ffffff;
+    z-index: 10;
+}
+
+.table thead th {
+    border: none !important;
+    padding: 8px 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #18233b;
+}
+
+.table tbody td {
+    padding: 6px 10px;
+    vertical-align: middle !important;
+    border-color: #f1f5f9;
+}
+
+.table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.badge-state {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.address-cell {
+    min-width: 200px;
+    max-width: 240px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.search-box {
+    position: relative;
+    width: 280px;
+    margin-bottom: 10px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.search-box input {
+    padding-left: 30px;
+    height: 30px !important;
+}
+
+/* Action Buttons Flexbox Layout */
+.action-td {
+    min-width: 80px;
+    white-space: nowrap !important;
+}
+
+.action-cell {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+}
+
+.equal-btn {
+    width: 28px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    line-height: 26px !important;
+    font-size: 11px !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
 }
 </style>
 
-
 <div class="row">
-<div class="col-md-12"><?php echo display_msg($msg); ?></div>
-</div>
+    <!-- ADD/EDIT FORM (TOP FULL-WIDTH) -->
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading title-header">
+                <i class="glyphicon glyphicon-user"></i>
+                <?php echo $edit ? 'EDIT SUPPLIER MASTER' : 'SUPPLIER MASTER'; ?>
+            </div>
+            <div class="panel-body">
+                <form method="post" id="supplierForm">
+                    <?php if($edit){ ?>
+                        <input type="hidden" name="id" value="<?php echo $edit['id']; ?>">
+                    <?php } ?>
 
-<div class="row">
+                    <!-- Row 1: Supplier Name, Phone, Email -->
+                    <div class="row">
+                        <div class="col-md-4 form-group-compact">
+                            <label>Supplier Name *</label>
+                            <input type="text" id="supplier_name" name="supplier_name" class="form-control"
+                                   value="<?php echo $edit ? $edit['supplier_name'] : ''; ?>"
+                                   placeholder="Enter supplier name..." required autofocus>
+                        </div>
 
-<!-- ADD / EDIT FORM -->
-<div class="col-md-3" style="margin-top:-50px;">
-<div class="panel panel-default">
-<div class="panel-heading"><?php echo $edit ? 'Edit Supplier' : 'Add Supplier'; ?></div>
+                        <div class="col-md-4 form-group-compact">
+                            <label>Phone / Contact No</label>
+                            <input type="text" name="phone" class="form-control"
+                                   value="<?php echo $edit ? $edit['phone'] : ''; ?>"
+                                   placeholder="Phone number...">
+                        </div>
 
-<div class="panel-body">
-<form method="post">
+                        <div class="col-md-4 form-group-compact">
+                            <label>Email Address</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="<?php echo $edit ? $edit['email'] : ''; ?>"
+                                   placeholder="Email address...">
+                        </div>
+                    </div>
 
-<?php if($edit){ ?>
-<input type="hidden" name="id" value="<?php echo $edit['id']; ?>">
-<?php } ?>
+                    <!-- Row 2: Contact Person, State, State Code, GST No -->
+                    <div class="row">
+                        <div class="col-md-3 form-group-compact">
+                            <label>Contact Person</label>
+                            <input type="text" name="contact" class="form-control"
+                                   value="<?php echo $edit ? $edit['contact_person'] : ''; ?>"
+                                   placeholder="Person name...">
+                        </div>
 
-<input type="text" id="supplier_name" name="supplier_name" class="form-control"
-value="<?php echo $edit ? $edit['supplier_name'] : ''; ?>"
-placeholder="Supplier Name *" required><br>
+                        <div class="col-md-3 form-group-compact">
+                            <label>State</label>
+                            <select name="state_id" id="state_id" class="form-control" required>
+                                <option value="">Select State</option>
+                                <?php foreach($states as $s){ ?>
+                                    <option value="<?php echo $s['id']; ?>"
+                                            data-code="<?php echo $s['state_code']; ?>"
+                                            <?php if($edit && $edit['state_id']==$s['id']) echo "selected"; ?>>
+                                        <?php echo $s['state_name']; ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
 
+                        <div class="col-md-2 form-group-compact">
+                            <label>State Code</label>
+                            <input type="text" name="state_code" id="state_code" class="form-control"
+                                   value="<?php echo $edit ? $edit['state_code'] : ''; ?>"
+                                   placeholder="State Code" readonly>
+                        </div>
 
-<input type="text" name="phone" class="form-control"
-value="<?php echo $edit ? $edit['phone'] : ''; ?>"
-placeholder="Contact No"><br>
+                        <div class="col-md-4 form-group-compact">
+                            <label>GST No</label>
+                            <input type="text" name="gst" id="gst" class="form-control"
+                                   value="<?php echo $edit ? $edit['gst_no'] : ''; ?>"
+                                   placeholder="Enter GST Number (e.g. 09AAAAA0000A1Z5)">
+                        </div>
+                    </div>
 
-<input type="email" name="email" class="form-control"
-value="<?php echo $edit ? $edit['email'] : ''; ?>"
-placeholder="Email"><br>
+                    <!-- Row 3: Address & Buttons -->
+                    <div class="row">
+                        <div class="col-md-8 form-group-compact">
+                            <label>Address</label>
+                            <textarea name="address" rows="1" class="form-control"
+                                      placeholder="Complete address..."><?php echo $edit ? $edit['address'] : ''; ?></textarea>
+                        </div>
 
-<input type="text" name="contact" class="form-control"
-value="<?php echo $edit ? $edit['contact_person'] : ''; ?>"
-placeholder="Contact Person"><br>
+                        <div class="col-md-4 form-group-compact text-right" style="padding-top: 18px;">
+                            <?php if(!$edit){ ?>
+                                <button type="button" class="btn btn-clear btn-custom" onclick="clearForm()">
+                                    Clear
+                                </button>
+                            <?php } ?>
 
-<textarea name="address" class="form-control"
-placeholder="Address"><?php echo $edit ? $edit['address'] : ''; ?></textarea><br>
+                            <?php if($edit){ ?>
+                                <a href="supplier_master.php" class="btn btn-clear btn-custom">
+                                    Cancel
+                                </a>
+                                <button class="btn btn-primary-custom btn-custom" name="update_supplier">
+                                    Update Supplier
+                                </button>
+                            <?php }else{ ?>
+                                <button class="btn btn-success-custom btn-custom" name="add_supplier">
+                                    Save Supplier
+                                </button>
+                            <?php } ?>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-<!-- STATE DROPDOWN -->
-<select name="state_id" id="state_id" class="form-control" required>
-<option value="">Select State</option>
+    <!-- LIST (BOTTOM FULL-WIDTH) -->
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">SUPPLIER LIST</div>
 
-<?php foreach($states as $s){ ?>
-<option value="<?php echo $s['id']; ?>"
-data-code="<?php echo $s['state_code']; ?>"
-<?php if($edit && $edit['state_id']==$s['id']) echo "selected"; ?>>
-<?php echo $s['state_name']; ?>
-</option>
-<?php } ?>
-</select>
-<br>
+            <div class="panel-body">
+                <div class="search-box">
+                    <i class="glyphicon glyphicon-search"></i>
+                    <input type="text" id="search" class="form-control" placeholder="Search supplier...">
+                </div>
 
-<!-- STATE CODE AUTO -->
-<input type="text" name="state_code" id="state_code" class="form-control"
-value="<?php echo $edit ? $edit['state_code'] : ''; ?>"
-placeholder="State Code" readonly><br>
-
-<!-- GST AUTO PREFIX -->
-<input type="text" name="gst" id="gst" class="form-control"
-value="<?php echo $edit ? $edit['gst_no'] : ''; ?>"
-placeholder="Enter GST Number">
-<br>
-
-
-<?php if($edit){ ?>
-<button name="update_supplier" class="btn btn-danger btn-block">Update</button>
-<a href="supplier_master.php" class="btn btn-secondary btn-block">Cancel</a>
-<?php } else { ?>
-<button name="add_supplier" class="btn btn-danger btn-block">Save Supplier</button>
-<button type="button" class="btn btn-secondary btn-block" onclick="clearForm()">Clear</button>
-
-<?php } ?>
-
-</form>
-</div>
-</div>
-</div>
-
-<!-- LIST -->
-<div class="col-md-9">
-<div class="panel panel-default">
-<div class="panel-heading">Supplier List</div>
-
-<div class="panel-body">
-
-<input type="text" id="search" class="form-control" placeholder="Search supplier..."><br>
-
-<div class="table-responsive">
-<table class="table table-bordered table-striped">
-
-<tr>
-<th>#</th>
-<th>Name</th>
-<th>Phone</th>
-<th>Email</th>
-<th>Contact Person</th>
-<th>Address</th>
-<th>State</th>
-<th>GST Code</th>
-<th>GST No</th>
-<th>Action</th>
-</tr>
-
-<tbody id="supplierTable">
-<?php foreach($suppliers as $i=>$s): ?>
-<tr>
-<td><?php echo $i+1; ?></td>
-<td><?php echo $s['supplier_name']; ?></td>
-<td><?php echo $s['phone']; ?></td>
-<td><?php echo $s['email']; ?></td>
-<td><?php echo $s['contact_person']; ?></td>
-<td><?php echo $s['address']; ?></td>
-<td><?php echo $s['state_name']; ?></td>
-<td><?php echo $s['state_code']; ?></td>
-<td><?php echo $s['gst_no']; ?></td>
-
-<td>
-<a href="supplier_master.php?edit=<?php echo $s['id']; ?>" 
-   class="btn btn-info btn-xs equal-btn">Edit</a>
-
-<a href="supplier_master.php?del=<?php echo $s['id']; ?>" 
-   class="btn btn-danger btn-xs equal-btn"
-   onclick="return confirm('Delete supplier?');">Delete</a>
-</td>
-</tr>
-<?php endforeach; ?>
-</tbody>
-
-</table>
-</div>
-
-</div>
-</div>
-</div>
-
-
+                <div class="table-scrollable">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th width="40" class="text-center">#</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Contact Person</th>
+                                <th>Address</th>
+                                <th>State</th>
+                                <th class="text-center">GST Code</th>
+                                <th>GST No</th>
+                                <th width="80" class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplierTable">
+                            <?php if(!empty($suppliers)): ?>
+                                <?php foreach($suppliers as $i=>$s): ?>
+                                <tr>
+                                    <td class="text-center"><?php echo $i+1; ?></td>
+                                    <td><strong><?php echo $s['supplier_name']; ?></strong></td>
+                                    <td><?php echo $s['phone']; ?></td>
+                                    <td><?php echo $s['email']; ?></td>
+                                    <td><?php echo $s['contact_person']; ?></td>
+                                    <td class="address-cell"><?php echo $s['address']; ?></td>
+                                    <td><span class="badge-state"><?php echo $s['state_name']; ?></span></td>
+                                    <td class="text-center"><?php echo $s['state_code']; ?></td>
+                                    <td><?php echo $s['gst_no']; ?></td>
+                                    <td class="action-td">
+                                        <div class="action-cell">
+                                            <a href="supplier_master.php?edit=<?php echo $s['id']; ?>" class="btn btn-primary btn-xs equal-btn" title="Edit">
+                                                <i class="glyphicon glyphicon-pencil"></i>
+                                            </a>
+                                            <button type="button" onclick="confirmDelete(<?php echo $s['id']; ?>)" class="btn btn-danger btn-xs equal-btn" title="Delete">
+                                                <i class="glyphicon glyphicon-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="10" class="text-center" style="color: #94a3b8; padding: 15px;">No suppliers found.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-document.getElementById("state_id").addEventListener("change", function(){
-    let code=this.options[this.selectedIndex].getAttribute("data-code");
-    document.getElementById("state_code").value=code;
-});
+window.onload = function () {
+    let input = document.getElementById("supplier_name");
+    if(input) input.focus();
+};
 
-  window.onload = function () {
-      document.getElementById("supplier_name").focus();
-  };
-
-  function clearForm(){
-    document.querySelector("form").reset();
-    document.getElementById("supplier_name").focus();
+function clearForm(){
+    document.getElementById("supplierForm").reset();
+    let input = document.getElementById("supplier_name");
+    if(input) input.focus();
 }
 
+document.getElementById("state_id").addEventListener("change", function(){
+    let code = this.options[this.selectedIndex].getAttribute("data-code") || '';
+    document.getElementById("state_code").value = code;
+});
 
 /* Search filter */
 document.getElementById("search").addEventListener("keyup", function(){
-  let value = this.value.toLowerCase();
-  document.querySelectorAll("#supplierTable tr").forEach(function(row){
-    row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
-  });
+    let value = this.value.toLowerCase();
+    document.querySelectorAll("#supplierTable tr").forEach(function(row){
+        row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
+    });
 });
 
-/* GST Auto Uppercase */
+/* GST Auto Uppercase & Format */
 document.getElementById("gst").addEventListener("input", function () {
     this.value = this.value
         .toUpperCase()
@@ -270,6 +540,23 @@ document.getElementById("gst").addEventListener("input", function () {
         .substring(0, 15);
 });
 
+/* Delete confirmation modal */
+function confirmDelete(id) {
+    Swal.fire({
+        title: 'Are You Sure?',
+        text: "This Supplier Will Be Deleted!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmColor: '#ef4444',
+        cancelColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete It!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = "supplier_master.php?del=" + id;
+        }
+    });
+}
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
