@@ -498,20 +498,20 @@ document.getElementById("search").addEventListener("keyup", function(){
     });
 });
 
-/* Delete confirmation modal */
+// Delete Confirmation
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Are You Sure?',
-        text: "This Supplier Will Be Deleted!",
+        title: 'Kya aap sure hain?',
+        text: "Is Print Type ko delete kar diya jayega!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Yes, Delete It!',
+        confirmButtonText: 'Haan, Delete Karo!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = "supplier_master.php?del=" + id;
+            window.location.href = "print_type_master.php?del=" + id;
         }
     });
 }
