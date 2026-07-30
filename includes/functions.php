@@ -1,8 +1,8 @@
 <?php
- $errors = array();
+$errors = array();
 
 /*--------------------------------------------------------------*/
-/* Function for Remove escapes special characters
+/* Helper Functions
 /*--------------------------------------------------------------*/
 function real_escape($str){
   global $con;
@@ -138,7 +138,7 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO
+/* 1. SEND INVOICE PDF VIA BREVO (SUPPORT FOR REVISED COPY)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
@@ -163,6 +163,11 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 
     if (empty($invoice_data)) return false;
     $invoice = $invoice_data[0];
+
+    // Check if revised
+    $is_revised = isset($invoice['is_revised']) && $invoice['is_revised'] == 1;
+    $title_text = $is_revised ? 'REVISED INVOICE' : 'INVOICE';
+    $title_color = $is_revised ? '#dc2626' : '#2563eb';
 
     $org_master = find_by_sql("
         SELECT org_name 
@@ -201,7 +206,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         .wrapper { width: 100%; }
         .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; padding-bottom: 8px; }
         .org-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 3px; }
-        .inv-title { font-size: 18px; font-weight: bold; color: #2563eb; text-align: right; text-transform: uppercase; }
+        .inv-title { font-size: 18px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
         .meta-table { font-size: 10px; width: 100%; text-align: right; }
         .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
         .card-title { font-size: 9px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 2px; }
@@ -230,7 +235,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                     </div>
                 </td>
                 <td width="40%" style="vertical-align: top;">
-                    <div class="inv-title">Invoice</div>
+                    <div class="inv-title">' . $title_text . '</div>
                     <table class="meta-table">
                         <tr><td style="color:#64748b;">Invoice No:</td><td class="bold">' . htmlspecialchars($invoice['invoice_no']) . '</td></tr>
                         <tr><td style="color:#64748b;">Date:</td><td class="bold">' . $inv_date_formatted . '</td></tr>
@@ -410,18 +415,25 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    $apiKey = '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';
+    // Auto-fetch API key from Railway ENV to avoid auto-revocation
+    $apiKey = getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
     $senderEmail = 'redorangesconsulting@gmail.com';
 
+    // Subject & Body Change for Revised
+    $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from Red Oranges Consulting";
+    $body = $is_revised 
+        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Invoice.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>"
+        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>";
+
     $data = [
-        "sender" => ["name" => "Red Oranges Counsulting", "email" => $senderEmail],
+        "sender" => ["name" => "Red Oranges Consulting", "email" => $senderEmail],
         "to" => [["email" => $to_email, "name" => $customer_name]],
-        "subject" => "Invoice #" . $invoice['invoice_no'] . " from Red Oranges Consulting",
-        "htmlContent" => "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice .<br><br>Regards,<br><b>Team Red Orenges Consulting</b>",
+        "subject" => $subject,
+        "htmlContent" => $body,
         "attachment" => [
             [
                 "content" => $pdf_base64,
-                "name"    => "Invoice_" . str_replace('/', '_', $invoice['invoice_no']) . ".pdf"
+                "name"    => ($is_revised ? "Revised_" : "") . "Invoice_" . str_replace('/', '_', $invoice['invoice_no']) . ".pdf"
             ]
         ]
     ];
@@ -431,6 +443,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'accept: application/json',
         'api-key: ' . $apiKey,
@@ -445,7 +458,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 }
 
 /*--------------------------------------------------------------*/
-/* 2. SEND QUOTATION PDF VIA BREVO (SS2 PRINT EXACT MATCH)
+/* 2. SEND QUOTATION PDF VIA BREVO (SUPPORT FOR REVISED COPY)
 /*--------------------------------------------------------------*/
 function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
@@ -470,6 +483,11 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
 
     if (empty($q_data)) return false;
     $quotation = $q_data[0];
+
+    // Check if revised
+    $is_revised = isset($quotation['is_revised']) && $quotation['is_revised'] == 1;
+    $title_text = $is_revised ? 'REVISED QUOTATION' : 'QUOTATION';
+    $title_color = $is_revised ? '#dc2626' : '#2563eb';
 
     $org_master = find_by_sql("
         SELECT org_name 
@@ -500,7 +518,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $q_date_formatted = date("d/M/Y", strtotime($quotation['quotation_date']));
     $net_total_words = numberToWords($quotation['net_total']);
 
-    // EXACT HTML FROM QUOTATION_PRINT.PHP (SS2 MATCH)
     $html = '
     <html>
     <head>
@@ -509,7 +526,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         .wrapper { width: 100%; }
         .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; padding-bottom: 8px; }
         .org-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 3px; }
-        .q-title { font-size: 18px; font-weight: bold; color: #2563eb; text-align: right; text-transform: uppercase; }
+        .q-title { font-size: 18px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
         .meta-table { font-size: 10px; width: 100%; text-align: right; }
         .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
         .card-title { font-size: 9px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 2px; }
@@ -528,8 +545,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     </head>
     <body>
     <div class="wrapper">
-
-        <!-- HEADER -->
         <table class="header-table">
             <tr>
                 <td width="60%">
@@ -540,7 +555,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
                     </div>
                 </td>
                 <td width="40%" style="vertical-align: top;">
-                    <div class="q-title">Quotation</div>
+                    <div class="q-title">' . $title_text . '</div>
                     <table class="meta-table">
                         <tr><td style="color:#64748b;">Quotation No:</td><td class="bold">' . htmlspecialchars($quotation['quotation_no']) . '</td></tr>
                         <tr><td style="color:#64748b;">Date:</td><td class="bold">' . $q_date_formatted . '</td></tr>
@@ -549,7 +564,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
             </tr>
         </table>
 
-        <!-- CUSTOMER DETAILS -->
         <div class="info-card">
             <div class="card-title">Customer Details</div>
             <div class="customer-name">' . $cust_name_upper . '</div>
@@ -559,7 +573,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
             </div>
         </div>
 
-        <!-- ITEMS TABLE -->
         <table class="data-table">
             <thead>
                 <tr>
@@ -631,13 +644,11 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
             </tbody>
         </table>
 
-        <!-- AMOUNT IN WORDS -->
         <div class="amount-words-box">
             <span class="bold" style="color: #64748b;">Amount in Words:</span>
             <span class="bold">' . $net_total_words . ' Only</span>
         </div>
 
-        <!-- GST TAX BREAKDOWN TABLE (SS2 FEATURE) -->
         <div style="font-size: 9px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 3px;">GST Tax Breakdown</div>
         <table class="data-table" style="font-size: 9px;">
             <thead>
@@ -671,7 +682,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
             </tbody>
         </table>
 
-        <!-- FOOTER: BANK DETAILS & AUTHORIZED SIGNATORY (SS2 FEATURE) -->
         <table class="footer-table">
             <tr>
                 <td width="50%" class="footer-card">
@@ -714,18 +724,25 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    $apiKey = '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';
+    // Auto-fetch API key from Railway ENV to avoid auto-revocation
+    $apiKey = getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
     $senderEmail = 'redorangesconsulting@gmail.com';
+
+    // Subject & Body Change for Revised
+    $subject = ($is_revised ? "[REVISED] " : "") . "Quotation #" . $quotation['quotation_no'] . " from Red Oranges Consulting";
+    $body = $is_revised 
+        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Quotation.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>"
+        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your requested Quotation.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>";
 
     $data = [
         "sender" => ["name" => "Red Oranges Consulting", "email" => $senderEmail],
         "to" => [["email" => $to_email, "name" => $customer_name]],
-        "subject" => "Quotation #" . $quotation['quotation_no'] . " from Red Oranges Consulting",
-        "htmlContent" => "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your requested Quotation .<br><br>Regards,<br><b>Team Red Oranges Consulting</b>",
+        "subject" => $subject,
+        "htmlContent" => $body,
         "attachment" => [
             [
                 "content" => $pdf_base64,
-                "name"    => "Quotation_" . str_replace('/', '_', $quotation['quotation_no']) . ".pdf"
+                "name"    => ($is_revised ? "Revised_" : "") . "Quotation_" . str_replace('/', '_', $quotation['quotation_no']) . ".pdf"
             ]
         ]
     ];
@@ -735,6 +752,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'accept: application/json',
         'api-key: ' . $apiKey,
