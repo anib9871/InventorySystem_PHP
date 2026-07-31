@@ -550,13 +550,13 @@ document.getElementById("search").addEventListener("keyup", function(){
 
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Kya aap sure hain?',
-        text: "Is organization ko delete kar diya jayega!",
+        title: 'Are You Sure?',
+        text: "This organization will be deleted!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Delete Karo!',
+        confirmButtonText: 'Yes, Delete It!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
