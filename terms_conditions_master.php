@@ -483,7 +483,7 @@ document.getElementById("searchTemplate").addEventListener("keyup", function(){
 function confirmDelete(id) {
     Swal.fire({
         title: 'Are You Sure?',
-        text: "This Supplier Will Be Deleted!",
+        text: "This Terms-Conditions Will Be Deleted!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
