@@ -142,15 +142,26 @@ if (!function_exists('numberToWords')) {
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
+// Dompdf Autoloader Path Fix (Railway / Linux Compatible)
+    $possible_paths = [
+        __DIR__ . '/libs/dompdf/vendor/autoload.php',
+        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php'
+    ];
 
-    $vendor_file = __DIR__ . '/../libs/dompdf/vendor/autoload.php';
-    if (!file_exists($vendor_file)) {
-        $vendor_file = __DIR__ . '/libs/dompdf/vendor/autoload.php';
+    $vendor_file = null;
+    foreach ($possible_paths as $path) {
+        if (file_exists($path)) {
+            $vendor_file = $path;
+            break;
+        }
     }
 
-    if (file_exists($vendor_file)) {
+    if ($vendor_file) {
         require_once($vendor_file);
     } else {
+        error_log("BREVO DOMPDF ERROR: Dompdf vendor/autoload.php not found!");
         return false;
     }
 
@@ -463,14 +474,26 @@ $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? 
 function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
-    $vendor_file = __DIR__ . '/../libs/dompdf/vendor/autoload.php';
-    if (!file_exists($vendor_file)) {
-        $vendor_file = __DIR__ . '/libs/dompdf/vendor/autoload.php';
+// Dompdf Autoloader Path Fix (Railway / Linux Compatible)
+    $possible_paths = [
+        __DIR__ . '/libs/dompdf/vendor/autoload.php',
+        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php'
+    ];
+
+    $vendor_file = null;
+    foreach ($possible_paths as $path) {
+        if (file_exists($path)) {
+            $vendor_file = $path;
+            break;
+        }
     }
 
-    if (file_exists($vendor_file)) {
+    if ($vendor_file) {
         require_once($vendor_file);
     } else {
+        error_log("BREVO DOMPDF ERROR: Dompdf vendor/autoload.php not found!");
         return false;
     }
 
