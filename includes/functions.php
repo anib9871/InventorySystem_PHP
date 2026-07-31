@@ -1,3 +1,211 @@
+<?php
+$errors = array();
+
+/*--------------------------------------------------------------*/
+/* Helper Functions
+/*--------------------------------------------------------------*/
+function real_escape($str){
+  global $con;
+  $escape = mysqli_real_escape_string($con,$str);
+  return $escape;
+}
+
+function remove_junk($str){
+  $str = nl2br($str);
+  $str = htmlspecialchars(strip_tags($str, ENT_QUOTES));
+  return $str;
+}
+
+function first_character($str){
+  $val = str_replace('-'," ",$str);
+  $val = ucfirst($val);
+  return $val;
+}
+
+function validate_fields($var){
+  global $errors;
+  foreach ($var as $field) {
+    $val = remove_junk($_POST[$field]);
+    if(isset($val) && $val==''){
+      $errors = $field ." can't be blank.";
+      return $errors;
+    }
+  }
+}
+
+function display_msg($msg =''){
+   $output = array();
+   if(!empty($msg)) {
+      foreach ($msg as $key => $value) {
+         $output  = "<div class=\"alert alert-{$key}\">";
+         $output .= "<a href=\"#\" class=\"close\" data-dismiss=\"alert\">&times;</a>";
+         $output .= remove_junk(first_character($value));
+         $output .= "</div>";
+      }
+      return $output;
+   } else {
+      return "" ;
+   }
+}
+
+function redirect($url, $permanent = false)
+{
+    if (headers_sent() === false)
+    {
+      header('Location: ' . $url, true, ($permanent === true) ? 301 : 302);
+    }
+    exit();
+}
+
+function total_price($totals){
+   $sum = 0;
+   $sub = 0;
+   foreach($totals as $total ){
+     $sum += $total['total_saleing_price'];
+     $sum += $total['total_buying_price'];
+     $profit = $sum - $sub;
+   }
+   return array($sum,$profit);
+}
+
+function read_date($str){
+     if($str)
+      return date('F j, Y, g:i:s a', strtotime($str));
+     else
+      return null;
+}
+
+function make_date(){
+  return strftime("%Y-%m-%d %H:%M:%S", time());
+}
+
+function count_id(){
+  static $count = 1;
+  return $count++;
+}
+
+function randString($length = 5)
+{
+  $str='';
+  $cha = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+  for($x=0; $x<$length; $x++)
+   $str .= $cha[mt_rand(0,strlen($cha))];
+  return $str;
+}
+
+function getSystemMode(){
+  if(isset($_SESSION['combined_mode']) && $_SESSION['combined_mode'] == 1){
+    return 'combined';
+  }
+  if(isset($_SESSION['billing_access']) && $_SESSION['billing_access'] == 1){
+    return 'billing';
+  }
+  if(isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1){
+    return 'inventory';
+  }
+  return 'inventory';
+}
+
+/* HELPER FUNCTIONS FOR NUMBER TO WORDS */
+if (!function_exists('convertGroup')) {
+    function convertGroup($num) {
+        $ones = array(0 => "", 1 => "One", 2 => "Two", 3 => "Three", 4 => "Four", 5 => "Five", 6 => "Six", 7 => "Seven", 8 => "Eight", 9 => "Nine", 10 => "Ten", 11 => "Eleven", 12 => "Twelve", 13 => "Thirteen", 14 => "Fourteen", 15 => "Fifteen", 16 => "Sixteen", 17 => "Seventeen", 18 => "Eighteen", 19 => "Nineteen");
+        $tens = array(0 => "", 2 => "Twenty", 3 => "Thirty", 4 => "Forty", 5 => "Fifty", 6 => "Sixty", 7 => "Seventy", 8 => "Eighty", 9 => "Ninety");
+        if ($num == 0) return "";
+        if ($num < 20) return $ones[$num];
+        if ($num < 100) return trim($tens[intval($num / 10)] . " " . $ones[$num % 10]);
+        if ($num < 1000) return trim($ones[intval($num / 100)] . " Hundred " . convertGroup($num % 100));
+        if ($num < 100000) return trim(convertGroup(intval($num / 1000)) . " Thousand " . convertGroup($num % 1000));
+        if ($num < 10000000) return trim(convertGroup(intval($num / 100000)) . " Lakh " . convertGroup($num % 100000));
+        return trim(convertGroup(intval($num / 10000000)) . " Crore " . convertGroup($num % 10000000));
+    }
+}
+
+if (!function_exists('numberToWords')) {
+    function numberToWords($amount) {
+        $amount = round($amount, 2);
+        $rupees = intval($amount);
+        $paise = intval(round(($amount - $rupees) * 100));
+        if ($rupees == 0 && $paise == 0) return "Zero";
+        $rupeesInWords = ($rupees > 0) ? convertGroup($rupees) : "Zero";
+        $result = $rupeesInWords;
+        if ($paise > 0) {
+            $result .= " and " . convertGroup($paise) . " Paise";
+        }
+        return trim($result);
+    }
+}
+
+/*--------------------------------------------------------------*/
+/* HELPER: SMART DOMPDF LOADER FOR NESTED GITHUB PATH
+/*--------------------------------------------------------------*/
+function init_dompdf_autoloader() {
+    if (class_exists('Dompdf\Dompdf')) {
+        return true;
+    }
+
+    // 1. Try Standard Composer Autoloaders
+    $possible_paths = [
+        __DIR__ . '/libs/dompdf/vendor/autoload.php',
+        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
+        '/app/libs/dompdf/vendor/autoload.php'
+    ];
+
+    foreach ($possible_paths as $path) {
+        if (file_exists($path)) {
+            require_once($path);
+            break;
+        }
+    }
+
+    if (class_exists('Dompdf\Dompdf')) {
+        return true;
+    }
+
+    // 2. Direct Auto-Fallback for your GitHub Nested Path: libs/dompdf/vendor/dompdf/dompdf/src
+    $search_bases = [
+        __DIR__ . '/libs/dompdf/vendor/dompdf/dompdf',
+        __DIR__ . '/../libs/dompdf/vendor/dompdf/dompdf',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/dompdf/dompdf',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/dompdf/dompdf',
+        '/app/libs/dompdf/vendor/dompdf/dompdf'
+    ];
+
+    foreach ($search_bases as $base) {
+        if (file_exists($base . '/src/Dompdf.php')) {
+            spl_autoload_register(function ($class) use ($base) {
+                $prefix = 'Dompdf\\';
+                $len = strlen($prefix);
+                if (strncmp($prefix, $class, $len) !== 0) return;
+                $relative_class = substr($class, $len);
+                $file = $base . '/src/' . str_replace('\\', '/', $relative_class) . '.php';
+                if (file_exists($file)) {
+                    require_once $file;
+                }
+            });
+
+            // Also load FontLib & SvgLib if needed
+            spl_autoload_register(function ($class) use ($base) {
+                if (strpos($class, 'FontLib\\') === 0) {
+                    $file = dirname($base) . '/phenx/php-font-lib/src/' . str_replace('\\', '/', $class) . '.php';
+                    if (file_exists($file)) require_once $file;
+                }
+                if (strpos($class, 'Svg\\') === 0) {
+                    $file = dirname($base) . '/phenx/php-svg-lib/src/' . str_replace('\\', '/', $class) . '.php';
+                    if (file_exists($file)) require_once $file;
+                }
+            });
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /*--------------------------------------------------------------*/
 /* 1. SEND INVOICE EMAIL VIA BREVO API (PURE HTML & LINK FIX)
 /*--------------------------------------------------------------*/
@@ -158,3 +366,4 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         return "PHP Exception: " . $e->getMessage();
     }
 }
+?>
