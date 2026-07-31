@@ -469,11 +469,15 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
     curl_close($ch);
 
-    return ($httpCode == 201 || $httpCode == 200);
+    if ($httpCode == 201 || $httpCode == 200) {
+        return true;
+    } else {
+        return "HTTP Code {$httpCode} | cURL Error: {$curlErr} | Brevo Response: {$response}";
+    }
 }
-
 /*--------------------------------------------------------------*/
 /* 2. SEND QUOTATION PDF VIA BREVO (RAILWAY COMPATIBLE)
 /*--------------------------------------------------------------*/
