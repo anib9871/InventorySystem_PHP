@@ -29,13 +29,14 @@ if (isset($_POST['send_email_btn'])) {
     $client_name  = $invoice['customer_name'];
 
     if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
-        $sent = send_invoice_email($id, $client_email, $client_name);
+        $result = send_invoice_email($id, $client_email, $client_name);
         
-        if ($sent) {
+        if ($result === true) {
             $email_msg = "Invoice email successfully sent to " . htmlspecialchars($client_email) . "!";
             $email_status = "success";
         } else {
-            $email_msg = "Failed to send email. Please check Brevo settings/logs.";
+            // Ab direct real error reason print hoga
+            $email_msg = "Brevo Mail Error: " . htmlspecialchars($result);
             $email_status = "error";
         }
     } else {
