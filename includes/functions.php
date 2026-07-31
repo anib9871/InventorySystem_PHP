@@ -144,13 +144,13 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     try {
-  // GitHub Repo (autoload.inc.php) Compatible Path Fix
+// Project Root Composer Autoload Path (Railway Compatible)
         $possible_paths = [
-            __DIR__ . '/libs/dompdf/autoload.inc.php',
-            __DIR__ . '/../libs/dompdf/autoload.inc.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/autoload.inc.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/autoload.inc.php',
-            dirname(__DIR__) . '/libs/dompdf/autoload.inc.php'
+            __DIR__ . '/vendor/autoload.php',
+            __DIR__ . '/../vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/vendor/autoload.php',
+            '/app/vendor/autoload.php'
         ];
 
         $vendor_file = null;
@@ -164,9 +164,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         if ($vendor_file) {
             require_once($vendor_file);
         } else {
-            return "Dompdf autoload.php not found in any path!";
+            return "Root vendor/autoload.php not found! Please check composer packages.";
         }
-
         $invoice_data = find_by_sql("
             SELECT i.*, c.customer_name, c.address, c.gst_no, c.contact_no
             FROM invoice i
@@ -486,14 +485,15 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     try {
-// GitHub Repo (autoload.inc.php) Compatible Path Fix
+// Project Root Composer Autoload Path (Railway Compatible)
         $possible_paths = [
-            __DIR__ . '/libs/dompdf/autoload.inc.php',
-            __DIR__ . '/../libs/dompdf/autoload.inc.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/autoload.inc.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/autoload.inc.php',
-            dirname(__DIR__) . '/libs/dompdf/autoload.inc.php'
+            __DIR__ . '/vendor/autoload.php',
+            __DIR__ . '/../vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/vendor/autoload.php',
+            '/app/vendor/autoload.php'
         ];
+
         $vendor_file = null;
         foreach ($possible_paths as $path) {
             if (file_exists($path)) {
@@ -505,7 +505,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         if ($vendor_file) {
             require_once($vendor_file);
         } else {
-            return "Dompdf autoload.php not found in any path!";
+            return "Root vendor/autoload.php not found! Please check composer packages.";
         }
 
         $q_data = find_by_sql("
