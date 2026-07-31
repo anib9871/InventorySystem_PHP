@@ -9,9 +9,9 @@ if(strpos($print_name,'Thermal') !== false){
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if($id <= 0) die("Invalid Quotation ID");
 
-/* Fetch Invoice */
+/* Fetch Quotation */
 $invoice_data = find_by_sql("
-SELECT i.*, c.customer_name, c.address, c.gst_no, c.contact_no
+SELECT i.*, c.customer_name, c.address, c.gst_no, c.contact_no, c.email AS customer_email
 FROM quotation_master i
 LEFT JOIN customer_master c ON c.id = i.customer_id
 WHERE i.id = $id
@@ -19,6 +19,31 @@ WHERE i.id = $id
 
 if(!$invoice_data) die("Quotation not found");
 $quotation = $invoice_data[0];
+/* ================= MANUAL EMAIL SEND HANDLER ================= */
+$email_msg = "";
+$email_status = "";
+
+if (isset($_POST['send_email_btn'])) {
+    $client_email = trim($_POST['target_email']);
+    $client_name  = $quotation['customer_name'];
+
+    if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+        // Brevo email function call for quotation
+        $sent = send_quotation_email($id, $client_email, $client_name);
+        
+        if ($sent) {
+            $email_msg = "Quotation email successfully sent to " . htmlspecialchars($client_email) . "!";
+            $email_status = "success";
+        } else {
+            $email_msg = "Failed to send email. Please check Brevo settings/logs.";
+            $email_status = "error";
+        }
+    } else {
+        $email_msg = "Invalid or empty customer email address!";
+        $email_status = "error";
+    }
+}
+
 
 /* MASTER ORG NAME */
 $org_master = find_by_sql("
@@ -411,15 +436,33 @@ table.data-table tr:nth-child(even):not(.summary-row) {
 
 <body>
 
-<!-- PRINT / NAVIGATION BUTTONS -->
+<!-- PRINT / EMAIL / NAVIGATION BUTTONS -->
 <div class="no-print-bar">
     <div>
         <a href="create_quotation.php" class="btn">← Back to Create Quotation</a>
         <a href="quotation_list.php" class="btn">← Back to Quotation List</a>
     </div>
-    <button onclick="window.print()" class="btn btn-primary">🖨 Print Quotation</button>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <!-- EMAIL FORM -->
+        <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
+            <input type="email" name="target_email" 
+                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
+                   value="<?= htmlspecialchars($quotation['customer_email'] ?? '') ?>" 
+                   placeholder="Enter Customer Email" required>
+            <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
+        </form>
+
+        <button onclick="window.print()" class="btn btn-primary">🖨 Print Quotation</button>
+    </div>
 </div>
 
+<!-- ALERT NOTIFICATION -->
+<?php if (!empty($email_msg)): ?>
+    <div style="max-width: 850px; margin: 10px auto; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; <?= $email_status == 'success' ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #b91c1c;' ?>">
+        <?= $email_msg ?>
+    </div>
+<?php endif; ?>
 <div class="wrapper">
 
     <!-- HEADER SECTION -->
