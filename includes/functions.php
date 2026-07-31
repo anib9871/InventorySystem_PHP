@@ -138,34 +138,85 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
+/* HELPER: SMART DOMPDF LOADER FOR NESTED GITHUB PATH
+/*--------------------------------------------------------------*/
+function init_dompdf_autoloader() {
+    if (class_exists('Dompdf\Dompdf')) {
+        return true;
+    }
+
+    // 1. Try Standard Composer Autoloaders
+    $possible_paths = [
+        __DIR__ . '/libs/dompdf/vendor/autoload.php',
+        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
+        '/app/libs/dompdf/vendor/autoload.php'
+    ];
+
+    foreach ($possible_paths as $path) {
+        if (file_exists($path)) {
+            require_once($path);
+            break;
+        }
+    }
+
+    if (class_exists('Dompdf\Dompdf')) {
+        return true;
+    }
+
+    // 2. Direct Auto-Fallback for your GitHub Nested Path: libs/dompdf/vendor/dompdf/dompdf/src
+    $search_bases = [
+        __DIR__ . '/libs/dompdf/vendor/dompdf/dompdf',
+        __DIR__ . '/../libs/dompdf/vendor/dompdf/dompdf',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/dompdf/dompdf',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/dompdf/dompdf',
+        '/app/libs/dompdf/vendor/dompdf/dompdf'
+    ];
+
+    foreach ($search_bases as $base) {
+        if (file_exists($base . '/src/Dompdf.php')) {
+            spl_autoload_register(function ($class) use ($base) {
+                $prefix = 'Dompdf\\';
+                $len = strlen($prefix);
+                if (strncmp($prefix, $class, $len) !== 0) return;
+                $relative_class = substr($class, $len);
+                $file = $base . '/src/' . str_replace('\\', '/', $relative_class) . '.php';
+                if (file_exists($file)) {
+                    require_once $file;
+                }
+            });
+
+            // Also load FontLib & SvgLib if needed
+            spl_autoload_register(function ($class) use ($base) {
+                if (strpos($class, 'FontLib\\') === 0) {
+                    $file = dirname($base) . '/phenx/php-font-lib/src/' . str_replace('\\', '/', $class) . '.php';
+                    if (file_exists($file)) require_once $file;
+                }
+                if (strpos($class, 'Svg\\') === 0) {
+                    $file = dirname($base) . '/phenx/php-svg-lib/src/' . str_replace('\\', '/', $class) . '.php';
+                    if (file_exists($file)) require_once $file;
+                }
+            });
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*--------------------------------------------------------------*/
 /* 1. SEND INVOICE PDF VIA BREVO (EXACT ERROR REPORTING)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     try {
-// Exact GitHub Uploaded Vendor Path Fix
-        $possible_paths = [
-            __DIR__ . '/libs/dompdf/vendor/autoload.php',
-            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
-            '/app/libs/dompdf/vendor/autoload.php'
-        ];
-
-        $vendor_file = null;
-        foreach ($possible_paths as $path) {
-            if (file_exists($path)) {
-                $vendor_file = $path;
-                break;
-            }
+        if (!init_dompdf_autoloader()) {
+            return "Dompdf library files not found in any path!";
         }
 
-        if ($vendor_file) {
-            require_once($vendor_file);
-        } else {
-            return "Root vendor/autoload.php not found! Please check composer packages.";
-        }
         $invoice_data = find_by_sql("
             SELECT i.*, c.customer_name, c.address, c.gst_no, c.contact_no
             FROM invoice i
@@ -426,7 +477,6 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         $dompdf->render();
         $pdf_base64 = base64_encode($dompdf->output());
 
-        // Environment Variables Check
         $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
         $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
@@ -485,27 +535,8 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     try {
-// Exact GitHub Uploaded Vendor Path Fix
-        $possible_paths = [
-            __DIR__ . '/libs/dompdf/vendor/autoload.php',
-            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
-            '/app/libs/dompdf/vendor/autoload.php'
-        ];
-
-        $vendor_file = null;
-        foreach ($possible_paths as $path) {
-            if (file_exists($path)) {
-                $vendor_file = $path;
-                break;
-            }
-        }
-
-        if ($vendor_file) {
-            require_once($vendor_file);
-        } else {
-            return "Root vendor/autoload.php not found! Please check composer packages.";
+        if (!init_dompdf_autoloader()) {
+            return "Dompdf library files not found in any path!";
         }
 
         $q_data = find_by_sql("
