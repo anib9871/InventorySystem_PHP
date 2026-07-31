@@ -249,13 +249,13 @@ document.getElementById("userSearch").addEventListener("keyup", function() {
 // Delete Confirmation
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Kya aap sure hain?',
-        text: "Is user ko remove kar diya jayega!",
+        title: 'Are You Sure?',
+        text: "This User Will Be Removed!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Delete Karo!',
+        confirmButtonText: 'Yes, Delete It!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
