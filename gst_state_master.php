@@ -437,13 +437,13 @@ document.getElementById("searchBox").addEventListener("keyup", function() {
 /* Delete confirmation */
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Kya aap sure hain?',
-        text: "Is State Code ko delete kar diya jayega!",
+        title: 'Are You Sure?',
+        text: "This state code will be deleted!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Delete Karo!',
+        confirmButtonText: 'Yes, Delete It!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
