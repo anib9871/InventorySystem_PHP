@@ -375,13 +375,13 @@ document.getElementById("catSearch").addEventListener("keyup", function() {
 // Delete Confirmation Modal
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Kya aap sure hain?',
-        text: "Is category ko delete kar diya jayega!",
+        title: 'Are You Sure?',
+        text: "This category will be deleted!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Delete Karo!',
+        confirmButtonText: 'Yes, Delete It!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
