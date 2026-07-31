@@ -416,8 +416,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $pdf_base64 = base64_encode($dompdf->output());
 
     // Auto-fetch API key from Railway ENV to avoid auto-revocation
-    $apiKey = getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
-    $senderEmail = 'redorangesconsulting@gmail.com';
+$apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
+$senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
     // Subject & Body Change for Revised
     $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from Red Oranges Consulting";
@@ -725,8 +725,8 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $pdf_base64 = base64_encode($dompdf->output());
 
     // Auto-fetch API key from Railway ENV to avoid auto-revocation
-    $apiKey = getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
-    $senderEmail = 'redorangesconsulting@gmail.com';
+$apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
+$senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
     // Subject & Body Change for Revised
     $subject = ($is_revised ? "[REVISED] " : "") . "Quotation #" . $quotation['quotation_no'] . " from Red Oranges Consulting";
