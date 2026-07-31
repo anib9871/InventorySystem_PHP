@@ -765,21 +765,7 @@ file_put_contents(
     FILE_APPEND
 );
 
-/* ================= AUTOMATIC EMAIL SEND VIA BREVO ================= */
-if ($cust > 0) {
-    // customer_master table se email check kar rahe hain
-    $cust_details = find_by_sql("SELECT customer_name, email FROM customer_master WHERE id = '$cust' LIMIT 1");
-
-    if (!empty($cust_details) && !empty($cust_details[0]['email']) && filter_var($cust_details[0]['email'], FILTER_VALIDATE_EMAIL)) {
-        $client_email = $cust_details[0]['email'];
-        $client_name  = $cust_details[0]['customer_name'];
-
-        // Brevo email function call (jo functions.php mein banaya hai)
-        send_invoice_email($qid, $client_email, $client_name);
-    }
-}
-
-// Invoice print page par redirect
+// Direct print page par redirect karo (bina mail bheje)
 echo "<script>
 window.location='invoice_print.php?id=".$qid."';
 </script>";
