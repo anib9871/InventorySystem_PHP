@@ -207,13 +207,13 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (RAILWAY ENV DRIVEN)
+/* 1. SEND INVOICE PDF VIA BREVO (SUPPORT FOR REVISED COPY)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf load error";
+        return "Dompdf library files not found!";
     }
 
     $invoice_data = find_by_sql("
@@ -223,7 +223,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE i.id = '{$invoice_id}' LIMIT 1
     ");
 
-    if (empty($invoice_data)) return "Invoice not found";
+    if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
     $invoice = $invoice_data[0];
 
     // Check if revised
@@ -481,9 +481,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
     $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
-    if (empty($apiKey) || empty($senderEmail)) {
-        return false;
-    }
+    if (empty($apiKey)) return "BREVO_API_KEY is EMPTY in Railway Environment Variables!";
+    if (empty($senderEmail)) return "BREVO_SENDER_EMAIL is EMPTY in Railway Environment Variables!";
 
     $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from " . $org_name_upper;
     $body = $is_revised 
@@ -517,9 +516,14 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
     curl_close($ch);
 
-    return ($httpCode == 201 || $httpCode == 200);
+    if ($httpCode == 201 || $httpCode == 200) {
+        return true;
+    } else {
+        return "HTTP Code: {$httpCode} | cURL Err: {$curlErr} | Brevo Msg: {$response}";
+    }
 }
 
 /*--------------------------------------------------------------*/
@@ -529,7 +533,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return false;
+        return "Dompdf library files not found!";
     }
 
     $q_data = find_by_sql("
@@ -539,7 +543,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         WHERE q.id = '{$quotation_id}' LIMIT 1
     ");
 
-    if (empty($q_data)) return false;
+    if (empty($q_data)) return "Quotation ID {$quotation_id} not found!";
     $quotation = $q_data[0];
 
     // Check if revised
@@ -786,9 +790,8 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
     $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
-    if (empty($apiKey) || empty($senderEmail)) {
-        return false;
-    }
+    if (empty($apiKey)) return "BREVO_API_KEY is EMPTY in Railway Environment Variables!";
+    if (empty($senderEmail)) return "BREVO_SENDER_EMAIL is EMPTY in Railway Environment Variables!";
 
     $subject = ($is_revised ? "[REVISED] " : "") . "Quotation #" . $quotation['quotation_no'] . " from " . $org_name_upper;
     $body = $is_revised 
@@ -822,8 +825,13 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
     curl_close($ch);
 
-    return ($httpCode == 201 || $httpCode == 200);
+    if ($httpCode == 201 || $httpCode == 200) {
+        return true;
+    } else {
+        return "HTTP Code: {$httpCode} | cURL Err: {$curlErr} | Brevo Msg: {$response}";
+    }
 }
 ?>
