@@ -144,13 +144,13 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     try {
-// Project Root Composer Autoload Path (Railway Compatible)
+// Exact GitHub Uploaded Vendor Path Fix
         $possible_paths = [
-            __DIR__ . '/vendor/autoload.php',
-            __DIR__ . '/../vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/vendor/autoload.php',
-            '/app/vendor/autoload.php'
+            __DIR__ . '/libs/dompdf/vendor/autoload.php',
+            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
+            '/app/libs/dompdf/vendor/autoload.php'
         ];
 
         $vendor_file = null;
@@ -485,13 +485,13 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     try {
-// Project Root Composer Autoload Path (Railway Compatible)
+// Exact GitHub Uploaded Vendor Path Fix
         $possible_paths = [
-            __DIR__ . '/vendor/autoload.php',
-            __DIR__ . '/../vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/vendor/autoload.php',
-            '/app/vendor/autoload.php'
+            __DIR__ . '/libs/dompdf/vendor/autoload.php',
+            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
+            '/app/libs/dompdf/vendor/autoload.php'
         ];
 
         $vendor_file = null;
