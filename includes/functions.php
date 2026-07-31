@@ -144,12 +144,13 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     try {
-        // Dompdf Autoloader Path Fix (Railway / Linux Compatible)
+  // GitHub Repo (autoload.inc.php) Compatible Path Fix
         $possible_paths = [
-            __DIR__ . '/libs/dompdf/vendor/autoload.php',
-            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php'
+            __DIR__ . '/libs/dompdf/autoload.inc.php',
+            __DIR__ . '/../libs/dompdf/autoload.inc.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/autoload.inc.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/autoload.inc.php',
+            dirname(__DIR__) . '/libs/dompdf/autoload.inc.php'
         ];
 
         $vendor_file = null;
@@ -485,13 +486,14 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     try {
+// GitHub Repo (autoload.inc.php) Compatible Path Fix
         $possible_paths = [
-            __DIR__ . '/libs/dompdf/vendor/autoload.php',
-            __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
-            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php'
+            __DIR__ . '/libs/dompdf/autoload.inc.php',
+            __DIR__ . '/../libs/dompdf/autoload.inc.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/autoload.inc.php',
+            $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/autoload.inc.php',
+            dirname(__DIR__) . '/libs/dompdf/autoload.inc.php'
         ];
-
         $vendor_file = null;
         foreach ($possible_paths as $path) {
             if (file_exists($path)) {
