@@ -138,31 +138,13 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* SAFE DOMPDF AUTOLOADER (INNER CLASSES & CPDF FIX)
+/* SAFE DOMPDF AUTOLOADER (WITH CPDF CLASS FALLBACK)
 /*--------------------------------------------------------------*/
 function load_dompdf_framework() {
     if (class_exists('Dompdf\Dompdf')) {
         return true;
     }
 
-    $possible_autoloads = [
-        __DIR__ . '/libs/dompdf/vendor/autoload.php',
-        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor/autoload.php',
-        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor/autoload.php',
-        '/app/libs/dompdf/vendor/autoload.php'
-    ];
-
-    foreach ($possible_autoloads as $file) {
-        if (file_exists($file)) {
-            require_once($file);
-            if (class_exists('Dompdf\Dompdf')) {
-                return true;
-            }
-        }
-    }
-
-    // Direct PSR-4 Fallback Resolver for Nested Structure
     $possible_vendors = [
         __DIR__ . '/libs/dompdf/vendor',
         __DIR__ . '/../libs/dompdf/vendor',
@@ -180,7 +162,28 @@ function load_dompdf_framework() {
     }
 
     if ($v) {
+        // First load Composer Autoload if available
+        if (file_exists($v . '/autoload.php')) {
+            require_once($v . '/autoload.php');
+        }
+
+        // Custom Autoloader to fix CPDF and Lib path issues
         spl_autoload_register(function ($class) use ($v) {
+            if ($class === 'Dompdf\Cpdf' || $class === 'Cpdf') {
+                $cpdf_paths = [
+                    $v . '/dompdf/dompdf/lib/Cpdf.php',
+                    $v . '/dompdf/dompdf/lib/cpdf.php',
+                    $v . '/dompdf/dompdf/src/Cpdf.php',
+                    $v . '/phenx/php-font-lib/src/FontLib/EOT/File.php'
+                ];
+                foreach ($cpdf_paths as $cp) {
+                    if (file_exists($cp)) {
+                        require_once $cp;
+                        return;
+                    }
+                }
+            }
+
             $map = [
                 'Dompdf\\' => $v . '/dompdf/dompdf/src/',
                 'FontLib\\' => $v . '/phenx/php-font-lib/src/FontLib/',
@@ -199,7 +202,8 @@ function load_dompdf_framework() {
                     }
                 }
             }
-        });
+        }, true, true); // Prepend autoloader to run before composer
+
         return true;
     }
 
@@ -207,13 +211,13 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (SUPPORT FOR REVISED COPY)
+/* 1. SEND INVOICE PDF VIA BREVO (RAILWAY ENV DRIVEN)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf library files not found!";
+        return "Dompdf load error";
     }
 
     $invoice_data = find_by_sql("
@@ -223,7 +227,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE i.id = '{$invoice_id}' LIMIT 1
     ");
 
-    if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
+    if (empty($invoice_data)) return "Invoice not found";
     $invoice = $invoice_data[0];
 
     // Check if revised
