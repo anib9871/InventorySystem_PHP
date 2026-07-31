@@ -368,22 +368,10 @@ VALUES
 
 $db->query("COMMIT");
 
-/* ================= AUTO SEND REVISED EMAIL ================= */
-// Customer details direct database se re-fetch karenge taaki email bypass na ho
-$c_info = find_by_sql("SELECT email, customer_name FROM customer_master WHERE id = '$cust' LIMIT 1");
-
-if (!empty($c_info) && !empty($c_info[0]['email'])) {
-    $to_email = $c_info[0]['email'];
-    $customer_name = $c_info[0]['customer_name'];
-    
-    if (function_exists('send_invoice_email')) {
-        send_invoice_email($id, $to_email, $customer_name);
-    }
-}
-
+/* Direct print page par redirect (bina auto mail bheje) */
 echo "
 <script>
-alert('Invoice Updated & Revised Copy Sent to Email Successfully!');
+alert('Invoice Updated Successfully!');
 window.location='invoice_print.php?id=".$id."';
 </script>
 ";
