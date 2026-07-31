@@ -138,11 +138,12 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (SUPPORT FOR REVISED COPY)
+/* 1. SEND INVOICE PDF VIA BREVO (RAILWAY COMPATIBLE)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
-// Dompdf Autoloader Path Fix (Railway / Linux Compatible)
+
+    // Dompdf Autoloader Path Fix (Railway / Linux Compatible)
     $possible_paths = [
         __DIR__ . '/libs/dompdf/vendor/autoload.php',
         __DIR__ . '/../libs/dompdf/vendor/autoload.php',
@@ -426,18 +427,23 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    // Auto-fetch API key from Railway ENV to avoid auto-revocation
-$apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
-$senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
+    // Auto-fetch API key from Railway ENV Variables
+    $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
+    $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
+
+    if (empty($apiKey) || empty($senderEmail)) {
+        error_log("BREVO ERROR: Missing API Key or Sender Email in ENV.");
+        return false;
+    }
 
     // Subject & Body Change for Revised
-    $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from Red Oranges Consulting";
+    $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from Billing Team";
     $body = $is_revised 
-        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Invoice.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>"
-        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>";
+        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Invoice.<br><br>Regards,<br><b>Billing Team</b>"
+        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice.<br><br>Regards,<br><b>Billing Team</b>";
 
     $data = [
-        "sender" => ["name" => "Red Oranges Consulting", "email" => $senderEmail],
+        "sender" => ["name" => "Invoice Billing", "email" => $senderEmail],
         "to" => [["email" => $to_email, "name" => $customer_name]],
         "subject" => $subject,
         "htmlContent" => $body,
@@ -469,12 +475,12 @@ $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? 
 }
 
 /*--------------------------------------------------------------*/
-/* 2. SEND QUOTATION PDF VIA BREVO (SUPPORT FOR REVISED COPY)
+/* 2. SEND QUOTATION PDF VIA BREVO (RAILWAY COMPATIBLE)
 /*--------------------------------------------------------------*/
 function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
-// Dompdf Autoloader Path Fix (Railway / Linux Compatible)
+    // Dompdf Autoloader Path Fix (Railway / Linux Compatible)
     $possible_paths = [
         __DIR__ . '/libs/dompdf/vendor/autoload.php',
         __DIR__ . '/../libs/dompdf/vendor/autoload.php',
@@ -747,18 +753,23 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    // Auto-fetch API key from Railway ENV to avoid auto-revocation
-$apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
-$senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
+    // Auto-fetch API key from Railway ENV Variables
+    $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
+    $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
+
+    if (empty($apiKey) || empty($senderEmail)) {
+        error_log("BREVO ERROR: Missing API Key or Sender Email in ENV.");
+        return false;
+    }
 
     // Subject & Body Change for Revised
-    $subject = ($is_revised ? "[REVISED] " : "") . "Quotation #" . $quotation['quotation_no'] . " from Red Oranges Consulting";
+    $subject = ($is_revised ? "[REVISED] " : "") . "Quotation #" . $quotation['quotation_no'] . " from Billing Team";
     $body = $is_revised 
-        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Quotation.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>"
-        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your requested Quotation.<br><br>Regards,<br><b>Team Red Oranges Consulting</b>";
+        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Quotation.<br><br>Regards,<br><b>Billing Team</b>"
+        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your requested Quotation.<br><br>Regards,<br><b>Billing Team</b>";
 
     $data = [
-        "sender" => ["name" => "Red Oranges Consulting", "email" => $senderEmail],
+        "sender" => ["name" => "Quotation Billing", "email" => $senderEmail],
         "to" => [["email" => $to_email, "name" => $customer_name]],
         "subject" => $subject,
         "htmlContent" => $body,
