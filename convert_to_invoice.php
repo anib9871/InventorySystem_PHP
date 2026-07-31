@@ -310,22 +310,8 @@ NOW()
 
 
 
-/* Redirect to Invoice Print & Send Email */
+/* Redirect to Invoice Print Page (bina auto mail ke) */
 $db->query("COMMIT");
-
-/* ===== AUTO SEND NEW INVOICE EMAIL VIA BREVO ===== */
-$c_info = find_by_sql("SELECT email, customer_name FROM customer_master WHERE id = '{$quotation['customer_id']}' LIMIT 1");
-
-if (!empty($c_info) && !empty($c_info[0]['email'])) {
-    $to_email = $c_info[0]['email'];
-    $customer_name = $c_info[0]['customer_name'];
-    
-    if (function_exists('send_invoice_email')) {
-        send_invoice_email($new_invoice_id, $to_email, $customer_name);
-    }
-}
-
-ob_clean();
 
 header("Location: invoice_print.php?id=".$new_invoice_id);
 exit;
