@@ -282,12 +282,12 @@ document.getElementById("fySearch").addEventListener("keyup", function() {
 function confirmActivate(id) {
     Swal.fire({
         title: 'Activate Financial Year?',
-        text: "Is financial year ko system ka active year set kar diya jayega!",
+        text: "This financial year will be set as the system's active year!",
         icon: 'question',
         showCancelButton: true,
         confirmColor: '#2b8cff',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Activate Karo!',
+        confirmButtonText: 'Yes, Activate This!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
