@@ -193,22 +193,11 @@ WHERE id = '$id'
 
 $db->query("COMMIT");
 
-/* ================= AUTO SEND REVISED QUOTATION EMAIL ================= */
-$c_info = find_by_sql("SELECT email, customer_name FROM customer_master WHERE id = '$cust' LIMIT 1");
-
-if (!empty($c_info) && !empty($c_info[0]['email'])) {
-    $to_email = $c_info[0]['email'];
-    $customer_name = $c_info[0]['customer_name'];
-    
-    if (function_exists('send_quotation_email')) {
-        send_quotation_email($id, $to_email, $customer_name);
-    }
-}
-
+/* Direct quotation print page par redirect (bina auto mail ke) */
 echo "
 <script>
-alert('Quotation Updated & Revised Copy Sent to Email Successfully!');
-window.location='quotation_list.php?print_id=".$id."';
+alert('Quotation Updated Successfully!');
+window.location='quotation_print.php?id=".$id."';
 </script>
 ";
 
