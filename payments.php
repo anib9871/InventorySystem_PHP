@@ -4,6 +4,7 @@ $page_title = 'Outstanding Payments';
 require_once('includes/load.php');
 
 $type = $_GET['type'] ?? 'customer';
+
 /* ================= SAVE PAYMENT ================= */
 
 if(isset($_POST['save_payment'])){
@@ -14,8 +15,7 @@ $amounts = $_POST['amounts'];
 
 $total_amount = 0;
 
-$remarks =
-$db->escape($_POST['remarks']);
+$remarks = $db->escape($_POST['remarks']);
 
 $payment_date = $_POST['payment_date'];
 
@@ -63,30 +63,18 @@ $invoice = $invoice[0];
 /* VALIDATION */
 
 foreach($amounts as $amt){
-
-$total_amount += round((float)$amt);
-
+    $total_amount += round((float)$amt);
 }
 
 if($total_amount <= 0){
-
-$session->msg('d','Invalid Amount');
-redirect('payments.php');
-
+    $session->msg('d','Invalid Amount');
+    redirect('payments.php');
 }
 
 /* CALCULATE */
 
-$new_paid =
-$invoice['paid_amount'] + $total_amount;
+$new_paid = $invoice['paid_amount'] + $total_amount;
 
-if($type == 'customer'){
-    $new_due = $invoice['net_total'] - $new_paid;
-}else{
-    $new_due = $invoice['bill_amount'] - $new_paid;
-}
-
-// Calculate Due
 if($type == 'customer'){
     $new_due = round($invoice['net_total'] - $new_paid, 2);
 }else{
@@ -122,6 +110,7 @@ if($new_due <= 0){
     }
 
 }
+
 foreach($amounts as $mode => $amt){
 
     $amt = round((float)$amt);
@@ -226,8 +215,6 @@ if($type == 'customer'){
     WHERE id='{$invoice['customer_id']}'
     ");
 
-}else{
-
 }
 
 /* LEDGER ENTRY */
@@ -256,6 +243,7 @@ if($type == 'customer'){
     ");
 
 }
+
 $session->msg('s','Payment Added Successfully');
 
 redirect('payments.php');
@@ -408,7 +396,7 @@ body{
 /* Compact Modal Styling */
 #paymentModal .modal-dialog {
     width: 100% !important;
-    max-width: 580px; /* Width tight kar di */
+    max-width: 580px;
     margin: 30px auto;
 }
 
@@ -459,157 +447,119 @@ body{
     gap: 6px;
 }
 
+/* Green Payment Report Button */
+.btn-payment-report {
+    background-color: #16a34a;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-payment-report:hover {
+    background-color: #15803d;
+    transform: translateY(-1px);
+}
+
 </style>
 
 <div class="row">
-
 <div class="col-md-12">
-
-</div>
-
-</div>
-
-<div class="row">
-
-<div class="col-md-12">
-
 <div class="report-card">
 
 <div class="panel-heading">
-
-<strong>
-
-Outstanding Payments
-
-</strong>
-
+<strong>Outstanding Payments</strong>
 </div>
 
 <div class="panel-body">
 
-<div style="margin-bottom:15px;">
-
-<label style="margin-right:20px;">
-
-<input type="radio"
-name="outstanding_type"
-value="customer"
-
-<?= ($type=='customer')?'checked':'' ?>
-
-onclick="window.location='payments.php?type=customer'">
-
- Customer Outstanding
-
-</label>
-
-<label>
-
-<input type="radio"
-name="outstanding_type"
-value="supplier"
-
-<?= ($type=='supplier')?'checked':'' ?>
-
-onclick="window.location='payments.php?type=supplier'">
-
- Supplier Outstanding
-
-</label>
-
-</div>
-
 <?php
-
 $total_due = 0;
-
 foreach($payments as $d){
-
-$total_due += $d['due_amount'];
-
+    $total_due += $d['due_amount'];
 }
-
 ?>
 
-<div style="
-background:#ffffff;
-border:1px solid #e5e7eb;
-border-left:5px solid #2563eb;
-border-radius:10px;
-padding:14px 18px;
-margin-bottom:18px;
-box-shadow:0 2px 8px rgba(0,0,0,.05);
-">
+<!-- FILTER & TOTAL OUTSTANDING ROW -->
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
 
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-">
+    <!-- Left Controls: Radio Inputs -->
+    <div style="display:flex; align-items:center; gap:20px;">
+        <label style="margin:0; font-weight:600; cursor:pointer;">
+            <input type="radio" name="outstanding_type" value="customer" <?= ($type=='customer')?'checked':'' ?> onclick="window.location='payments.php?type=customer'">
+            Customer Outstanding
+        </label>
 
-<span style="
-font-size:15px;
-font-weight:600;
-color:#374151;
-">
-Total Outstanding
-</span>
+        <label style="margin:0; font-weight:600; cursor:pointer;">
+            <input type="radio" name="outstanding_type" value="supplier" <?= ($type=='supplier')?'checked':'' ?> onclick="window.location='payments.php?type=supplier'">
+            Supplier Outstanding
+        </label>
+    </div>
 
-<span style="
-font-size:22px;
-font-weight:700;
-color:#2563eb;
-">
-₹ <?= number_format($total_due,2); ?>
-</span>
+    <!-- Right Controls: Compact Red Total Outstanding Box & Payment Report Button -->
+    <div style="display:flex; align-items:center; gap:12px;">
+        
+        <!-- SLIM & RED TOTAL OUTSTANDING CARD -->
+        <div style="
+            background:#fff;
+            border:1px solid #fca5a5;
+            border-left:4px solid #dc2626;
+            border-radius:8px;
+            padding:5px 12px;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            box-shadow:0 1px 4px rgba(220, 38, 38, 0.08);
+        ">
+            <span style="font-size:12px; font-weight:600; color:#4b5563;">
+                Total Outstanding:
+            </span>
+            <span style="font-size:16px; font-weight:700; color:#dc2626;">
+                ₹ <?= number_format($total_due,2); ?>
+            </span>
+        </div>
+
+        <!-- GREEN PAYMENT REPORT BUTTON -->
+        <a href="payment_report.php?type=<?= $type; ?>&action=generate" class="btn-payment-report">
+            <i class="fa fa-file-text-o"></i> Payment Report
+        </a>
+
+    </div>
 
 </div>
 
-</div>
-
-<input type="text"
-id="search"
-class="form-control search-box"
-placeholder="Search Customer / Invoice">
+<input type="text" id="search" class="form-control search-box" placeholder="Search Customer / Invoice">
 
 <br>
 
 <div class="table-responsive">
-
 <table class="table table-bordered table-striped">
-
 <thead>
-
 <tr>
-
-<th>#</th>
-<th>
-
-<?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?>
-
-</th>
-<th>
-<?= ($type=='customer') ? 'Customer' : 'Supplier' ?>
-</th>
-<?php if($type == 'customer'){ ?>
-<th>Amount</th>
-<th>GST</th>
-<th>Paid</th>
-<th>Due</th>
-
-<?php } else { ?>
-
-<th>Bill Amount</th>
-<th>Paid</th>
-<th>Due</th>
-
-<?php } ?>
-<th>Status</th>
-<th>Date</th>
-<th>Action</th>
-
+    <th>#</th>
+    <th><?= ($type=='customer') ? 'Invoice No' : 'GRN No' ?></th>
+    <th><?= ($type=='customer') ? 'Customer' : 'Supplier' ?></th>
+    <?php if($type == 'customer'){ ?>
+        <th>Amount</th>
+        <th>GST</th>
+        <th>Paid</th>
+        <th>Due</th>
+    <?php } else { ?>
+        <th>Bill Amount</th>
+        <th>Paid</th>
+        <th>Due</th>
+    <?php } ?>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Action</th>
 </tr>
-
 </thead>
 
 <tbody id="paymentTable">
@@ -617,110 +567,37 @@ placeholder="Search Customer / Invoice">
 <?php foreach($payments as $i => $p): ?>
 
 <tr>
-
 <td><?= $i+1; ?></td>
-
 <td><?= $p['invoice_no']; ?></td>
-
-<td>
-<?= htmlspecialchars($p['party_name']); ?>
-</td>
+<td><?= htmlspecialchars($p['party_name']); ?></td>
 
 <?php if($type == 'customer'){ ?>
-
-<td>
-₹ <?= number_format($p['sale_amount'],2); ?>
-</td>
-
-<td>
-₹ <?= number_format($p['sale_gst'],2); ?>
-</td>
-
-<td>
-₹ <?= number_format($p['paid_amount'],2); ?>
-</td>
-
-<td>
-<span style="color:red;font-weight:bold;">
-₹ <?= number_format($p['due_amount'],2); ?>
-</span>
-</td>
-
+    <td>₹ <?= number_format($p['sale_amount'],2); ?></td>
+    <td>₹ <?= number_format($p['sale_gst'],2); ?></td>
+    <td>₹ <?= number_format($p['paid_amount'],2); ?></td>
+    <td><span style="color:red;font-weight:bold;">₹ <?= number_format($p['due_amount'],2); ?></span></td>
 <?php } else { ?>
-
-<td>
-₹ <?= number_format($p['net_total'],2); ?>
-</td>
-
-<td>
-₹ <?= number_format($p['paid_amount'],2); ?>
-</td>
-
-<td>
-<span style="color:red;font-weight:bold;">
-₹ <?= number_format($p['due_amount'],2); ?>
-</span>
-</td>
-
+    <td>₹ <?= number_format($p['net_total'],2); ?></td>
+    <td>₹ <?= number_format($p['paid_amount'],2); ?></td>
+    <td><span style="color:red;font-weight:bold;">₹ <?= number_format($p['due_amount'],2); ?></span></td>
 <?php } ?>
 
 <td>
-
-<?php if($p['payment_status']=="Paid"): ?>
-
-<span class="label label-success">
-
-Paid
-
-</span>
-
-<?php elseif($p['payment_status']=="Partial"): ?>
-
-<span class="label label-warning">
-
-Partial
-
-</span>
-
-<?php else: ?>
-
-<span class="label label-danger">
-
-Unpaid
-
-</span>
-
-<?php endif; ?>
-
+    <?php if($p['payment_status']=="Paid"): ?>
+        <span class="label label-success">Paid</span>
+    <?php elseif($p['payment_status']=="Partial"): ?>
+        <span class="label label-warning">Partial</span>
+    <?php else: ?>
+        <span class="label label-danger">Unpaid</span>
+    <?php endif; ?>
 </td>
 
-<td>
-
-<?= date('d/M/Y', strtotime($p['created_at'])); ?>
-
-</td>
+<td><?= date('d/M/Y', strtotime($p['created_at'])); ?></td>
 
 <td>
-
-<button
-class="btn btn-success btn-xs"
-
-data-toggle="modal"
-data-target="#paymentModal"
-
-onclick="setPaymentData(
-
-'<?= $p['id']; ?>',
-'<?= $p['invoice_no']; ?>',
-'<?= $p['party_name']; ?>',
-'<?= $p['due_amount']; ?>'
-
-)">
-
-Add Payment
-
-</button>
-
+    <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#paymentModal" onclick="setPaymentData('<?= $p['id']; ?>','<?= $p['invoice_no']; ?>','<?= addslashes($p['party_name']); ?>','<?= $p['due_amount']; ?>')">
+        Add Payment
+    </button>
 </td>
 
 </tr>
@@ -728,17 +605,12 @@ Add Payment
 <?php endforeach; ?>
 
 </tbody>
-
 </table>
-
 </div>
 
 </div>
-
 </div>
-
 </div>
-
 </div>
 
 <!-- ================= ADD PAYMENT MODAL ================= -->
@@ -823,122 +695,63 @@ Add Payment
 <script>
 
 /* SEARCH */
-
-document.getElementById("search")
-.addEventListener("keyup", function(){
-
-let value = this.value.toLowerCase();
-
-document.querySelectorAll("#paymentTable tr")
-.forEach(function(row){
-
-row.style.display =
-
-row.textContent.toLowerCase()
-.includes(value)
-
-? ""
-
-: "none";
-
-});
-
+document.getElementById("search").addEventListener("keyup", function(){
+    let value = this.value.toLowerCase();
+    document.querySelectorAll("#paymentTable tr").forEach(function(row){
+        row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
+    });
 });
 
 /* SET PAYMENT DATA */
-
-function setPaymentData(
-id,
-invoice,
-customer,
-due
-){
-
-document.getElementById('invoice_id')
-.value = id;
-
-document.getElementById('invoice_no')
-.value = invoice;
-
-document.getElementById('customer_name')
-.value = customer;
-
-document.getElementById('due_amount')
-.value = due;
-
+function setPaymentData(id, invoice, customer, due){
+    document.getElementById('invoice_id').value = id;
+    document.getElementById('invoice_no').value = invoice;
+    document.getElementById('customer_name').value = customer;
+    document.getElementById('due_amount').value = due;
 }
 
-
-document.querySelectorAll('.pay-check')
-.forEach(function(check){
-
-check.addEventListener('change', function(){
-
-let target =
-document.getElementById(
-this.dataset.target
-);
-
-if(this.checked){
-
-    let due = parseFloat(
-        document.getElementById('due_amount').value
-    ) || 0;
-
-    target.disabled = false;
-    target.readOnly = false;
-    target.value = due.toFixed(2);
-
-    target.focus();
-    target.select();
-
-}else{
-
-    target.disabled = true;
-    target.value = "";
-
-}
-
+document.querySelectorAll('.pay-check').forEach(function(check){
+    check.addEventListener('change', function(){
+        let target = document.getElementById(this.dataset.target);
+        if(this.checked){
+            let due = parseFloat(document.getElementById('due_amount').value) || 0;
+            target.disabled = false;
+            target.readOnly = false;
+            target.value = due.toFixed(2);
+            target.focus();
+            target.select();
+        }else{
+            target.disabled = true;
+            target.value = "";
+        }
+    });
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    if(typeof flatpickr !== "undefined") {
+        flatpickr(".payment-datepicker", {
+            dateFormat: "d/M/Y",
+            allowInput: false,
+            disableMobile: true
+        });
+    }
 });
 
 </script>
-
 
 <?php include_once('layouts/footer.php'); ?>
 
 <?php if($msg): ?>
-
 <script>
-
 document.addEventListener("DOMContentLoaded", function () {
-
-<?php foreach($msg as $m): ?>
-
-Swal.fire({
-
-icon: "<?= ($m['type']=='s') ? 'success' : 'error'; ?>",
-
-title: "<?= ($m['type']=='s') ? 'Success' : 'Error'; ?>",
-
-text: "<?= addslashes($m['text']); ?>",
-
-confirmButtonColor: "#28a745"
-
+    <?php foreach($msg as $m): ?>
+    Swal.fire({
+        icon: "<?= ($m['type']=='s') ? 'success' : 'error'; ?>",
+        title: "<?= ($m['type']=='s') ? 'Success' : 'Error'; ?>",
+        text: "<?= addslashes($m['text']); ?>",
+        confirmButtonColor: "#28a745"
+    });
+    <?php endforeach; ?>
 });
-
-<?php endforeach; ?>
-
-});
-
 </script>
 <?php endif; ?>
-
-<script>
-flatpickr(".payment-datepicker", {
-    dateFormat: "d/M/Y",
-    allowInput: false,
-    disableMobile: true
-});
-</script>
