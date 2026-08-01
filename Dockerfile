@@ -1,26 +1,23 @@
 FROM php:8.2-cli
 
-WORKDIR /app
-
-# Install system tools & GD/Zip (required by Dompdf)
+# Install required system tools and packages
 RUN apt-get update && apt-get install -y \
-    git \
     unzip \
+    git \
     libzip-dev \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install mysqli zip gd
 
-# Install Composer
+# Copy composer binary from official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
 
 # Copy project files
 COPY . /app
 
-# Run composer install to generate clean vendor & Dompdf files
+# Install PHP packages (Dompdf)
 RUN composer install --no-dev --optimize-autoloader
 
-# Start PHP built-in server
+# Start server
 CMD php -S 0.0.0.0:$PORT
