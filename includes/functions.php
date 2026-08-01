@@ -138,7 +138,7 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* UNIVERSAL AUTOLOADER FOR DOMPDF
+/* UNIVERSAL AUTOLOADER FOR DOMPDF (COMPOSER ONLY)
 /*--------------------------------------------------------------*/
 function load_dompdf_framework() {
     if (class_exists('Dompdf\Dompdf')) {
@@ -149,9 +149,6 @@ function load_dompdf_framework() {
         __DIR__ . '/../vendor/autoload.php',
         __DIR__ . '/vendor/autoload.php',
         $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
-        __DIR__ . '/libs/dompdf/vendor/autoload.php',
-        __DIR__ . '/../libs/dompdf/vendor/autoload.php',
-        '/app/libs/dompdf/vendor/autoload.php',
         '/app/vendor/autoload.php'
     ];
 
@@ -168,13 +165,13 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (EXACT ORIGINAL DESIGN)
+/* 1. SEND INVOICE PDF VIA BREVO
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf autoload error! Check composer vendor files.";
+        return "Dompdf autoload error! Clean vendor folder not found.";
     }
 
     $invoice_data = find_by_sql("
@@ -437,7 +434,6 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    // Railway Environment Variables
     $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
     $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
 
@@ -493,7 +489,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf autoload error! Check composer vendor files.";
+        return "Dompdf autoload error! Clean vendor folder not found.";
     }
 
     $q_data = find_by_sql("
