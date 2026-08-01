@@ -138,7 +138,7 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* DOMPDF SAFE INITIALIZER (WITH EXACT CLASS ALIAS FIX FOR CPDF)
+/* DOMPDF SAFE INITIALIZER
 /*--------------------------------------------------------------*/
 function load_dompdf_framework() {
     if (class_exists('Dompdf\Dompdf') && class_exists('Dompdf\Cpdf')) {
@@ -223,7 +223,7 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE VIA BREVO
+/* 1. SEND INVOICE / PROFORMA VIA BREVO
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
@@ -242,9 +242,16 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
     $invoice = $invoice_data[0];
 
-    $is_revised = isset($invoice['is_revised']) && $invoice['is_revised'] == 1;
-    $title_text = $is_revised ? 'REVISED INVOICE' : 'INVOICE';
-    $title_color = $is_revised ? '#dc2626' : '#2563eb';
+    // Check header type from remarks (REVISED INVOICE REMOVED)
+    $is_proforma = (strtoupper($invoice['remarks'] ?? '') === 'PROFORMA');
+
+    if ($is_proforma) {
+        $title_text = 'PROFORMA INVOICE';
+        $title_color = '#d97706'; // Amber / Orange
+    } else {
+        $title_text = 'TAX INVOICE';
+        $title_color = '#2563eb'; // Blue
+    }
 
     $org_master = find_by_sql("
         SELECT org_name 
@@ -270,37 +277,45 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE ii.invoice_id = '{$invoice_id}'
     ");
 
+    /* FETCH PAYMENTS */
+    $payment_records = find_by_sql("
+        SELECT payment_mode, amount, reference_no, payment_date 
+        FROM payments 
+        WHERE invoice_id = '{$invoice_id}' AND amount > 0
+    ");
+
     $org_name_upper = strtoupper($org_master['org_name']);
     $cust_name_upper = strtoupper($invoice['customer_name']);
     $inv_date_formatted = date("d/M/Y", strtotime($invoice['invoice_date']));
     $net_total_words = numberToWords($invoice['net_total']);
 
-    // CSS COMPRESSED FOR SINGLE PAGE A4 FIT
     $html = '
     <html>
     <head>
     <style>
-        @page { margin: 15px 20px; }
-        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 0; line-height: 1.2; }
+        @page { margin: 12px 18px; }
+        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 9.5px; color: #1e293b; margin: 0; padding: 0; line-height: 1.15; }
         .wrapper { width: 100%; }
-        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 6px; padding-bottom: 4px; }
-        .org-title { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
-        .inv-title { font-size: 16px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
-        .meta-table { font-size: 9px; width: 100%; text-align: right; }
-        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 5px 8px; margin-bottom: 6px; border-radius: 4px; }
+        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 5px; padding-bottom: 3px; }
+        .org-title { font-size: 13px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
+        .inv-title { font-size: 15px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
+        .meta-table { font-size: 8.5px; width: 100%; text-align: right; }
+        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 4px 6px; margin-bottom: 5px; border-radius: 4px; }
         .card-title { font-size: 8px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 1px; }
-        .customer-name { font-size: 11px; font-weight: bold; color: #1e293b; }
-        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-        table.data-table th { background: #f8fafc; color: #64748b; font-size: 8px; text-transform: uppercase; padding: 4px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-        table.data-table td { padding: 4px; border-bottom: 1px solid #e2e8f0; font-size: 9px; }
+        .customer-name { font-size: 10.5px; font-weight: bold; color: #1e293b; }
+        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+        table.data-table th { background: #f8fafc; color: #64748b; font-size: 8px; text-transform: uppercase; padding: 3px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        table.data-table td { padding: 3px; border-bottom: 1px solid #e2e8f0; font-size: 8.5px; }
         .right { text-align: right; } .center { text-align: center; } .bold { font-weight: bold; }
-        .summary-row td { border-bottom: none; padding: 2px 4px; }
-        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 10px; color: #1d4ed8; font-weight: bold; }
-        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 4px 6px; margin-bottom: 6px; font-size: 9px; }
-        .footer-table { width: 100%; margin-top: 6px; }
-        .footer-card { border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; font-size: 9px; vertical-align: top; }
-        .footer-title { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 3px; padding-bottom: 2px; }
-        .terms-box { border: 1px solid #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 7.5px; line-height: 1.15; color: #475569; margin-top: 6px; }
+        .summary-row td { border-bottom: none; padding: 2px 3px; }
+        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 9.5px; color: #1d4ed8; font-weight: bold; }
+        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 3px 5px; margin-bottom: 5px; font-size: 8.5px; }
+        .footer-table { width: 100%; margin-top: 4px; }
+        .footer-card { border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; font-size: 8.5px; vertical-align: top; }
+        .footer-title { font-size: 7.5px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 2px; padding-bottom: 1px; }
+        .terms-box { border: 1px solid #e2e8f0; padding: 3px 5px; border-radius: 4px; font-size: 7px; line-height: 1.1; color: #475569; margin-top: 4px; }
+        .pay-box-green { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; }
+        .pay-box-orange { background: #fffbebfb; border: 1px solid #fef3c7; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; color: #b45309; font-size: 8px; }
     </style>
     </head>
     <body>
@@ -309,7 +324,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <tr>
                 <td width="60%">
                     <div class="org-title">' . $org_name_upper . '</div>
-                    <div style="color: #64748b; font-size: 9px;">
+                    <div style="color: #64748b; font-size: 8.5px;">
                         ' . nl2br(htmlspecialchars($org['address'] ?? '')) . '<br>
                         <b>GSTIN:</b> ' . htmlspecialchars($org['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
                     </div>
@@ -327,7 +342,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         <div class="info-card">
             <div class="card-title">Billed To</div>
             <div class="customer-name">' . $cust_name_upper . '</div>
-            <div style="font-size: 9px; line-height: 1.2;">
+            <div style="font-size: 8.5px; line-height: 1.15;">
                 ' . nl2br(htmlspecialchars($invoice['address'] ?? '')) . '<br>
                 <b>GSTIN:</b> ' . htmlspecialchars($invoice['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($invoice['contact_no'] ?? '') . '
             </div>
@@ -383,8 +398,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 </tr>';
             }
 
-            $advance = $invoice['advance_paid'] ?? 0;
-            $balance = $invoice['net_total'] - $advance;
+            $paid = $invoice['paid_amount'] ?? 0;
+            $balance = $invoice['due_amount'] ?? ($invoice['net_total'] - $paid);
 
     $html .= '
             <tr class="summary-row">
@@ -405,23 +420,59 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td class="right bold">' . number_format($invoice['net_total'], 2) . '</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="8" class="right">Advance Paid</td>
-                <td class="right">' . number_format($advance, 2) . '</td>
+                <td colspan="8" class="right" style="color:#16a34a; font-weight:bold;">Total Paid / Received</td>
+                <td class="right" style="color:#16a34a; font-weight:bold;">' . number_format($paid, 2) . '</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="8" class="right bold" style="color: #1d4ed8;">Balance Due</td>
-                <td class="right bold" style="color: #1d4ed8;">' . number_format($balance, 2) . '</td>
+                <td colspan="8" class="right bold" style="color: #dc2626;">Balance Due</td>
+                <td class="right bold" style="color: #dc2626;">' . number_format($balance, 2) . '</td>
             </tr>
             </tbody>
-        </table>
+        </table>';
 
+    if (!empty($payment_records)) {
+        $html .= '
+        <div class="pay-box-green">
+            <div style="font-size:8px; font-weight:bold; color:#166534; text-transform:uppercase; margin-bottom:2px;">
+                Payment Breakdown (' . strtoupper($invoice['payment_status']) . ')
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:8px;">
+                <thead>
+                    <tr style="border-bottom:1px solid #bbf7d0; color:#15803d;">
+                        <th align="left" style="padding:1px 0;">Mode</th>
+                        <th align="left" style="padding:1px 0;">UTR / Ref No.</th>
+                        <th align="right" style="padding:1px 0;">Amount Received</th>
+                    </tr>
+                </thead>
+                <tbody>';
+                foreach ($payment_records as $pr) {
+                    $ref = !empty($pr['reference_no']) ? htmlspecialchars($pr['reference_no']) : 'N/A';
+                    $html .= '
+                    <tr>
+                        <td style="padding:1px 0;"><b>' . strtoupper($pr['payment_mode']) . '</b></td>
+                        <td style="padding:1px 0;">' . $ref . '</td>
+                        <td align="right" style="padding:1px 0; font-weight:bold; color:#166534;">₹ ' . number_format($pr['amount'], 2) . '</td>
+                    </tr>';
+                }
+        $html .= '
+                </tbody>
+            </table>
+        </div>';
+    } else {
+        $html .= '
+        <div class="pay-box-orange">
+            <b>PROFORMA INVOICE / ESTIMATE</b> | Pending Balance: <b>₹ ' . number_format($balance, 2) . '</b>
+        </div>';
+    }
+
+    $html .= '
         <div class="amount-words-box">
             <span class="bold" style="color: #64748b;">Amount in Words:</span>
             <span class="bold">' . $net_total_words . ' Only</span>
         </div>
 
-        <div style="font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">GST Tax Breakdown</div>
-        <table class="data-table" style="font-size: 8px;">
+        <div style="font-size: 7.5px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">GST Tax Breakdown</div>
+        <table class="data-table" style="font-size: 7.5px;">
             <thead>
                 <tr>
                     <th class="center">HSN / SAC</th>
@@ -470,8 +521,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td width="50%" class="footer-card center" style="text-align: center;">
                     <div class="footer-title">Authorized Signatory</div>
                     <div class="bold">' . $org_name_upper . '</div>
-                    <div style="height: 18px;"></div>
-                    <div style="font-size: 7.5px; color: #64748b;">Computer-generated invoice. No physical signature required.</div>
+                    <div style="height: 16px;"></div>
+                    <div style="font-size: 7px; color: #64748b;">Computer-generated document. No physical signature required.</div>
                 </td>
             </tr>
         </table>';
@@ -495,16 +546,21 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $dompdf->render();
     $pdf_base64 = base64_encode($dompdf->output());
 
-    $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY');
-    $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL');
+    // =========================================================
+    // BREVO API CREDENTIALS (टेस्टिंग के लिए यहाँ सीधे Key डालें)
+    // =========================================================
+    $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY') ?? 'YOUR_BREVO_API_KEY_HERE';
+    $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL') ?? 'your-email@domain.com';
+  
+    if (empty($apiKey) || $apiKey === 'YOUR_BREVO_API_KEY_HERE') {
+        return "BREVO_API_KEY is missing/not set properly!";
+    }
+    if (empty($senderEmail) || $senderEmail === 'your-email@domain.com') {
+        return "BREVO_SENDER_EMAIL is missing/not set properly!";
+    }
 
-    if (empty($apiKey)) return "BREVO_API_KEY is EMPTY in Railway Environment Variables!";
-    if (empty($senderEmail)) return "BREVO_SENDER_EMAIL is EMPTY in Railway Environment Variables!";
-
-    $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from " . $org_name_upper;
-    $body = $is_revised 
-        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your invoice.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>"
-        : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
+    $subject = ($is_proforma ? "Proforma Invoice #" : "Tax Invoice #") . $invoice['invoice_no'] . " from " . $org_name_upper;
+    $body = "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your " . ($is_proforma ? "Proforma Invoice" : "Tax Invoice") . ".<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
     $data = [
         "sender" => ["name" => $org_name_upper, "email" => $senderEmail],
@@ -514,7 +570,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         "attachment" => [
             [
                 "content" => $pdf_base64,
-                "name"    => ($is_revised ? "Revised_" : "") . "Invoice_" . str_replace('/', '_', $invoice['invoice_no']) . ".pdf"
+                "name"    => ($is_proforma ? "Proforma_" : "Invoice_") . str_replace('/', '_', $invoice['invoice_no']) . ".pdf"
             ]
         ]
     ];
@@ -541,11 +597,3 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         return "HTTP Code: {$httpCode} | Brevo Msg: {$response}";
     }
 }
-
-/*--------------------------------------------------------------*/
-/* 2. SEND QUOTATION VIA BREVO
-/*--------------------------------------------------------------*/
-function send_quotation_email($quotation_id, $to_email, $customer_name) {
-    return send_invoice_email($quotation_id, $to_email, $customer_name);
-}
-?>
