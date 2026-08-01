@@ -138,7 +138,7 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* DOMPDF SAFE INITIALIZER
+/* DOMPDF SAFE INITIALIZER (WITH EXACT CLASS ALIAS FIX FOR CPDF)
 /*--------------------------------------------------------------*/
 function load_dompdf_framework() {
     if (class_exists('Dompdf\Dompdf') && class_exists('Dompdf\Cpdf')) {
@@ -223,7 +223,7 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE VIA BREVO (WITH PAYMENT & UTR BREAKDOWN)
+/* 1. SEND INVOICE VIA BREVO
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
@@ -270,45 +270,37 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE ii.invoice_id = '{$invoice_id}'
     ");
 
-    /* 🔥 FETCH PAYMENTS & UTR DATA FOR THIS INVOICE 🔥 */
-    $payment_records = find_by_sql("
-        SELECT payment_mode, amount, reference_no, payment_date 
-        FROM payments 
-        WHERE invoice_id = '{$invoice_id}' AND amount > 0
-    ");
-
     $org_name_upper = strtoupper($org_master['org_name']);
     $cust_name_upper = strtoupper($invoice['customer_name']);
     $inv_date_formatted = date("d/M/Y", strtotime($invoice['invoice_date']));
     $net_total_words = numberToWords($invoice['net_total']);
 
+    // CSS COMPRESSED FOR SINGLE PAGE A4 FIT
     $html = '
     <html>
     <head>
     <style>
-        @page { margin: 12px 18px; }
-        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 9.5px; color: #1e293b; margin: 0; padding: 0; line-height: 1.15; }
+        @page { margin: 15px 20px; }
+        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 0; line-height: 1.2; }
         .wrapper { width: 100%; }
-        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 5px; padding-bottom: 3px; }
-        .org-title { font-size: 13px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
-        .inv-title { font-size: 15px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
-        .meta-table { font-size: 8.5px; width: 100%; text-align: right; }
-        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 4px 6px; margin-bottom: 5px; border-radius: 4px; }
+        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 6px; padding-bottom: 4px; }
+        .org-title { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
+        .inv-title { font-size: 16px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
+        .meta-table { font-size: 9px; width: 100%; text-align: right; }
+        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 5px 8px; margin-bottom: 6px; border-radius: 4px; }
         .card-title { font-size: 8px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 1px; }
-        .customer-name { font-size: 10.5px; font-weight: bold; color: #1e293b; }
-        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-        table.data-table th { background: #f8fafc; color: #64748b; font-size: 8px; text-transform: uppercase; padding: 3px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-        table.data-table td { padding: 3px; border-bottom: 1px solid #e2e8f0; font-size: 8.5px; }
+        .customer-name { font-size: 11px; font-weight: bold; color: #1e293b; }
+        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        table.data-table th { background: #f8fafc; color: #64748b; font-size: 8px; text-transform: uppercase; padding: 4px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        table.data-table td { padding: 4px; border-bottom: 1px solid #e2e8f0; font-size: 9px; }
         .right { text-align: right; } .center { text-align: center; } .bold { font-weight: bold; }
-        .summary-row td { border-bottom: none; padding: 2px 3px; }
-        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 9.5px; color: #1d4ed8; font-weight: bold; }
-        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 3px 5px; margin-bottom: 5px; font-size: 8.5px; }
-        .footer-table { width: 100%; margin-top: 4px; }
-        .footer-card { border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; font-size: 8.5px; vertical-align: top; }
-        .footer-title { font-size: 7.5px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 2px; padding-bottom: 1px; }
-        .terms-box { border: 1px solid #e2e8f0; padding: 3px 5px; border-radius: 4px; font-size: 7px; line-height: 1.1; color: #475569; margin-top: 4px; }
-        .pay-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; }
-        .pay-title { font-size: 8px; font-weight: bold; color: #166534; text-transform: uppercase; margin-bottom: 2px; }
+        .summary-row td { border-bottom: none; padding: 2px 4px; }
+        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 10px; color: #1d4ed8; font-weight: bold; }
+        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 4px 6px; margin-bottom: 6px; font-size: 9px; }
+        .footer-table { width: 100%; margin-top: 6px; }
+        .footer-card { border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; font-size: 9px; vertical-align: top; }
+        .footer-title { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 3px; padding-bottom: 2px; }
+        .terms-box { border: 1px solid #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 7.5px; line-height: 1.15; color: #475569; margin-top: 6px; }
     </style>
     </head>
     <body>
@@ -317,7 +309,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <tr>
                 <td width="60%">
                     <div class="org-title">' . $org_name_upper . '</div>
-                    <div style="color: #64748b; font-size: 8.5px;">
+                    <div style="color: #64748b; font-size: 9px;">
                         ' . nl2br(htmlspecialchars($org['address'] ?? '')) . '<br>
                         <b>GSTIN:</b> ' . htmlspecialchars($org['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
                     </div>
@@ -335,7 +327,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         <div class="info-card">
             <div class="card-title">Billed To</div>
             <div class="customer-name">' . $cust_name_upper . '</div>
-            <div style="font-size: 8.5px; line-height: 1.15;">
+            <div style="font-size: 9px; line-height: 1.2;">
                 ' . nl2br(htmlspecialchars($invoice['address'] ?? '')) . '<br>
                 <b>GSTIN:</b> ' . htmlspecialchars($invoice['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($invoice['contact_no'] ?? '') . '
             </div>
@@ -392,8 +384,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             }
 
             $advance = $invoice['advance_paid'] ?? 0;
-            $paid = $invoice['paid_amount'] ?? 0;
-            $balance = $invoice['due_amount'] ?? ($invoice['net_total'] - $paid);
+            $balance = $invoice['net_total'] - $advance;
 
     $html .= '
             <tr class="summary-row">
@@ -414,53 +405,23 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td class="right bold">' . number_format($invoice['net_total'], 2) . '</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="8" class="right" style="color:#16a34a; font-weight:bold;">Total Paid / Received</td>
-                <td class="right" style="color:#16a34a; font-weight:bold;">' . number_format($paid, 2) . '</td>
+                <td colspan="8" class="right">Advance Paid</td>
+                <td class="right">' . number_format($advance, 2) . '</td>
             </tr>
             <tr class="summary-row">
-                <td colspan="8" class="right bold" style="color: #dc2626;">Balance Due</td>
-                <td class="right bold" style="color: #dc2626;">' . number_format($balance, 2) . '</td>
+                <td colspan="8" class="right bold" style="color: #1d4ed8;">Balance Due</td>
+                <td class="right bold" style="color: #1d4ed8;">' . number_format($balance, 2) . '</td>
             </tr>
             </tbody>
-        </table>';
+        </table>
 
-    /* 🔥 DYNAMIC PAYMENT BREAKDOWN BLOCK (MODE, AMOUNT & UTR NO) 🔥 */
-    if (!empty($payment_records)) {
-        $html .= '
-        <div class="pay-box">
-            <div class="pay-title">Payment Received Details (' . strtoupper($invoice['payment_status']) . ')</div>
-            <table style="width:100%; border-collapse:collapse; font-size:8px;">
-                <thead>
-                    <tr style="border-bottom:1px solid #bbf7d0; color:#15803d;">
-                        <th align="left" style="padding:2px 0;">Mode</th>
-                        <th align="left" style="padding:2px 0;">UTR / Ref No.</th>
-                        <th align="right" style="padding:2px 0;">Amount Received</th>
-                    </tr>
-                </thead>
-                <tbody>';
-                foreach ($payment_records as $pr) {
-                    $ref = !empty($pr['reference_no']) ? htmlspecialchars($pr['reference_no']) : 'N/A';
-                    $html .= '
-                    <tr>
-                        <td style="padding:2px 0;"><b>' . strtoupper($pr['payment_mode']) . '</b></td>
-                        <td style="padding:2px 0;">' . $ref . '</td>
-                        <td align="right" style="padding:2px 0; font-weight:bold; color:#166534;">₹ ' . number_format($pr['amount'], 2) . '</td>
-                    </tr>';
-                }
-        $html .= '
-                </tbody>
-            </table>
-        </div>';
-    }
-
-    $html .= '
         <div class="amount-words-box">
             <span class="bold" style="color: #64748b;">Amount in Words:</span>
             <span class="bold">' . $net_total_words . ' Only</span>
         </div>
 
-        <div style="font-size: 7.5px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">GST Tax Breakdown</div>
-        <table class="data-table" style="font-size: 7.5px;">
+        <div style="font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">GST Tax Breakdown</div>
+        <table class="data-table" style="font-size: 8px;">
             <thead>
                 <tr>
                     <th class="center">HSN / SAC</th>
@@ -509,8 +470,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td width="50%" class="footer-card center" style="text-align: center;">
                     <div class="footer-title">Authorized Signatory</div>
                     <div class="bold">' . $org_name_upper . '</div>
-                    <div style="height: 16px;"></div>
-                    <div style="font-size: 7px; color: #64748b;">Computer-generated invoice. No physical signature required.</div>
+                    <div style="height: 18px;"></div>
+                    <div style="font-size: 7.5px; color: #64748b;">Computer-generated invoice. No physical signature required.</div>
                 </td>
             </tr>
         </table>';
