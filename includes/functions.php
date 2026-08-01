@@ -223,7 +223,7 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (STRICT SINGLE PAGE FIT)
+/* 1. SEND INVOICE VIA BREVO
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
@@ -503,7 +503,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 
     $subject = ($is_revised ? "[REVISED] " : "") . "Invoice #" . $invoice['invoice_no'] . " from " . $org_name_upper;
     $body = $is_revised 
-        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your Invoice.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>"
+        ? "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached the <b>REVISED/UPDATED</b> copy of your invoice.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>"
         : "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your invoice.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
     $data = [
@@ -543,7 +543,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 }
 
 /*--------------------------------------------------------------*/
-/* 2. SEND QUOTATION PDF VIA BREVO
+/* 2. SEND QUOTATION VIA BREVO
 /*--------------------------------------------------------------*/
 function send_quotation_email($quotation_id, $to_email, $customer_name) {
     return send_invoice_email($quotation_id, $to_email, $customer_name);
