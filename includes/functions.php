@@ -164,12 +164,10 @@ function load_dompdf_framework() {
     }
 
     if ($v) {
-        // First load vendor autoloader if present
         if (file_exists($v . '/autoload.php')) {
             @include_once $v . '/autoload.php';
         }
 
-        // Custom PSR-4 & Legacy Cpdf Mapping
         spl_autoload_register(function ($class) use ($v) {
             if ($class === 'Dompdf\Cpdf' || $class === 'Cpdf') {
                 $cpdf_files = [
@@ -210,7 +208,6 @@ function load_dompdf_framework() {
             }
         }, true, true);
 
-        // Fallback: If Dompdf\Adapter\CPDF exists but Dompdf\Cpdf doesn't
         if (!class_exists('Dompdf\Cpdf')) {
             if (class_exists('Dompdf\Adapter\CPDF')) {
                 class_alias('Dompdf\Adapter\CPDF', 'Dompdf\Cpdf');
@@ -226,7 +223,7 @@ function load_dompdf_framework() {
 }
 
 /*--------------------------------------------------------------*/
-/* 1. SEND INVOICE PDF VIA BREVO (EXACT ORIGINAL HTML DESIGN)
+/* 1. SEND INVOICE PDF VIA BREVO (STRICT SINGLE PAGE FIT)
 /*--------------------------------------------------------------*/
 function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
@@ -278,29 +275,32 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $inv_date_formatted = date("d/M/Y", strtotime($invoice['invoice_date']));
     $net_total_words = numberToWords($invoice['net_total']);
 
+    // CSS COMPRESSED FOR SINGLE PAGE A4 FIT
     $html = '
     <html>
     <head>
     <style>
-        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 11px; color: #1e293b; margin: 0; padding: 0; }
+        @page { margin: 15px 20px; }
+        body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 0; line-height: 1.2; }
         .wrapper { width: 100%; }
-        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; padding-bottom: 8px; }
-        .org-title { font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 3px; }
-        .inv-title { font-size: 18px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
-        .meta-table { font-size: 10px; width: 100%; text-align: right; }
-        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
-        .card-title { font-size: 9px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 2px; }
-        .customer-name { font-size: 12px; font-weight: bold; color: #1e293b; }
-        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        table.data-table th { background: #f8fafc; color: #64748b; font-size: 9px; text-transform: uppercase; padding: 5px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
-        table.data-table td { padding: 5px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
+        .header-table { width: 100%; border-bottom: 1px solid #e2e8f0; margin-bottom: 6px; padding-bottom: 4px; }
+        .org-title { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 2px; }
+        .inv-title { font-size: 16px; font-weight: bold; color: ' . $title_color . '; text-align: right; text-transform: uppercase; }
+        .meta-table { font-size: 9px; width: 100%; text-align: right; }
+        .info-card { background: #eff6ff; border: 1px solid #dbeafe; padding: 5px 8px; margin-bottom: 6px; border-radius: 4px; }
+        .card-title { font-size: 8px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 1px; }
+        .customer-name { font-size: 11px; font-weight: bold; color: #1e293b; }
+        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        table.data-table th { background: #f8fafc; color: #64748b; font-size: 8px; text-transform: uppercase; padding: 4px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        table.data-table td { padding: 4px; border-bottom: 1px solid #e2e8f0; font-size: 9px; }
         .right { text-align: right; } .center { text-align: center; } .bold { font-weight: bold; }
-        .summary-row td { border-bottom: none; padding: 3px 5px; }
-        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 11px; color: #1d4ed8; font-weight: bold; }
-        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 6px; margin-bottom: 10px; font-size: 10px; }
-        .footer-table { width: 100%; margin-top: 10px; }
-        .footer-card { border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 10px; vertical-align: top; }
-        .footer-title { font-size: 9px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 4px; padding-bottom: 2px; }
+        .summary-row td { border-bottom: none; padding: 2px 4px; }
+        .grand-total td { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; background: #eff6ff; font-size: 10px; color: #1d4ed8; font-weight: bold; }
+        .amount-words-box { background: #f8fafc; border: 1px dashed #e2e8f0; padding: 4px 6px; margin-bottom: 6px; font-size: 9px; }
+        .footer-table { width: 100%; margin-top: 6px; }
+        .footer-card { border: 1px solid #e2e8f0; padding: 5px; border-radius: 4px; font-size: 9px; vertical-align: top; }
+        .footer-title { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 3px; padding-bottom: 2px; }
+        .terms-box { border: 1px solid #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 7.5px; line-height: 1.15; color: #475569; margin-top: 6px; }
     </style>
     </head>
     <body>
@@ -309,7 +309,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <tr>
                 <td width="60%">
                     <div class="org-title">' . $org_name_upper . '</div>
-                    <div style="color: #64748b; font-size: 10px;">
+                    <div style="color: #64748b; font-size: 9px;">
                         ' . nl2br(htmlspecialchars($org['address'] ?? '')) . '<br>
                         <b>GSTIN:</b> ' . htmlspecialchars($org['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
                     </div>
@@ -327,7 +327,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         <div class="info-card">
             <div class="card-title">Billed To</div>
             <div class="customer-name">' . $cust_name_upper . '</div>
-            <div style="font-size: 10px; line-height: 1.3;">
+            <div style="font-size: 9px; line-height: 1.2;">
                 ' . nl2br(htmlspecialchars($invoice['address'] ?? '')) . '<br>
                 <b>GSTIN:</b> ' . htmlspecialchars($invoice['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($invoice['contact_no'] ?? '') . '
             </div>
@@ -420,8 +420,8 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <span class="bold">' . $net_total_words . ' Only</span>
         </div>
 
-        <div style="font-size: 9px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 3px;">GST Tax Breakdown</div>
-        <table class="data-table" style="font-size: 9px;">
+        <div style="font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">GST Tax Breakdown</div>
+        <table class="data-table" style="font-size: 8px;">
             <thead>
                 <tr>
                     <th class="center">HSN / SAC</th>
@@ -470,17 +470,17 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td width="50%" class="footer-card center" style="text-align: center;">
                     <div class="footer-title">Authorized Signatory</div>
                     <div class="bold">' . $org_name_upper . '</div>
-                    <div style="height: 25px;"></div>
-                    <div style="font-size: 8px; color: #64748b;">Computer-generated invoice. No physical signature required.</div>
+                    <div style="height: 18px;"></div>
+                    <div style="font-size: 7.5px; color: #64748b;">Computer-generated invoice. No physical signature required.</div>
                 </td>
             </tr>
         </table>';
 
         if (!empty(trim($invoice['terms_conditions'] ?? ''))) {
             $html .= '
-            <div class="footer-card" style="margin-top: 8px;">
+            <div class="terms-box">
                 <div class="footer-title">Terms & Conditions</div>
-                <div style="font-size: 9px; color: #64748b; white-space: pre-line;">' . htmlspecialchars(trim($invoice['terms_conditions'])) . '</div>
+                <div style="white-space: pre-line;">' . htmlspecialchars(trim($invoice['terms_conditions'])) . '</div>
             </div>';
         }
 
@@ -543,7 +543,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
 }
 
 /*--------------------------------------------------------------*/
-/* 2. SEND QUOTATION PDF VIA BREVO (ORIGINAL HTML DESIGN)
+/* 2. SEND QUOTATION PDF VIA BREVO
 /*--------------------------------------------------------------*/
 function send_quotation_email($quotation_id, $to_email, $customer_name) {
     return send_invoice_email($quotation_id, $to_email, $customer_name);
