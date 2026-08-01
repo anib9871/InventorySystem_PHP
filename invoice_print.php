@@ -20,6 +20,26 @@ WHERE i.id = $id
 if(!$invoice_data) die("Invoice not found");
 $invoice = $invoice_data[0];
 
+/* 🔥 PROFORMA VS TAX INVOICE TITLE LOGIC (REVISED REMOVED) 🔥 */
+$doc_type = strtoupper($invoice['remarks'] ?? '');
+$is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $invoice['payment_status'] == 'Unpaid'));
+
+if ($is_proforma) {
+    $title_text = 'PROFORMA INVOICE';
+    $title_color = '#d97706'; // Amber / Orange
+} else {
+    // ALWAYS TAX INVOICE (NO REVISED TEXT)
+    $title_text = 'TAX INVOICE';
+    $title_color = '#2563eb'; // Blue
+}
+
+/* 🔥 FETCH PAYMENTS, UTR & DATE RECORDS FOR THIS INVOICE 🔥 */
+$payment_records = find_by_sql("
+SELECT payment_mode, amount, reference_no, payment_date 
+FROM payments 
+WHERE invoice_id = $id AND amount > 0
+");
+
 /* ================= MANUAL EMAIL SEND HANDLER ================= */
 $email_msg = "";
 $email_status = "";
@@ -29,14 +49,13 @@ if (isset($_POST['send_email_btn'])) {
     $client_name  = $invoice['customer_name'];
 
     if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
-        $result = send_invoice_email($id, $client_email, $client_name);
+        $sent = send_invoice_email($id, $client_email, $client_name);
         
-        if ($result === true) {
-            $email_msg = "Invoice email successfully sent to " . htmlspecialchars($client_email) . "!";
+        if ($sent === true || $sent == 1) {
+            $email_msg = "Document email successfully sent to " . htmlspecialchars($client_email) . "!";
             $email_status = "success";
         } else {
-            // Ab direct real error reason print hoga
-            $email_msg = "Brevo Mail Error: " . htmlspecialchars($result);
+            $email_msg = "Failed to send email. " . htmlspecialchars($sent);
             $email_status = "error";
         }
     } else {
@@ -59,9 +78,8 @@ $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 $org = find_by_sql("SELECT * FROM organization_master WHERE id=".$invoice['organization_id'])[0];
 
 /* ================= TAX MODE DETECT ================= */
-
-$org_state  = substr($org['gst_no'], 0, 2);
-$cust_state = substr($invoice['gst_no'], 0, 2);
+$org_state  = substr($org['gst_no'] ?? '', 0, 2);
+$cust_state = substr($invoice['gst_no'] ?? '', 0, 2);
 
 $tax_mode = ($org_state == $cust_state) ? 'CGST_SGST' : 'IGST';
 
@@ -77,8 +95,7 @@ LEFT JOIN products p ON p.id = ii.product_id
 WHERE ii.invoice_id = $id
 ");
 
-/* ================= IMPROVED NUMBER TO WORDS FUNCTION ================= */
-
+/* ================= NUMBER TO WORDS FUNCTION ================= */
 function convertGroup($num) {
     $ones = array(
         0 => "", 1 => "One", 2 => "Two", 3 => "Three", 4 => "Four", 5 => "Five",
@@ -92,33 +109,12 @@ function convertGroup($num) {
     );
 
     if ($num == 0) return "";
-
-    if ($num < 20) {
-        return $ones[$num];
-    }
-
-    if ($num < 100) {
-        $rem = $num % 10;
-        return trim($tens[intval($num / 10)] . " " . $ones[$rem]);
-    }
-
-    if ($num < 1000) {
-        $rem = $num % 100;
-        return trim($ones[intval($num / 100)] . " Hundred " . convertGroup($rem));
-    }
-
-    if ($num < 100000) {
-        $rem = $num % 1000;
-        return trim(convertGroup(intval($num / 1000)) . " Thousand " . convertGroup($rem));
-    }
-
-    if ($num < 10000000) {
-        $rem = $num % 100000;
-        return trim(convertGroup(intval($num / 100000)) . " Lakh " . convertGroup($rem));
-    }
-
-    $rem = $num % 10000000;
-    return trim(convertGroup(intval($num / 10000000)) . " Crore " . convertGroup($rem));
+    if ($num < 20) return $ones[$num];
+    if ($num < 100) return trim($tens[intval($num / 10)] . " " . $ones[$num % 10]);
+    if ($num < 1000) return trim($ones[intval($num / 100)] . " Hundred " . convertGroup($num % 100));
+    if ($num < 100000) return trim(convertGroup(intval($num / 1000)) . " Thousand " . convertGroup($num % 1000));
+    if ($num < 10000000) return trim(convertGroup(intval($num / 100000)) . " Lakh " . convertGroup($num % 100000));
+    return trim(convertGroup(intval($num / 10000000)) . " Crore " . convertGroup($num % 10000000));
 }
 
 function numberToWords($amount) {
@@ -126,16 +122,12 @@ function numberToWords($amount) {
     $rupees = intval($amount);
     $paise = intval(round(($amount - $rupees) * 100));
 
-    if ($rupees == 0 && $paise == 0) {
-        return "Zero";
-    }
-
+    if ($rupees == 0 && $paise == 0) return "Zero";
     $rupeesInWords = ($rupees > 0) ? convertGroup($rupees) : "Zero";
     $result = $rupeesInWords;
 
     if ($paise > 0) {
-        $paiseInWords = convertGroup($paise);
-        $result .= " and " . $paiseInWords . " Paise";
+        $result .= " and " . convertGroup($paise) . " Paise";
     }
 
     return trim($result);
@@ -146,11 +138,11 @@ function numberToWords($amount) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title><?= htmlspecialchars($invoice['customer_name']) ?>_Invoice_<?= htmlspecialchars($invoice['invoice_no']) ?></title>
+<title><?= htmlspecialchars($invoice['customer_name']) ?>_Document_<?= htmlspecialchars($invoice['invoice_no']) ?></title>
 <style>
 /* ===== GLOBAL RESET & VARIABLES ===== */
 :root {
-  --primary-color: #2563eb;
+  --primary-color: <?= $title_color ?>;
   --primary-dark: #1d4ed8;
   --primary-light: #eff6ff;
   --text-main: #1e293b;
@@ -159,9 +151,7 @@ function numberToWords($amount) {
   --table-header-bg: #f8fafc;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -173,7 +163,6 @@ body {
   color: var(--text-main);
 }
 
-/* ===== ACTION BAR (NO PRINT) ===== */
 .no-print-bar {
   max-width: 850px;
   margin: 15px auto;
@@ -186,7 +175,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 500;
   text-decoration: none;
@@ -199,23 +188,10 @@ body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
+.btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.btn-primary { background: var(--primary-color); color: #ffffff; border-color: var(--primary-color); }
+.btn-primary:hover { opacity: 0.9; }
 
-.btn-primary {
-  background: var(--primary-color);
-  color: #ffffff;
-  border-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-}
-
-/* ===== MAIN INVOICE WRAPPER ===== */
 .wrapper {
   width: 100%;
   max-width: 850px;
@@ -228,18 +204,14 @@ body {
   overflow: hidden;
 }
 
-/* Decorative Header Bar */
 .wrapper::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 5px;
   background: var(--primary-color);
 }
 
-/* ===== HEADER & META ===== */
 .header-grid {
   display: flex;
   justify-content: space-between;
@@ -248,246 +220,98 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.org-brand {
-  flex: 1;
-}
+.org-brand { flex: 1; }
+.org-title { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; margin: 0 0 4px 0; }
+.invoice-badge-box { text-align: right; }
+.invoice-title { font-size: 20px; font-weight: 800; color: <?= $title_color ?>; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0; }
 
-.org-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
-  margin: 0 0 4px 0;
-}
+.meta-info-table { width: auto; margin-left: auto; border-collapse: collapse; }
+.meta-info-table td { padding: 1px 0 1px 10px; font-size: 11px; }
+.meta-label { color: var(--text-muted); font-weight: 500; text-align: right; }
+.meta-value { font-weight: 600; color: var(--text-main); text-align: right; }
 
-.invoice-badge-box {
-  text-align: right;
-}
+.info-card { background: var(--primary-light); border: 1px solid #dbeafe; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+.card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #2563eb; margin-bottom: 2px; }
+.customer-name { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
 
-.invoice-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--primary-color);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 4px 0;
-}
-
-.meta-info-table {
-  width: auto;
-  margin-left: auto;
-  border-collapse: collapse;
-}
-
-.meta-info-table td {
-  padding: 1px 0 1px 10px;
-  font-size: 11px;
-}
-
-.meta-label {
-  color: var(--text-muted);
-  font-weight: 500;
-  text-align: right;
-}
-
-.meta-value {
-  font-weight: 600;
-  color: var(--text-main);
-  text-align: right;
-}
-
-/* ===== CUSTOMER CARD ===== */
-.info-card {
-  background: var(--primary-light);
-  border: 1px solid #dbeafe;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-}
-
-.card-title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--primary-color);
-  margin-bottom: 2px;
-}
-
-.customer-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 2px;
-}
-
-/* ===== TABLES ===== */
-table.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 10px;
-}
-
-table.data-table th {
-  background: var(--table-header-bg);
-  color: var(--text-muted);
-  font-weight: 600;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-table.data-table td {
-  padding: 5px 8px;
-  border-bottom: 1px solid var(--border-color);
-  vertical-align: middle;
-  font-size: 11px;
-}
-
-table.data-table tr:nth-child(even):not(.summary-row) {
-  background-color: #fafafa;
-}
+table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+table.data-table th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+table.data-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 11px; }
+table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafafa; }
 
 .right { text-align: right; }
 .center { text-align: center; }
 .bold { font-weight: 600; }
 
-/* Table Summary Section */
-.summary-row td {
-  border-bottom: none;
-  padding: 3px 8px;
-}
+.summary-row td { border-bottom: none; padding: 3px 8px; }
+.summary-row.grand-total td { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--primary-light); font-size: 12px; color: #1d4ed8; font-weight: bold; }
 
-.summary-row.grand-total td {
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  background: var(--primary-light);
-  font-size: 12px;
-  color: var(--primary-dark);
-}
+.amount-words-box { background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 5px; padding: 6px 10px; margin-bottom: 10px; font-size: 11px; }
 
-/* Amount in words bar */
-.amount-words-box {
-  background: #f8fafc;
-  border: 1px dashed var(--border-color);
-  border-radius: 5px;
-  padding: 6px 10px;
-  margin-bottom: 10px;
-  font-size: 11px;
-}
-
-/* ===== DUAL FOOTER SECTION ===== */
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.footer-card {
-  border: 1px solid var(--border-color);
+.utr-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
 }
-
-.footer-card-title {
+.utr-title {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
+  color: #166534;
   margin-bottom: 4px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 2px;
 }
 
-.terms-box {
-  white-space: pre-line;
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1.3;
-}
+.footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.footer-card { border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; }
+.footer-card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px; border-bottom: 1px solid var(--border-color); padding-bottom: 2px; }
+.terms-box { white-space: pre-line; font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+.signature-space { height: 28px; }
 
-.signature-space {
-  height: 28px;
-}
-
-/* ===== PRINT STYLES ===== */
-@page {
-  size: A4;
-  margin: 6mm 8mm; /* Reduced print margin for 1 page fit */
-}
-
+@page { size: A4; margin: 6mm 8mm; }
 @media print {
-  html, body {
-    height: 100%;
-    background: #ffffff;
-    color: #000000;
-  }
-
-  .no-print-bar {
-    display: none !important;
-  }
-
-  .wrapper {
-    box-shadow: none;
-    padding: 0;
-    max-width: 100%;
-    border-radius: 0;
-    margin: 0;
-  }
-
-  table.data-table th {
-    background: #f1f5f9 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .info-card, .summary-row.grand-total td {
-    background: #f8fafc !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .wrapper::before {
-    display: none;
-  }
+  html, body { height: 100%; background: #ffffff; color: #000000; }
+  .no-print-bar { display: none !important; }
+  .wrapper { box-shadow: none; padding: 0; max-width: 100%; border-radius: 0; margin: 0; }
+  table.data-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .info-card, .summary-row.grand-total td { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .utr-box { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrapper::before { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- PRINT / EMAIL / NAVIGATION BUTTONS -->
+<!-- NAVIGATION BUTTONS BAR -->
 <div class="no-print-bar">
-    <div>
-        <a href="invoice_create.php" class="btn">← Back to Create Invoice</a>
-        <a href="invoice_list.php" class="btn">← Back to Invoice List</a>
+    <div style="display: flex; gap: 6px;">
+        <a href="invoice_create.php" class="btn">← Create Invoice</a>
+        <a href="invoice_list.php" class="btn">← Invoice List</a>
+        <!-- 🔥 BACK TO PAYMENT REPORT BUTTON 🔥 -->
+        <a href="payment_report.php?action=generate&type=customer" class="btn" style="background: #f8fafc; border-color: #3b82f6; color: #1d4ed8; font-weight: 600;">← Back to Payment Report</a>
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
-        <!-- EMAIL FORM -->
         <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
             <input type="email" name="target_email" 
-                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
+                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 180px;" 
                    value="<?= htmlspecialchars($invoice['customer_email'] ?? '') ?>" 
                    placeholder="Enter Customer Email" required>
             <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
         </form>
 
-        <button onclick="window.print()" class="btn btn-primary">🖨 Print Invoice</button>
+        <button onclick="window.print()" class="btn btn-primary">🖨 Print <?= $is_proforma ? 'Proforma' : 'Invoice' ?></button>
     </div>
 </div>
 
-<!-- ALERT NOTIFICATION -->
 <?php if (!empty($email_msg)): ?>
     <div style="max-width: 850px; margin: 10px auto; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; <?= $email_status == 'success' ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #b91c1c;' ?>">
         <?= $email_msg ?>
     </div>
 <?php endif; ?>
+
 <div class="wrapper">
 
     <!-- HEADER SECTION -->
@@ -504,10 +328,11 @@ table.data-table tr:nth-child(even):not(.summary-row) {
         </div>
 
         <div class="invoice-badge-box">
-            <div class="invoice-title">Invoice</div>
+            <!-- DYNAMIC TITLE (NO REVISED TEXT) -->
+            <div class="invoice-title"><?= $title_text ?></div>
             <table class="meta-info-table">
                 <tr>
-                    <td class="meta-label">Invoice No:</td>
+                    <td class="meta-label"><?= $is_proforma ? 'Proforma No:' : 'Invoice No:' ?></td>
                     <td class="meta-value"><?= $invoice['invoice_no'] ?></td>
                 </tr>
                 <tr>
@@ -610,18 +435,47 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             </tr>
 
             <tr class="summary-row">
-                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right">Advance Paid</td>
-                <td class="right"><?= number_format($invoice['advance_paid'] ?? 0,2) ?></td>
+                <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right">Advance / Paid</td>
+                <td class="right"><?= number_format($invoice['paid_amount'] ?? $invoice['advance_paid'] ?? 0,2) ?></td>
             </tr>
 
             <tr class="summary-row">
                 <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right bold" style="color: var(--primary-dark);">Balance Due</td>
                 <td class="right bold" style="color: var(--primary-dark);">
-                    <?= number_format($invoice['net_total'] - ($invoice['advance_paid'] ?? 0),2) ?>
+                    <?= number_format($invoice['due_amount'] ?? ($invoice['net_total'] - ($invoice['paid_amount'] ?? 0)),2) ?>
                 </td>
             </tr>
         </tbody>
     </table>
+
+    <!-- DYNAMIC PAYMENT, UTR & DATE BREAKDOWN BOX -->
+    <?php if(!empty($payment_records)): ?>
+    <div class="utr-box">
+        <div class="utr-title">Payment Collection Details</div>
+        <table style="width:100%; border-collapse:collapse; font-size:11px;">
+            <thead>
+                <tr style="border-bottom:1px solid #bbf7d0; color:#15803d; font-weight:bold;">
+                    <td align="left" style="padding:2px 0;">Payment Date</td>
+                    <td align="left" style="padding:2px 0;">Mode</td>
+                    <td align="left" style="padding:2px 0;">UTR / Ref Number</td>
+                    <td align="right" style="padding:2px 0;">Amount Paid</td>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($payment_records as $pr): 
+                    $p_date = !empty($pr['payment_date']) ? date("d/M/Y", strtotime($pr['payment_date'])) : 'N/A';
+                ?>
+                <tr>
+                    <td style="padding:2px 0; color:#15803d; font-weight:500;"><?= $p_date; ?></td>
+                    <td style="padding:2px 0;"><b><?= strtoupper($pr['payment_mode']); ?></b></td>
+                    <td style="padding:2px 0;"><?= !empty($pr['reference_no']) ? htmlspecialchars($pr['reference_no']) : 'N/A'; ?></td>
+                    <td align="right" style="padding:2px 0; font-weight:bold; color:#166534;">₹ <?= number_format($pr['amount'], 2); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
 
     <!-- AMOUNT IN WORDS -->
     <div class="amount-words-box">
@@ -760,7 +614,7 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             <div class="bold"><?= $org_master['org_name'] ?></div>
             <div class="signature-space"></div>
             <div style="font-size: 9px; color: var(--text-muted);">
-                Computer-generated invoice. No physical signature required.
+                Computer-generated document. No physical signature required.
             </div>
         </div>
     </div>
