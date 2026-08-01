@@ -138,27 +138,73 @@ if (!function_exists('numberToWords')) {
 }
 
 /*--------------------------------------------------------------*/
-/* UNIVERSAL AUTOLOADER FOR DOMPDF (COMPOSER ONLY)
+/* DIRECT AUTOLOADER (BYPASSES CORRUPT COMPOSER MAPPINGS)
 /*--------------------------------------------------------------*/
 function load_dompdf_framework() {
     if (class_exists('Dompdf\Dompdf')) {
         return true;
     }
 
-    $possible_autoloads = [
-        __DIR__ . '/../vendor/autoload.php',
-        __DIR__ . '/vendor/autoload.php',
-        $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php',
-        '/app/vendor/autoload.php'
+    $possible_vendors = [
+        __DIR__ . '/libs/dompdf/vendor',
+        __DIR__ . '/../libs/dompdf/vendor',
+        $_SERVER['DOCUMENT_ROOT'] . '/libs/dompdf/vendor',
+        $_SERVER['DOCUMENT_ROOT'] . '/InventorySystem_PHP/libs/dompdf/vendor',
+        '/app/libs/dompdf/vendor',
+        '/app/vendor',
+        __DIR__ . '/vendor',
+        __DIR__ . '/../vendor'
     ];
 
-    foreach ($possible_autoloads as $file) {
-        if (file_exists($file)) {
-            require_once($file);
-            if (class_exists('Dompdf\Dompdf')) {
-                return true;
-            }
+    $v = null;
+    foreach ($possible_vendors as $dir) {
+        if (file_exists($dir . '/dompdf/dompdf/src/Dompdf.php')) {
+            $v = $dir;
+            break;
         }
+    }
+
+    if ($v) {
+        spl_autoload_register(function ($class) use ($v) {
+            // Direct CPDF fallback
+            if ($class === 'Dompdf\Cpdf' || $class === 'Cpdf') {
+                $cpdf_files = [
+                    $v . '/dompdf/dompdf/lib/Cpdf.php',
+                    $v . '/dompdf/dompdf/lib/cpdf.php',
+                    $v . '/dompdf/dompdf/src/Cpdf.php',
+                    $v . '/dompdf/dompdf/src/Adapter/CPDF.php'
+                ];
+                foreach ($cpdf_files as $f) {
+                    if (file_exists($f)) {
+                        require_once $f;
+                        return;
+                    }
+                }
+            }
+
+            $map = [
+                'Dompdf\Adapter\\' => $v . '/dompdf/dompdf/src/Adapter/',
+                'Dompdf\Adaptor\\' => $v . '/dompdf/dompdf/src/Adapter/',
+                'Dompdf\\'         => $v . '/dompdf/dompdf/src/',
+                'FontLib\\'        => $v . '/phenx/php-font-lib/src/FontLib/',
+                'Svg\\'            => $v . '/phenx/php-svg-lib/src/Svg/',
+                'Sabberworm\CSS\\' => $v . '/sabberworm/php-css-parser/src/'
+            ];
+
+            foreach ($map as $prefix => $base_dir) {
+                $len = strlen($prefix);
+                if (strncmp($prefix, $class, $len) === 0) {
+                    $rel = substr($class, $len);
+                    $file = $base_dir . str_replace('\\', '/', $rel) . '.php';
+                    if (file_exists($file)) {
+                        require_once $file;
+                        return;
+                    }
+                }
+            }
+        }, true, true);
+
+        return true;
     }
 
     return false;
@@ -171,7 +217,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf autoload error! Clean vendor folder not found.";
+        return "Dompdf load error: Vendor path not found!";
     }
 
     $invoice_data = find_by_sql("
@@ -489,7 +535,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     global $db;
 
     if (!load_dompdf_framework()) {
-        return "Dompdf autoload error! Clean vendor folder not found.";
+        return "Dompdf load error: Vendor path not found!";
     }
 
     $q_data = find_by_sql("
