@@ -48,6 +48,7 @@ if ($action === 'generate') {
                 p.payment_mode,
                 p.amount,
                 p.reference_no AS ref_no,
+                i.id AS invoice_id,
                 i.invoice_no,
                 i.payment_status,
                 c.customer_name
@@ -120,6 +121,21 @@ tfoot th{ font-size:15px; }
 .report-card .radio-inline{ font-size:13px; font-weight:500; margin-bottom:0; }
 .report-card .form-control{ height:34px; font-size:13px; border-radius:6px; padding:6px 10px; }
 .report-card .btn{ height:34px; font-size:13px; border-radius:6px; padding:6px 14px; }
+.btn-print-invoice {
+    background: #2563eb;
+    color: #ffffff !important;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-print-invoice:hover {
+    background: #1d4ed8;
+}
 </style>
 
 <!-- FILTER CONTROLS -->
@@ -191,7 +207,9 @@ tfoot th{ font-size:15px; }
     <th>Mode</th>
     <th>Amount</th>
     <th>Status</th>
-    <th style="min-width:180px;">Ref No</th>
+    <th style="min-width:140px;">Ref No</th>
+    <!-- 🔥 ACTION COLUMN FOR PRINT TAX INVOICE 🔥 -->
+    <th class="text-center" style="width:130px;">Action</th>
 </tr>
 </thead>
 <tbody id="paymentReportTable">
@@ -215,19 +233,27 @@ foreach($reports as $i => $r):
     else{ echo '<span class="label label-danger">Unpaid</span>'; }
     ?>
     </td>
-    <td style="min-width:180px; white-space:nowrap; font-weight:bold; color:#333;">
+    <td style="min-width:140px; white-space:nowrap; font-weight:bold; color:#333;">
         <?= htmlspecialchars($r['ref_no'] ?? '-') ?>
+    </td>
+    <!-- 🔥 PRINT TAX INVOICE BUTTON 🔥 -->
+    <td class="text-center">
+        <a href="invoice_print.php?id=<?= $r['invoice_id']; ?>" 
+           target="_blank" 
+           class="btn-print-invoice">
+            🖨️ Tax Invoice
+        </a>
     </td>
 </tr>
 <?php endforeach; ?>
 <?php if(empty($reports)): ?>
-<tr><td colspan="8" class="text-center">No payment records found for this date range.</td></tr>
+<tr><td colspan="9" class="text-center">No payment records found for this date range.</td></tr>
 <?php endif; ?>
 </tbody>
 <tfoot>
 <tr>
     <th colspan="5" class="text-right">Total Collection</th>
-    <th colspan="3" style="color:green;">₹ <?= number_format($total,2); ?></th>
+    <th colspan="4" style="color:green;">₹ <?= number_format($total,2); ?></th>
 </tr>
 </tfoot>
 </table>
@@ -267,7 +293,6 @@ foreach($reports as $i => $r):
 $supplier_total = 0;
 $row_index = 1;
 
-// Pre-process to map original advance modes & ref_nos to suppliers
 $advances_by_supplier = [];
 foreach ($supplier_reports as $s_item) {
     if (trim($s_item['bill_no'] ?? '') === 'ADVANCE') {
@@ -288,7 +313,6 @@ foreach($supplier_reports as $s):
 
     $is_advance_entry = ($bill_no === 'ADVANCE');
 
-    // 1. Check if supplier has an adjusted GRN bill in this report list
     $has_grn_adjusted = false;
     foreach ($supplier_reports as $check_grn) {
         if ($check_grn['supplier_id'] == $supplier_id && trim($check_grn['bill_no'] ?? '') !== 'ADVANCE') {
@@ -301,28 +325,23 @@ foreach($supplier_reports as $s):
         }
     }
 
-    // Hide standalone 'Advance Paid' row if it was already adjusted in GRN
     if ($is_advance_entry && $has_grn_adjusted) {
         continue;
     }
 
     $supplier_total += $s['payment_amount'];
 
-    // 2. Determine display values for Mode and Ref No
     $display_mode = $payment_mode;
     $is_adjusted_row = false;
 
     if (!$is_advance_entry && ($payment_mode === 'ADVANCE' || strpos(strtolower($ref_no), 'advance') !== false)) {
         $is_adjusted_row = true;
-        
-        // Fetch original payment mode from advance entry if mode was saved as ADVANCE
         if (isset($advances_by_supplier[$supplier_id]['mode']) && !empty($advances_by_supplier[$supplier_id]['mode'])) {
             $display_mode = strtoupper($advances_by_supplier[$supplier_id]['mode']);
         } else {
-            $display_mode = 'NET BANKING'; // Default fallback
+            $display_mode = 'NET BANKING';
         }
 
-        // Fetch original Ref No from advance entry if Ref No is "Advance Adjusted"
         if (strpos(strtolower($ref_no), 'advance') !== false && isset($advances_by_supplier[$supplier_id]['ref_no'])) {
             $display_ref = $advances_by_supplier[$supplier_id]['ref_no'];
         } else {
@@ -415,7 +434,6 @@ foreach($supplier_reports as $s):
 <?php endif; ?>
 
 <script>
-// Search filter for Customer Table
 if(document.getElementById("searchPayment")){
     document.getElementById("searchPayment").addEventListener("keyup", function(){
         let value = this.value.toLowerCase();
@@ -425,7 +443,6 @@ if(document.getElementById("searchPayment")){
     });
 }
 
-// Search filter for Supplier Table
 if(document.getElementById("searchSupplier")){
     document.getElementById("searchSupplier").addEventListener("keyup", function(){
         let value = this.value.toLowerCase();
@@ -435,7 +452,6 @@ if(document.getElementById("searchSupplier")){
     });
 }
 
-// Filter button submission
 function filterReport(){
     let from = document.getElementById("fromDate").value;
     let to   = document.getElementById("toDate").value;
