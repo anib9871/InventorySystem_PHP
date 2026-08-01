@@ -7,792 +7,657 @@ error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 $center_id = $_SESSION['center_id'] ?? 0;
 
 if($_SESSION['role_id'] == 3){
-
-
-
-$customers = find_by_sql("
-SELECT * FROM customer_master
-WHERE center_id = '$center_id'
-");
-
+    $customers = find_by_sql("
+    SELECT * FROM customer_master
+    WHERE center_id = '$center_id'
+    ");
 }else{
-
-$customers = find_all('customer_master');
-
+    $customers = find_all('customer_master');
 }
+
 $products = array_values(array_filter(join_product_table(), function($p){
     return $p['is_active'] == 1;
 }));
 $payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
 
 /* TERMS & CONDITIONS */
-
 $terms_templates = find_all('terms_conditions_master');
 
 $rate_map = [];
+$rates = find_by_sql("
+    SELECT r.product_id, r.rate, g.gst_percent
+    FROM rate_master r
+    LEFT JOIN gst_master g ON g.id = r.gst_id
+");
 
-    $rates = find_by_sql("
-        SELECT r.product_id, r.rate, g.gst_percent
-        FROM rate_master r
-        LEFT JOIN gst_master g ON g.id = r.gst_id
-        
-    ");
-
-    foreach($rates as $r){
-        $rate_map[$r['product_id']] = $r;
-    }
-
-
+foreach($rates as $r){
+    $rate_map[$r['product_id']] = $r;
+}
 
 /* SAVE INVOICE */
 if(isset($_POST['save_invoice'])){
 
-if($_SESSION['role_id'] == 2){
-
-   $center_id = (int)$_POST['center_id'];
-
-}else{
-
-   $center_id = (int)$_SESSION['center_id'];
-}
-  global $db;
-
-
-  mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-$db->query("START TRANSACTION");
-
-  $debug = [];
-
-$debug[] = "========================";
-$debug[] = "INVOICE CREATE DEBUG";
-$debug[] = date("Y-m-d H:i:s");
-$debug[] = "System : ".$system;
-$debug[] = "POST : ".json_encode($_POST);
-
-try {
-
-/* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
-
-/* ===== SAFE INVOICE NUMBER (MULTI-USER FIX) ===== */
-
-
-
-/* 🔒 LOCK sequence row */
-/* 🔒 LOCK sequence row */
-
-$fy = find_by_sql("
-SELECT fy_id, fy_name
-FROM financial_year_master
-LIMIT 1
-");
-
-$fy_id = $fy[0]['fy_id'];
-
-$seq = find_by_sql("
-SELECT *
-FROM sequence_master
-WHERE sequence_category='invoice'
-AND fy_id='$fy_id'
-LIMIT 1
-");
-
-if($seq){
-
-    $seq = $seq[0];
-
-    $next = $seq['last_no'] + 1;
-
-$db->query("
-UPDATE sequence_master
-SET last_no = '$next'
-WHERE sequence_category = 'invoice'
-AND fy_id = '$fy_id'
-");
-
-}else{
-
-    $next = 1;
-
-    $db->query("
-    INSERT INTO sequence_master
-    (
-        sequence_category,
-        fy_id,
-        last_no
-    )
-    VALUES
-    (
-        'invoice',
-        '$fy_id',
-        1
-    )
-    ");
-}
-
-$fy_name = substr($fy[0]['fy_name'], 2);
-
-$inv_no = $fy_name . "/" . $next;
-
-
-$cust  = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
-
-if($system != 'inventory'){
-
-if($cust <= 0){
-
-    $name  = remove_junk($db->escape($_POST['manual_name']));
-    $phone = remove_junk($db->escape($_POST['manual_phone']));
-    // $gst   = remove_junk($db->escape($_POST['manual_gst']));
-    // $addr  = remove_junk($db->escape($_POST['manual_address']));
-
-    if($name == ""){
-        echo "<script>
-alert('Please enter customer name');
-window.location='invoice_create.php';
-</script>";
-exit;
+    if($_SESSION['role_id'] == 2){
+       $center_id = (int)$_POST['center_id'];
+    }else{
+       $center_id = (int)$_SESSION['center_id'];
     }
+    global $db;
 
-    /* 🔥 SMART LOGIC START */
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    if($phone != ""){
+    $db->query("START TRANSACTION");
 
-        // ✅ contact se match
-        $check = find_by_sql("SELECT id FROM customer_master WHERE contact_no='$phone' LIMIT 1");
+    $debug = [];
+    $debug[] = "========================";
+    $debug[] = "INVOICE CREATE DEBUG";
+    $debug[] = date("Y-m-d H:i:s");
+    $debug[] = "System : ".$system;
+    $debug[] = "POST : ".json_encode($_POST);
 
-        if($check){
-            $cust = $check[0]['id'];
+    try {
+
+        /* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
+        $fy = find_by_sql("
+        SELECT fy_id, fy_name
+        FROM financial_year_master
+        LIMIT 1
+        ");
+
+        $fy_id = $fy[0]['fy_id'];
+
+        $seq = find_by_sql("
+        SELECT *
+        FROM sequence_master
+        WHERE sequence_category='invoice'
+        AND fy_id='$fy_id'
+        LIMIT 1
+        ");
+
+        if($seq){
+            $seq = $seq[0];
+            $next = $seq['last_no'] + 1;
+
+            $db->query("
+            UPDATE sequence_master
+            SET last_no = '$next'
+            WHERE sequence_category = 'invoice'
+            AND fy_id = '$fy_id'
+            ");
         }else{
-            // new create
-            $db->query("INSERT INTO customer_master
-            (customer_name, contact_no, address, gst_no, center_id)
+            $next = 1;
+            $db->query("
+            INSERT INTO sequence_master
+            (
+                sequence_category,
+                fy_id,
+                last_no
+            )
             VALUES
             (
-            '$name',
-            '$phone',
-            '$addr',
-            '$gst',
+                'invoice',
+                '$fy_id',
+                1
+            )
+            ");
+        }
+
+        $fy_name = substr($fy[0]['fy_name'], 2);
+        $inv_no = $fy_name . "/" . $next;
+
+        /* 🔥 CALCULATE TOTAL PAID TO CHECK PROFORMA VS TAX INVOICE 🔥 */
+        $total_paid = 0;
+        if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
+            foreach($_POST['payment_amount'] as $amt){
+                $total_paid += (float)$amt;
+            }
+        }
+
+        // Save Proforma vs Tax Invoice mark in remarks
+        $doc_type = ($total_paid > 0) ? 'TAX_INVOICE' : 'PROFORMA';
+
+        $cust = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
+
+        if($system != 'inventory'){
+            if($cust <= 0){
+                $name  = remove_junk($db->escape($_POST['manual_name']));
+                $phone = remove_junk($db->escape($_POST['manual_phone']));
+                $gst   = remove_junk($db->escape($_POST['manual_gst']));
+                $addr  = remove_junk($db->escape($_POST['manual_address']));
+
+                if($name == ""){
+                    echo "<script>
+                    alert('Please enter customer name');
+                    window.location='invoice_create.php';
+                    </script>";
+                    exit;
+                }
+
+                if($phone != ""){
+                    $check = find_by_sql("SELECT id FROM customer_master WHERE contact_no='$phone' LIMIT 1");
+                    if($check){
+                        $cust = $check[0]['id'];
+                    }else{
+                        $db->query("INSERT INTO customer_master
+                        (customer_name, contact_no, address, gst_no, center_id)
+                        VALUES
+                        (
+                        '$name',
+                        '$phone',
+                        '$addr',
+                        '$gst',
+                        '$center_id'
+                        )");
+
+                        $cust = $db->insert_id();
+                    }
+                }else{
+                    $db->query("INSERT INTO customer_master
+                    (customer_name, contact_no, address, gst_no, center_id)
+                    VALUES
+                    (
+                    '$name',
+                    '',
+                    '$addr',
+                    '$gst',
+                    '$center_id'
+                    )");
+
+                    $cust = $db->insert_id();
+                }
+            }
+        }else{
+            if($cust <= 0){
+                echo "<script>
+                alert('Please select customer');
+                window.location='invoice_create.php';
+                </script>";
+                exit;
+            }
+        }
+
+        if(!isset($_SESSION['org_id'])){
+            echo "<script>
+            alert('Session expired. Please login again');
+            window.location='index.php';
+            </script>";
+            exit;
+        }
+
+        $org_id = $_SESSION['org_id'];
+
+        /* ===============================
+           STATE CODE CHECK
+        ================================ */
+        $org_data = find_by_sql("
+        SELECT gst_no 
+        FROM organization_master 
+        WHERE id = '{$org_id}'
+        ");
+        $cust_data = find_by_sql("SELECT gst_no FROM customer_master WHERE id = $cust");
+
+        $cust_gst = '';
+        if(!empty($cust_data)){
+            $cust_gst = $cust_data[0]['gst_no'] ?? '';
+        }
+
+        $org_gst = '';
+        if(!empty($org_data)){
+            $org_gst = $org_data[0]['gst_no'] ?? '';
+        }
+
+        $org_state_code = substr($org_gst, 0, 2);
+        $cust_state_code = substr($cust_gst, 0, 2);
+
+        /* Determine GST Mode */
+        $tax_mode = 'CGST_SGST';
+
+        if(isset($_POST['product_id']) && count($_POST['product_id']) > 0){
+            foreach($_POST['product_id'] as $pid){
+                $product = find_by_id('products', $pid);
+                if(in_array($product['type'], [1,2])){
+                    if(trim((string)$org_state_code) !== trim((string)$cust_state_code)){
+                        $tax_mode = 'IGST';
+                    }else{
+                        $tax_mode = 'CGST_SGST';
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!empty($_POST['invoice_date'])) {
+            $qdate = $_POST['invoice_date'];
+            $formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+            foreach ($formats as $format) {
+                $dt = DateTime::createFromFormat($format, $qdate);
+                if ($dt instanceof DateTime) {
+                    $qdate = $dt->format('Y-m-d');
+                    break;
+                }
+            }
+        } else {
+            $qdate = date('Y-m-d');
+        }
+
+        $gst_type = isset($_POST['gst_type']) ? $_POST['gst_type'] : 'inclusive';
+
+        $subtotal  = 0;
+        $net_total = 0;
+        $total_gst = 0;
+
+        /* ===============================
+           INSERT MASTER
+        ================================*/
+        $insertMaster = $db->query("
+        INSERT INTO invoice
+        (
+        invoice_no,
+        invoice_date,
+        customer_id,
+        organization_id,
+        quotation_id,
+        subtotal,
+        gst_total,
+        net_total,
+        paid_amount,
+        due_amount,
+        payment_status,
+        gst_type,
+        remarks,
+        terms_conditions,
+        created_at
+        )
+        VALUES
+        (
+        '$inv_no',
+        '$qdate',
+        '$cust',
+        '$org_id',
+        NULL,
+        0,
+        0,
+        0,
+        0,
+        0,
+        'Unpaid',
+        '$gst_type',
+        '$doc_type',
+        '".$db->escape($_POST['terms_conditions'])."',
+        NOW()
+        )
+        ");
+
+        if(!$insertMaster){
+            echo "<script>alert('Master Insert Error');window.location='invoice_create.php';</script>";
+            exit;
+        }
+
+        $qid = $db->insert_id();
+
+        $debug[] = "Invoice ID : ".$qid;
+
+        if(!$qid){
+            echo "<script>
+            alert('Something went wrong while saving invoice');
+            window.location='invoice_create.php';
+            </script>";
+            exit;
+        }
+
+        if(!isset($_POST['product_id']) || count($_POST['product_id']) == 0){
+            $db->query("DELETE FROM invoice WHERE id = $qid");
+            echo "<script>
+            alert('Something went wrong while saving invoice');
+            window.location='invoice_create.php';
+            </script>";
+            exit;
+        }
+
+        /* ===============================
+           INSERT ITEMS
+        ================================*/
+        $itemInserted = false;
+
+        foreach($_POST['product_id'] as $i => $pid){
+            $pid = (int)$pid;
+
+            if($pid <= 0){
+                continue;
+            }
+
+            $qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
+            $base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
+            $gst = 0;
+
+            if($gst_enabled == "Yes"){
+               $gst = isset($_POST['gst'][$i]) ? (float)$_POST['gst'][$i] : 0;
+            }
+            $disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
+
+            $product = find_by_id('products',$pid);
+
+            if($product['type'] == 1){
+                $stock_row = find_by_sql("
+                SELECT 
+                COALESCE(SUM(
+                CASE
+                WHEN transaction_type = 1 THEN quantity
+                WHEN transaction_type = 2 THEN -quantity
+                WHEN transaction_type = 3 THEN -quantity
+                WHEN transaction_type = 4 THEN quantity
+                END
+                ),0) AS stock
+                FROM transaction_master
+                WHERE product_id = {$pid}
+                ");
+
+                $current_stock = $stock_row[0]['stock'] ?? 0;
+
+                if($qty > $current_stock){
+                    $db->query("DELETE FROM invoice WHERE id = $qid");
+
+                    echo "<script>
+                    alert('Stock not available. Available stock: ".$current_stock."');
+                    window.history.back();
+                    </script>";
+
+                    exit;
+                }
+            }
+
+            if($qty <= 0 || $base <= 0){
+                continue;
+            }
+
+            $itemInserted = true;
+            $line_base = $qty * $base;
+            $discounted_base = $line_base - $disc;
+
+            if($gst_type == "exclusive"){
+                if($tax_mode == 'IGST'){
+                    $igst_amount = $discounted_base * $gst / 100;
+                    $cgst_amount = 0;
+                    $sgst_amount = 0;
+                    $gst_amount  = $igst_amount;
+                }else{
+                    $cgst_amount = ($discounted_base * $gst / 100) / 2;
+                    $sgst_amount = ($discounted_base * $gst / 100) / 2;
+                    $igst_amount = 0;
+                    $gst_amount  = $cgst_amount + $sgst_amount;
+                }
+
+                $rate_incl  = $base + ($base * $gst / 100);
+                $line_total = $discounted_base + $gst_amount;
+            }else{
+                $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
+
+                if($tax_mode == 'IGST'){
+                    $igst_amount = $gst_amount;
+                    $cgst_amount = 0;
+                    $sgst_amount = 0;
+                }else{
+                    $cgst_amount = $gst_amount / 2;
+                    $sgst_amount = $gst_amount / 2;
+                    $igst_amount = 0;
+                }
+
+                $rate_incl  = $base;
+                $line_total = $discounted_base;
+            }
+
+            $total_gst += $gst_amount;
+            $subtotal  += $line_base;
+            $net_total += $line_total;
+
+            $insertItem = $db->query("
+            INSERT INTO invoice_items
+            (invoice_id, product_id, qty, rate_excl_gst,
+            discount_amount, gst_percent, rate_incl_gst, 
+            cgst_amount, sgst_amount, igst_amount, line_total)
+            VALUES
+            ($qid, $pid, $qty, $base,
+            $disc, $gst, $rate_incl,
+            $cgst_amount, $sgst_amount, $igst_amount, $line_total)
+            ");
+
+            if(!$insertItem){
+                $db->query("DELETE FROM invoice WHERE id = $qid");
+                echo "<script>
+                alert('Item Insert Error');
+                window.location='invoice_create.php';
+                </script>";
+                exit;
+            }
+
+            /* ================= TRANSACTION MASTER ENTRY ================= */
+            $trans = $db->query("
+            INSERT INTO transaction_master
+            (
+            product_id,
+            supplier_id,
+            bill_indent_no,
+            entry_date,
+            bill_indent_date,
+            quantity,
+            free_qty,
+            unit,
+            rate_id,
+            gst_id,
+            unit_price,
+            gst_amount,
+            discount_amount,
+            net_price,
+            mrp,
+            misc_amount,
+            sale_amount,
+            sale_gst,
+            sale_net,
+            transaction_type,
+            status,
+            payment_status,
+            payment_mode,
+            amount_received,
+            balance_amount,
+            from_dept,
+            to_dept,
+            comments,
+            created_at,
+            center_id
+            )
+            VALUES
+            (
+            '$pid',
+            NULL,
+            '$inv_no',
+            NOW(),
+            NOW(),
+            '$qty',
+            0,
+            'PCS',
+            0,
+            0,
+            '$base',
+            '$gst_amount',
+            '$disc',
+            '$line_total',
+            0,
+            0,
+            '$discounted_base',
+            '$gst_amount',
+            '$line_total',
+            2,
+            1,
+            0,
+            NULL,
+            0,
+            0,
+            'STORE',
+            'CUSTOMER',
+            'Sale Invoice',
+            NOW(),
             '$center_id'
-            )");
+            )
+            ");
 
-            $cust = $db->insert_id();
+            if(!$trans){
+                echo "<script>alert('Transaction Error');window.location='invoice_create.php';</script>";
+                exit;
+            }
         }
 
-    }else{
+        if(!$itemInserted){
+            $db->query("DELETE FROM invoice WHERE id = $qid");
+            echo "<script>
+            alert('Please select at least one valid product');
+            window.location='invoice_create.php';
+            </script>";
+            exit;
+        }
 
-        // ❌ phone nahi → direct new customer
-          $db->query("INSERT INTO customer_master
-          (customer_name, contact_no, address, gst_no, center_id)
-          VALUES
-          (
-          '$name',
-           '',
-          '$addr',
-          '$gst',
-          '$center_id'
-          )");
+        /* ===============================
+           UPDATE TOTALS
+        ================================*/
+        $due_amount = round($net_total - $total_paid, 2);
 
-        $cust = $db->insert_id();
-    }
+        if($due_amount <= 0){
+            $due_amount = 0;
+            $payment_status = "Paid";
+        }elseif($total_paid > 0){
+            $payment_status = "Partial";
+        }else{
+            $payment_status = "Unpaid";
+        }
 
-    /* 🔥 SMART LOGIC END */
-}
+        $debug[] = "Net Total : ".$net_total;
+        $debug[] = "Total Paid : ".$total_paid;
+        $debug[] = "Due Amount : ".$due_amount;
+        $debug[] = "Payment Status : ".$payment_status;
 
-}else{
+        $gst_total = $total_gst;
 
-    if($cust <= 0){
+        $update = $db->query("
+        UPDATE invoice SET
+        subtotal = '$subtotal',
+        gst_total = '$gst_total',
+        net_total = '$net_total',
+        paid_amount = '$total_paid',
+        due_amount = '$due_amount',
+        payment_status = '$payment_status'
+        WHERE id = '$qid'
+        ");
+
+        if(!$update){
+            throw new Exception("Invoice Update Failed : ".$db->error);
+        }
+
+        if($system == 'billing' && isset($_POST['payment_amount'])){
+            foreach($_POST['payment_amount'] as $mode_id => $amt){
+                $amt = (float)$amt;
+                if($amt > 0){
+                    $pm = find_by_id('payment_mode_master', $mode_id);
+                    $mode_name = $pm['mode_name'];
+                    $utr = $_POST['utr_no'][$mode_id] ?? '';
+
+                    $db->query("
+                    INSERT INTO payments
+                    (
+                    invoice_id,
+                    customer_id,
+                    payment_mode,
+                    amount,
+                    reference_no,
+                    center_id
+                    )
+                    VALUES
+                    (
+                    $qid,
+                    $cust,
+                    '$mode_name',
+                    '$amt',
+                    '".$db->escape($utr)."',
+                    '$center_id'
+                    )
+                    ");
+                }
+            }
+        }
+
+        // ================= LEDGER ENTRY =================
+        $db->query("
+        INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+        VALUES ($qid, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
+        ");
+
+        $db->query("
+        UPDATE customer_master 
+        SET balance = balance + $net_total
+        WHERE id = $cust
+        ");
+
+        $db->query("
+        INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+        VALUES ($qid, $cust, 'SALES', 'CREDIT', '$net_total')
+        ");
+
+        if($system == 'billing' && isset($_POST['payment_amount'])){
+            foreach($_POST['payment_amount'] as $mode_id => $amt){
+                $amt = (float)$amt;
+                if($amt > 0){
+                    $pm = find_by_id('payment_mode_master', $mode_id);
+                    $mode_name = strtoupper($pm['mode_name']);
+
+                    $db->query("
+                    INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+                    VALUES ($qid, $cust, '$mode_name', 'DEBIT', '$amt')
+                    ");
+
+                    $db->query("
+                    INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
+                    VALUES ($qid, $cust, 'CUSTOMER', 'CREDIT', '$amt')
+                    ");
+
+                    $db->query("
+                    UPDATE customer_master 
+                    SET balance = balance - $amt
+                    WHERE id = $cust
+                    ");
+                }
+            }
+        }
+
+        $db->query("COMMIT");
+
+        file_put_contents(
+            __DIR__.'/invoice_debug.log',
+            implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
+            FILE_APPEND
+        );
+
         echo "<script>
-alert('Please select customer');
-window.location='invoice_create.php';
-</script>";
-exit;
+        window.location='invoice_print.php?id=".$qid."';
+        </script>";
+        exit;
+
+    } catch(Exception $e){
+        $db->query("ROLLBACK");
+
+        $debug[] = "EXCEPTION : ".$e->getMessage();
+
+        file_put_contents(
+            __DIR__.'/invoice_debug.log',
+            implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
+            FILE_APPEND
+        );
+
+        echo "<script>
+        alert(" . json_encode($e->getMessage()) . ");
+        window.location='invoice_create.php';
+        </script>";
+
+        exit;
     }
-
 }
-  if(!isset($_SESSION['org_id'])){
-    echo "<script>
-    alert('Session expired. Please login again');
-    window.location='index.php';
-    </script>";
-    exit;
-}
-
-$org_id = $_SESSION['org_id'];
-
-  /* ===============================
-   STATE CODE CHECK
-================================ */
-
-$org_data = find_by_sql("
-SELECT gst_no 
-FROM organization_master 
-WHERE id = '{$org_id}'
-");
-$cust_data = find_by_sql("SELECT gst_no FROM customer_master WHERE id = $cust");
-
-$cust_gst = '';
-
-if(!empty($cust_data)){
-    $cust_gst = $cust_data[0]['gst_no'] ?? '';
-}
-
-$org_gst = '';
-
-if(!empty($org_data)){
-    $org_gst = $org_data[0]['gst_no'] ?? '';
-}
-
-//$org_gst = $org_data[0]['gst_no'] ?? '';
-// $cust_gst = $cust_data[0]['gst_no'] ?? '';
-
-$org_state_code = substr($org_gst, 0, 2);
-$cust_state_code = substr($cust_gst, 0, 2);
-
-/* Determine GST Mode */
-$tax_mode = 'CGST_SGST'; // default for services
-
-if(isset($_POST['product_id']) && count($_POST['product_id']) > 0){
-
-foreach($_POST['product_id'] as $pid){
-
-  $product = find_by_id('products', $pid);
-
-if(in_array($product['type'], [1,2])){// product
-
-if(trim((string)$org_state_code) !== trim((string)$cust_state_code)){
-
-    $tax_mode = 'IGST';
-
-}else{
-
-    $tax_mode = 'CGST_SGST';
-}
-
-break;
-}
-}
-}
-
-if (!empty($_POST['invoice_date'])) {
-
-    $qdate = $_POST['invoice_date'];
-
-    $formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
-
-    foreach ($formats as $format) {
-        $dt = DateTime::createFromFormat($format, $qdate);
-        if ($dt instanceof DateTime) {
-            $qdate = $dt->format('Y-m-d');
-            break;
-        }
-    }
-
-} else {
-
-    $qdate = date('Y-m-d');
-
-}
-
-$gst_type = isset($_POST['gst_type'])
-? $_POST['gst_type']
-: 'inclusive';
-
-  $subtotal  = 0;
-  $net_total = 0;
-  $total_gst = 0;
-
-  /* ===============================
-     INSERT MASTER
-  ================================*/
-$insertMaster = $db->query("
-INSERT INTO invoice
-(
-invoice_no,
-invoice_date,
-customer_id,
-organization_id,
-quotation_id,
-subtotal,
-gst_total,
-net_total,
-paid_amount,
-due_amount,
-payment_status,
-gst_type,
-remarks,
-terms_conditions,
-created_at
-)
-VALUES
-(
-'$inv_no',
-'$qdate',
-'$cust',
-'$org_id',
-NULL,
-0,
-0,
-0,
-0,
-0,
-'Unpaid',
-'$gst_type',
-'',
-'".$db->escape($_POST['terms_conditions'])."',
-NOW()
-)
-");
-
-  if(!$insertMaster){
-      echo "<script>alert('Master Insert Error');window.location='invoice_create.php';</script>";
-exit;
-  }
-
-  $qid = $db->insert_id();   // ✅ correct method
-
-  $debug[] = "Invoice ID : ".$qid;
-
-  if(!$qid){
-      echo "<script>
-alert('Something went wrong while saving invoice');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  if(!isset($_POST['product_id']) || count($_POST['product_id']) == 0){
-      $db->query("DELETE FROM invoice WHERE id = $qid");
-      echo "<script>
-alert('Something went wrong while saving invoice');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  /* ===============================
-     INSERT ITEMS
-  ================================*/
-  $itemInserted = false;
-
-foreach($_POST['product_id'] as $i => $pid){
-
-$pid = (int)$pid;
-
-if($pid <= 0){
-    continue;
-}
-
-$qty  = isset($_POST['qty'][$i]) ? (float)$_POST['qty'][$i] : 0;
-$base = isset($_POST['rate'][$i]) ? (float)$_POST['rate'][$i] : 0;
-$gst = 0;
-
-if($gst_enabled == "Yes"){
-   $gst = isset($_POST['gst'][$i])
-          ? (float)$_POST['gst'][$i]
-          : 0;
-}
-$disc = isset($_POST['discount'][$i]) ? (float)$_POST['discount'][$i] : 0;
-
-/* ===== CHECK AVAILABLE STOCK ===== */
-// | type | meaning         |
-// | ---- | --------------- |
-// | 1    | GRN             |
-// | 2    | SALE            |
-// | 3    | PURCHASE RETURN |
-// | 4    | SALE RETURN     |
-$product = find_by_id('products',$pid);
-
-/* ===== ONLY PRODUCT ME STOCK CHECK ===== */
-if($product['type'] == 1){
-
-$stock_row = find_by_sql("
-SELECT 
-COALESCE(SUM(
-CASE
-WHEN transaction_type = 1 THEN quantity
-WHEN transaction_type = 2 THEN -quantity
-WHEN transaction_type = 3 THEN -quantity
-WHEN transaction_type = 4 THEN quantity
-END
-),0) AS stock
-FROM transaction_master
-WHERE product_id = {$pid}
-");
-
-$current_stock = $stock_row[0]['stock'] ?? 0;
-
-if($qty > $current_stock){
-
-$db->query("DELETE FROM invoice WHERE id = $qid");
-
-echo "<script>
-alert('Stock not available. Available stock: ".$current_stock."');
-window.history.back();
-</script>";
-
-exit;
-}
-
-} // 🔥 IMPORTANT: yahi close karo
-
-/* ===== YE SAB SABKE LIYE CHALEGA (product + service) ===== */
-
-if($qty <= 0 || $base <= 0){
-    continue;
-}
-
-$itemInserted = true;
-
-$line_base = $qty * $base;
-
-/* 🔥 Discount */
-$discounted_base = $line_base - $disc;
-
-if($gst_type == "exclusive"){
-
-    if($tax_mode == 'IGST'){
-        $igst_amount = $discounted_base * $gst / 100;
-        $cgst_amount = 0;
-        $sgst_amount = 0;
-        $gst_amount  = $igst_amount;
-    }else{
-        $cgst_amount = ($discounted_base * $gst / 100) / 2;
-        $sgst_amount = ($discounted_base * $gst / 100) / 2;
-        $igst_amount = 0;
-        $gst_amount  = $cgst_amount + $sgst_amount;
-    }
-
-    $rate_incl  = $base + ($base * $gst / 100);
-    $line_total = $discounted_base + $gst_amount;
-
-}else{
-
-    $gst_amount = $discounted_base - ($discounted_base / (1 + $gst/100));
-
-    if($tax_mode == 'IGST'){
-        $igst_amount = $gst_amount;
-        $cgst_amount = 0;
-        $sgst_amount = 0;
-    }else{
-        $cgst_amount = $gst_amount / 2;
-        $sgst_amount = $gst_amount / 2;
-        $igst_amount = 0;
-    }
-
-    $rate_incl  = $base;
-    $line_total = $discounted_base;
-}
-
-$total_gst += $gst_amount;
-
-      $subtotal  += $line_base;
-      $net_total += $line_total;
-      $insertItem = $db->query("
-      INSERT INTO invoice_items
-      (invoice_id, product_id, qty, rate_excl_gst,
-      discount_amount, gst_percent, rate_incl_gst, 
-      cgst_amount, sgst_amount, igst_amount, line_total)
-      VALUES
-      ($qid, $pid, $qty, $base,
-      $disc, $gst, $rate_incl,
-      $cgst_amount, $sgst_amount, $igst_amount, $line_total)
-      ");
-
-      if(!$insertItem){
-          $db->query("DELETE FROM invoice WHERE id = $qid");
-          echo "<script>
-alert('Item Insert Error');
-window.location='invoice_create.php';
-</script>";
-exit;
-      }
-
-      /* ================= TRANSACTION MASTER ENTRY ================= */
-
-$trans = $db->query("
-INSERT INTO transaction_master
-(
-product_id,
-supplier_id,
-bill_indent_no,
-entry_date,
-bill_indent_date,
-quantity,
-free_qty,
-unit,
-rate_id,
-gst_id,
-unit_price,
-gst_amount,
-discount_amount,
-net_price,
-mrp,
-misc_amount,
-sale_amount,
-sale_gst,
-sale_net,
-transaction_type,
-status,
-payment_status,
-payment_mode,
-amount_received,
-balance_amount,
-from_dept,
-to_dept,
-comments,
-created_at,
-center_id
-)
-VALUES
-(
-'$pid',
-NULL,
-'$inv_no',
-NOW(),
-NOW(),
-'$qty',
-0,
-'PCS',
-0,
-0,
-'$base',
-'$gst_amount',
-'$disc',
-'$line_total',
-0,
-0,
-'$discounted_base',
-'$gst_amount',
-'$line_total',
-2,
-1,
-0,
-NULL,
-0,
-0,
-'STORE',
-'CUSTOMER',
-'Sale Invoice',
-NOW(),
-'$center_id'
-)
-");
-
-if(!$trans){
-    echo "<script>alert('Transaction Error');window.location='invoice_create.php';</script>";
-exit;
-}
-}
-
-
-  if(!$itemInserted){
-      $db->query("DELETE FROM invoice WHERE id = $qid");
-      echo "<script>
-alert('Please select at least one valid product');
-window.location='invoice_create.php';
-</script>";
-exit;
-  }
-
-  /* ===============================
-     UPDATE TOTALS
-  ================================*/
-
-
-$total_paid = 0;
-
-/* Payment Amount Calculate */
-if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
-
-    foreach($_POST['payment_amount'] as $amt){
-
-        $total_paid += (float)$amt;
-
-    }
-
-}
-
-/* Due Amount */
-$due_amount = round($net_total - $total_paid,2);
-
-if($due_amount <= 0){
-
-    $due_amount = 0;
-    $payment_status = "Paid";
-
-}elseif($total_paid > 0){
-
-    $payment_status = "Partial";
-
-}else{
-
-    $payment_status = "Unpaid";
-
-}
-
-$debug[] = "Net Total : ".$net_total;
-$debug[] = "Total Paid : ".$total_paid;
-$debug[] = "Due Amount : ".$due_amount;
-$debug[] = "Payment Status : ".$payment_status;
-
-$gst_total = $total_gst;
-
-
-
-$update = $db->query("
-UPDATE invoice SET
-
-subtotal = '$subtotal',
-gst_total = '$gst_total',
-net_total = '$net_total',
-
-paid_amount = '$total_paid',
-due_amount = '$due_amount',
-payment_status = '$payment_status'
-
-WHERE id = '$qid'
-");
-
-/* 👇 YE CODE YAHI INSERT KARO */
-if(!$update){
-    throw new Exception("Invoice Update Failed : ".$db->error);
-}
-
-if($system == 'billing' && isset($_POST['payment_amount'])){
-
-  foreach($_POST['payment_amount'] as $mode_id => $amt){
-
-    $amt = (float)$amt;
-
-    if($amt > 0){
-
-      // 🔥 get payment mode name
-      $pm = find_by_id('payment_mode_master', $mode_id);
-      $mode_name = $pm['mode_name'];
-
-// 🔥 insert into NEW payments table
-
-$utr = $_POST['utr_no'][$mode_id] ?? '';
-
-$db->query("
-INSERT INTO payments
-(
-invoice_id,
-customer_id,
-payment_mode,
-amount,
-reference_no,
-center_id
-)
-VALUES
-(
-$qid,
-$cust,
-'$mode_name',
-'$amt',
-'".$db->escape($utr)."',
-'$center_id'
-)
-");
-
-    }
-  }
-}
-
-// ================= LEDGER ENTRY =================
-
-// 🔹 1. CUSTOMER DEBIT (invoice total)
-$db->query("
-INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-VALUES ($qid, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
-");
-
-// 🔥 UPDATE CUSTOMER BALANCE (INVOICE)
-$db->query("
-UPDATE customer_master 
-SET balance = balance + $net_total
-WHERE id = $cust
-");
-
-// 🔹 2. SALES CREDIT
-$db->query("
-INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-VALUES ($qid, $cust, 'SALES', 'CREDIT', '$net_total')
-");
-
-
-// 🔹 3. PAYMENT ENTRIES
-if($system == 'billing' && isset($_POST['payment_amount'])){
-
-  foreach($_POST['payment_amount'] as $mode_id => $amt){
-
-    $amt = (float)$amt;
-
-    if($amt > 0){
-
-      $pm = find_by_id('payment_mode_master', $mode_id);
-      $mode_name = strtoupper($pm['mode_name']);
-
-      // CASH / UPI DEBIT
-      $db->query("
-      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-      VALUES ($qid, $cust, '$mode_name', 'DEBIT', '$amt')
-      ");
-
-      // CUSTOMER CREDIT
-      $db->query("
-      INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
-      VALUES ($qid, $cust, 'CUSTOMER', 'CREDIT', '$amt')
-      ");
-
-      // 🔥 CUSTOMER BALANCE REDUCE (PAYMENT)
-      $db->query("
-      UPDATE customer_master 
-      SET balance = balance - $amt
-      WHERE id = $cust
-      ");
-
-    }
-  }
-}
-
-$db->query("COMMIT");  // 🔥 FINAL COMMIT
-
-file_put_contents(
-    __DIR__.'/invoice_debug.log',
-    implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
-    FILE_APPEND
-);
-
-// Direct print page par redirect karo (bina mail bheje)
-echo "<script>
-window.location='invoice_print.php?id=".$qid."';
-</script>";
-exit;
-
-} catch(Exception $e){
-
-  $db->query("ROLLBACK");
-
-  $debug[] = "EXCEPTION : ".$e->getMessage();
-
-file_put_contents(
-    __DIR__.'/invoice_debug.log',
-    implode(PHP_EOL,$debug).PHP_EOL.PHP_EOL,
-    FILE_APPEND
-);
-
-  echo "<script>
-alert(" . json_encode($e->getMessage()) . ");
-window.location='invoice_create.php';
-</script>";
-
-exit;
-}
-
-} // POST['save_invoice'] condition close
-
 ?>
 
 <?php include_once('layouts/header.php'); ?>
@@ -1635,7 +1500,7 @@ function renderProducts(filter=""){
     <td>₹${p.sale_price}</td>
   `;
 
-  tr.addEventListener("click",()=>addProduct(p)); // 🔥 inline onclick remove
+  tr.addEventListener("click",()=>addProduct(p));
 
   list.appendChild(tr);
  });
@@ -1720,7 +1585,7 @@ value="0"></td>
 }
 
 
-/* 🔥 INPUT FIX (VERY IMPORTANT) */
+/* 🔥 INPUT FIX */
 document.addEventListener("input", function(e){
 
  if(
@@ -1804,13 +1669,11 @@ if(gstField){
 
  let total = qty * base;
 
- // 🔥 FIX: prevent divide by zero
  if(total === 0){
    r.querySelector(".discAmt").value = 0;
    r.querySelector(".discPer").value = 0;
  }
 
- // discount sync
 let active = document.activeElement;
 
 if(active && active.classList.contains("discPer")){
@@ -1909,7 +1772,6 @@ function updateSummary(){
  document.getElementById("balance").innerText   = balance.toFixed(2);
  document.getElementById("returnAmt").innerText = returnAmt.toFixed(2);
 
-/* 🔥 ADD THIS */
 highlightSummary();
 }
 
@@ -1963,7 +1825,7 @@ document.querySelectorAll(".payAmt").forEach(input=>{
   if(parseFloat(this.value) < 0){
    this.value = 0;
 }
-    updateSummary(); // 🔥 ye missing tha
+    updateSummary();
   });
 });
 
