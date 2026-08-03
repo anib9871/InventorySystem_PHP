@@ -119,8 +119,6 @@ tfoot th{ font-size:15px; }
 .report-card hr{ margin:10px 0 12px !important; }
 .report-card label{ margin-bottom:4px; font-size:12px; font-weight:600; color:#555; }
 .report-card .radio-inline{ font-size:13px; font-weight:500; margin-bottom:0; }
-.report-card .form-control{ height:34px; font-size:13px; border-radius:6px; padding:6px 10px; }
-.report-card .btn{ height:34px; font-size:13px; border-radius:6px; padding:6px 14px; }
 .btn-print-invoice {
     background: #2563eb;
     color: #ffffff !important;
@@ -136,6 +134,45 @@ tfoot th{ font-size:15px; }
 .btn-print-invoice:hover {
     background: #1d4ed8;
 }
+
+/* ===== FIX FOR DATE BOX TRUNCATION ===== */
+.filter-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+}
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.date-input-group .form-control {
+    width: 130px !important;
+    min-width: 130px !important;
+    height: 38px !important;
+    font-size: 13px !important;
+    border-radius: 8px;
+    padding: 4px 8px !important;
+    text-align: center;
+    border: 1px solid #dfe6ee;
+    background-color: #fff !important;
+}
+.btn-generate {
+    height: 38px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0 18px;
+    white-space: nowrap;
+}
 </style>
 
 <!-- FILTER CONTROLS -->
@@ -143,37 +180,40 @@ tfoot th{ font-size:15px; }
 <div class="col-md-12">
 <div class="report-card">
 <div class="panel-body">
-<div class="row" style="display:flex;align-items:center;min-height:40px;">
+<div class="filter-container">
 
-<div class="col-md-2" style="display:flex;align-items:center;height:40px;">
-    <label class="radio-inline" style="margin:0;">
-        <input type="radio" name="reportType" value="customer" <?= $report_type === 'customer' ? 'checked' : ''; ?>>
-        Customer
-    </label>
-</div>
+    <!-- Customer Radio -->
+    <div class="filter-option">
+        <label class="radio-inline" style="margin:0;">
+            <input type="radio" name="reportType" value="customer" <?= $report_type === 'customer' ? 'checked' : ''; ?>> Customer
+        </label>
+    </div>
 
-<div class="col-md-2" style="display:flex;align-items:center;height:40px;">
-    <label class="radio-inline" style="margin:0;">
-        <input type="radio" name="reportType" value="supplier" <?= $report_type === 'supplier' ? 'checked' : ''; ?>>
-        Supplier
-    </label>
-</div>
+    <!-- Supplier Radio -->
+    <div class="filter-option">
+        <label class="radio-inline" style="margin:0;">
+            <input type="radio" name="reportType" value="supplier" <?= $report_type === 'supplier' ? 'checked' : ''; ?>> Supplier
+        </label>
+    </div>
 
-<div class="col-md-2" style="display:flex;align-items:center;">
-    <label style="margin:0 8px 0 0;white-space:nowrap;">From Date</label>
-    <input type="text" id="fromDate" class="form-control" value="<?= date('d/M/Y', strtotime($from)); ?>" autocomplete="off">
-</div>
+    <!-- From Date -->
+    <div class="date-input-group">
+        <label style="margin:0; font-weight:600; font-size:13px; color:#555;">From Date</label>
+        <input type="text" id="fromDate" class="form-control" value="<?= date('d/M/Y', strtotime($from)); ?>" autocomplete="off" readonly>
+    </div>
 
-<div class="col-md-2" style="display:flex;align-items:center;">
-    <label style="margin:0 8px 0 0;white-space:nowrap;">To Date</label>
-    <input type="text" id="toDate" class="form-control" value="<?= date('d/M/Y', strtotime($to)); ?>" autocomplete="off">
-</div>
+    <!-- To Date -->
+    <div class="date-input-group">
+        <label style="margin:0; font-weight:600; font-size:13px; color:#555;">To Date</label>
+        <input type="text" id="toDate" class="form-control" value="<?= date('d/M/Y', strtotime($to)); ?>" autocomplete="off" readonly>
+    </div>
 
-<div class="col-md-4">
-    <button type="button" class="btn btn-primary btn-block" onclick="filterReport()">
-        <i class="fa fa-search"></i> Generate Report
-    </button>
-</div>
+    <!-- Button -->
+    <div>
+        <button type="button" class="btn btn-primary btn-generate" onclick="filterReport()">
+            <i class="fa fa-search"></i> Generate Report
+        </button>
+    </div>
 
 </div>
 </div>
