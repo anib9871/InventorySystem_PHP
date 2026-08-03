@@ -20,46 +20,66 @@ WHERE i.id = $id
 if(!$invoice_data) die("Invoice not found");
 $invoice = $invoice_data[0];
 
-/* 🔥 PROFORMA VS TAX INVOICE TITLE LOGIC (REVISED REMOVED) 🔥 */
+/* PROFORMA VS TAX INVOICE TITLE LOGIC */
 $doc_type = strtoupper($invoice['remarks'] ?? '');
 $is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $invoice['payment_status'] == 'Unpaid'));
 
 if ($is_proforma) {
     $title_text = 'PROFORMA INVOICE';
-    $title_color = '#d97706'; // Amber / Orange
+    $title_color = '#d97706'; 
 } else {
-    // ALWAYS TAX INVOICE (NO REVISED TEXT)
     $title_text = 'TAX INVOICE';
-    $title_color = '#2563eb'; // Blue
+    $title_color = '#2563eb'; 
 }
 
-/* 🔥 FETCH PAYMENTS, UTR & DATE RECORDS FOR THIS INVOICE 🔥 */
+/* FETCH PAYMENTS, UTR & DATE RECORDS */
 $payment_records = find_by_sql("
 SELECT payment_mode, amount, reference_no, payment_date 
 FROM payments 
 WHERE invoice_id = $id AND amount > 0
 ");
 
-/* ================= MANUAL EMAIL SEND HANDLER ================= */
+/* ================= MANUAL MULTIPLE EMAIL SEND HANDLER ================= */
 $email_msg = "";
 $email_status = "";
 
 if (isset($_POST['send_email_btn'])) {
-    $client_email = trim($_POST['target_email']);
+    $raw_emails = trim($_POST['target_email']);
     $client_name  = $invoice['customer_name'];
 
-    if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
-        $sent = send_invoice_email($id, $client_email, $client_name);
+    if (!empty($raw_emails)) {
+        // Comma se split karke multiple emails ki array banao
+        $emails = array_map('trim', explode(',', $raw_emails));
         
-        if ($sent === true || $sent == 1) {
-            $email_msg = "Document email successfully sent to " . htmlspecialchars($client_email) . "!";
+        $sent_emails = [];
+        $failed_emails = [];
+
+        foreach ($emails as $client_email) {
+            if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+                $sent = send_invoice_email($id, $client_email, $client_name);
+                if ($sent === true || $sent == 1) {
+                    $sent_emails[] = htmlspecialchars($client_email);
+                } else {
+                    $failed_emails[] = htmlspecialchars($client_email);
+                }
+            } else {
+                $failed_emails[] = htmlspecialchars($client_email);
+            }
+        }
+
+        // Status Message Create Karo
+        if (!empty($sent_emails) && empty($failed_emails)) {
+            $email_msg = "Document email successfully sent to: " . implode(', ', $sent_emails);
             $email_status = "success";
+        } elseif (!empty($sent_emails) && !empty($failed_emails)) {
+            $email_msg = "Sent to: " . implode(', ', $sent_emails) . " | Failed for: " . implode(', ', $failed_emails);
+            $email_status = "error";
         } else {
-            $email_msg = "Failed to send email. " . htmlspecialchars($sent);
+            $email_msg = "Failed to send email to provided address(es).";
             $email_status = "error";
         }
     } else {
-        $email_msg = "Invalid or empty customer email address!";
+        $email_msg = "Please enter at least one valid email address!";
         $email_status = "error";
     }
 }
@@ -77,7 +97,7 @@ $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 /* Organization */
 $org = find_by_sql("SELECT * FROM organization_master WHERE id=".$invoice['organization_id'])[0];
 
-/* ================= TAX MODE DETECT ================= */
+/* TAX MODE DETECT */
 $org_state  = substr($org['gst_no'] ?? '', 0, 2);
 $cust_state = substr($invoice['gst_no'] ?? '', 0, 2);
 
@@ -95,7 +115,7 @@ LEFT JOIN products p ON p.id = ii.product_id
 WHERE ii.invoice_id = $id
 ");
 
-/* ================= NUMBER TO WORDS FUNCTION ================= */
+/* NUMBER TO WORDS FUNCTION */
 function convertGroup($num) {
     $ones = array(
         0 => "", 1 => "One", 2 => "Two", 3 => "Three", 4 => "Four", 5 => "Five",
@@ -139,8 +159,8 @@ function numberToWords($amount) {
 <head>
 <meta charset="UTF-8">
 <title><?= htmlspecialchars($invoice['customer_name']) ?>_Document_<?= htmlspecialchars($invoice['invoice_no']) ?></title>
+
 <style>
-/* ===== GLOBAL RESET & VARIABLES ===== */
 :root {
   --primary-color: <?= $title_color ?>;
   --primary-dark: #1d4ed8;
@@ -269,10 +289,71 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
 .terms-box { white-space: pre-line; font-size: 10px; color: var(--text-muted); line-height: 1.3; }
 .signature-space { height: 28px; }
 
+/* COMPACT TOP-RIGHT ALERT BANNER STYLES */
+.custom-top-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    animation: fadeInSlide 0.3s ease-in-out;
+}
+
+.toast-success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.toast-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.toast-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.toast-success .toast-icon {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.toast-error .toast-icon {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @page { size: A4; margin: 6mm 8mm; }
 @media print {
   html, body { height: 100%; background: #ffffff; color: #000000; }
-  .no-print-bar { display: none !important; }
+  .no-print-bar, .custom-top-toast { display: none !important; }
   .wrapper { box-shadow: none; padding: 0; max-width: 100%; border-radius: 0; margin: 0; }
   table.data-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .info-card, .summary-row.grand-total td { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -284,33 +365,35 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
 
 <body>
 
+<!-- TOP RIGHT TOAST BANNER -->
+<?php if (!empty($email_msg)): ?>
+<div id="customToastAlert" class="custom-top-toast <?= $email_status === 'success' ? 'toast-success' : 'toast-error' ?>">
+    <span class="toast-icon"><?= $email_status === 'success' ? '✔' : '✖' ?></span>
+    <span class="toast-message"><?= $email_msg ?></span>
+</div>
+<?php endif; ?>
+
 <!-- NAVIGATION BUTTONS BAR -->
 <div class="no-print-bar">
     <div style="display: flex; gap: 6px;">
         <a href="invoice_create.php" class="btn">← Create Invoice</a>
         <a href="invoice_list.php" class="btn">← Invoice List</a>
-        <!-- 🔥 BACK TO PAYMENT REPORT BUTTON 🔥 -->
         <a href="payment_report.php?action=generate&type=customer" class="btn" style="background: #f8fafc; border-color: #3b82f6; color: #1d4ed8; font-weight: 600;">← Back to Payment Report</a>
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
         <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
-            <input type="email" name="target_email" 
-                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 180px;" 
+            <!-- Input width width: 220px kardi hai taaki comma separated emails easily fit aayein -->
+            <input type="text" name="target_email" 
+                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 220px;" 
                    value="<?= htmlspecialchars($invoice['customer_email'] ?? '') ?>" 
-                   placeholder="Enter Customer Email" required>
+                   placeholder="Emails (comma separated)" title="Use comma to separate multiple emails (e.g. a@b.com, c@d.com)" required>
             <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
         </form>
 
         <button onclick="window.print()" class="btn btn-primary">🖨 Print <?= $is_proforma ? 'Proforma' : 'Invoice' ?></button>
     </div>
 </div>
-
-<?php if (!empty($email_msg)): ?>
-    <div style="max-width: 850px; margin: 10px auto; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; <?= $email_status == 'success' ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #b91c1c;' ?>">
-        <?= $email_msg ?>
-    </div>
-<?php endif; ?>
 
 <div class="wrapper">
 
@@ -328,7 +411,6 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
         </div>
 
         <div class="invoice-badge-box">
-            <!-- DYNAMIC TITLE (NO REVISED TEXT) -->
             <div class="invoice-title"><?= $title_text ?></div>
             <table class="meta-info-table">
                 <tr>
@@ -405,7 +487,6 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
             </tr>
             <?php } ?>
 
-            <!-- SUMMARY ROWS -->
             <tr class="summary-row">
                 <td colspan="<?= ($gst_enabled == 'Yes') ? '8' : '7' ?>" class="right bold">Sub Total</td>
                 <td class="right bold"><?= number_format($total_taxable,2) ?></td>
@@ -448,7 +529,7 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
         </tbody>
     </table>
 
-    <!-- DYNAMIC PAYMENT, UTR & DATE BREAKDOWN BOX -->
+    <!-- PAYMENT DETAILS -->
     <?php if(!empty($payment_records)): ?>
     <div class="utr-box">
         <div class="utr-title">Payment Collection Details</div>
@@ -593,7 +674,7 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     </div>
     <?php endif; ?>
 
-    <!-- FOOTER INFO: BANK DETAILS & AUTHORIZATION -->
+    <!-- FOOTER INFO -->
     <div class="footer-grid">
         <div class="footer-card">
             <div class="footer-card-title">Bank Details</div>
@@ -628,6 +709,23 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     <?php endif; ?>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 3 seconds baad alert gayab ho jayega automatically
+    setTimeout(function() {
+        var alertBox = document.getElementById("customToastAlert");
+        if (alertBox) {
+            alertBox.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+            alertBox.style.opacity = "0";
+            alertBox.style.transform = "translateY(-10px)";
+            setTimeout(function() {
+                alertBox.remove();
+            }, 400);
+        }
+    }, 3000); 
+});
+</script>
 
 </body>
 </html>
