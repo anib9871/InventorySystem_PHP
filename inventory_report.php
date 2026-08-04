@@ -134,6 +134,7 @@ if ($role_id == 2) {
 ═══════════════════════════════════════ */
 $txn_q = "
 SELECT
+    t.transaction_id,
     t.bill_indent_no AS invoice_no,
     DATE(t.entry_date) AS sale_date,
     mc.center_name,
@@ -177,9 +178,10 @@ $sales = find_by_sql($txn_q);
 
 $grand = 0;
 foreach ($sales as $s) {
-    $grand += $s['total_sale'];
+    $grand += (float)$s['total_sale'];
 }
 
+/* Round off Calculation */
 $grand_round = round($grand);
 $round_off   = $grand_round - $grand;
 
