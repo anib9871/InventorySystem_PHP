@@ -29,20 +29,26 @@ $org_name = remove_junk($db->escape($_POST['org_name']));
 
 $db_name = strtolower(str_replace(" ","_",$org_name))."_inventory";
 
-$db_username = remove_junk($db->escape($_POST['db_username']));
-$db_password = remove_junk($db->escape($_POST['db_password']));
-$db_link = remove_junk($db->escape($_POST['db_link']));
-$port = remove_junk($db->escape($_POST['port']));
+$db_username  = remove_junk($db->escape($_POST['db_username']));
+$db_password  = remove_junk($db->escape($_POST['db_password']));
+$db_link      = remove_junk($db->escape($_POST['db_link']));
+$port         = remove_junk($db->escape($_POST['port']));
+$report_email = remove_junk($db->escape($_POST['report_email']));
+$auto_report  = isset($_POST['auto_report']) ? 1 : 0;
+$report_time  = remove_junk($db->escape($_POST['report_time']));
 
 $sql = "INSERT INTO master_inventory.master_organization
-(org_name,db_name,db_username,db_password,db_link,port)
+(org_name,db_name,db_username,db_password,db_link,port,report_email,auto_report,report_time)
 VALUES(
 '{$org_name}',
 '{$db_name}',
 '{$db_username}',
 '{$db_password}',
 '{$db_link}',
-'{$port}'
+'{$port}',
+'{$report_email}',
+'{$auto_report}',
+'{$report_time}'
 )";
 
 if($db->query($sql)){
@@ -199,13 +205,20 @@ if(!empty($plan_id)){
 
 /* 🔥 SUBSCRIPTION END */
 
+$report_email = remove_junk($db->escape($_POST['report_email']));
+$auto_report  = isset($_POST['auto_report']) ? 1 : 0;
+$report_time  = remove_junk($db->escape($_POST['report_time']));
+
 $sql = "UPDATE master_inventory.master_organization SET
 org_name='{$org_name}',
 db_name='{$db_name}',
 db_username='{$db_username}',
 db_password='{$db_password}',
 db_link='{$db_link}',
-port='{$port}'
+port='{$port}',
+report_email='{$report_email}',
+auto_report='{$auto_report}',
+report_time='{$report_time}'
 WHERE org_id='{$id}'";
 
 $db->query($sql);
@@ -314,6 +327,26 @@ placeholder="Port"
 value="3306">
 </div>
 
+<div class="form-group">
+<input type="email" name="report_email" class="form-control"
+value="<?php echo $edit_org ? $edit_org['report_email'] : ''; ?>"
+placeholder="Admin Report Email (e.g. admin@org.com)">
+</div>
+
+<div class="checkbox">
+<label>
+<input type="checkbox" name="auto_report" value="1"
+<?php echo (!$edit_org || (isset($edit_org['auto_report']) && $edit_org['auto_report']==1)) ? 'checked' : ''; ?>>
+Enable Daily Auto Report Email
+</label>
+</div>
+
+<div class="form-group">
+<label>Report Time</label>
+<input type="time" name="report_time" class="form-control"
+value="<?php echo ($edit_org && !empty($edit_org['report_time'])) ? $edit_org['report_time'] : '23:00'; ?>">
+</div>
+
 <?php if($edit_org): ?>
 
 <button type="submit" name="update_org" class="btn btn-primary">
@@ -366,9 +399,9 @@ placeholder="Search organization...">
 <th>#</th>
 <th>Organization</th>
 <th>Database Name</th>
-<th>DB Username</th>
-<th>DB Link</th>
-<th>Port</th>
+<th>Report Email</th>
+<th>Auto Report</th>
+<th>Time</th>
 <th>Action</th>
 </tr>
 
@@ -383,9 +416,9 @@ placeholder="Search organization...">
 <td><?php echo $org['org_id']; ?></td>
 <td><?php echo $org['org_name']; ?></td>
 <td><?php echo $org['db_name']; ?></td>
-<td><?php echo $org['db_username']; ?></td>
-<td><?php echo $org['db_link']; ?></td>
-<td><?php echo $org['port']; ?></td>
+<td><?php echo !empty($org['report_email']) ? $org['report_email'] : '<span class="label label-warning">N/A</span>'; ?></td>
+<td><?php echo (isset($org['auto_report']) && $org['auto_report'] == 1) ? '<span class="label label-success">ON</span>' : '<span class="label label-danger">OFF</span>'; ?></td>
+<td><?php echo !empty($org['report_time']) ? $org['report_time'] : '23:00'; ?></td>
 
 <td>
 
