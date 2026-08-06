@@ -12,6 +12,13 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
+
+// ✅ FRESH LOGIN FLAG CHECK & CONSUMPTION
+$is_fresh_login = false;
+if (!empty($_SESSION['just_logged_in'])) {
+    $is_fresh_login = true;
+    unset($_SESSION['just_logged_in']); // Immediate consumption to prevent infinite loops
+}
 ?>
 
 <!DOCTYPE html>
@@ -73,18 +80,34 @@ if(isset($_SESSION['role_id'])){
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
-    var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
+    // 1. FRESH LOGIN: Session token set karo
     if (isFreshLogin) {
-        // Naye login par localStorage version auto-sync hoga taaki false alert na aaye
+        sessionStorage.setItem("app_tab_active", "1");
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    } else {
-        var savedVersion = localStorage.getItem("app_deploy_version");
+    } 
+    else {
+        var isTabActive = sessionStorage.getItem("app_tab_active") === "1";
+        
+        // App ke andar kisi link ko naye tab me khola gaya hai kya check karo
+        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
+        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
 
+        // Agar NAYE TAB me DIRECT URL paste hua (bina fresh login / bina link click kiye) -> FORCE LOGOUT
+        if (!isTabActive && !isBridgeValid) {
+            window.location.href = "logout.php?msg=tab_closed";
+            return;
+        }
+
+        // Tab session maintain rakho
+        sessionStorage.setItem("app_tab_active", "1");
+
+        // 2. REDEPLOYMENT VERSION CHECK
+        var savedVersion = localStorage.getItem("app_deploy_version");
         if (!savedVersion) {
             localStorage.setItem("app_deploy_version", CURRENT_VERSION);
         } else if (savedVersion !== CURRENT_VERSION) {
-            // Version mismatch = Redeploy detected! Show Modal
             window.addEventListener("DOMContentLoaded", function() {
                 var modal = document.getElementById("deployModalOverlay");
                 if (modal) {
@@ -100,6 +123,13 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
+
+// App ke andar kisi link ko naye tab me kholne par temporary bridge token
+document.addEventListener("mousedown", function(e) {
+    if (e.target.closest("a")) {
+        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
+    }
+});
 </script>
 
 <title>
@@ -133,7 +163,7 @@ else{
     <div class="deploy-icon">🚀</div>
     <h3 style="margin: 0 0 8px 0; font-weight: 700; color: #0f172a;">System Updated</h3>
     <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
-      A new version has been deployed. Please click below to log in again and continue.
+      A new update has been deployed. Please click below to refresh and log in again.
     </p>
     <button class="deploy-btn" onclick="confirmRedeployLogout()">OK, Login Again</button>
   </div>
