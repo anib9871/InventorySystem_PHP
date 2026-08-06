@@ -13,26 +13,33 @@ require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 require_once(LIB_PATH_INC.'session.php');
 
-/* ================= APP VERSION & STRICT SESSION FLUSH ================= */
+/* ================= 1. STRICT SESSION FLUSH & REDIRECT ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     session_start();
 }
 
-// Check: Agar user logged in hai LEKIN uska session version match nahi kar raha (ya missing hai)
 if (defined('APP_VERSION')) {
-    $is_logged_in = isset($_SESSION['user_id']) || isset($_SESSION['org_id']);
+    $is_logged_in = !empty($_SESSION['user_id']) || !empty($_SESSION['org_id']);
     $session_version = $_SESSION['app_version'] ?? null;
 
     if ($is_logged_in && $session_version !== APP_VERSION) {
-        // Force fully clear stale/corrupt session
-        session_unset();
+        // Complete Session & Cookie Wipe
+        $_SESSION = array();
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
         session_destroy();
-        
-        session_start();
-        $_SESSION['app_version'] = APP_VERSION;
-        
-        // Redirect to login page
-        header("Location: index.php?msg=system_updated");
+
+        // Fail-safe Redirection (PHP + JS + Meta)
+        if (!headers_sent()) {
+            header("Location: index.php?msg=system_updated");
+        }
+        echo "<script>window.location.href='index.php?msg=system_updated';</script>";
+        echo "<meta http-equiv='refresh' content='0;url=index.php?msg=system_updated'>";
         exit;
     }
     
@@ -41,6 +48,13 @@ if (defined('APP_VERSION')) {
 
 require_once(LIB_PATH_INC.'upload.php');
 require_once(LIB_PATH_INC.'database.php');
+
+/* ================= 2. FORCE ORG DATABASE SELECTION ================= */
+// Ensures queries always target Org DB (Fixes Blank Supplier/Customer Issue)
+if (isset($_SESSION['db_name']) && !empty($_SESSION['db_name']) && isset($db->con)) {
+    @mysqli_select_db($db->con, $_SESSION['db_name']);
+}
+
 require_once(LIB_PATH_INC.'sql.php');
 
 /* ================= GST CONFIG ================= */
