@@ -9,7 +9,7 @@ define("DS", DIRECTORY_SEPARATOR);
 defined('SITE_ROOT')? null: define('SITE_ROOT', realpath(dirname(__FILE__)));
 define("LIB_PATH_INC", SITE_ROOT.DS);
 
-/* ================= 1. STRICT SESSION START (MUST BE BEFORE ANY OTHER INCLUDE) ================= */
+/* ================= 1. STRICT SESSION START ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     if (!headers_sent()) {
         session_set_cookie_params(0, '/');
@@ -20,34 +20,58 @@ if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
 require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 
-// Version Tagging (Session Check se Pehle Set Karo)
-if (defined('APP_VERSION')) {
-    if (!isset($_SESSION['app_version'])) {
-        $_SESSION['app_version'] = APP_VERSION;
-    }
+// If App Version is newly set on fresh session
+if (defined('APP_VERSION') && !isset($_SESSION['app_version'])) {
+    $_SESSION['app_version'] = APP_VERSION;
 }
 
 require_once(LIB_PATH_INC.'session.php');
 
 /* ================= 2. GLOBAL AUTH & SESSION INTEGRITY CHECK ================= */
 $current_script = basename($_SERVER['PHP_SELF']);
-// Pages jahan login hona zaroori nahi hai
 $public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php'];
 
 if (!in_array($current_script, $public_scripts)) {
     
-    // Check 1: Session Variables exist karte hain ya nahi?
-    $has_valid_session = !empty($_SESSION['user_id']) 
-                      && !empty($_SESSION['org_id']) 
-                      && !empty($_SESSION['db_name']);
+    // Check Superadmin vs Normal User Role
+    $is_superadmin = !empty($_SESSION['superadmin_login']) || (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1);
+    
+    if ($is_superadmin) {
+        $has_valid_session = !empty($_SESSION['user_id']);
+    } else {
+        // Normal user must have user_id and username
+        $has_valid_session = !empty($_SESSION['user_id']) && !empty($_SESSION['username']);
+    }
 
-    // Check 2: App Version match kar raha hai ya nahi?
-    $has_correct_version = !defined('APP_VERSION') 
-                        || (isset($_SESSION['app_version']) && $_SESSION['app_version'] === APP_VERSION);
+    // Check Redeployment / Version Mismatch
+    $is_version_mismatch = false;
+    if (defined('APP_VERSION') && isset($_SESSION['app_version'])) {
+        if ($_SESSION['app_version'] !== APP_VERSION) {
+            $is_version_mismatch = true;
+        }
+    }
 
-    // Agar session wipe ho gaya HO ya version match na kare -> INSTANT LOGOUT & REDIRECT
-    if (!$has_valid_session || !$has_correct_version) {
-        
+    // --- CASE A: PRODUCTION REDEPLOYMENT (ALERT FIRST, THEN LOGOUT) ---
+    if ($is_version_mismatch) {
+        $_SESSION = array();
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+        session_destroy();
+
+        echo "<script>
+            alert('⚠️ System Updated / Redeployed! Please login again.');
+            window.location.href = 'index.php?msg=redeployed';
+        </script>";
+        exit;
+    }
+
+    // --- CASE B: INVALID / EXPIRED SESSION ---
+    if (!$has_valid_session) {
         $_SESSION = array();
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
