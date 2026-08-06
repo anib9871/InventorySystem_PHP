@@ -797,7 +797,7 @@ placeholder="Search Product...">
 
 <label class="mb-1">Terms & Conditions</label>
 
-<textarea name="terms_conditions" id="termsBox" rows="5" class="form-control"><?= htmlspecialchars($quote['terms_conditions']); ?></textarea>
+<textarea name="terms_conditions" id="termsBox" rows="5" class="form-control"><?= htmlspecialchars($quote['terms_conditions'] ?? ''); ?></textarea>
 </div>
 
 </div>
