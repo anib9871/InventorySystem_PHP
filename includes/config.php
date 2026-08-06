@@ -1,6 +1,6 @@
 <?php
 
-define('APP_VERSION', '1.0.2');
+define('APP_VERSION', '1.0.3');
 
 define('DB_HOST', getenv('MYSQLHOST'));
 define('DB_USER', getenv('MYSQLUSER'));
