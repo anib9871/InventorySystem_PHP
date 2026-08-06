@@ -102,7 +102,27 @@ function deleteGRN(bill){
 
 }
 
+<!-- ✅ AUTO-LOGOUT ON TAB / BROWSER CLOSE -->
+
+window.addEventListener("pagehide", function (event) {
+    if (!sessionStorage.getItem("is_navigating")) {
+        sessionStorage.clear();
+    }
+});
+
+document.addEventListener("click", function (e) {
+    sessionStorage.setItem("is_navigating", "true");
+});
+
+document.addEventListener("submit", function (e) {
+    sessionStorage.setItem("is_navigating", "true");
+});
+
+window.addEventListener("load", function () {
+    sessionStorage.removeItem("is_navigating");
+});
 </script>
+
 </body>
 </html>
 
