@@ -68,6 +68,9 @@ $_SESSION['user_id'] = $user['id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['user_level'] = $user['user_level'];
 
+// ✅ ADDED THIS LINE TO PREVENT TAB LOOP:
+$_SESSION['just_logged_in'] = true;
+
 redirect('home.php', false);
 
 }else{
