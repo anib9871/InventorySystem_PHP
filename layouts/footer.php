@@ -4,31 +4,35 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="libs/js/functions.js"></script>
 
-  <!-- ✅ FIXED ACCORDION & SUBMENU TOGGLE SCRIPT -->
+  <!-- ✅ FIXED NESTED ACCORDION SCRIPT -->
 <script>
 $(document).ready(function(){
 
-    // 1. Purane handlers unbind karo
+    // 1. Purane global click handlers unbind karo
     $('.submenu-toggle').off('click');
     $(document).off('click', '.submenu-toggle');
 
-    // 2. Initial State: Hide all submenus on load unless saved
+    // 2. Initial State: Sabhi submenus ko default hide rakho
     $('.submenu').hide();
     $('.arrow').removeClass('rotate');
 
+    // 3. Purana open menu restore karo (Session storage se)
     var activeMenu = sessionStorage.getItem('active_sidebar_menu');
     if (activeMenu) {
         var $activeToggle = $('.submenu-toggle[data-menu="' + activeMenu + '"]');
         if ($activeToggle.length) {
+            // Self + Parents (Level 1 & Level 2) dono ko show karo
+            $activeToggle.parents('.submenu').show();
+            $activeToggle.parents('li').find('> .submenu-toggle > .arrow').addClass('rotate');
             $activeToggle.next('.submenu').show();
-            $activeToggle.find('.arrow').addClass('rotate');
+            $activeToggle.find('> .arrow').addClass('rotate');
         }
     }
 
-    // 3. Strict Submenu Click
+    // 4. Strict Level-Based Accordion Click
     $(document).on('click', '.submenu-toggle', function(e){
         e.preventDefault();
-        e.stopPropagation(); // Event ko parent tak jaane se rokega
+        e.stopPropagation();
 
         var $this = $(this);
         var $targetSubmenu = $this.next('.submenu');
@@ -37,14 +41,16 @@ $(document).ready(function(){
 
         var isAlreadyOpen = $targetSubmenu.is(':visible');
 
-        // Baki saare khule submenus ko close karo (Single Open Accordion)
-        $('.submenu').not($targetSubmenu).slideUp(150);
-        $('.submenu-toggle').not($this).find('.arrow').removeClass('rotate');
+        // 🔥 FIX: Parent menu ko bina chede, SIRF same level ke baki sibling menus ko close karo
+        $this.closest('li').siblings().find('> .submenu').slideUp(150);
+        $this.closest('li').siblings().find('> a .arrow').removeClass('rotate');
 
         if (isAlreadyOpen) {
             $targetSubmenu.slideUp(150);
             $targetArrow.removeClass('rotate');
-            sessionStorage.removeItem('active_sidebar_menu');
+            if (menuKey) {
+                sessionStorage.removeItem('active_sidebar_menu');
+            }
         } else {
             $targetSubmenu.slideDown(150);
             $targetArrow.addClass('rotate');
