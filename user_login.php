@@ -90,6 +90,9 @@ $_SESSION['role_id'] = 3;
 $_SESSION['org_id'] = $org_id;
 $_SESSION['center_id'] = $user['center_id'];
 
+// ✅ ADDED THIS LINE TO PREVENT TAB LOOP:
+$_SESSION['just_logged_in'] = true;
+
 $org_query = mysqli_query($conn,"
 SELECT org_name
 FROM master_organization
