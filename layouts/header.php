@@ -75,11 +75,9 @@ if(isset($_SESSION['role_id'])){
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
     var savedVersion = localStorage.getItem("app_deploy_version");
 
-    // Initial Setup
     if (!savedVersion) {
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } 
-    // Code Redeployed (Version Mismatch) -> Show Popup Modal
     else if (savedVersion !== CURRENT_VERSION) {
         window.addEventListener("DOMContentLoaded", function() {
             var modal = document.getElementById("deployModalOverlay");
