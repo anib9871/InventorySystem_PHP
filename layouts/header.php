@@ -18,6 +18,7 @@ if(isset($_SESSION['role_id'])){
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
 <!-- ✅ REDEPLOYMENT POPUP STYLING & SCRIPT -->
 <style>
   #deployModalOverlay {
@@ -70,7 +71,7 @@ if(isset($_SESSION['role_id'])){
 
 <script>
 (function() {
-    var CURRENT_VERSION = "1.0.1"; // 🚀 Deploy karte waqt bas is version ko change karna hai
+    var CURRENT_VERSION = "1.0.1"; 
 
     var savedVersion = localStorage.getItem("app_deploy_version");
 
@@ -91,69 +92,14 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
-</script>
 
-<!-- ✅ SMART TAB TOKEN & NEW TAB BRIDGE SCRIPT -->
-<?php
-$is_fresh_login = false;
-if (!empty($_SESSION['just_logged_in'])) {
-    $is_fresh_login = true;
-    unset($_SESSION['just_logged_in']);
-}
-?>
-<script>
+// Token auto sync to prevent navigation crashes
 (function() {
     var serverToken = "<?php echo $_SESSION['tab_token'] ?? ''; ?>";
-    var isFresh = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
-    
     if (serverToken !== '') {
-        var clientToken = sessionStorage.getItem("app_tab_token");
-        
-        // 1. Fresh Login -> Same tab me session set karo
-        if (isFresh) {
-            sessionStorage.setItem("app_tab_token", serverToken);
-        } 
-        // 2. Agar new tab khola hai
-        else if (!clientToken || clientToken !== serverToken) {
-            
-            // Check: Kya ye new tab app ke kisi link/toggle se khola gaya hai?
-            var bridgeData = localStorage.getItem("app_tab_bridge");
-            var isBridgeValid = false;
-            
-            if (bridgeData) {
-                try {
-                    var parsed = JSON.parse(bridgeData);
-                    // Check if link was clicked within last 5 seconds
-                    if (parsed.token === serverToken && (Date.now() - parsed.time) < 5000) {
-                        isBridgeValid = true;
-                    }
-                } catch(e){}
-            }
-            
-            if (isBridgeValid) {
-                // Link se khola hai -> Naye tab ko allow karo
-                sessionStorage.setItem("app_tab_token", serverToken);
-            } else {
-                // Direct URL paste / Tab closing case -> Force Logout
-                window.location.href = "logout.php";
-            }
-        }
+        sessionStorage.setItem("app_tab_token", serverToken);
     }
 })();
-
-// App ke andar kisi bhi link (Open in new tab / Ctrl+Click) ko detect karne ka listener
-document.addEventListener("mousedown", function(e) {
-    var aTag = e.target.closest("a");
-    if (aTag) {
-        var serverToken = "<?php echo $_SESSION['tab_token'] ?? ''; ?>";
-        if (serverToken !== '') {
-            localStorage.setItem("app_tab_bridge", JSON.stringify({
-                token: serverToken,
-                time: Date.now()
-            }));
-        }
-    }
-});
 </script>
 
 <title>
@@ -171,16 +117,27 @@ else{
 </title>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"/>
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
-
 <link rel="stylesheet" href="libs/css/main.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
+</head>
 <body>
+
+<!-- ✅ REDEPLOYMENT POPUP OVERLAY HTML -->
+<div id="deployModalOverlay">
+  <div class="deploy-modal-card">
+    <div class="deploy-icon">🚀</div>
+    <h3 style="margin: 0 0 8px 0; font-weight: 700; color: #0f172a;">System Updated</h3>
+    <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+      A new update has been deployed. Please click below to refresh and log in again.
+    </p>
+    <button class="deploy-btn" onclick="confirmRedeployLogout()">OK, Login Again</button>
+  </div>
+</div>
 
 <?php if(isset($_SESSION['username'])): ?>
 
