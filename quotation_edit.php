@@ -1,7 +1,6 @@
 
 <?php
 require_once('includes/load.php');
-
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
