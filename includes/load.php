@@ -15,6 +15,7 @@ require_once(LIB_PATH_INC.'session.php');
 
 /* ================= STRICT GLOBAL AUTH & SESSION INTEGRITY ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
+    session_set_cookie_params(0, '/');
     session_start();
 }
 
