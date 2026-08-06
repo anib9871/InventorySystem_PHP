@@ -784,10 +784,10 @@ placeholder="Search Product...">
 
 <?php foreach($terms_templates as $t): ?>
 
-<option value="<?= htmlspecialchars($t['template']); ?>"
-<?= trim($quote['terms_conditions']) == trim($t['template']) ? 'selected' : ''; ?>>
+<option value="<?= htmlspecialchars($t['template'] ?? ''); ?>"
+<?= trim((string)($quote['terms_conditions'] ?? '')) == trim((string)($t['template'] ?? '')) ? 'selected' : ''; ?>>
 
-<?= htmlspecialchars($t['template_name']); ?>
+<?= htmlspecialchars($t['template_name'] ?? ''); ?>
 
 </option>
 
