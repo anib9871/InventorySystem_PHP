@@ -12,6 +12,13 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
+
+// ✅ FIX: Fresh login flag ko check karke UNSET karo (sirf login par 1 baar chalega)
+$is_fresh_login = false;
+if (!empty($_SESSION['just_logged_in'])) {
+    $is_fresh_login = true;
+    unset($_SESSION['just_logged_in']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -73,18 +80,31 @@ if(isset($_SESSION['role_id'])){
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
-    var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
+    // 1. TAB ISOLATION CHECK
     if (isFreshLogin) {
-        // Naye login par localStorage version auto-sync hoga taaki false alert na aaye
+        sessionStorage.setItem("app_tab_session", "active");
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } else {
-        var savedVersion = localStorage.getItem("app_deploy_version");
+        var isTabSessionActive = sessionStorage.getItem("app_tab_session") === "active";
+        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
+        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 10000;
 
+        // Agar user ne naye tab me DIRECT URL paste kiya (bina app ke kisi link par click kiye) -> FORCE LOGOUT
+        if (!isTabSessionActive && !isBridgeValid) {
+            window.location.href = "logout.php?msg=tab_closed";
+            return;
+        }
+
+        // Active tab / App link click -> maintain session
+        sessionStorage.setItem("app_tab_session", "active");
+
+        // 2. REDEPLOYMENT CHECK
+        var savedVersion = localStorage.getItem("app_deploy_version");
         if (!savedVersion) {
             localStorage.setItem("app_deploy_version", CURRENT_VERSION);
         } else if (savedVersion !== CURRENT_VERSION) {
-            // Version mismatch = Redeploy detected! Show Modal
             window.addEventListener("DOMContentLoaded", function() {
                 var modal = document.getElementById("deployModalOverlay");
                 if (modal) {
@@ -100,6 +120,13 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
+
+// Multi-Tab navigation via links (Right Click -> Open in new tab / Ctrl+Click)
+document.addEventListener("mousedown", function(e) {
+    if (e.target.closest("a")) {
+        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
+    }
+});
 </script>
 
 <title>
