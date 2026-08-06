@@ -12,13 +12,6 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
-
-// ✅ FRESH LOGIN FLAG CHECK & CONSUMPTION
-$is_fresh_login = false;
-if (!empty($_SESSION['just_logged_in'])) {
-    $is_fresh_login = true;
-    unset($_SESSION['just_logged_in']); // Immediate consumption to prevent infinite loops
-}
 ?>
 
 <!DOCTYPE html>
@@ -80,41 +73,20 @@ if (!empty($_SESSION['just_logged_in'])) {
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
-    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+    var savedVersion = localStorage.getItem("app_deploy_version");
 
-    // 1. FRESH LOGIN: Session token set karo
-    if (isFreshLogin) {
-        sessionStorage.setItem("app_tab_active", "1");
+    // Initial Setup
+    if (!savedVersion) {
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } 
-    else {
-        var isTabActive = sessionStorage.getItem("app_tab_active") === "1";
-        
-        // App ke andar kisi link ko naye tab me khola gaya hai kya check karo
-        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
-        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
-
-        // Agar NAYE TAB me DIRECT URL paste hua (bina fresh login / bina link click kiye) -> FORCE LOGOUT
-        if (!isTabActive && !isBridgeValid) {
-            window.location.href = "logout.php?msg=tab_closed";
-            return;
-        }
-
-        // Tab session maintain rakho
-        sessionStorage.setItem("app_tab_active", "1");
-
-        // 2. REDEPLOYMENT VERSION CHECK
-        var savedVersion = localStorage.getItem("app_deploy_version");
-        if (!savedVersion) {
-            localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-        } else if (savedVersion !== CURRENT_VERSION) {
-            window.addEventListener("DOMContentLoaded", function() {
-                var modal = document.getElementById("deployModalOverlay");
-                if (modal) {
-                    modal.style.display = "flex";
-                }
-            });
-        }
+    // Code Redeployed (Version Mismatch) -> Show Popup Modal
+    else if (savedVersion !== CURRENT_VERSION) {
+        window.addEventListener("DOMContentLoaded", function() {
+            var modal = document.getElementById("deployModalOverlay");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        });
     }
 })();
 
@@ -123,13 +95,6 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
-
-// App ke andar kisi link ko naye tab me kholne par temporary bridge token
-document.addEventListener("mousedown", function(e) {
-    if (e.target.closest("a")) {
-        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
-    }
-});
 </script>
 
 <title>
