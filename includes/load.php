@@ -11,7 +11,7 @@ define("LIB_PATH_INC", SITE_ROOT.DS);
 
 /* ================= 💡 APP VERSION ================= */
 if (!defined('APP_VERSION')) {
-    define('APP_VERSION', '1.0.1'); // 🚀 Jab naya code deploy karo, version badal do (e.g. 1.0.2)
+    define('APP_VERSION', '1.0.1'); // 🚀 Code redeploy karte waqt bas is version number ko badal dena (e.g. 1.0.2)
 }
 
 /* ================= 1. STRICT SESSION START ================= */
@@ -32,30 +32,37 @@ $public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v
 
 if (!in_array($current_script, $public_scripts)) {
     
-    // Check 1: User Logged In hai ya nahi?
-    $is_logged_in = !empty($_SESSION['user_id']);
+    $was_logged_in = isset($_COOKIE['app_was_logged_in']) && $_COOKIE['app_was_logged_in'] === '1';
+    $has_active_session = !empty($_SESSION['user_id']);
+    $version_matches = isset($_SESSION['app_version']) && $_SESSION['app_version'] === APP_VERSION;
 
-    // Check 2: Browser Cookie me saved version aur Current Code Version mismatch
-    $browser_version = $_COOKIE['app_deploy_version'] ?? '';
-    $is_redeployed = ($browser_version !== '' && $browser_version !== APP_VERSION);
-
-    // --- CASE A: REDEPLOYMENT DETECTED (ALERT FIRST -> LOGOUT ONLY AFTER OK) ---
-    if ($is_redeployed) {
+    // --- CASE A: REDEPLOYMENT / SESSION WIPE DETECTED ---
+    // Agar user logged-in tha, lekin redeploy ki wajah se session wipe hua YA version change hua
+    if ($was_logged_in && (!$has_active_session || !$version_matches)) {
         
-        // Browser Cookie ko new version par update kar do
-        setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
+        // Cookie clear karo taaki alert baar baar na aaye
+        setcookie('app_was_logged_in', '', time() - 3600, '/');
+        
+        // Session clean karo
+        $_SESSION = array();
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"]);
+        }
+        session_destroy();
 
-        // Browser me alert dikhao. Jab tak user OK nahi dabaayega, JS rukega.
-        // OK dabaate hi 'logout.php' par bhejega jo session destroy karega.
+        // 🛑 Alert Box Blocking Script (OK dabane ke BAAD hi redirect hoga)
+        echo "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
         echo "<script>
             alert('⚠️ System Updated / Redeployed! Please click OK to login again.');
-            window.location.href = 'logout.php?msg=redeployed';
+            window.location.href = 'index.php?msg=redeployed';
         </script>";
+        echo "</body></html>";
         exit;
     }
 
-    // --- CASE B: NOT LOGGED IN / SESSION EXPIRED ---
-    if (!$is_logged_in) {
+    // --- CASE B: NORMAL UNAUTHENTICATED USER ---
+    if (!$has_active_session) {
         if (!headers_sent()) {
             header("Location: index.php?msg=session_expired");
         } else {
@@ -64,8 +71,9 @@ if (!in_array($current_script, $public_scripts)) {
         exit;
     }
 
-    // Current version cookie refresh karo for active user
-    setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
+    // Active session ke liye browser mein logged-in cookie maintain rakho
+    $_SESSION['app_version'] = APP_VERSION;
+    setcookie('app_was_logged_in', '1', time() + (86400 * 30), '/');
 }
 
 require_once(LIB_PATH_INC.'upload.php');
