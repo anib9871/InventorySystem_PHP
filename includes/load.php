@@ -11,7 +11,7 @@ define("LIB_PATH_INC", SITE_ROOT.DS);
 
 /* ================= 💡 APP VERSION ================= */
 if (!defined('APP_VERSION')) {
-    define('APP_VERSION', '1.0.1'); // 🚀 Code redeploy karte waqt bas is version number ko badal dena (e.g. 1.0.2)
+    define('APP_VERSION', '1.0.1');
 }
 
 /* ================= 1. STRICT SESSION START ================= */
@@ -26,43 +26,12 @@ require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 require_once(LIB_PATH_INC.'session.php');
 
-/* ================= 2. GLOBAL AUTH & REDEPLOYMENT CHECK ================= */
+/* ================= 2. GLOBAL AUTH CHECK ================= */
 $current_script = basename($_SERVER['PHP_SELF']);
 $public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php', 'logout.php'];
 
 if (!in_array($current_script, $public_scripts)) {
-    
-    $was_logged_in = isset($_COOKIE['app_was_logged_in']) && $_COOKIE['app_was_logged_in'] === '1';
-    $has_active_session = !empty($_SESSION['user_id']);
-    $version_matches = isset($_SESSION['app_version']) && $_SESSION['app_version'] === APP_VERSION;
-
-    // --- CASE A: REDEPLOYMENT / SESSION WIPE DETECTED ---
-    // Agar user logged-in tha, lekin redeploy ki wajah se session wipe hua YA version change hua
-    if ($was_logged_in && (!$has_active_session || !$version_matches)) {
-        
-        // Cookie clear karo taaki alert baar baar na aaye
-        setcookie('app_was_logged_in', '', time() - 3600, '/');
-        
-        // Session clean karo
-        $_SESSION = array();
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"]);
-        }
-        session_destroy();
-
-        // 🛑 Alert Box Blocking Script (OK dabane ke BAAD hi redirect hoga)
-        echo "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>";
-        echo "<script>
-            alert('⚠️ System Updated / Redeployed! Please click OK to login again.');
-            window.location.href = 'index.php?msg=redeployed';
-        </script>";
-        echo "</body></html>";
-        exit;
-    }
-
-    // --- CASE B: NORMAL UNAUTHENTICATED USER ---
-    if (!$has_active_session) {
+    if (empty($_SESSION['user_id'])) {
         if (!headers_sent()) {
             header("Location: index.php?msg=session_expired");
         } else {
@@ -70,10 +39,6 @@ if (!in_array($current_script, $public_scripts)) {
         }
         exit;
     }
-
-    // Active session ke liye browser mein logged-in cookie maintain rakho
-    $_SESSION['app_version'] = APP_VERSION;
-    setcookie('app_was_logged_in', '1', time() + (86400 * 30), '/');
 }
 
 require_once(LIB_PATH_INC.'upload.php');
