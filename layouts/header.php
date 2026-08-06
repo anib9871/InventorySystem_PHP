@@ -19,6 +19,31 @@ if(isset($_SESSION['role_id'])){
 <head>
 <meta charset="UTF-8">
 
+<!-- ✅ IS SCRIPT KO CHIPKAO -->
+<?php
+$is_fresh_login = false;
+if (!empty($_SESSION['just_logged_in'])) {
+    $is_fresh_login = true;
+    unset($_SESSION['just_logged_in']);
+}
+?>
+<script>
+(function() {
+    var serverToken = "<?php echo $_SESSION['tab_token'] ?? ''; ?>";
+    var isFresh = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+    
+    if (serverToken !== '') {
+        var clientToken = sessionStorage.getItem("app_tab_token");
+        
+        if (isFresh) {
+            sessionStorage.setItem("app_tab_token", serverToken);
+        } else if (!clientToken || clientToken !== serverToken) {
+            window.location.href = "logout.php";
+        }
+    }
+})();
+</script>
+
 <title>
 <?php
 if (!empty($page_title)){
