@@ -12,6 +12,31 @@ define("LIB_PATH_INC", SITE_ROOT.DS);
 require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 require_once(LIB_PATH_INC.'session.php');
+
+/* ================= APP VERSION & STALE SESSION FLUSH ================= */
+if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
+    session_start();
+}
+
+// Production Deploy Check: Agar code version update hua hai, toh purana kharab session reset kar do
+if (defined('APP_VERSION') && isset($_SESSION['app_version']) && $_SESSION['app_version'] !== APP_VERSION) {
+    session_unset();
+    session_destroy();
+    
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $_SESSION['app_version'] = APP_VERSION;
+    
+    // Login / Index page par safe redirect
+    header("Location: index.php?msg=system_updated");
+    exit;
+}
+
+if (defined('APP_VERSION')) {
+    $_SESSION['app_version'] = APP_VERSION;
+}
+
 require_once(LIB_PATH_INC.'upload.php');
 require_once(LIB_PATH_INC.'database.php');
 require_once(LIB_PATH_INC.'sql.php');
@@ -135,11 +160,11 @@ if(!$fy){
     WHERE fy_name='{$current_fy}'
     ");
 
-$db->query("
-UPDATE financial_year_master
-SET is_active = 0
-WHERE fy_name!='{$current_fy}'
-");
+    $db->query("
+    UPDATE financial_year_master
+    SET is_active = 0
+    WHERE fy_name!='{$current_fy}'
+    ");
 }
 
 $_SESSION['financial_year'] = $current_fy;
