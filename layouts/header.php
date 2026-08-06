@@ -71,24 +71,30 @@ if(isset($_SESSION['role_id'])){
 
 <script>
 (function() {
-    var CURRENT_VERSION = "1.0.1"; 
+    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
+    var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
 
-    var savedVersion = localStorage.getItem("app_deploy_version");
-
-    if (!savedVersion) {
+    if (isFreshLogin) {
+        // Fresh login par version localStorage me set/sync karo taaki alert loop na bane
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    } else if (savedVersion !== CURRENT_VERSION) {
-        window.addEventListener("DOMContentLoaded", function() {
-            var modal = document.getElementById("deployModalOverlay");
-            if (modal) {
-                modal.style.display = "flex";
-            }
-        });
+    } else {
+        var savedVersion = localStorage.getItem("app_deploy_version");
+
+        if (!savedVersion) {
+            localStorage.setItem("app_deploy_version", CURRENT_VERSION);
+        } else if (savedVersion !== CURRENT_VERSION) {
+            window.addEventListener("DOMContentLoaded", function() {
+                var modal = document.getElementById("deployModalOverlay");
+                if (modal) {
+                    modal.style.display = "flex";
+                }
+            });
+        }
     }
 })();
 
 function confirmRedeployLogout() {
-    var CURRENT_VERSION = "1.0.1";
+    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>";
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
