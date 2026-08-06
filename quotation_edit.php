@@ -35,10 +35,18 @@ WHERE qi.quotation_id = $id
 
 /* ================= MASTER DATA ================= */
 
+// ✅ AB ISKO AISE KAR DO:
+$items = find_by_sql("SELECT qi.*, p.name FROM quotation_items qi LEFT JOIN products p ON p.id = qi.product_id WHERE qi.quotation_id = $id");
+if(!$items) { $items = []; }
+
 $customers = find_all('customer_master');
+if(!$customers) { $customers = []; }
+
 $products  = join_product_table();
+if(!$products) { $products = []; }
 
 $terms_templates = find_all('terms_conditions_master');
+if(!$terms_templates) { $terms_templates = []; }
 
 $gst_enabled = "Yes";
 
@@ -69,106 +77,109 @@ WHERE quotation_id = $id
 
 /* ================= INSERT ITEMS AGAIN ================= */
 
-foreach($_POST['product_id'] as $i => $pid){
+if(isset($_POST['product_id']) && is_array($_POST['product_id'])){
 
-$pid = (int)$pid;
+    foreach($_POST['product_id'] as $i => $pid){
 
-if($pid <= 0){
-    continue;
-}
+        $pid = (int)$pid;
 
-$qty  = (float)$_POST['qty'][$i];
-$base = (float)$_POST['rate'][$i];
+        if($pid <= 0){
+            continue;
+        }
 
-$gst = 0;
+        $qty  = (float)($_POST['qty'][$i] ?? 0);
+        $base = (float)($_POST['rate'][$i] ?? 0);
 
-if($gst_enabled == "Yes"){
-    $gst = (float)$_POST['gst'][$i];
-}
+        $gst = 0;
+        if($gst_enabled == "Yes"){
+            $gst = (float)($_POST['gst'][$i] ?? 0);
+        }
 
-$disc = (float)$_POST['discount'][$i];
+        $disc = (float)($_POST['discount'][$i] ?? 0);
 
-$line_base = $qty * $base;
+        $line_base = $qty * $base;
 
-$discounted_base = $line_base - $disc;
+        $discounted_base = $line_base - $disc;
 
-if($gst_type == "exclusive"){
+        if($gst_type == "exclusive"){
 
-    $gst_amount = ($discounted_base * $gst) / 100;
+            $gst_amount = ($discounted_base * $gst) / 100;
 
-    $cgst_amount = $gst_amount / 2;
-    $sgst_amount = $gst_amount / 2;
-    $igst_amount = 0;
+            $cgst_amount = $gst_amount / 2;
+            $sgst_amount = $gst_amount / 2;
+            $igst_amount = 0;
 
-    $rate_incl = $base + ($base * $gst / 100);
+            $rate_incl = $base + ($base * $gst / 100);
 
-    $line_total = $discounted_base + $gst_amount;
+            $line_total = $discounted_base + $gst_amount;
 
-}
-elseif($gst_type == "inclusive"){
+        }
+        elseif($gst_type == "inclusive"){
 
-    $gst_amount = $discounted_base
-                - ($discounted_base / (1 + $gst/100));
+            $gst_amount = $discounted_base
+                        - ($discounted_base / (1 + $gst/100));
 
-    $cgst_amount = $gst_amount / 2;
-    $sgst_amount = $gst_amount / 2;
-    $igst_amount = 0;
+            $cgst_amount = $gst_amount / 2;
+            $sgst_amount = $gst_amount / 2;
+            $igst_amount = 0;
 
-    $rate_incl = $base;
+            $rate_incl = $base;
 
-    $line_total = $discounted_base;
-}
-else{
+            $line_total = $discounted_base;
+        }
+        else{
 
-    $gst_amount = 0;
+            $gst_amount = 0;
 
-    $cgst_amount = 0;
-    $sgst_amount = 0;
-    $igst_amount = 0;
+            $cgst_amount = 0;
+            $sgst_amount = 0;
+            $igst_amount = 0;
 
-    $rate_incl = $base;
+            $rate_incl = $base;
 
-    $line_total = $discounted_base;
-}
+            $line_total = $discounted_base;
+        }
 
-$total_gst += $gst_amount;
+        $total_gst += $gst_amount;
 
-$subtotal += $line_base;
+        $subtotal += $line_base;
 
-$net_total += $line_total;
+        $net_total += $line_total;
 
-/* ================= INSERT ITEM ================= */
+        /* ================= INSERT ITEM ================= */
 
-$db->query("
-INSERT INTO quotation_items
-(
-quotation_id,
-product_id,
-qty,
-rate_excl_gst,
-discount_amount,
-gst_percent,
-rate_incl_gst,
-cgst_amount,
-sgst_amount,
-igst_amount,
-line_total
-)
-VALUES
-(
-$id,
-$pid,
-$qty,
-$base,
-$disc,
-$gst,
-$rate_incl,
-$cgst_amount,
-$sgst_amount,
-$igst_amount,
-$line_total
-)
-");
+        $db->query("
+        INSERT INTO quotation_items
+        (
+        quotation_id,
+        product_id,
+        qty,
+        rate_excl_gst,
+        discount_amount,
+        gst_percent,
+        rate_incl_gst,
+        cgst_amount,
+        sgst_amount,
+        igst_amount,
+        line_total
+        )
+        VALUES
+        (
+        $id,
+        $pid,
+        $qty,
+        $base,
+        $disc,
+        $gst,
+        $rate_incl,
+        $cgst_amount,
+        $sgst_amount,
+        $igst_amount,
+        $line_total
+        )
+        ");
+
+    }
 
 }
 
@@ -889,7 +900,7 @@ class="form-control"><?= htmlspecialchars($quote['terms_conditions']); ?></texta
 
 <script>
 
-const products = <?= json_encode($products); ?>;
+const products = <?= json_encode($products); ?> || [];
 
 /* PRODUCT LIST */
 
