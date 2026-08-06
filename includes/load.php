@@ -13,17 +13,30 @@ require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 require_once(LIB_PATH_INC.'session.php');
 
-/* ================= 1. STRICT SESSION FLUSH & REDIRECT ================= */
+/* ================= STRICT GLOBAL AUTH & SESSION INTEGRITY ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     session_start();
 }
 
-if (defined('APP_VERSION')) {
-    $is_logged_in = !empty($_SESSION['user_id']) || !empty($_SESSION['org_id']);
-    $session_version = $_SESSION['app_version'] ?? null;
+$current_script = basename($_SERVER['PHP_SELF']);
+// Pages jahan login hona zaroori nahi hai
+$public_scripts = ['index.php', 'login.php', 'auth.php', 'auth_v2.php', 'forgot_password.php'];
 
-    if ($is_logged_in && $session_version !== APP_VERSION) {
-        // Complete Session & Cookie Wipe
+if (!in_array($current_script, $public_scripts)) {
+    
+    // Check 1: Session Variables exist karte hain ya deploy par wipe ho gaye?
+    $has_valid_session = !empty($_SESSION['user_id']) 
+                      && !empty($_SESSION['org_id']) 
+                      && !empty($_SESSION['db_name']);
+
+    // Check 2: App Version match kar raha hai ya nahi?
+    $has_correct_version = defined('APP_VERSION') 
+                        && isset($_SESSION['app_version']) 
+                        && $_SESSION['app_version'] === APP_VERSION;
+
+    // Agar session wipe ho gaya HO ya version purana ho -> INSTANT LOGOUT & REDIRECT
+    if (!$has_valid_session || !$has_correct_version) {
+        
         $_SESSION = array();
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
@@ -34,23 +47,24 @@ if (defined('APP_VERSION')) {
         }
         session_destroy();
 
-        // Fail-safe Redirection (PHP + JS + Meta)
         if (!headers_sent()) {
-            header("Location: index.php?msg=system_updated");
+            header("Location: index.php?msg=session_expired");
         }
-        echo "<script>window.location.href='index.php?msg=system_updated';</script>";
-        echo "<meta http-equiv='refresh' content='0;url=index.php?msg=system_updated'>";
+        echo "<script>window.location.href='index.php?msg=session_expired';</script>";
+        echo "<meta http-equiv='refresh' content='0;url=index.php?msg=session_expired'>";
         exit;
     }
-    
+}
+
+// Version Tagging
+if (defined('APP_VERSION')) {
     $_SESSION['app_version'] = APP_VERSION;
 }
 
 require_once(LIB_PATH_INC.'upload.php');
 require_once(LIB_PATH_INC.'database.php');
 
-/* ================= 2. FORCE ORG DATABASE SELECTION ================= */
-// Ensures queries always target Org DB (Fixes Blank Supplier/Customer Issue)
+/* ================= FORCE ORG DATABASE SELECTION ================= */
 if (isset($_SESSION['db_name']) && !empty($_SESSION['db_name']) && isset($db->con)) {
     @mysqli_select_db($db->con, $_SESSION['db_name']);
 }
