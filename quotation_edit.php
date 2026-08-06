@@ -1,6 +1,7 @@
-
 <?php
+ob_start();
 require_once('includes/load.php');
+
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -32,11 +33,9 @@ LEFT JOIN products p ON p.id = qi.product_id
 WHERE qi.quotation_id = $id
 ");
 
-/* ================= MASTER DATA ================= */
-
-// ✅ AB ISKO AISE KAR DO:
-$items = find_by_sql("SELECT qi.*, p.name FROM quotation_items qi LEFT JOIN products p ON p.id = qi.product_id WHERE qi.quotation_id = $id");
 if(!$items) { $items = []; }
+
+/* ================= MASTER DATA ================= */
 
 $customers = find_all('customer_master');
 if(!$customers) { $customers = []; }
@@ -464,52 +463,32 @@ body{
 
 /* COLUMN WIDTHS */
 
-/* COLUMN WIDTHS */
-
 #itemTable th:nth-child(1),
-#itemTable td:nth-child(1){
-    width:28%;
-}
+#itemTable td:nth-child(1){ width:28%; }
 
 #itemTable th:nth-child(2),
-#itemTable td:nth-child(2){
-    width:9%;
-}
+#itemTable td:nth-child(2){ width:9%; }
 
 #itemTable th:nth-child(3),
-#itemTable td:nth-child(3){
-    width:14%;
-}
+#itemTable td:nth-child(3){ width:14%; }
 
 #itemTable th:nth-child(4),
-#itemTable td:nth-child(4){
-    width:10%;
-}
+#itemTable td:nth-child(4){ width:10%; }
 
 #itemTable th:nth-child(5),
-#itemTable td:nth-child(5){
-    width:12%;
-}
+#itemTable td:nth-child(5){ width:12%; }
 
 #itemTable th:nth-child(6),
-#itemTable td:nth-child(6){
-    width:10%;
-}
+#itemTable td:nth-child(6){ width:10%; }
 
 #itemTable th:nth-child(7),
-#itemTable td:nth-child(7){
-    width:12%;
-}
+#itemTable td:nth-child(7){ width:12%; }
 
 #itemTable th:nth-child(8),
-#itemTable td:nth-child(8){
-    width:15%;
-}
+#itemTable td:nth-child(8){ width:15%; }
 
 #itemTable th:last-child,
-#itemTable td:last-child{
-    width:50px;
-}
+#itemTable td:last-child{ width:50px; }
 
 /* INPUTS */
 
@@ -589,20 +568,9 @@ body{
 ========================= */
 
 @media(max-width:991px){
-
-    .left-panel{
-        position:relative;
-        top:0;
-    }
-
-    .bill-grid{
-        max-height:none;
-    }
-
-    .summary-card .col-lg-4{
-        border-right:none !important;
-        margin-bottom:20px;
-    }
+    .left-panel{ position:relative; top:0; }
+    .bill-grid{ max-height:none; }
+    .summary-card .col-lg-4{ border-right:none !important; margin-bottom:20px; }
 }
 
 </style>
@@ -656,8 +624,7 @@ placeholder="Search Product...">
 
 <label>Customer</label>
 
-<select name="customer_id"
-class="form-control">
+<select name="customer_id" class="form-control">
 
 <?php foreach($customers as $c): ?>
 
@@ -680,20 +647,9 @@ class="form-control">
 
 <select name="gst_type" class="form-control">
 
-<option value="exclusive"
-<?=$quote['gst_type']=="exclusive"?'selected':'';?>>
-Exclusive GST
-</option>
-
-<option value="inclusive"
-<?=$quote['gst_type']=="inclusive"?'selected':'';?>>
-Inclusive GST
-</option>
-
-<option value="nogst"
-<?=$quote['gst_type']=="nogst"?'selected':'';?>>
-No GST
-</option>
+<option value="exclusive" <?=$quote['gst_type']=="exclusive"?'selected':'';?>>Exclusive GST</option>
+<option value="inclusive" <?=$quote['gst_type']=="inclusive"?'selected':'';?>>Inclusive GST</option>
+<option value="nogst" <?=$quote['gst_type']=="nogst"?'selected':'';?>>No GST</option>
 
 </select>
 
@@ -701,13 +657,8 @@ No GST
 
 <div class="col-md-3">
 
-<button
-type="submit"
-name="update_quotation"
-class="btn btn-success w-100">
-
+<button type="submit" name="update_quotation" class="btn btn-success w-100">
 💾 Update Quotation
-
 </button>
 
 </div>
@@ -753,66 +704,43 @@ class="btn btn-success w-100">
 
 <td>
 <?= $it['name']; ?>
-<input type="hidden"
-name="product_id[]"
-value="<?= $it['product_id']; ?>">
+<input type="hidden" name="product_id[]" value="<?= $it['product_id']; ?>">
 </td>
 
 <td>
-<input type="number"
-name="qty[]"
-class="form-control form-control-sm qty"
-value="<?= $it['qty']; ?>">
+<input type="number" name="qty[]" class="form-control form-control-sm qty" value="<?= $it['qty']; ?>">
 </td>
 
 <td>
-<input type="number"
-name="rate[]"
-class="form-control form-control-sm base"
-value="<?= $it['rate_excl_gst']; ?>">
+<input type="number" name="rate[]" class="form-control form-control-sm base" value="<?= $it['rate_excl_gst']; ?>">
 </td>
 
 <?php if($gst_enabled == "Yes"): ?>
 
 <td>
-<input type="number"
-name="gst[]"
-class="form-control form-control-sm gst"
-value="<?= $it['gst_percent']; ?>">
+<input type="number" name="gst[]" class="form-control form-control-sm gst" value="<?= $it['gst_percent']; ?>">
 </td>
 
 <td>
-<input type="text"
-class="form-control form-control-sm gstAmt"
-readonly>
+<input type="text" class="form-control form-control-sm gstAmt" readonly>
 </td>
 
 <?php endif; ?>
 
 <td>
-<input type="number"
-class="form-control form-control-sm discPer"
-value="0">
+<input type="number" class="form-control form-control-sm discPer" value="0">
 </td>
 
 <td>
-<input type="number"
-name="discount[]"
-class="form-control form-control-sm discAmt"
-value="<?= $it['discount_amount']; ?>">
+<input type="number" name="discount[]" class="form-control form-control-sm discAmt" value="<?= $it['discount_amount']; ?>">
 </td>
 
 <td>
-<input type="text"
-class="form-control form-control-sm totalRow"
-readonly>
+<input type="text" class="form-control form-control-sm totalRow" readonly>
 </td>
 
 <td>
-<button type="button"
-class="btn btn-danger btn-sm remove">
-×
-</button>
+<button type="button" class="btn btn-danger btn-sm remove">×</button>
 </td>
 
 </tr>
@@ -848,22 +776,15 @@ class="btn btn-danger btn-sm remove">
 
 <div class="col-lg-8">
 
-<label class="mb-1">
-Terms & Conditions Template
-</label>
+<label class="mb-1">Terms & Conditions Template</label>
 
-<select
-id="termsTemplate"
-class="form-control mb-2">
+<select id="termsTemplate" class="form-control mb-2">
 
-<option value="">
-Select Template
-</option>
+<option value="">Select Template</option>
 
 <?php foreach($terms_templates as $t): ?>
 
-<option
-value="<?= htmlspecialchars($t['template']); ?>"
+<option value="<?= htmlspecialchars($t['template']); ?>"
 <?= trim($quote['terms_conditions']) == trim($t['template']) ? 'selected' : ''; ?>>
 
 <?= htmlspecialchars($t['template_name']); ?>
@@ -874,15 +795,9 @@ value="<?= htmlspecialchars($t['template']); ?>"
 
 </select>
 
-<label class="mb-1">
-Terms & Conditions
-</label>
+<label class="mb-1">Terms & Conditions</label>
 
-<textarea
-name="terms_conditions"
-id="termsBox"
-rows="5"
-class="form-control"><?= htmlspecialchars($quote['terms_conditions']); ?></textarea>
+<textarea name="terms_conditions" id="termsBox" rows="5" class="form-control"><?= htmlspecialchars($quote['terms_conditions']); ?></textarea>
 </div>
 
 </div>
@@ -941,18 +856,18 @@ function addProduct(p){
 
  for(let r of rows){
 
-   let name=r.querySelector("td").innerText.trim();
+    let name=r.querySelector("td").innerText.trim();
 
-   if(name===p.name){
+    if(name===p.name){
 
-      let qty=r.querySelector(".qty");
+       let qty=r.querySelector(".qty");
 
-      qty.value=parseInt(qty.value||0)+1;
+       qty.value=parseInt(qty.value||0)+1;
 
-      calculate(r);
+       calculate(r);
 
-      return;
-   }
+       return;
+    }
  }
 
  let row=document.createElement("tr");
@@ -965,60 +880,39 @@ ${p.name}
 </td>
 
 <td>
-<input type="number"
-name="qty[]"
-class="form-control form-control-sm qty"
-value="1">
+<input type="number" name="qty[]" class="form-control form-control-sm qty" value="1">
 </td>
 
 <td>
-<input type="number"
-name="rate[]"
-class="form-control form-control-sm base"
-value="${p.sale_price}">
+<input type="number" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}">
 </td>
 
 <?php if($gst_enabled == "Yes"): ?>
 
 <td>
-<input type="number"
-name="gst[]"
-class="form-control form-control-sm gst"
-value="${p.gst_percent}">
+<input type="number" name="gst[]" class="form-control form-control-sm gst" value="${p.gst_percent}">
 </td>
 
 <td>
-<input type="text"
-class="form-control form-control-sm gstAmt"
-readonly>
+<input type="text" class="form-control form-control-sm gstAmt" readonly>
 </td>
 
 <?php endif; ?>
 
 <td>
-<input type="number"
-class="form-control form-control-sm discPer"
-value="0">
+<input type="number" class="form-control form-control-sm discPer" value="0">
 </td>
 
 <td>
-<input type="number"
-name="discount[]"
-class="form-control form-control-sm discAmt"
-value="0">
+<input type="number" name="discount[]" class="form-control form-control-sm discAmt" value="0">
 </td>
 
 <td>
-<input type="text"
-class="form-control form-control-sm totalRow"
-readonly>
+<input type="text" class="form-control form-control-sm totalRow" readonly>
 </td>
 
 <td>
-<button type="button"
-class="btn btn-danger btn-sm remove">
-×
-</button>
+<button type="button" class="btn btn-danger btn-sm remove">×</button>
 </td>
 `;
 
@@ -1038,7 +932,7 @@ document.addEventListener("input",function(e){
    e.target.classList.contains("discPer") ||
    e.target.classList.contains("discAmt")
  ){
-   calculate(e.target.closest("tr"));
+    calculate(e.target.closest("tr"));
  }
 
 });
@@ -1047,9 +941,9 @@ document.addEventListener("change",function(e){
 
  if(e.target.name=="gst_type"){
 
-   document.querySelectorAll("#billBody tr").forEach(r=>{
-      calculate(r);
-   });
+    document.querySelectorAll("#billBody tr").forEach(r=>{
+       calculate(r);
+    });
 
  }
 
@@ -1059,9 +953,9 @@ document.addEventListener("click",function(e){
 
  if(e.target.classList.contains("remove")){
 
-   e.target.closest("tr").remove();
+    e.target.closest("tr").remove();
 
-   updateSummary();
+    updateSummary();
 
  }
 
@@ -1153,7 +1047,7 @@ function updateSummary(){
  let gross=0;
 
  document.querySelectorAll(".totalRow").forEach(t=>{
-   gross+=parseFloat(t.value)||0;
+    gross+=parseFloat(t.value)||0;
  });
 
  document.getElementById("gross").innerText=gross.toFixed(2);
@@ -1173,7 +1067,7 @@ document.getElementById("termsTemplate")
 /* EXISTING ITEMS */
 
 document.querySelectorAll("#billBody tr").forEach(r=>{
-   calculate(r);
+    calculate(r);
 });
 
 window.addEventListener("load", function(){
