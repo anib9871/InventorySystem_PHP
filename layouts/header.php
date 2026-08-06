@@ -19,7 +19,7 @@ if(isset($_SESSION['role_id'])){
 <head>
 <meta charset="UTF-8">
 
-<!-- ✅ IS SCRIPT KO CHIPKAO -->
+<!-- ✅ SMART TAB TOKEN & NEW TAB BRIDGE SCRIPT -->
 <?php
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
@@ -35,13 +35,51 @@ if (!empty($_SESSION['just_logged_in'])) {
     if (serverToken !== '') {
         var clientToken = sessionStorage.getItem("app_tab_token");
         
+        // 1. Fresh Login -> Same tab me session set karo
         if (isFresh) {
             sessionStorage.setItem("app_tab_token", serverToken);
-        } else if (!clientToken || clientToken !== serverToken) {
-            window.location.href = "logout.php";
+        } 
+        // 2. Agar new tab khola hai
+        else if (!clientToken || clientToken !== serverToken) {
+            
+            // Check: Kya ye new tab app ke kisi link/toggle se khola gaya hai?
+            var bridgeData = localStorage.getItem("app_tab_bridge");
+            var isBridgeValid = false;
+            
+            if (bridgeData) {
+                try {
+                    var parsed = JSON.parse(bridgeData);
+                    // Check if link was clicked within last 5 seconds
+                    if (parsed.token === serverToken && (Date.now() - parsed.time) < 5000) {
+                        isBridgeValid = true;
+                    }
+                } catch(e){}
+            }
+            
+            if (isBridgeValid) {
+                // Link se khola hai -> Naye tab ko allow karo
+                sessionStorage.setItem("app_tab_token", serverToken);
+            } else {
+                // Direct URL paste / Tab closing case -> Force Logout
+                window.location.href = "logout.php";
+            }
         }
     }
 })();
+
+// App ke andar kisi bhi link (Open in new tab / Ctrl+Click) ko detect karne ka listener
+document.addEventListener("mousedown", function(e) {
+    var aTag = e.target.closest("a");
+    if (aTag) {
+        var serverToken = "<?php echo $_SESSION['tab_token'] ?? ''; ?>";
+        if (serverToken !== '') {
+            localStorage.setItem("app_tab_bridge", JSON.stringify({
+                token: serverToken,
+                time: Date.now()
+            }));
+        }
+    }
+});
 </script>
 
 <title>
