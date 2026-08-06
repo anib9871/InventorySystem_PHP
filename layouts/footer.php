@@ -4,19 +4,18 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="libs/js/functions.js"></script>
 
-  <!-- ✅ STRICT SINGLE-ACCORDION & AUTO-RESET SCRIPT -->
+  <!-- ✅ FIXED ACCORDION & SUBMENU TOGGLE SCRIPT -->
 <script>
 $(document).ready(function(){
 
-    // A. functions.js ke purane click handlers ko remove karo
+    // 1. Purane handlers unbind karo
     $('.submenu-toggle').off('click');
     $(document).off('click', '.submenu-toggle');
 
-    // B. Page load par pehle saare submenus ko HIDE karo
+    // 2. Initial State: Hide all submenus on load unless saved
     $('.submenu').hide();
     $('.arrow').removeClass('rotate');
 
-    // C. Sirf tabhi open karo agar active tab me khola tha
     var activeMenu = sessionStorage.getItem('active_sidebar_menu');
     if (activeMenu) {
         var $activeToggle = $('.submenu-toggle[data-menu="' + activeMenu + '"]');
@@ -26,10 +25,10 @@ $(document).ready(function(){
         }
     }
 
-    // D. Strict Single-Accordion Logic
+    // 3. Strict Submenu Click
     $(document).on('click', '.submenu-toggle', function(e){
         e.preventDefault();
-        e.stopPropagation();
+        e.stopPropagation(); // Event ko parent tak jaane se rokega
 
         var $this = $(this);
         var $targetSubmenu = $this.next('.submenu');
@@ -38,16 +37,16 @@ $(document).ready(function(){
 
         var isAlreadyOpen = $targetSubmenu.is(':visible');
 
-        // Baki saare open submenus ko fauran close karo
-        $('.submenu').not($targetSubmenu).slideUp(200);
+        // Baki saare khule submenus ko close karo (Single Open Accordion)
+        $('.submenu').not($targetSubmenu).slideUp(150);
         $('.submenu-toggle').not($this).find('.arrow').removeClass('rotate');
 
         if (isAlreadyOpen) {
-            $targetSubmenu.slideUp(200);
+            $targetSubmenu.slideUp(150);
             $targetArrow.removeClass('rotate');
             sessionStorage.removeItem('active_sidebar_menu');
         } else {
-            $targetSubmenu.slideDown(200);
+            $targetSubmenu.slideDown(150);
             $targetArrow.addClass('rotate');
             if (menuKey) {
                 sessionStorage.setItem('active_sidebar_menu', menuKey);
