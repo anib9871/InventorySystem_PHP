@@ -1,6 +1,6 @@
 <?php
 ob_start();
-//
+
 date_default_timezone_set('Asia/Kolkata');
 
 define("URL_SEPARATOR", '/');
@@ -8,6 +8,12 @@ define("DS", DIRECTORY_SEPARATOR);
 
 defined('SITE_ROOT')? null: define('SITE_ROOT', realpath(dirname(__FILE__)));
 define("LIB_PATH_INC", SITE_ROOT.DS);
+
+/* ================= 💡 SET APP VERSION HERE ================= */
+// 🚀 Jab bhi Production/Railway par NAYA CODE deploy karo, bas is version ko change kar do (e.g. 1.0.1 -> 1.0.2)
+if (!defined('APP_VERSION')) {
+    define('APP_VERSION', '1.0.1'); 
+}
 
 /* ================= 1. STRICT SESSION START ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
@@ -19,49 +25,34 @@ if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
 
 require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
-
-// If App Version is newly set on fresh session
-if (defined('APP_VERSION') && !isset($_SESSION['app_version'])) {
-    $_SESSION['app_version'] = APP_VERSION;
-}
-
 require_once(LIB_PATH_INC.'session.php');
 
-/* ================= 2. GLOBAL AUTH & SESSION INTEGRITY CHECK ================= */
+/* ================= 2. GLOBAL AUTH & REDEPLOYMENT CHECK ================= */
 $current_script = basename($_SERVER['PHP_SELF']);
 $public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php'];
 
 if (!in_array($current_script, $public_scripts)) {
     
-    // Check Superadmin vs Normal User Role
-    $is_superadmin = !empty($_SESSION['superadmin_login']) || (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1);
-    
-    if ($is_superadmin) {
-        $has_valid_session = !empty($_SESSION['user_id']);
-    } else {
-        // Normal user must have user_id and username
-        $has_valid_session = !empty($_SESSION['user_id']) && !empty($_SESSION['username']);
-    }
+    // Check 1: User Logged In hai ya nahi?
+    $is_logged_in = !empty($_SESSION['user_id']);
 
-    // Check Redeployment / Version Mismatch
-    $is_version_mismatch = false;
-    if (defined('APP_VERSION') && isset($_SESSION['app_version'])) {
-        if ($_SESSION['app_version'] !== APP_VERSION) {
-            $is_version_mismatch = true;
-        }
-    }
+    // Check 2: Browser Cookie me saved version aur Current Code Version mismatch
+    $browser_version = $_COOKIE['app_deploy_version'] ?? '';
+    $is_redeployed = ($browser_version !== '' && $browser_version !== APP_VERSION);
 
-    // --- CASE A: PRODUCTION REDEPLOYMENT (ALERT FIRST, THEN LOGOUT) ---
-    if ($is_version_mismatch) {
+    // --- CASE A: REDEPLOYMENT DETECTED (ALERT + LOGOUT) ---
+    if ($is_redeployed) {
+        
+        // Session and Cookies Clear
         $_SESSION = array();
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
-            );
+            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"]);
         }
         session_destroy();
+
+        // Update Cookie to current version
+        setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
 
         echo "<script>
             alert('⚠️ System Updated / Redeployed! Please login again.');
@@ -70,18 +61,8 @@ if (!in_array($current_script, $public_scripts)) {
         exit;
     }
 
-    // --- CASE B: INVALID / EXPIRED SESSION ---
-    if (!$has_valid_session) {
-        $_SESSION = array();
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
-            );
-        }
-        session_destroy();
-
+    // --- CASE B: NOT LOGGED IN / SESSION EXPIRED ---
+    if (!$is_logged_in) {
         if (!headers_sent()) {
             header("Location: index.php?msg=session_expired");
         } else {
@@ -89,6 +70,9 @@ if (!in_array($current_script, $public_scripts)) {
         }
         exit;
     }
+
+    // Cookie set for current logged in user
+    setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
 }
 
 require_once(LIB_PATH_INC.'upload.php');
