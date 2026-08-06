@@ -9,10 +9,9 @@ define("DS", DIRECTORY_SEPARATOR);
 defined('SITE_ROOT')? null: define('SITE_ROOT', realpath(dirname(__FILE__)));
 define("LIB_PATH_INC", SITE_ROOT.DS);
 
-/* ================= 💡 SET APP VERSION HERE ================= */
-// 🚀 Jab bhi Production/Railway par NAYA CODE deploy karo, bas is version ko change kar do (e.g. 1.0.1 -> 1.0.2)
+/* ================= 💡 APP VERSION ================= */
 if (!defined('APP_VERSION')) {
-    define('APP_VERSION', '1.0.1'); 
+    define('APP_VERSION', '1.0.1'); // 🚀 Jab naya code deploy karo, version badal do (e.g. 1.0.2)
 }
 
 /* ================= 1. STRICT SESSION START ================= */
@@ -29,7 +28,7 @@ require_once(LIB_PATH_INC.'session.php');
 
 /* ================= 2. GLOBAL AUTH & REDEPLOYMENT CHECK ================= */
 $current_script = basename($_SERVER['PHP_SELF']);
-$public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php'];
+$public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php', 'logout.php'];
 
 if (!in_array($current_script, $public_scripts)) {
     
@@ -40,23 +39,17 @@ if (!in_array($current_script, $public_scripts)) {
     $browser_version = $_COOKIE['app_deploy_version'] ?? '';
     $is_redeployed = ($browser_version !== '' && $browser_version !== APP_VERSION);
 
-    // --- CASE A: REDEPLOYMENT DETECTED (ALERT + LOGOUT) ---
+    // --- CASE A: REDEPLOYMENT DETECTED (ALERT FIRST -> LOGOUT ONLY AFTER OK) ---
     if ($is_redeployed) {
         
-        // Session and Cookies Clear
-        $_SESSION = array();
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"]);
-        }
-        session_destroy();
-
-        // Update Cookie to current version
+        // Browser Cookie ko new version par update kar do
         setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
 
+        // Browser me alert dikhao. Jab tak user OK nahi dabaayega, JS rukega.
+        // OK dabaate hi 'logout.php' par bhejega jo session destroy karega.
         echo "<script>
-            alert('⚠️ System Updated / Redeployed! Please login again.');
-            window.location.href = 'index.php?msg=redeployed';
+            alert('⚠️ System Updated / Redeployed! Please click OK to login again.');
+            window.location.href = 'logout.php?msg=redeployed';
         </script>";
         exit;
     }
@@ -71,7 +64,7 @@ if (!in_array($current_script, $public_scripts)) {
         exit;
     }
 
-    // Cookie set for current logged in user
+    // Current version cookie refresh karo for active user
     setcookie('app_deploy_version', APP_VERSION, time() + (86400 * 30), "/");
 }
 
