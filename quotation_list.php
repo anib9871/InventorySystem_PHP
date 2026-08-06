@@ -111,7 +111,8 @@ foreach($quotes as $q){
 
 <a href="quotation_edit.php?id=<?php echo $q['id']; ?>"
    class="btn btn-info btn-xs"
-   title="Edit">
+   title="Edit"
+   onclick="openAppPage(event, this.href)">
    <i class="fa fa-pencil"></i>
 </a>
 
@@ -133,8 +134,21 @@ foreach($quotes as $q){
 </div>
 <script>
 
-function convertQuotation(url){
+function openAppPage(e, url) {
+    e.preventDefault();
+    if (typeof sessionStorage !== "undefined") {
+        var token = sessionStorage.getItem("app_tab_token");
+        if (token) {
+            localStorage.setItem("app_tab_bridge", JSON.stringify({
+                token: token,
+                time: Date.now()
+            }));
+        }
+    }
+    window.location.href = url;
+}
 
+function convertQuotation(url){
     fetch(url)
 
     .then(res => res.text())
