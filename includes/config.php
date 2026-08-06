@@ -1,5 +1,7 @@
 <?php
 
+define('APP_VERSION', '1.0.1');
+
 define('DB_HOST', getenv('MYSQLHOST'));
 define('DB_USER', getenv('MYSQLUSER'));
 define('DB_PASS', getenv('MYSQLPASSWORD'));
