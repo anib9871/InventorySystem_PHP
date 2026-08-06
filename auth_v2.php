@@ -35,6 +35,10 @@ if($user['role_id'] == 1){
     $_SESSION['username'] = $user['username'];
     $_SESSION['role_id'] = $user['role_id'];
 
+    // ✅ ADD HERE
+    $_SESSION['tab_token'] = bin2hex(random_bytes(16));
+    $_SESSION['just_logged_in'] = true;
+
     redirect('superadmin_dashboard.php');
     exit;
 }
@@ -149,7 +153,9 @@ if($user['role_id'] == 2){
 
     $db->db_disconnect();
     $db->db_connect();
-
+// ✅ ADD HERE
+    $_SESSION['tab_token'] = bin2hex(random_bytes(16));
+    $_SESSION['just_logged_in'] = true;
 
     redirect('admin.php');
     exit;
@@ -162,6 +168,9 @@ elseif($user['role_id'] == 3){
 
     $db->db_disconnect();
     $db->db_connect();
+    // ✅ ADD HERE
+    $_SESSION['tab_token'] = bin2hex(random_bytes(16));
+    $_SESSION['just_logged_in'] = true;
    
     redirect('home.php');
     exit;
@@ -266,6 +275,10 @@ if(mysqli_num_rows($center)>0){
                 $_SESSION['combined_mode']=1;
             }
         }
+
+        // ✅ ADD HERE
+    $_SESSION['tab_token'] = bin2hex(random_bytes(16));
+    $_SESSION['just_logged_in'] = true;
 
         if($user['user_level']==1){
 
