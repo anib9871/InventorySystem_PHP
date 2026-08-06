@@ -215,4 +215,13 @@
         </form>
     </div>
 </div>
+<!-- ✅ LOGIN PAGE LOAD PAR MEMORY CLEAR -->
+<script>
+    if (typeof(Storage) !== "undefined") {
+        sessionStorage.clear();
+        localStorage.clear();
+    }
+</script>
+
 <?php include_once('layouts/footer.php'); ?>
+
