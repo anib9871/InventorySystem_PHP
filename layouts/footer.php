@@ -1,62 +1,57 @@
-     </div>
+</div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="libs/js/functions.js"></script>
 
-  <!-- ✅ SIDEBAR TOGGLE SCRIPT -->
+  <!-- ✅ FIXED ACCORDION SIDEBAR TOGGLE SCRIPT -->
 <script>
 $(document).ready(function(){
 
-    // ✅ VERSION CHECK — naya deploy = localStorage saaf
-    var SIDEBAR_VERSION = "v2"; // har deploy pe ye number badha
-    if(localStorage.getItem('sidebar_ver') !== SIDEBAR_VERSION){
-        // purani keys saaf karo
-        ['inventory_main','billing_main','inventory_masters',
-         'billing_masters','inventory_transaction','billing_transaction',
-         'inventory_reports','billing_reports'].forEach(function(k){
-            localStorage.removeItem(k);
-        });
-        localStorage.setItem('sidebar_ver', SIDEBAR_VERSION);
+    // 1. Dynamic Version Check — Naya deploy/logout hote hi state saaf
+    var SIDEBAR_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : 'v2'; ?>";
+    
+    if(sessionStorage.getItem('sidebar_ver') !== SIDEBAR_VERSION){
+        sessionStorage.clear();
+        sessionStorage.setItem('sidebar_ver', SIDEBAR_VERSION);
     }
 
-    // RESTORE SAVED MENUS
-    $(".submenu-toggle").each(function(){
-        let menuKey = $(this).attr("data-menu");
-        if(localStorage.getItem(menuKey) === "open"){
-            $(this).next(".submenu").show();
-            $(this).find(".arrow").addClass("rotate");
+    // 2. Restore ONLY Currently Active Menu
+    var activeMenuKey = sessionStorage.getItem('active_submenu');
+    if(activeMenuKey){
+        var $activeToggle = $('.submenu-toggle[data-menu="' + activeMenuKey + '"]');
+        if($activeToggle.length){
+            $activeToggle.next('.submenu').show();
+            $activeToggle.find('.arrow').addClass('rotate');
         }
-    });
+    }
 
-    // MENU TOGGLE
-    $(".submenu-toggle").off("click").on("click", function(e){
+    // 3. Strict Accordion Click Event (Ek khulega toh baki saare close)
+    $(document).off('click', '.submenu-toggle').on('click', '.submenu-toggle', function(e){
         e.preventDefault();
         e.stopPropagation();
 
-        let currentToggle = $(this);
-        let submenu = currentToggle.next(".submenu");
-        let arrow = currentToggle.find(".arrow");
-        let menuKey = currentToggle.attr("data-menu");
+        var $currentToggle = $(this);
+        var $currentSubmenu = $currentToggle.next('.submenu');
+        var $currentArrow = $currentToggle.find('.arrow');
+        var menuKey = $currentToggle.attr('data-menu');
 
-        currentToggle.parent().siblings()
-            .find("> .submenu").slideUp(200);
-        currentToggle.parent().siblings()
-            .find("> a .arrow").removeClass("rotate");
-        currentToggle.parent().siblings()
-            .find("> a.submenu-toggle").each(function(){
-                localStorage.removeItem($(this).attr("data-menu"));
-            });
+        var isAlreadyOpen = $currentSubmenu.is(':visible');
 
-        submenu.stop(true,true).slideToggle(200, function(){
-            if(submenu.is(":visible")){
-                localStorage.setItem(menuKey, "open");
-                arrow.addClass("rotate");
-            } else {
-                localStorage.removeItem(menuKey);
-                arrow.removeClass("rotate");
-            }
-        });
+        // Step A: Close ALL other open submenus strictly
+        $('.submenu').not($currentSubmenu).slideUp(200);
+        $('.submenu-toggle').not($currentToggle).find('.arrow').removeClass('rotate');
+
+        // Step B: Toggle the clicked menu
+        if(isAlreadyOpen){
+            $currentSubmenu.slideUp(200);
+            $currentArrow.removeClass('rotate');
+            sessionStorage.removeItem('active_submenu');
+        } else {
+            $currentSubmenu.slideDown(200);
+            $currentArrow.addClass('rotate');
+            sessionStorage.setItem('active_submenu', menuKey);
+        }
     });
 
 });
@@ -65,11 +60,13 @@ $(document).ready(function(){
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    flatpickr("#bill_date", {
-        dateFormat: "d/M/Y",
-        allowInput: false,
-        disableMobile: true
-    });
+    if(typeof flatpickr !== "undefined" && document.querySelector("#bill_date")) {
+        flatpickr("#bill_date", {
+            dateFormat: "d/M/Y",
+            allowInput: false,
+            disableMobile: true
+        });
+    }
 
 });
 </script>
