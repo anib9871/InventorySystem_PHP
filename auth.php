@@ -10,12 +10,15 @@ if(empty($errors)){
 
   $user = authenticate($username,$password);
 
-  if($user){
+if($user){
       // create session
       $session->login($user['id']);
 
       // update last login
       updateLastLogIn($user['id']);
+
+      // ✅ YAHAN ADD KARO:
+      $_SESSION['just_logged_in'] = true;
 
       $session->msg("s","Welcome to Inventory Management System");
       redirect('admin.php',false);
