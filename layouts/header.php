@@ -27,8 +27,8 @@ if(isset($_SESSION['role_id'])){
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(5px);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(6px);
     z-index: 999999;
     display: none;
     align-items: center;
@@ -37,10 +37,10 @@ if(isset($_SESSION['role_id'])){
   .deploy-modal-card {
     background: #ffffff;
     border-radius: 16px;
-    padding: 24px 28px;
+    padding: 28px 32px;
     max-width: 420px;
     width: 90%;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
     text-align: center;
     animation: popupAnim 0.25s ease-out;
   }
@@ -49,7 +49,7 @@ if(isset($_SESSION['role_id'])){
     to { transform: scale(1); opacity: 1; }
   }
   .deploy-icon {
-    font-size: 42px;
+    font-size: 48px;
     margin-bottom: 12px;
   }
   .deploy-btn {
@@ -59,10 +59,11 @@ if(isset($_SESSION['role_id'])){
     padding: 12px 24px;
     border-radius: 10px;
     font-weight: 600;
-    margin-top: 18px;
+    font-size: 15px;
+    margin-top: 20px;
     cursor: pointer;
     width: 100%;
-    transition: 0.2s;
+    transition: background 0.2s;
   }
   .deploy-btn:hover {
     background: #1d4ed8;
@@ -75,7 +76,7 @@ if(isset($_SESSION['role_id'])){
     var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
 
     if (isFreshLogin) {
-        // Fresh login par version localStorage me set/sync karo taaki alert loop na bane
+        // Naye login par localStorage version auto-sync hoga taaki false alert na aaye
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } else {
         var savedVersion = localStorage.getItem("app_deploy_version");
@@ -83,6 +84,7 @@ if(isset($_SESSION['role_id'])){
         if (!savedVersion) {
             localStorage.setItem("app_deploy_version", CURRENT_VERSION);
         } else if (savedVersion !== CURRENT_VERSION) {
+            // Version mismatch = Redeploy detected! Show Modal
             window.addEventListener("DOMContentLoaded", function() {
                 var modal = document.getElementById("deployModalOverlay");
                 if (modal) {
@@ -98,14 +100,6 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
-
-// Token auto sync to prevent navigation crashes
-(function() {
-    var serverToken = "<?php echo $_SESSION['tab_token'] ?? ''; ?>";
-    if (serverToken !== '') {
-        sessionStorage.setItem("app_tab_token", serverToken);
-    }
-})();
 </script>
 
 <title>
@@ -139,7 +133,7 @@ else{
     <div class="deploy-icon">🚀</div>
     <h3 style="margin: 0 0 8px 0; font-weight: 700; color: #0f172a;">System Updated</h3>
     <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
-      A new update has been deployed. Please click below to refresh and log in again.
+      A new version has been deployed. Please click below to log in again and continue.
     </p>
     <button class="deploy-btn" onclick="confirmRedeployLogout()">OK, Login Again</button>
   </div>
