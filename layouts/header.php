@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG CONSUMPTION
+// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,35 +48,32 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 ULTRA-REALISTIC 3D METALLIC SHUTTER STYLING -->
+<!-- 🏬 3D CARTOON CHARACTER & METALLIC SHUTTER STYLING -->
 <style>
-/* Fullscreen Shutter Overlay */
 .shutter-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    /* Realistic Metallic Slats Texture */
-    background: 
-        linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.3) 100%),
-        repeating-linear-gradient(
-            180deg,
-            #ffffff 0px,
-            #cbd5e1 3px,
-            #94a3b8 10px,
-            #64748b 16px,
-            #e2e8f0 22px
-        );
-    border-bottom: 28px solid #1e293b;
-    box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.35);
+    background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.2) 100%),
+                repeating-linear-gradient(
+                    180deg,
+                    #f8fafc 0px,
+                    #cbd5e1 4px,
+                    #94a3b8 10px,
+                    #64748b 16px,
+                    #cbd5e1 22px
+                );
+    border-bottom: 25px solid #1e293b;
+    box-shadow: inset 0 -35px 50px rgba(0, 0, 0, 0.3);
     z-index: 9999999;
+    transition: transform 1.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateY(0%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    transition: transform 1.25s cubic-bezier(0.25, 1, 0.5, 1);
-    transform: translateY(0%);
 }
 
 .shutter-overlay.shutter-hidden {
@@ -87,90 +84,83 @@ else{
     transform: translateY(-100%);
 }
 
-/* Side Metallic Guide Channels */
-.shutter-guide-rail-left,
-.shutter-guide-rail-right {
+/* 3D Character & Store Badge Overlay */
+.character-3d-wrapper {
     position: absolute;
-    top: 0;
-    width: 25px;
-    height: 100%;
-    background: linear-gradient(90deg, #334155, #64748b, #1e293b);
-    box-shadow: 0 0 15px rgba(0,0,0,0.4);
-    z-index: 10;
-}
-.shutter-guide-rail-left { left: 0; }
-.shutter-guide-rail-right { right: 0; }
-
-/* Heavy Bottom Handle Bar & Brass Lock */
-.shutter-bottom-rail {
-    width: 320px;
-    height: 38px;
-    background: linear-gradient(180deg, #f8fafc, #64748b, #334155);
-    border-radius: 10px 10px 0 0;
-    border: 2px solid #0f172a;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
-    margin-bottom: 8px;
+    bottom: 20px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #0f172a;
+    z-index: 100;
+}
+
+.character-3d-badge {
+    background: #ffffff;
+    border: 2px solid #a80000;
+    color: #a80000;
     font-weight: 800;
-    font-size: 12px;
-    letter-spacing: 2px;
-    position: relative;
-    z-index: 11;
+    font-size: 13px;
+    padding: 6px 22px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    margin-bottom: 12px;
+    letter-spacing: 1.5px;
 }
 
-.shutter-brass-lock {
-    width: 32px;
-    height: 32px;
-    background: #a80000;
-    color: #ffffff;
-    border-radius: 50%;
+.character-3d-svg {
+    width: 130px;
+    height: 130px;
+    filter: drop-shadow(0 15px 20px rgba(0,0,0,0.25));
+    animation: characterMotion 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes characterMotion {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-8px) scale(1.03); }
+}
+
+.shutter-handle-bar {
+    width: 280px;
+    height: 24px;
+    background: linear-gradient(180deg, #ffffff, #94a3b8);
+    border-radius: 8px;
+    border: 2px solid #334155;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
-    box-shadow: 0 0 12px rgba(168, 0, 0, 0.6);
-    transition: all 0.35s ease;
-}
-
-.shutter-brass-lock.unlocked {
-    background: #16a34a;
-    box-shadow: 0 0 16px rgba(22, 163, 74, 0.8);
-    transform: scale(1.15) rotate(12deg);
+    font-size: 11px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 2px;
+    margin-top: -10px;
 }
 </style>
 
-<!-- 🏬 DYNAMIC SYNTHESIZED MECHANICAL SOUNDS -->
+<!-- 🏬 SHUTTER SOUND & 3D ANIMATION CONTROLLER -->
 <script>
-// 1. Lock Unlock Click Sound
 function playLockClickSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         var ctx = new AudioContext();
-
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
 
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.setValueAtTime(1100, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
 
-        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
-
         osc.start();
         osc.stop(ctx.currentTime + 0.09);
     } catch (e) {}
 }
 
-// 2. Rolling Shutter Heavy Metallic Noise Sound
 function playRollingShutterSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -192,7 +182,7 @@ function playRollingShutterSound() {
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(450, ctx.currentTime);
         filter.frequency.linearRampToValueAtTime(750, ctx.currentTime + 1.1);
-        filter.Q.value = 2.2;
+        filter.Q.value = 2.0;
 
         var gain = ctx.createGain();
         gain.gain.setValueAtTime(0.35, ctx.currentTime);
@@ -206,57 +196,45 @@ function playRollingShutterSound() {
     } catch (e) {}
 }
 
-// 🚀 Fresh Login Shutter Transition
 window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
-    var lock = document.getElementById("shutterPadlock");
-    var lockIcon = document.getElementById("shutterLockIcon");
+    var statusText = document.getElementById("shutterStatusBadge");
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
     if (isFreshLogin && shutter) {
+        if (statusText) statusText.innerText = "STORE OPENING...";
         shutter.classList.remove("shutter-hidden");
         
-        // Step 1: Unlock Lock First
         setTimeout(function() {
             playLockClickSound();
-            if (lock && lockIcon) {
-                lock.classList.add("unlocked");
-                lockIcon.className = "fa-solid fa-lock-open";
-            }
-        }, 150);
+        }, 100);
 
-        // Step 2: Roll Shutter Up
         setTimeout(function() {
             playRollingShutterSound();
             shutter.classList.add("shutter-open");
-        }, 450);
+        }, 350);
     }
 });
 
-// 🔒 Logout Shutter Transition
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
-    var lock = document.getElementById("shutterPadlock");
-    var lockIcon = document.getElementById("shutterLockIcon");
+    var statusText = document.getElementById("shutterStatusBadge");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
+        if (statusText) statusText.innerText = "STORE CLOSING...";
         shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
         playRollingShutterSound();
 
         setTimeout(function() {
             playLockClickSound();
-            if (lock && lockIcon) {
-                lock.classList.remove("unlocked");
-                lockIcon.className = "fa-solid fa-lock";
-            }
-        }, 900);
+        }, 850);
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1250);
+        }, 1200);
     } else {
         window.location.href = targetUrl;
     }
@@ -308,16 +286,52 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 3D REALISTIC ROLLING SHUTTER OVERLAY -->
+<!-- 🏬 3D CARTOON CHARACTER METALLIC SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
-    <div class="shutter-guide-rail-left"></div>
-    <div class="shutter-guide-rail-right"></div>
-    
-    <div class="shutter-bottom-rail">
-        <div id="shutterPadlock" class="shutter-brass-lock">
-            <i id="shutterLockIcon" class="fa-solid fa-lock"></i>
+    <div class="character-3d-wrapper">
+        <div id="shutterStatusBadge" class="character-3d-badge">STORE OPENING...</div>
+        
+        <!-- Modern 3D Business Cartoon Character Vector Overlay -->
+        <svg class="character-3d-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffedd5"/>
+                    <stop offset="100%" stop-color="#fed7aa"/>
+                </linearGradient>
+                <linearGradient id="suitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#1e293b"/>
+                    <stop offset="100%" stop-color="#0f172a"/>
+                </linearGradient>
+                <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#475569"/>
+                    <stop offset="100%" stop-color="#1e293b"/>
+                </linearGradient>
+            </defs>
+            <!-- Hair -->
+            <path d="M 35,40 Q 60,15 85,40 Q 90,25 60,18 Q 30,25 35,40 Z" fill="url(#hairGrad)" />
+            <!-- Head -->
+            <circle cx="60" cy="48" r="20" fill="url(#skinGrad)" />
+            <!-- Glasses -->
+            <rect x="42" y="42" width="14" height="10" rx="3" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+            <rect x="64" y="42" width="14" height="10" rx="3" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+            <line x1="56" y1="46" x2="64" y2="46" stroke="#0f172a" stroke-width="2.5"/>
+            <!-- Smile -->
+            <path d="M 52,58 Q 60,64 68,58" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <!-- Suit Body -->
+            <path d="M 32,72 Q 60,65 88,72 L 95,115 L 25,115 Z" fill="url(#suitGrad)" />
+            <!-- Shirt & Crimson Tie -->
+            <polygon points="52,70 68,70 60,88" fill="#ffffff" />
+            <polygon points="57,72 63,72 65,100 60,108 55,100" fill="#a80000" />
+            <!-- Hands Lifting Handle Bar -->
+            <path d="M 28,78 Q 12,50 25,32" stroke="url(#skinGrad)" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <path d="M 92,78 Q 108,50 95,32" stroke="url(#skinGrad)" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <circle cx="25" cy="30" r="6" fill="#a80000"/>
+            <circle cx="95" cy="30" r="6" fill="#a80000"/>
+        </svg>
+
+        <div class="shutter-handle-bar">
+            <i class="fa-solid fa-store" style="margin-right: 6px;"></i> STORE GATE
         </div>
-        <span>STORE SHUTTER</span>
     </div>
 </div>
 
