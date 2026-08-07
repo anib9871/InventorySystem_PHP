@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ CONSUME FRESH LOGIN FLAG
+// ✅ FRESH LOGIN FLAG CONSUMPTION
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,6 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
+<!-- ✅ REDEPLOYMENT TOAST & TAB CONTROL SCRIPT -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -58,26 +59,31 @@ else{
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } else if (savedVersion !== CURRENT_VERSION) {
         window.addEventListener("DOMContentLoaded", function() {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'info',
-                title: '🚀 System Updated!',
-                text: 'New version deployed. Re-login required.',
-                showConfirmButton: true,
-                confirmButtonText: 'Login Again',
-                confirmButtonColor: '#2563eb',
-                timer: 10000,
-                timerProgressBar: true
-            }).then((result) => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: '🚀 System Updated!',
+                    text: 'New version deployed. Re-login required.',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Login Again',
+                    confirmButtonColor: '#2563eb',
+                    timer: 8000,
+                    timerProgressBar: true
+                }).then(function() {
+                    confirmRedeployLogout();
+                });
+            } else {
                 confirmRedeployLogout();
-            });
+            }
         });
+        return; // SweetAlert Toast dikhane ke liye aage ka redirect roko
     }
 
     // 🔒 2. TAB ISOLATION CHECK (SIRF LOGGED IN USERS KE LIYE)
     var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) return; // Login page par ye code run nahi hoga
 
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
@@ -88,7 +94,7 @@ else{
         var bridgeTime = localStorage.getItem("app_tab_bridge_time");
         var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
 
-        // Tab close / Direct URL paste karne par Re-Login
+        // Tab close hone par / direct URL copy-paste karne par -> Re-login
         if (!isTabActive && !isBridgeValid) {
             window.location.href = "logout.php?msg=tab_closed";
             return;
@@ -104,7 +110,7 @@ function confirmRedeployLogout() {
     window.location.href = "logout.php?msg=updated";
 }
 
-// System ke navigation links ke liye bridge token
+// Navigation links par click karne par bridge timestamp maintain rakhna
 document.addEventListener("mousedown", function(e) {
     if (e.target.closest("a")) {
         localStorage.setItem("app_tab_bridge_time", Date.now().toString());
