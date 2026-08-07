@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER ANIMATION
+// ✅ FRESH LOGIN FLAG FOR SHUTTER
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 MODERN STORE SHUTTER STYLING -->
+<!-- 🏬 LIGHT METALLIC SHUTTER STYLING -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -58,23 +58,22 @@ else{
     height: 100vh;
     background: repeating-linear-gradient(
         180deg,
-        #1e293b 0px,
-        #334155 12px,
-        #0f172a 24px,
-        #1e293b 36px
+        #f1f5f9 0px,
+        #cbd5e1 12px,
+        #94a3b8 24px,
+        #cbd5e1 36px
     );
-    border-bottom: 20px solid #020617;
-    box-shadow: inset 0 -30px 40px rgba(0, 0, 0, 0.85);
+    border-bottom: 20px solid #475569;
+    box-shadow: inset 0 -30px 40px rgba(0, 0, 0, 0.2);
     z-index: 9999999;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    transition: transform 1.3s cubic-bezier(0.77, 0, 0.175, 1);
+    justify-content: center;
+    transition: transform 1.3s cubic-bezier(0.65, 0, 0.35, 1);
     transform: translateY(0%);
 }
 
-/* Jab Login na ho tab hidden rakho */
 .shutter-overlay.shutter-hidden {
     display: none !important;
 }
@@ -83,43 +82,30 @@ else{
     transform: translateY(-100%);
 }
 
-/* Shutter Handle Bar & Shop Owner Graphic Badge */
-.shutter-center-badge {
-    position: absolute;
-    bottom: 30px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(15, 23, 42, 0.9);
-    padding: 10px 24px;
-    border-radius: 50px;
-    border: 2px solid #38bdf8;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-    color: #ffffff;
+.shutter-worker-box {
+    text-align: center;
+    background: #ffffff;
+    padding: 20px 35px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border: 2px solid #a80000;
 }
 
-.shutter-avatar {
-    width: 38px;
-    height: 38px;
-    background: #0284c7;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+.shutter-worker-icon {
+    font-size: 50px;
+    color: #a80000;
+    margin-bottom: 10px;
 }
 
-.shutter-handle-bar {
+.shutter-text {
     font-size: 13px;
     font-weight: 800;
     letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #e2e8f0;
+    color: #0f172a;
 }
 </style>
 
-<!-- 🏬 SHUTTER SOUND & CONTROL SCRIPT -->
+<!-- 🏬 SHUTTER SCRIPT -->
 <script>
 function playShutterSound() {
     try {
@@ -127,7 +113,7 @@ function playShutterSound() {
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.2;
+        var bufferSize = ctx.sampleRate * 1.1;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
@@ -144,8 +130,8 @@ function playShutterSound() {
         filter.Q.value = 2.5;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -159,7 +145,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
-    // 🚀 SHUTTER SIRF FRESH LOGIN PAR HI OPEN HOGA
+    // 🚀 SIRF LOGIN KE WAQT SHUTTER OPEN HOGA (BAKI RELOAD PAR NAHI)
     if (isFreshLogin && shutter) {
         shutter.classList.remove("shutter-hidden");
         setTimeout(function() {
@@ -169,7 +155,6 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// 🔒 LOGOUT KE WAKTH SHUTTER CLOSE ANIMATION
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
@@ -189,7 +174,7 @@ function animateLogout(e) {
 }
 </script>
 
-<!-- ✅ REDEPLOYMENT & TAB CONTROL SCRIPT -->
+<!-- ✅ REDEPLOYMENT CHECK -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -234,11 +219,13 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 STORE SHUTTER OVERLAY -->
+<!-- 🏬 LIGHT SHUTTER OVERLAY (Aadmi Lifting Animation Ke Saath) -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
-    <div class="shutter-center-badge">
-        <div class="shutter-avatar"><i class="fa-solid fa-user-tie"></i></div>
-        <div class="shutter-handle-bar"><i class="fa-solid fa-store" style="margin-right:6px;"></i> STORE OPENING...</div>
+    <div class="shutter-worker-box">
+        <div class="shutter-worker-icon">
+            <i class="fa-solid fa-person-running fa-bounce"></i>
+        </div>
+        <div class="shutter-text">OPENING...</div>
     </div>
 </div>
 
@@ -302,7 +289,6 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <ul class="dropdown-menu">
 <li>
-<!-- 🏬 LOGOUT WITH SHUTTER CLOSE ANIMATION -->
 <a href="logout.php" onclick="animateLogout(event)">
 <i class="glyphicon glyphicon-off"></i>
 Logout
