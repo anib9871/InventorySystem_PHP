@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG FOR SHUTTER
+// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 LIGHT METALLIC SHUTTER STYLING -->
+<!-- 🏬 REALISTIC LIGHT METALLIC SHUTTER STYLING -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -58,22 +58,23 @@ else{
     height: 100vh;
     background: repeating-linear-gradient(
         180deg,
-        #f1f5f9 0px,
-        #cbd5e1 12px,
-        #94a3b8 24px,
-        #cbd5e1 36px
+        #f8fafc 0px,
+        #e2e8f0 10px,
+        #cbd5e1 20px,
+        #e2e8f0 30px
     );
-    border-bottom: 20px solid #475569;
-    box-shadow: inset 0 -30px 40px rgba(0, 0, 0, 0.2);
+    border-bottom: 25px solid #475569;
+    box-shadow: inset 0 -30px 40px rgba(15, 23, 42, 0.15);
     z-index: 9999999;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: transform 1.3s cubic-bezier(0.65, 0, 0.35, 1);
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
     transform: translateY(0%);
 }
 
+/* Jab Login na ho tab Shutter ko chhupa kar rakho */
 .shutter-overlay.shutter-hidden {
     display: none !important;
 }
@@ -82,30 +83,36 @@ else{
     transform: translateY(-100%);
 }
 
+/* Shutter Character & Text Box */
 .shutter-worker-box {
     text-align: center;
     background: #ffffff;
-    padding: 20px 35px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    border: 2px solid #a80000;
+    padding: 22px 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    border: 2px solid #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
 
 .shutter-worker-icon {
-    font-size: 50px;
+    font-size: 45px;
     color: #a80000;
-    margin-bottom: 10px;
+    transition: all 0.3s ease;
 }
 
 .shutter-text {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 2px;
     color: #0f172a;
+    text-transform: uppercase;
 }
 </style>
 
-<!-- 🏬 SHUTTER SCRIPT -->
+<!-- 🏬 SHUTTER SOUND & CONTROL SCRIPT -->
 <script>
 function playShutterSound() {
     try {
@@ -145,8 +152,11 @@ window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
-    // 🚀 SIRF LOGIN KE WAQT SHUTTER OPEN HOGA (BAKI RELOAD PAR NAHI)
+    // 🚀 LOGIN KE WAQT: Shutter Open Hoga (Opening...)
     if (isFreshLogin && shutter) {
+        document.getElementById("shutterStatusText").innerText = "OPENING...";
+        document.getElementById("shutterStatusIcon").className = "fa-solid fa-store fa-bounce shutter-worker-icon";
+        
         shutter.classList.remove("shutter-hidden");
         setTimeout(function() {
             playShutterSound();
@@ -155,26 +165,30 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+// 🔒 LOGOUT KE WAQT: Shutter Close Hoga (Closing...)
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
+        document.getElementById("shutterStatusText").innerText = "CLOSING...";
+        document.getElementById("shutterStatusIcon").className = "fa-solid fa-lock fa-bounce shutter-worker-icon";
+
         shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
         playShutterSound();
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1200);
+        }, 1100);
     } else {
         window.location.href = targetUrl;
     }
 }
 </script>
 
-<!-- ✅ REDEPLOYMENT CHECK -->
+<!-- ✅ REDEPLOYMENT & TAB ISOLATION CONTROL -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -219,13 +233,11 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 LIGHT SHUTTER OVERLAY (Aadmi Lifting Animation Ke Saath) -->
+<!-- 🏬 LIGHT METALLIC SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
     <div class="shutter-worker-box">
-        <div class="shutter-worker-icon">
-            <i class="fa-solid fa-person-running fa-bounce"></i>
-        </div>
-        <div class="shutter-text">OPENING...</div>
+        <i id="shutterStatusIcon" class="fa-solid fa-store shutter-worker-icon"></i>
+        <div id="shutterStatusText" class="shutter-text">OPENING...</div>
     </div>
 </div>
 
