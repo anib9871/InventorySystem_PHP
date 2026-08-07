@@ -6,9 +6,13 @@ if (!$session->isUserLoggedIn(true)) {
     redirect('index.php', false);
 }
 
-/* USER DASHBOARD REDIRECT */
-redirect('user_dashboard.php', false);
-?>
+if (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1) {
+    redirect('superadmin_dashboard.php', false);
+} elseif (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2) {
+    redirect('admin.php', false);
+} else {
+    redirect('user_dashboard.php', false);
+}
 
 <?php include_once('layouts/header.php'); ?>
 <div class="row">
