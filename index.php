@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* Shutter Background Theme for Login Page */
+  /* Fullscreen Fixed Light Slate Background */
   .login-wrapper-fixed {
       position: fixed;
       top: 0;
@@ -21,18 +21,34 @@
       align-items: center;
       justify-content: center;
       z-index: 1;
-      background: 
-          linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.3) 100%),
-          repeating-linear-gradient(
-              180deg,
-              #ffffff 0px,
-              #cbd5e1 3px,
-              #94a3b8 10px,
-              #64748b 16px,
-              #e2e8f0 22px
-          );
+      background: #f1f5f9;
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Soft Ambient Glows */
+  .glow-circle-1 {
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      background: rgba(168, 0, 0, 0.05);
+      border-radius: 50%;
+      filter: blur(90px);
+      top: 15%;
+      left: 25%;
+      pointer-events: none;
+  }
+
+  .glow-circle-2 {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      background: rgba(19, 28, 42, 0.05);
+      border-radius: 50%;
+      filter: blur(100px);
+      bottom: 15%;
+      right: 25%;
+      pointer-events: none;
   }
 
   /* Clean White Floating Login Card */
@@ -44,7 +60,7 @@
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 20px;
-      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
+      box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
       color: #0f172a;
       box-sizing: border-box;
       z-index: 2;
@@ -133,6 +149,9 @@
 </style>
 
 <div class="login-wrapper-fixed">
+    <div class="glow-circle-1"></div>
+    <div class="glow-circle-2"></div>
+
     <div class="login-page-card">
         <div class="text-center">
            <h1>Login Panel</h1>
@@ -169,7 +188,7 @@
     </div>
 </div>
 
-<!-- ✅ SWEETALERT & CONTROLLER -->
+<!-- ✅ SWEETALERT & LOADER CONTROLLER -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
@@ -180,7 +199,7 @@ window.addEventListener("DOMContentLoaded", function() {
     if (form) {
         form.addEventListener("submit", function(e) {
             var btn = document.getElementById("submitBtn");
-            btn.innerHTML = 'Unlocking & Opening... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
+            btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
         });
     }
 
