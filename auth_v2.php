@@ -42,7 +42,7 @@ if($user['role_id'] == 1){
     redirect('superadmin_dashboard.php');
     exit;
 }
-/* 🔥 SUBSCRIPTION CHECK */
+/* 🔥 SUBSCRIPTION CHECK *//
 
 $org_id = $user['org_id'];
 
