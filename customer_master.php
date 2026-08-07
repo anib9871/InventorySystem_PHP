@@ -35,6 +35,9 @@ ORDER BY cm.id DESC
 /* FETCH STATE LIST */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
+/* FETCH ALL ORGANIZATIONS FOR PRINT MODAL */
+$all_orgs = find_by_sql("SELECT id, org_name, mnemonic FROM organization_master ORDER BY org_name ASC");
+
 /* ---------- ADD CUSTOMER ---------- */
 if(isset($_POST['add_customer'])){
 
@@ -531,15 +534,23 @@ textarea.form-control {
                                 </td>
                                 <td><small><?php echo date('d-m-Y h:i A', strtotime($c['created_date'])); ?></small></td>
                                 <td class="action-td">
-                                    <div class="action-cell">
-                                        <a href="customer_master.php?edit=<?php echo $c['id']; ?>" class="btn btn-primary btn-xs equal-btn" title="Edit">
-                                            <i class="glyphicon glyphicon-pencil"></i>
-                                        </a>
-                                        <button type="button" onclick="confirmDelete(<?php echo $c['id']; ?>)" class="btn btn-danger btn-xs equal-btn" title="Delete">
-                                            <i class="glyphicon glyphicon-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                <div class="action-cell">
+                                    <a href="customer_master.php?edit=<?php echo $c['id']; ?>" class="btn btn-primary btn-xs equal-btn" title="Edit">
+                                        <i class="glyphicon glyphicon-pencil"></i>
+                                    </a>
+                                    <button type="button" onclick="confirmDelete(<?php echo $c['id']; ?>)" class="btn btn-danger btn-xs equal-btn" title="Delete">
+                                        <i class="glyphicon glyphicon-trash"></i>
+                                    </button>
+                                    
+                                    <!-- ⬇️ YEH NAYA BUTTON ADD KAREIN ⬇️ -->
+                                    <button type="button" 
+                                            onclick="openPrintModal(<?php echo $c['id']; ?>, '<?php echo addslashes($c['customer_name']); ?>')" 
+                                            class="btn btn-info btn-xs equal-btn" 
+                                            title="Print Address Label">
+                                        <i class="glyphicon glyphicon-envelope"></i>
+                                    </button>
+                                </div>
+                            </td>
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -554,6 +565,48 @@ textarea.form-control {
     </div>
 </div>
 
+</div>
+
+<!-- PRINT ADDRESS LABEL MODAL -->
+<div class="modal fade" id="printLabelModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #18233b; color: #fff;">
+        <button type="button" class="close" data-dismiss="modal" style="color: #fff;">&times;</button>
+        <h4 class="modal-title" style="font-size: 14px; font-weight: 700;">
+            <i class="glyphicon glyphicon-print"></i> Print Address Label
+        </h4>
+      </div>
+      <form action="address_label_print.php" method="GET" target="_blank">
+          <div class="modal-body">
+              <input type="hidden" name="cust_id" id="modal_cust_id">
+              
+              <div class="form-group">
+                  <label>Selected Customer (TO)</label>
+                  <input type="text" id="modal_cust_name" class="form-control" readonly style="font-weight: bold;">
+              </div>
+
+              <div class="form-group">
+                  <label>Select Organization (FROM) *</label>
+                  <select name="org_id" class="form-control" required>
+                      <option value="">-- Choose Organization --</option>
+                      <?php foreach($all_orgs as $o): ?>
+                          <option value="<?php echo $o['id']; ?>" <?php if(isset($_SESSION['org_id']) && $_SESSION['org_id'] == $o['id']) echo 'selected'; ?>>
+                              <?php echo $o['org_name']; ?> (<?php echo $o['mnemonic']; ?>)
+                          </option>
+                      <?php endforeach; ?>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-xs" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success btn-xs" style="font-weight: 600;">
+                  <i class="glyphicon glyphicon-print"></i> Generate & Print
+              </button>
+          </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -606,6 +659,12 @@ function confirmDelete(id) {
             window.location.href = "customer_master.php?del=" + id;
         }
     });
+}
+
+function openPrintModal(custId, custName) {
+    document.getElementById('modal_cust_id').value = custId;
+    document.getElementById('modal_cust_name').value = custName;
+    $('#printLabelModal').modal('show');
 }
 </script>
 
