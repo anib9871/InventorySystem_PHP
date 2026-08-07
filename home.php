@@ -13,6 +13,7 @@ if (isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1) {
 } else {
     redirect('user_dashboard.php', false);
 }
+?>
 
 <?php include_once('layouts/header.php'); ?>
 <div class="row">
