@@ -4,8 +4,10 @@
   if($session->isUserLoggedIn(true)) { redirect('home.php', false);}
 ?>
 <?php include_once('layouts/header.php'); ?>
-<!-- FontAwesome Icons for Sharp Input Look -->
+
+<!-- FontAwesome Icons & SweetAlert2 -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
   /* Fullscreen Fixed Light Background */
@@ -18,8 +20,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 9999;
-      background: #f1f5f9; /* Light Slate Background */
+      z-index: 1; /* ✅ SweetAlert popup ko saamne lane ke liye z-index 1 kar diya */
+      background: #f1f5f9;
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
   }
@@ -29,7 +31,7 @@
       position: absolute;
       width: 380px;
       height: 380px;
-      background: rgba(168, 0, 0, 0.08); /* Crimson Red Glow */
+      background: rgba(168, 0, 0, 0.08);
       border-radius: 50%;
       filter: blur(90px);
       top: 15%;
@@ -41,7 +43,7 @@
       position: absolute;
       width: 420px;
       height: 420px;
-      background: rgba(19, 28, 42, 0.08); /* Navy Blue Glow */
+      background: rgba(19, 28, 42, 0.08);
       border-radius: 50%;
       filter: blur(100px);
       bottom: 15%;
@@ -65,17 +67,10 @@
   }
 
   @keyframes floatUp {
-      from {
-          opacity: 0;
-          transform: translateY(15px);
-      }
-      to {
-          opacity: 1;
-          transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Typography (Navy Blue #131c2a) */
   .login-page-card h1 {
       font-size: 28px;
       font-weight: 800;
@@ -92,7 +87,6 @@
       margin-bottom: 30px;
   }
 
-  /* Form Controls */
   .form-group {
       margin-bottom: 22px;
       text-align: left;
@@ -137,7 +131,7 @@
   }
 
   .form-control:focus {
-      border-color: #a80000 !important; /* Crimson Red Focus */
+      border-color: #a80000 !important;
       background: #ffffff !important;
       box-shadow: 0 0 0 4px rgba(168, 0, 0, 0.12) !important;
   }
@@ -146,7 +140,6 @@
       color: #a80000;
   }
 
-  /* Crimson Red Button (#a80000) */
   .btn-theme {
       width: 100%;
       height: 48px;
@@ -169,14 +162,9 @@
       box-shadow: 0 12px 22px rgba(168, 0, 0, 0.38);
       background: #8e0000;
   }
-
-  .btn-theme:active {
-      transform: translateY(0);
-  }
 </style>
 
 <div class="login-wrapper-fixed">
-    <!-- Background Ambient Light Spheres -->
     <div class="glow-circle-1"></div>
     <div class="glow-circle-2"></div>
 
@@ -215,44 +203,39 @@
         </form>
     </div>
 </div>
-<!-- ✅ LOGIN PAGE LOAD PAR MEMORY CLEAR -->
-<!-- ✅ LOGIN PAGE SESSION CLEAR + SWEETALERT TOAST -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ✅ LOGIN PAGE SESSION CLEAR & SWEETALERT SCRIPT -->
 <script>
-    // 1. LocalStorage ko bina cheede sirf SessionStorage clear karo
+window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
         sessionStorage.clear();
     }
 
-    // 2. URL Msg Read karke SweetAlert dikhao
-    (function() {
-        var urlParams = new URLSearchParams(window.location.search);
-        var msg = urlParams.get('msg');
+    var urlParams = new URLSearchParams(window.location.search);
+    var msg = urlParams.get('msg');
 
-        if (msg === 'updated') {
-            Swal.fire({
-                icon: 'info',
-                title: '🚀 System Updated!',
-                text: 'A new update was deployed. Please log in again.',
-                confirmButtonText: 'OK, Login',
-                confirmButtonColor: '#a80000'
-            });
-        } 
-        else if (msg === 'session_expired' || msg === 'tab_closed') {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'warning',
-                title: 'Session Expired!',
-                text: 'Please log in again to continue.',
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true
-            });
-        }
-    })();
+    if (msg === 'updated') {
+        Swal.fire({
+            icon: 'info',
+            title: '🚀 System Updated!',
+            text: 'A new update was deployed. Please log in again.',
+            confirmButtonText: 'OK, Login',
+            confirmButtonColor: '#a80000'
+        });
+    } 
+    else if (msg === 'session_expired' || msg === 'tab_closed') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Session Expired!',
+            text: 'Please log in again to continue.',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true
+        });
+    }
+});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
-
-
