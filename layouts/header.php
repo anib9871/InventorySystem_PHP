@@ -12,6 +12,13 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
+
+// ✅ CONSUME FRESH LOGIN FLAG
+$is_fresh_login = false;
+if (!empty($_SESSION['just_logged_in'])) {
+    $is_fresh_login = true;
+    unset($_SESSION['just_logged_in']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -87,21 +94,28 @@ if(isset($_SESSION['role_id'])){
         });
     }
 
-    // 2. Tab Isolation Check (SIRF LOGGED IN USERS KE LIYE)
+    // 2. Tab Isolation Check (ONLY FOR LOGGED IN USERS)
     var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
-    
-    if (isLoggedIn) {
-        var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+    if (!isLoggedIn) return; // Login page par ye script run nahi hogi (NO LOOP)
+
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+
+    if (isFreshLogin) {
+        sessionStorage.setItem("app_tab_session", "active");
+    } else {
+        var isTabActive = sessionStorage.getItem("app_tab_session") === "active";
         
-        if (isFreshLogin) {
-            sessionStorage.setItem("tab_is_open", "true");
-        } else {
-            // Agar Tab close karke naya tab khula hai -> Logout karke session wipe karo
-            if (!sessionStorage.getItem("tab_is_open")) {
-                window.location.href = "logout.php?msg=tab_closed";
-                return;
-            }
+        // System ke andar link par right click / Ctrl+click karke naya tab kholne ki permission
+        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
+        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
+
+        // Agar Tab close ho chuka hai ya direct URL paste karke naya tab khola -> FORCE LOGOUT
+        if (!isTabActive && !isBridgeValid) {
+            window.location.href = "logout.php?msg=tab_closed";
+            return;
         }
+
+        sessionStorage.setItem("app_tab_session", "active");
     }
 })();
 
@@ -111,10 +125,10 @@ function confirmRedeployLogout() {
     window.location.href = "logout.php?msg=updated";
 }
 
-// System ke andar links click hone par session active rakhna
+// App ke navigation links ke liye tab bridge
 document.addEventListener("mousedown", function(e) {
     if (e.target.closest("a")) {
-        sessionStorage.setItem("tab_is_open", "true");
+        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
     }
 });
 </script>
