@@ -48,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 REALISTIC LIGHT METALLIC SHUTTER STYLING -->
+<!-- 🏬 CARTOON WORKER & REALISTIC SHUTTER STYLING -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -58,23 +58,22 @@ else{
     height: 100vh;
     background: repeating-linear-gradient(
         180deg,
-        #f8fafc 0px,
-        #e2e8f0 10px,
+        #cbd5e1 0px,
+        #94a3b8 10px,
         #cbd5e1 20px,
-        #e2e8f0 30px
+        #64748b 30px
     );
-    border-bottom: 25px solid #475569;
-    box-shadow: inset 0 -30px 40px rgba(15, 23, 42, 0.15);
+    border-bottom: 25px solid #334155;
+    box-shadow: inset 0 -30px 50px rgba(15, 23, 42, 0.3);
     z-index: 9999999;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+    justify-content: flex-end;
+    transition: transform 1.3s cubic-bezier(0.65, 0, 0.35, 1);
     transform: translateY(0%);
 }
 
-/* Jab Login na ho tab Shutter ko chhupa kar rakho */
 .shutter-overlay.shutter-hidden {
     display: none !important;
 }
@@ -83,36 +82,69 @@ else{
     transform: translateY(-100%);
 }
 
-/* Shutter Character & Text Box */
-.shutter-worker-box {
-    text-align: center;
-    background: #ffffff;
-    padding: 22px 40px;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-    border: 2px solid #cbd5e1;
+/* Dukaan Board & Handle Section */
+.shop-board-container {
+    position: absolute;
+    bottom: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    z-index: 2;
 }
 
-.shutter-worker-icon {
-    font-size: 45px;
-    color: #a80000;
-    transition: all 0.3s ease;
-}
-
-.shutter-text {
-    font-size: 14px;
+.shop-handle-bar {
+    width: 260px;
+    height: 20px;
+    background: linear-gradient(180deg, #f8fafc, #94a3b8);
+    border-radius: 8px;
+    border: 2px solid #475569;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
     font-weight: 800;
-    letter-spacing: 2px;
     color: #0f172a;
-    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Cartoon Worker Character Container */
+.worker-character-box {
+    position: absolute;
+    bottom: -15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: workerLifting 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes workerLifting {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-8px); }
+}
+
+.worker-svg {
+    width: 110px;
+    height: 110px;
+    filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.3));
+}
+
+.status-badge {
+    background: #ffffff;
+    color: #a80000;
+    font-weight: 800;
+    font-size: 13px;
+    padding: 6px 20px;
+    border-radius: 20px;
+    border: 2px solid #a80000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    margin-bottom: 5px;
+    letter-spacing: 1.5px;
 }
 </style>
 
-<!-- 🏬 SHUTTER SOUND & CONTROL SCRIPT -->
+<!-- 🏬 SHUTTER SOUND & CARTOON WORKER SCRIPT -->
 <script>
 function playShutterSound() {
     try {
@@ -120,7 +152,7 @@ function playShutterSound() {
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.1;
+        var bufferSize = ctx.sampleRate * 1.2;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
@@ -137,8 +169,8 @@ function playShutterSound() {
         filter.Q.value = 2.5;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.25, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -152,12 +184,11 @@ window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
-    // 🚀 LOGIN KE WAQT: Shutter Open Hoga (Opening...)
+    // 🚀 LOGIN KE WAQT: Cartoon Worker Shutter Upar Uthayega
     if (isFreshLogin && shutter) {
-        document.getElementById("shutterStatusText").innerText = "OPENING...";
-        document.getElementById("shutterStatusIcon").className = "fa-solid fa-store fa-bounce shutter-worker-icon";
-        
+        document.getElementById("shutterStatusText").innerText = "OPENING STORE...";
         shutter.classList.remove("shutter-hidden");
+        
         setTimeout(function() {
             playShutterSound();
             shutter.classList.add("shutter-open");
@@ -165,30 +196,28 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// 🔒 LOGOUT KE WAQT: Shutter Close Hoga (Closing...)
+// 🔒 LOGOUT KE WAQT: Cartoon Worker Shutter Niche Kheenchein
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
-        document.getElementById("shutterStatusText").innerText = "CLOSING...";
-        document.getElementById("shutterStatusIcon").className = "fa-solid fa-lock fa-bounce shutter-worker-icon";
-
+        document.getElementById("shutterStatusText").innerText = "CLOSING STORE...";
         shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
         playShutterSound();
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1100);
+        }, 1200);
     } else {
         window.location.href = targetUrl;
     }
 }
 </script>
 
-<!-- ✅ REDEPLOYMENT & TAB ISOLATION CONTROL -->
+<!-- ✅ REDEPLOYMENT & TAB ISOLATION SCRIPT -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -233,11 +262,39 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 LIGHT METALLIC SHUTTER OVERLAY -->
+<!-- 🏬 CARTOON WORKER METALLIC SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
-    <div class="shutter-worker-box">
-        <i id="shutterStatusIcon" class="fa-solid fa-store shutter-worker-icon"></i>
-        <div id="shutterStatusText" class="shutter-text">OPENING...</div>
+    <div class="shop-board-container">
+        <div id="shutterStatusText" class="status-badge">OPENING STORE...</div>
+        
+        <!-- Animated Cartoon Man Lifting Shutter -->
+        <div class="worker-character-box">
+            <svg class="worker-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Cap / Safety Hat -->
+                <path d="M 25,35 Q 50,15 75,35 Z" fill="#a80000" />
+                <rect x="20" y="34" width="60" height="5" rx="2" fill="#8e0000" />
+                <!-- Head -->
+                <circle cx="50" cy="45" r="15" fill="#fbcfe8" />
+                <!-- Eyes -->
+                <circle cx="43" cy="43" r="2" fill="#0f172a" />
+                <circle cx="57" cy="43" r="2" fill="#0f172a" />
+                <!-- Smile -->
+                <path d="M 43,52 Q 50,58 57,52" stroke="#0f172a" stroke-width="2" fill="none" />
+                <!-- Uniform Body -->
+                <path d="M 30,62 L 70,62 L 75,95 L 25,95 Z" fill="#0284c7" />
+                <rect x="46" y="62" width="8" height="33" fill="#e0f2fe" />
+                <!-- Arms Lifting Up -->
+                <path d="M 25,65 Q 10,40 20,25" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" fill="none" />
+                <path d="M 75,65 Q 90,40 80,25" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" fill="none" />
+                <!-- Gloves grabbing handle bar -->
+                <circle cx="20" cy="24" r="5" fill="#a80000" />
+                <circle cx="80" cy="24" r="5" fill="#a80000" />
+            </svg>
+        </div>
+
+        <div class="shop-handle-bar">
+            <i class="fa-solid fa-lock" style="margin-right: 6px;"></i> STORE SHUTTER
+        </div>
     </div>
 </div>
 
