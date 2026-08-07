@@ -226,5 +226,37 @@ redirect('home.php', false);
         </form>
     </div>
 </div>
+<!-- ✅ SWEETALERT SCRIPT FOR LOGIN V2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+(function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var msg = urlParams.get('msg');
+
+    if (msg === 'updated') {
+        Swal.fire({
+            icon: 'info',
+            title: '🚀 System Updated!',
+            text: 'A new update was deployed. Please log in again.',
+            confirmButtonText: 'OK, Login',
+            confirmButtonColor: '#a80000'
+        });
+    } 
+    else if (msg === 'session_expired' || msg === 'tab_closed') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Session Expired!',
+            text: 'Please log in again to continue.',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true
+        });
+    }
+})();
+</script>
 
 <?php include_once('layouts/footer.php'); ?>
+
+
