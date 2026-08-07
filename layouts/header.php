@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
+// ✅ FRESH LOGIN FLAG FOR SHUTTER
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 CARTOON WORKER & REALISTIC SHUTTER STYLING -->
+<!-- 🏬 REALISTIC ROLLING SHUTTER CSS (As seen in Green Screen Video) -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -56,21 +56,19 @@ else{
     left: 0;
     width: 100vw;
     height: 100vh;
+    /* Slatted Rolling Metallic Metal Pattern */
     background: repeating-linear-gradient(
         180deg,
-        #cbd5e1 0px,
-        #94a3b8 10px,
-        #cbd5e1 20px,
-        #64748b 30px
+        #e2e8f0 0px,
+        #cbd5e1 6px,
+        #94a3b8 12px,
+        #cbd5e1 18px,
+        #f8fafc 24px
     );
-    border-bottom: 25px solid #334155;
-    box-shadow: inset 0 -30px 50px rgba(15, 23, 42, 0.3);
+    border-bottom: 22px solid #334155;
+    box-shadow: inset 0 -20px 30px rgba(0, 0, 0, 0.25);
     z-index: 9999999;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    transition: transform 1.3s cubic-bezier(0.65, 0, 0.35, 1);
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
     transform: translateY(0%);
 }
 
@@ -82,69 +80,21 @@ else{
     transform: translateY(-100%);
 }
 
-/* Dukaan Board & Handle Section */
-.shop-board-container {
+.shutter-handle-bar {
     position: absolute;
-    bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    z-index: 2;
-}
-
-.shop-handle-bar {
-    width: 260px;
-    height: 20px;
-    background: linear-gradient(180deg, #f8fafc, #94a3b8);
-    border-radius: 8px;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 16px;
+    background: linear-gradient(180deg, #ffffff, #94a3b8);
+    border-radius: 6px;
     border: 2px solid #475569;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: 2px;
-}
-
-/* Cartoon Worker Character Container */
-.worker-character-box {
-    position: absolute;
-    bottom: -15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    animation: workerLifting 0.6s infinite alternate ease-in-out;
-}
-
-@keyframes workerLifting {
-    0% { transform: translateY(0px); }
-    100% { transform: translateY(-8px); }
-}
-
-.worker-svg {
-    width: 110px;
-    height: 110px;
-    filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.3));
-}
-
-.status-badge {
-    background: #ffffff;
-    color: #a80000;
-    font-weight: 800;
-    font-size: 13px;
-    padding: 6px 20px;
-    border-radius: 20px;
-    border: 2px solid #a80000;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    margin-bottom: 5px;
-    letter-spacing: 1.5px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 </style>
 
-<!-- 🏬 SHUTTER SOUND & CARTOON WORKER SCRIPT -->
+<!-- 🏬 REALISTIC SHUTTER SOUND & ANIMATION CONTROLLER -->
 <script>
 function playShutterSound() {
     try {
@@ -165,8 +115,8 @@ function playShutterSound() {
 
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 600;
-        filter.Q.value = 2.5;
+        filter.frequency.value = 550;
+        filter.Q.value = 2.0;
 
         var gain = ctx.createGain();
         gain.gain.setValueAtTime(0.3, ctx.currentTime);
@@ -184,40 +134,37 @@ window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
     var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
 
-    // 🚀 LOGIN KE WAQT: Cartoon Worker Shutter Upar Uthayega
+    // 🚀 FRESH LOGIN: Dashboard khulte hi shutter rolling sound ke saath UP (Open) hoga
     if (isFreshLogin && shutter) {
-        document.getElementById("shutterStatusText").innerText = "OPENING STORE...";
         shutter.classList.remove("shutter-hidden");
-        
         setTimeout(function() {
             playShutterSound();
             shutter.classList.add("shutter-open");
-        }, 300);
+        }, 200);
     }
 });
 
-// 🔒 LOGOUT KE WAQT: Cartoon Worker Shutter Niche Kheenchein
+// 🔒 LOGOUT: Logout click karte hi shutter rolling sound ke saath DOWN (Close) hoga
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
-        document.getElementById("shutterStatusText").innerText = "CLOSING STORE...";
         shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
         playShutterSound();
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1200);
+        }, 1100);
     } else {
         window.location.href = targetUrl;
     }
 }
 </script>
 
-<!-- ✅ REDEPLOYMENT & TAB ISOLATION SCRIPT -->
+<!-- ✅ REDEPLOYMENT & SESSION GUARD -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -262,40 +209,9 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 CARTOON WORKER METALLIC SHUTTER OVERLAY -->
+<!-- 🏬 ROLLING SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
-    <div class="shop-board-container">
-        <div id="shutterStatusText" class="status-badge">OPENING STORE...</div>
-        
-        <!-- Animated Cartoon Man Lifting Shutter -->
-        <div class="worker-character-box">
-            <svg class="worker-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <!-- Cap / Safety Hat -->
-                <path d="M 25,35 Q 50,15 75,35 Z" fill="#a80000" />
-                <rect x="20" y="34" width="60" height="5" rx="2" fill="#8e0000" />
-                <!-- Head -->
-                <circle cx="50" cy="45" r="15" fill="#fbcfe8" />
-                <!-- Eyes -->
-                <circle cx="43" cy="43" r="2" fill="#0f172a" />
-                <circle cx="57" cy="43" r="2" fill="#0f172a" />
-                <!-- Smile -->
-                <path d="M 43,52 Q 50,58 57,52" stroke="#0f172a" stroke-width="2" fill="none" />
-                <!-- Uniform Body -->
-                <path d="M 30,62 L 70,62 L 75,95 L 25,95 Z" fill="#0284c7" />
-                <rect x="46" y="62" width="8" height="33" fill="#e0f2fe" />
-                <!-- Arms Lifting Up -->
-                <path d="M 25,65 Q 10,40 20,25" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" fill="none" />
-                <path d="M 75,65 Q 90,40 80,25" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" fill="none" />
-                <!-- Gloves grabbing handle bar -->
-                <circle cx="20" cy="24" r="5" fill="#a80000" />
-                <circle cx="80" cy="24" r="5" fill="#a80000" />
-            </svg>
-        </div>
-
-        <div class="shop-handle-bar">
-            <i class="fa-solid fa-lock" style="margin-right: 6px;"></i> STORE SHUTTER
-        </div>
-    </div>
+    <div class="shutter-handle-bar"></div>
 </div>
 
 <?php if(isset($_SESSION['username'])): ?>
