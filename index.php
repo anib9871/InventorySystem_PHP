@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* Clean Light Slate Background */
+  /* Light Slate Clean Background */
   .login-wrapper-fixed {
       position: fixed;
       top: 0;
@@ -24,6 +24,31 @@
       background: #f1f5f9;
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Soft Ambient Glows */
+  .glow-circle-1 {
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      background: rgba(168, 0, 0, 0.05);
+      border-radius: 50%;
+      filter: blur(90px);
+      top: 15%;
+      left: 25%;
+      pointer-events: none;
+  }
+
+  .glow-circle-2 {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      background: rgba(19, 28, 42, 0.05);
+      border-radius: 50%;
+      filter: blur(100px);
+      bottom: 15%;
+      right: 25%;
+      pointer-events: none;
   }
 
   /* Animated Lock Circle */
@@ -49,7 +74,7 @@
       transform: scale(1.1) rotate(15deg);
   }
 
-  /* Main Light Card */
+  /* Main Clean White Card */
   .login-page-card {
       position: relative;
       width: 100%;
@@ -145,6 +170,9 @@
 </style>
 
 <div class="login-wrapper-fixed">
+    <div class="glow-circle-1"></div>
+    <div class="glow-circle-2"></div>
+
     <div class="login-page-card">
         <!-- 🔒 ANIMATED LOCK -->
         <div id="lockIconContainer" class="lock-circle-container">
@@ -186,14 +214,14 @@
     </div>
 </div>
 
-<!-- ✅ SCRIPT -->
+<!-- ✅ LOCK UNLOCK & SWEETALERT SCRIPT -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
         sessionStorage.clear();
     }
 
-    // 🔓 LOCK UNLOCK ANIMATION
+    // 🔓 LOCK UNLOCK ANIMATION ON SUBMIT
     var form = document.getElementById("loginForm");
     if (form) {
         form.addEventListener("submit", function(e) {
@@ -202,7 +230,7 @@ window.addEventListener("DOMContentLoaded", function() {
             var btn = document.getElementById("submitBtn");
 
             lockContainer.classList.add("unlocked");
-            lockIcon.className = "fa-solid fa-unlock";
+            lockIcon.className = "fa-solid fa-lock-open";
             btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
         });
     }
