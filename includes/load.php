@@ -16,8 +16,11 @@ if (!defined('APP_VERSION')) {
 
 /* ================= 1. STRICT SESSION START ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
+    ini_set('session.cookie_lifetime', 0);
+    ini_set('session.use_cookies', 1);
+    ini_set('session.use_only_cookies', 1);
     if (!headers_sent()) {
-        session_set_cookie_params(0, '/');
+        session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'httponly' => true]);
     }
     session_start();
 }
