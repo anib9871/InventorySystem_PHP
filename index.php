@@ -205,6 +205,7 @@
 </div>
 
 <!-- ✅ LOGIN PAGE SESSION CLEAR & SWEETALERT SCRIPT -->
+<!-- ✅ LOGIN PAGE SESSION CLEAR & SWEETALERT SCRIPT -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
@@ -218,9 +219,12 @@ window.addEventListener("DOMContentLoaded", function() {
         Swal.fire({
             icon: 'info',
             title: '🚀 System Updated!',
-            text: 'A new update was deployed. Please log in again.',
+            // 👇 Yahan message ko aur clear kar diya hai
+            html: 'Your session has expired because a <b>new system update</b> was deployed.<br><br>Please log in again to experience the latest version.',
             confirmButtonText: 'OK, Login',
-            confirmButtonColor: '#a80000'
+            confirmButtonColor: '#a80000',
+            allowOutsideClick: false, // User ko OK dabana hi padega
+            allowEscapeKey: false
         });
     } 
     else if (msg === 'session_expired' || msg === 'tab_closed') {
