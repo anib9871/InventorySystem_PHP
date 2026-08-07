@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG CONSUMPTION
+// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER ANIMATION
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 METALLIC SHUTTER CSS -->
+<!-- 🏬 MODERN STORE SHUTTER STYLING -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -58,43 +58,68 @@ else{
     height: 100vh;
     background: repeating-linear-gradient(
         180deg,
-        #334155 0px,
-        #475569 10px,
-        #1e293b 20px,
-        #0f172a 30px
+        #1e293b 0px,
+        #334155 12px,
+        #0f172a 24px,
+        #1e293b 36px
     );
-    border-bottom: 15px solid #0f172a;
-    box-shadow: inset 0 -25px 35px rgba(0, 0, 0, 0.7);
+    border-bottom: 20px solid #020617;
+    box-shadow: inset 0 -30px 40px rgba(0, 0, 0, 0.85);
     z-index: 9999999;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    transition: transform 1.3s cubic-bezier(0.77, 0, 0.175, 1);
     transform: translateY(0%);
+}
+
+/* Jab Login na ho tab hidden rakho */
+.shutter-overlay.shutter-hidden {
+    display: none !important;
 }
 
 .shutter-overlay.shutter-open {
     transform: translateY(-100%);
 }
 
-.shutter-handle-bar {
-    width: 220px;
-    height: 22px;
-    background: linear-gradient(180deg, #e2e8f0, #64748b);
-    border-radius: 10px;
-    margin-bottom: 25px;
-    box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+/* Shutter Handle Bar & Shop Owner Graphic Badge */
+.shutter-center-badge {
+    position: absolute;
+    bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 23, 42, 0.9);
+    padding: 10px 24px;
+    border-radius: 50px;
+    border: 2px solid #38bdf8;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+}
+
+.shutter-avatar {
+    width: 38px;
+    height: 38px;
+    background: #0284c7;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 20px;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.shutter-handle-bar {
+    font-size: 13px;
     font-weight: 800;
-    color: #0f172a;
     letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e2e8f0;
 }
 </style>
 
-<!-- 🏬 METALLIC SHUTTER SOUND + ANIMATION SCRIPT -->
+<!-- 🏬 SHUTTER SOUND & CONTROL SCRIPT -->
 <script>
 function playShutterSound() {
     try {
@@ -102,7 +127,7 @@ function playShutterSound() {
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.1;
+        var bufferSize = ctx.sampleRate * 1.2;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
@@ -115,12 +140,12 @@ function playShutterSound() {
 
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 650;
-        filter.Q.value = 3.0;
+        filter.frequency.value = 600;
+        filter.Q.value = 2.5;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.25, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -132,26 +157,32 @@ function playShutterSound() {
 
 window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
-    if (shutter) {
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+
+    // 🚀 SHUTTER SIRF FRESH LOGIN PAR HI OPEN HOGA
+    if (isFreshLogin && shutter) {
+        shutter.classList.remove("shutter-hidden");
         setTimeout(function() {
             playShutterSound();
             shutter.classList.add("shutter-open");
-        }, 200);
+        }, 300);
     }
 });
 
+// 🔒 LOGOUT KE WAKTH SHUTTER CLOSE ANIMATION
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
-        playShutterSound();
+        shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
-        
+        playShutterSound();
+
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1100);
+        }, 1200);
     } else {
         window.location.href = targetUrl;
     }
@@ -203,9 +234,12 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 METALLIC SHOP SHUTTER OVERLAY -->
-<div id="shopShutter" class="shutter-overlay">
-    <div class="shutter-handle-bar">SHOP SHUTTER</div>
+<!-- 🏬 STORE SHUTTER OVERLAY -->
+<div id="shopShutter" class="shutter-overlay shutter-hidden">
+    <div class="shutter-center-badge">
+        <div class="shutter-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="shutter-handle-bar"><i class="fa-solid fa-store" style="margin-right:6px;"></i> STORE OPENING...</div>
+    </div>
 </div>
 
 <?php if(isset($_SESSION['username'])): ?>
