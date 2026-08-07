@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* Light Slate Clean Background */
+  /* Metallic Rolling Shutter Background on Login Page */
   .login-wrapper-fixed {
       position: fixed;
       top: 0;
@@ -21,60 +21,19 @@
       align-items: center;
       justify-content: center;
       z-index: 1;
-      background: #f1f5f9;
+      background: repeating-linear-gradient(
+          180deg,
+          #e2e8f0 0px,
+          #cbd5e1 6px,
+          #94a3b8 12px,
+          #cbd5e1 18px,
+          #f8fafc 24px
+      );
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Soft Ambient Glows */
-  .glow-circle-1 {
-      position: absolute;
-      width: 380px;
-      height: 380px;
-      background: rgba(168, 0, 0, 0.05);
-      border-radius: 50%;
-      filter: blur(90px);
-      top: 15%;
-      left: 25%;
-      pointer-events: none;
-  }
-
-  .glow-circle-2 {
-      position: absolute;
-      width: 420px;
-      height: 420px;
-      background: rgba(19, 28, 42, 0.05);
-      border-radius: 50%;
-      filter: blur(100px);
-      bottom: 15%;
-      right: 25%;
-      pointer-events: none;
-  }
-
-  /* Animated Lock Circle */
-  .lock-circle-container {
-      width: 75px;
-      height: 75px;
-      margin: 0 auto 15px auto;
-      background: rgba(168, 0, 0, 0.08);
-      border: 2px solid #a80000;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
-      color: #a80000;
-      transition: all 0.4s ease;
-  }
-
-  .lock-circle-container.unlocked {
-      background: rgba(34, 197, 94, 0.15);
-      border-color: #16a34a;
-      color: #16a34a;
-      transform: scale(1.1) rotate(15deg);
-  }
-
-  /* Main Clean White Card */
+  /* Clean White Floating Login Card */
   .login-page-card {
       position: relative;
       width: 100%;
@@ -83,9 +42,10 @@
       background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 20px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
       color: #0f172a;
       box-sizing: border-box;
+      z-index: 2;
   }
 
   .login-page-card h1 {
@@ -170,15 +130,7 @@
 </style>
 
 <div class="login-wrapper-fixed">
-    <div class="glow-circle-1"></div>
-    <div class="glow-circle-2"></div>
-
     <div class="login-page-card">
-        <!-- 🔒 ANIMATED LOCK -->
-        <div id="lockIconContainer" class="lock-circle-container">
-            <i id="lockIcon" class="fa-solid fa-lock"></i>
-        </div>
-
         <div class="text-center">
            <h1>Login Panel</h1>
            <h4>Inventory Management System</h4>
@@ -214,24 +166,18 @@
     </div>
 </div>
 
-<!-- ✅ LOCK UNLOCK & SWEETALERT SCRIPT -->
+<!-- ✅ SWEETALERT & SUBMIT CONTROLLER -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
         sessionStorage.clear();
     }
 
-    // 🔓 LOCK UNLOCK ANIMATION ON SUBMIT
     var form = document.getElementById("loginForm");
     if (form) {
         form.addEventListener("submit", function(e) {
-            var lockContainer = document.getElementById("lockIconContainer");
-            var lockIcon = document.getElementById("lockIcon");
             var btn = document.getElementById("submitBtn");
-
-            lockContainer.classList.add("unlocked");
-            lockIcon.className = "fa-solid fa-lock-open";
-            btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
+            btn.innerHTML = 'Opening Shutter... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
         });
     }
 
