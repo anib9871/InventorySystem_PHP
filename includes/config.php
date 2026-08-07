@@ -1,10 +1,9 @@
 <?php
 
-// 🚀 Jab bhi Railway/Production par naya build bhejo, bas is version number ko badal dena (e.g. '1.0.1' -> '1.0.2')
+// 🚀 Change version to 1.0.2 to trigger the Toast alert:
 if (!defined('APP_VERSION')) {
-    define('APP_VERSION', '1.0.1');
+    define('APP_VERSION', '1.0.2'); 
 }
-
 define('DB_HOST', getenv('MYSQLHOST'));
 define('DB_USER', getenv('MYSQLUSER'));
 define('DB_PASS', getenv('MYSQLPASSWORD'));
