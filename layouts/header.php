@@ -48,33 +48,35 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 3D REALISTIC STORE ROLLING SHUTTER CSS -->
+<!-- 🏬 ULTRA-REALISTIC 3D METALLIC SHUTTER STYLING -->
 <style>
+/* Fullscreen Shutter Overlay */
 .shutter-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    /* 3D Metallic Slats Gradient */
-    background: linear-gradient(90deg, #1e293b 0%, transparent 5%, transparent 95%, #1e293b 100%),
-                repeating-linear-gradient(
-                    180deg,
-                    #f1f5f9 0px,
-                    #cbd5e1 5px,
-                    #94a3b8 12px,
-                    #64748b 18px,
-                    #cbd5e1 24px
-                );
-    border-bottom: 25px solid #0f172a;
-    box-shadow: inset 0 -35px 50px rgba(0, 0, 0, 0.4);
+    /* Realistic Metallic Slats Texture */
+    background: 
+        linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.3) 100%),
+        repeating-linear-gradient(
+            180deg,
+            #ffffff 0px,
+            #cbd5e1 3px,
+            #94a3b8 10px,
+            #64748b 16px,
+            #e2e8f0 22px
+        );
+    border-bottom: 28px solid #1e293b;
+    box-shadow: inset 0 -40px 60px rgba(0, 0, 0, 0.35);
     z-index: 9999999;
-    transition: transform 1.3s cubic-bezier(0.77, 0, 0.175, 1);
-    transform: translateY(0%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
+    transition: transform 1.25s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateY(0%);
 }
 
 .shutter-overlay.shutter-hidden {
@@ -85,54 +87,97 @@ else{
     transform: translateY(-100%);
 }
 
-/* Shop Bottom Lock Mechanism Bar */
-.shutter-bottom-bar {
-    width: 300px;
-    height: 32px;
-    background: linear-gradient(180deg, #e2e8f0, #475569);
-    border-radius: 8px 8px 0 0;
+/* Side Metallic Guide Channels */
+.shutter-guide-rail-left,
+.shutter-guide-rail-right {
+    position: absolute;
+    top: 0;
+    width: 25px;
+    height: 100%;
+    background: linear-gradient(90deg, #334155, #64748b, #1e293b);
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+.shutter-guide-rail-left { left: 0; }
+.shutter-guide-rail-right { right: 0; }
+
+/* Heavy Bottom Handle Bar & Brass Lock */
+.shutter-bottom-rail {
+    width: 320px;
+    height: 38px;
+    background: linear-gradient(180deg, #f8fafc, #64748b, #334155);
+    border-radius: 10px 10px 0 0;
     border: 2px solid #0f172a;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    margin-bottom: 12px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     color: #0f172a;
     font-weight: 800;
     font-size: 12px;
     letter-spacing: 2px;
+    position: relative;
+    z-index: 11;
 }
 
-.shutter-padlock {
-    width: 28px;
-    height: 28px;
+.shutter-brass-lock {
+    width: 32px;
+    height: 32px;
     background: #a80000;
     color: #ffffff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    box-shadow: 0 0 10px rgba(168, 0, 0, 0.5);
-    transition: all 0.4s ease;
+    font-size: 15px;
+    box-shadow: 0 0 12px rgba(168, 0, 0, 0.6);
+    transition: all 0.35s ease;
 }
 
-.shutter-padlock.unlocked {
+.shutter-brass-lock.unlocked {
     background: #16a34a;
-    box-shadow: 0 0 12px rgba(22, 163, 74, 0.6);
+    box-shadow: 0 0 16px rgba(22, 163, 74, 0.8);
+    transform: scale(1.15) rotate(12deg);
 }
 </style>
 
-<!-- 🏬 ENHANCED MECHANICAL ROLLING SOUND & ANIMATION -->
+<!-- 🏬 DYNAMIC SYNTHESIZED MECHANICAL SOUNDS -->
 <script>
-function playMechanicalShutterSound() {
+// 1. Lock Unlock Click Sound
+function playLockClickSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.3;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+    } catch (e) {}
+}
+
+// 2. Rolling Shutter Heavy Metallic Noise Sound
+function playRollingShutterSound() {
+    try {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        var ctx = new AudioContext();
+
+        var bufferSize = ctx.sampleRate * 1.25;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
@@ -145,8 +190,9 @@ function playMechanicalShutterSound() {
 
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 520;
-        filter.Q.value = 1.8;
+        filter.frequency.setValueAtTime(450, ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(750, ctx.currentTime + 1.1);
+        filter.Q.value = 2.2;
 
         var gain = ctx.createGain();
         gain.gain.setValueAtTime(0.35, ctx.currentTime);
@@ -160,6 +206,7 @@ function playMechanicalShutterSound() {
     } catch (e) {}
 }
 
+// 🚀 Fresh Login Shutter Transition
 window.addEventListener("DOMContentLoaded", function() {
     var shutter = document.getElementById("shopShutter");
     var lock = document.getElementById("shutterPadlock");
@@ -169,21 +216,24 @@ window.addEventListener("DOMContentLoaded", function() {
     if (isFreshLogin && shutter) {
         shutter.classList.remove("shutter-hidden");
         
-        // 🔓 UNLOCK TAALA FIRST, THEN ROLL SHUTTER
+        // Step 1: Unlock Lock First
         setTimeout(function() {
+            playLockClickSound();
             if (lock && lockIcon) {
                 lock.classList.add("unlocked");
                 lockIcon.className = "fa-solid fa-lock-open";
             }
-        }, 100);
+        }, 150);
 
+        // Step 2: Roll Shutter Up
         setTimeout(function() {
-            playMechanicalShutterSound();
+            playRollingShutterSound();
             shutter.classList.add("shutter-open");
-        }, 400);
+        }, 450);
     }
 });
 
+// 🔒 Logout Shutter Transition
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
@@ -192,18 +242,21 @@ function animateLogout(e) {
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
-        if (lock && lockIcon) {
-            lock.classList.remove("unlocked");
-            lockIcon.className = "fa-solid fa-lock";
-        }
-
         shutter.classList.remove("shutter-hidden");
         shutter.classList.remove("shutter-open");
-        playMechanicalShutterSound();
+        playRollingShutterSound();
+
+        setTimeout(function() {
+            playLockClickSound();
+            if (lock && lockIcon) {
+                lock.classList.remove("unlocked");
+                lockIcon.className = "fa-solid fa-lock";
+            }
+        }, 900);
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1200);
+        }, 1250);
     } else {
         window.location.href = targetUrl;
     }
@@ -255,10 +308,13 @@ document.addEventListener("mousedown", function(e) {
 </head>
 <body>
 
-<!-- 🏬 3D REALISTIC STORE SHUTTER OVERLAY -->
+<!-- 🏬 3D REALISTIC ROLLING SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
-    <div class="shutter-bottom-bar">
-        <div id="shutterPadlock" class="shutter-padlock">
+    <div class="shutter-guide-rail-left"></div>
+    <div class="shutter-guide-rail-right"></div>
+    
+    <div class="shutter-bottom-rail">
+        <div id="shutterPadlock" class="shutter-brass-lock">
             <i id="shutterLockIcon" class="fa-solid fa-lock"></i>
         </div>
         <span>STORE SHUTTER</span>
