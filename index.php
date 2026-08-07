@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* Store Front Ambient Frame */
+  /* Shutter Background Theme for Login Page */
   .login-wrapper-fixed {
       position: fixed;
       top: 0;
@@ -21,47 +21,33 @@
       align-items: center;
       justify-content: center;
       z-index: 1;
-      /* Slatted Shutter Texture */
-      background: linear-gradient(90deg, #1e293b 0%, transparent 4%, transparent 96%, #1e293b 100%),
-                  repeating-linear-gradient(
-                      180deg,
-                      #f1f5f9 0px,
-                      #cbd5e1 5px,
-                      #94a3b8 12px,
-                      #64748b 18px,
-                      #cbd5e1 24px
-                  );
+      background: 
+          linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.3) 100%),
+          repeating-linear-gradient(
+              180deg,
+              #ffffff 0px,
+              #cbd5e1 3px,
+              #94a3b8 10px,
+              #64748b 16px,
+              #e2e8f0 22px
+          );
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Concrete Store Pillars Left & Right */
-  .store-pillar-left, .store-pillar-right {
-      position: absolute;
-      top: 0;
-      width: 45px;
-      height: 100%;
-      background: linear-gradient(90deg, #334155, #64748b, #1e293b);
-      box-shadow: 0 0 25px rgba(0,0,0,0.5);
-      z-index: 2;
-  }
-  .store-pillar-left { left: 0; }
-  .store-pillar-right { right: 0; }
-
-  /* Premium Glass Floating Card */
+  /* Clean White Floating Login Card */
   .login-page-card {
       position: relative;
       width: 100%;
       max-width: 410px;
-      padding: 40px 35px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
+      padding: 42px 36px;
+      background: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 20px;
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
       color: #0f172a;
       box-sizing: border-box;
-      z-index: 3;
+      z-index: 2;
   }
 
   .login-page-card h1 {
@@ -126,18 +112,18 @@
 
   .btn-theme {
       width: 100%;
-      height: 50px;
+      height: 48px;
       margin-top: 10px;
       border: none;
       border-radius: 10px;
       background: #a80000;
       color: #ffffff;
       font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 8px 18px rgba(168, 0, 0, 0.28);
+      box-shadow: 0 8px 18px rgba(168, 0, 0, 0.25);
       transition: all 0.3s ease;
   }
 
@@ -147,9 +133,6 @@
 </style>
 
 <div class="login-wrapper-fixed">
-    <div class="store-pillar-left"></div>
-    <div class="store-pillar-right"></div>
-
     <div class="login-page-card">
         <div class="text-center">
            <h1>Login Panel</h1>
@@ -172,13 +155,13 @@
                 <label for="password">Password</label>
                 <div class="input-wrapper">
                     <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-                    <i class="fa-solid fa-key"></i>
+                    <i class="fa-solid fa-lock"></i>
                 </div>
             </div>
 
             <div class="text-center">
                 <button type="submit" id="submitBtn" class="btn-theme">
-                    Unlock Store & Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                    Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
                 </button>
             </div>
 
@@ -186,7 +169,7 @@
     </div>
 </div>
 
-<!-- ✅ SWEETALERT & UNLOCKING CONTROLLER -->
+<!-- ✅ SWEETALERT & CONTROLLER -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
@@ -197,7 +180,7 @@ window.addEventListener("DOMContentLoaded", function() {
     if (form) {
         form.addEventListener("submit", function(e) {
             var btn = document.getElementById("submitBtn");
-            btn.innerHTML = 'Unlocking Key... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
+            btn.innerHTML = 'Unlocking & Opening... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
         });
     }
 
