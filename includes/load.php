@@ -9,12 +9,15 @@ define("DS", DIRECTORY_SEPARATOR);
 defined('SITE_ROOT')? null: define('SITE_ROOT', realpath(dirname(__FILE__)));
 define("LIB_PATH_INC", SITE_ROOT.DS);
 
-/* ================= 💡 APP VERSION ================= */
+/* ================= 1. CONFIG FILE PEHLE LOAD KARO ================= */
+require_once(LIB_PATH_INC.'config.php');
+
+/* ================= 2. APP VERSION FALLBACK ================= */
 if (!defined('APP_VERSION')) {
-    define('APP_VERSION', '1.0.1');
+    define('APP_VERSION', '1.0.1'); // Default Version
 }
 
-/* ================= 1. STRICT SESSION START ================= */
+/* ================= 3. STRICT SESSION START ================= */
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     ini_set('session.cookie_lifetime', 0);
     ini_set('session.use_cookies', 1);
@@ -25,11 +28,10 @@ if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     session_start();
 }
 
-require_once(LIB_PATH_INC.'config.php');
 require_once(LIB_PATH_INC.'functions.php');
 require_once(LIB_PATH_INC.'session.php');
 
-/* ================= 2. GLOBAL AUTH CHECK ================= */
+/* ================= 4. GLOBAL AUTH CHECK ================= */
 $current_script = basename($_SERVER['PHP_SELF']);
 $public_scripts = ['index.php', 'login.php', 'login_v2.php', 'auth.php', 'auth_v2.php', 'forgot_password.php', 'logout.php'];
 
