@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* Metallic Rolling Shutter Background on Login Page */
+  /* Store Front Ambient Frame */
   .login-wrapper-fixed {
       position: fixed;
       top: 0;
@@ -21,31 +21,47 @@
       align-items: center;
       justify-content: center;
       z-index: 1;
-      background: repeating-linear-gradient(
-          180deg,
-          #e2e8f0 0px,
-          #cbd5e1 6px,
-          #94a3b8 12px,
-          #cbd5e1 18px,
-          #f8fafc 24px
-      );
+      /* Slatted Shutter Texture */
+      background: linear-gradient(90deg, #1e293b 0%, transparent 4%, transparent 96%, #1e293b 100%),
+                  repeating-linear-gradient(
+                      180deg,
+                      #f1f5f9 0px,
+                      #cbd5e1 5px,
+                      #94a3b8 12px,
+                      #64748b 18px,
+                      #cbd5e1 24px
+                  );
       overflow: hidden;
       font-family: 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Clean White Floating Login Card */
+  /* Concrete Store Pillars Left & Right */
+  .store-pillar-left, .store-pillar-right {
+      position: absolute;
+      top: 0;
+      width: 45px;
+      height: 100%;
+      background: linear-gradient(90deg, #334155, #64748b, #1e293b);
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+      z-index: 2;
+  }
+  .store-pillar-left { left: 0; }
+  .store-pillar-right { right: 0; }
+
+  /* Premium Glass Floating Card */
   .login-page-card {
       position: relative;
       width: 100%;
       max-width: 410px;
       padding: 40px 35px;
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
       border: 1px solid #cbd5e1;
       border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
       color: #0f172a;
       box-sizing: border-box;
-      z-index: 2;
+      z-index: 3;
   }
 
   .login-page-card h1 {
@@ -110,18 +126,19 @@
 
   .btn-theme {
       width: 100%;
-      height: 48px;
+      height: 50px;
       margin-top: 10px;
       border: none;
       border-radius: 10px;
       background: #a80000;
       color: #ffffff;
       font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 1px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 8px 18px rgba(168, 0, 0, 0.25);
+      box-shadow: 0 8px 18px rgba(168, 0, 0, 0.28);
+      transition: all 0.3s ease;
   }
 
   .btn-theme:hover {
@@ -130,6 +147,9 @@
 </style>
 
 <div class="login-wrapper-fixed">
+    <div class="store-pillar-left"></div>
+    <div class="store-pillar-right"></div>
+
     <div class="login-page-card">
         <div class="text-center">
            <h1>Login Panel</h1>
@@ -152,13 +172,13 @@
                 <label for="password">Password</label>
                 <div class="input-wrapper">
                     <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-                    <i class="fa-solid fa-lock"></i>
+                    <i class="fa-solid fa-key"></i>
                 </div>
             </div>
 
             <div class="text-center">
                 <button type="submit" id="submitBtn" class="btn-theme">
-                    Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                    Unlock Store & Login <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
                 </button>
             </div>
 
@@ -166,7 +186,7 @@
     </div>
 </div>
 
-<!-- ✅ SWEETALERT & SUBMIT CONTROLLER -->
+<!-- ✅ SWEETALERT & UNLOCKING CONTROLLER -->
 <script>
 window.addEventListener("DOMContentLoaded", function() {
     if (typeof(Storage) !== "undefined") {
@@ -177,7 +197,7 @@ window.addEventListener("DOMContentLoaded", function() {
     if (form) {
         form.addEventListener("submit", function(e) {
             var btn = document.getElementById("submitBtn");
-            btn.innerHTML = 'Opening Shutter... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
+            btn.innerHTML = 'Unlocking Key... <i class="fa-solid fa-spinner fa-spin" style="margin-left:8px;"></i>';
         });
     }
 
