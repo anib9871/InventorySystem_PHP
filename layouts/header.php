@@ -48,13 +48,122 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
+<!-- 🏬 METALLIC SHUTTER CSS -->
+<style>
+.shutter-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: repeating-linear-gradient(
+        180deg,
+        #334155 0px,
+        #475569 10px,
+        #1e293b 20px,
+        #0f172a 30px
+    );
+    border-bottom: 15px solid #0f172a;
+    box-shadow: inset 0 -25px 35px rgba(0, 0, 0, 0.7);
+    z-index: 9999999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+    transform: translateY(0%);
+}
+
+.shutter-overlay.shutter-open {
+    transform: translateY(-100%);
+}
+
+.shutter-handle-bar {
+    width: 220px;
+    height: 22px;
+    background: linear-gradient(180deg, #e2e8f0, #64748b);
+    border-radius: 10px;
+    margin-bottom: 25px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 2px;
+}
+</style>
+
+<!-- 🏬 METALLIC SHUTTER SOUND + ANIMATION SCRIPT -->
+<script>
+function playShutterSound() {
+    try {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        var ctx = new AudioContext();
+
+        var bufferSize = ctx.sampleRate * 1.1;
+        var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        var data = buffer.getChannelData(0);
+
+        for (var i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        var noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        var filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 650;
+        filter.Q.value = 3.0;
+
+        var gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        noise.start();
+    } catch (e) {}
+}
+
+window.addEventListener("DOMContentLoaded", function() {
+    var shutter = document.getElementById("shopShutter");
+    if (shutter) {
+        setTimeout(function() {
+            playShutterSound();
+            shutter.classList.add("shutter-open");
+        }, 200);
+    }
+});
+
+function animateLogout(e) {
+    e.preventDefault();
+    var shutter = document.getElementById("shopShutter");
+    var targetUrl = e.currentTarget.href;
+
+    if (shutter) {
+        playShutterSound();
+        shutter.classList.remove("shutter-open");
+        
+        setTimeout(function() {
+            window.location.href = targetUrl;
+        }, 1100);
+    } else {
+        window.location.href = targetUrl;
+    }
+}
+</script>
+
 <!-- ✅ REDEPLOYMENT & TAB CONTROL SCRIPT -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
     var savedVersion = localStorage.getItem("app_deploy_version");
 
-    // 🚀 1. REDEPLOYMENT CHECK -> DIRECT LOGOUT PAR BHEJO
     if (!savedVersion) {
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } else if (savedVersion !== CURRENT_VERSION) {
@@ -63,7 +172,6 @@ else{
         return;
     }
 
-    // 🔒 2. TAB ISOLATION CHECK (SIRF LOGGED IN USERS KE LIYE)
     var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
     if (!isLoggedIn) return;
 
@@ -76,7 +184,6 @@ else{
         var bridgeTime = localStorage.getItem("app_tab_bridge_time");
         var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
 
-        // Tab close / Direct URL paste karne par Re-Login
         if (!isTabActive && !isBridgeValid) {
             window.location.href = "logout.php?msg=tab_closed";
             return;
@@ -86,7 +193,6 @@ else{
     }
 })();
 
-// Navigation links par click ka bridge token
 document.addEventListener("mousedown", function(e) {
     if (e.target.closest("a")) {
         localStorage.setItem("app_tab_bridge_time", Date.now().toString());
@@ -96,6 +202,11 @@ document.addEventListener("mousedown", function(e) {
 
 </head>
 <body>
+
+<!-- 🏬 METALLIC SHOP SHUTTER OVERLAY -->
+<div id="shopShutter" class="shutter-overlay">
+    <div class="shutter-handle-bar">SHOP SHUTTER</div>
+</div>
 
 <?php if(isset($_SESSION['username'])): ?>
 
@@ -157,7 +268,8 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <ul class="dropdown-menu">
 <li>
-<a href="logout.php">
+<!-- 🏬 LOGOUT WITH SHUTTER CLOSE ANIMATION -->
+<a href="logout.php" onclick="animateLogout(event)">
 <i class="glyphicon glyphicon-off"></i>
 Logout
 </a>
