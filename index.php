@@ -216,12 +216,44 @@
     </div>
 </div>
 <!-- ✅ LOGIN PAGE LOAD PAR MEMORY CLEAR -->
+<!-- ✅ LOGIN PAGE SESSION CLEAR + SWEETALERT TOAST -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // 1. LocalStorage ko bina cheede sirf SessionStorage clear karo
     if (typeof(Storage) !== "undefined") {
         sessionStorage.clear();
-        localStorage.clear();
     }
+
+    // 2. URL Msg Read karke SweetAlert dikhao
+    (function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var msg = urlParams.get('msg');
+
+        if (msg === 'updated') {
+            Swal.fire({
+                icon: 'info',
+                title: '🚀 System Updated!',
+                text: 'A new update was deployed. Please log in again.',
+                confirmButtonText: 'OK, Login',
+                confirmButtonColor: '#a80000'
+            });
+        } 
+        else if (msg === 'session_expired' || msg === 'tab_closed') {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'Session Expired!',
+                text: 'Please log in again to continue.',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true
+            });
+        }
+    })();
 </script>
+
+<?php include_once('layouts/footer.php'); ?>
 
 <?php include_once('layouts/footer.php'); ?>
 
