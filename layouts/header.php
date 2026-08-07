@@ -75,16 +75,29 @@ if(isset($_SESSION['role_id'])){
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
     var savedVersion = localStorage.getItem("app_deploy_version");
 
+    // 1. Redeploy Check
     if (!savedVersion) {
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    } 
-    else if (savedVersion !== CURRENT_VERSION) {
+    } else if (savedVersion !== CURRENT_VERSION) {
         window.addEventListener("DOMContentLoaded", function() {
             var modal = document.getElementById("deployModalOverlay");
             if (modal) {
                 modal.style.display = "flex";
             }
         });
+    }
+
+    // 2. Safe Tab Close Check (Without Session Destruction Loop)
+    var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+    
+    if (isFreshLogin) {
+        sessionStorage.setItem("tab_is_open", "true");
+    } else {
+        // Tab Close hone par jab naya Tab khulega toh direct Login Screen par bhejega
+        if (!sessionStorage.getItem("tab_is_open")) {
+            window.location.href = "login_v2.php";
+            return;
+        }
     }
 })();
 
@@ -93,6 +106,13 @@ function confirmRedeployLogout() {
     localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     window.location.href = "logout.php?msg=updated";
 }
+
+// Same app ke andar kisi link ko naye tab me kholne par tab state maintain rakhna
+document.addEventListener("mousedown", function(e) {
+    if (e.target.closest("a")) {
+        sessionStorage.setItem("tab_is_open", "true");
+    }
+});
 </script>
 
 <title>
