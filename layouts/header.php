@@ -75,7 +75,7 @@ if(isset($_SESSION['role_id'])){
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
     var savedVersion = localStorage.getItem("app_deploy_version");
 
-    // 1. Redeploy Check
+    // 1. Redeployment Check
     if (!savedVersion) {
         localStorage.setItem("app_deploy_version", CURRENT_VERSION);
     } else if (savedVersion !== CURRENT_VERSION) {
@@ -87,16 +87,20 @@ if(isset($_SESSION['role_id'])){
         });
     }
 
-    // 2. Safe Tab Close Check (Without Session Destruction Loop)
-    var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+    // 2. Tab Isolation Check (SIRF LOGGED IN USERS KE LIYE)
+    var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
     
-    if (isFreshLogin) {
-        sessionStorage.setItem("tab_is_open", "true");
-    } else {
-        // Tab Close hone par jab naya Tab khulega toh direct Login Screen par bhejega
-        if (!sessionStorage.getItem("tab_is_open")) {
-            window.location.href = "login_v2.php";
-            return;
+    if (isLoggedIn) {
+        var isFreshLogin = <?php echo !empty($_SESSION['just_logged_in']) ? 'true' : 'false'; ?>;
+        
+        if (isFreshLogin) {
+            sessionStorage.setItem("tab_is_open", "true");
+        } else {
+            // Agar Tab close karke naya tab khula hai -> Logout karke session wipe karo
+            if (!sessionStorage.getItem("tab_is_open")) {
+                window.location.href = "logout.php?msg=tab_closed";
+                return;
+            }
         }
     }
 })();
@@ -107,7 +111,7 @@ function confirmRedeployLogout() {
     window.location.href = "logout.php?msg=updated";
 }
 
-// Same app ke andar kisi link ko naye tab me kholne par tab state maintain rakhna
+// System ke andar links click hone par session active rakhna
 document.addEventListener("mousedown", function(e) {
     if (e.target.closest("a")) {
         sessionStorage.setItem("tab_is_open", "true");
