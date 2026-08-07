@@ -26,113 +26,6 @@ if (!empty($_SESSION['just_logged_in'])) {
 <head>
 <meta charset="UTF-8">
 
-<!-- ✅ REDEPLOYMENT POPUP STYLING & SCRIPT -->
-<style>
-  #deployModalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(6px);
-    z-index: 999999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-  .deploy-modal-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 28px 32px;
-    max-width: 420px;
-    width: 90%;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-    text-align: center;
-    animation: popupAnim 0.25s ease-out;
-  }
-  @keyframes popupAnim {
-    from { transform: scale(0.85); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  .deploy-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-  }
-  .deploy-btn {
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 15px;
-    margin-top: 20px;
-    cursor: pointer;
-    width: 100%;
-    transition: background 0.2s;
-  }
-  .deploy-btn:hover {
-    background: #1d4ed8;
-  }
-</style>
-
-<script>
-(function() {
-    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
-    var savedVersion = localStorage.getItem("app_deploy_version");
-
-    // 1. Redeployment Check
-    if (!savedVersion) {
-        localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    } else if (savedVersion !== CURRENT_VERSION) {
-        window.addEventListener("DOMContentLoaded", function() {
-            var modal = document.getElementById("deployModalOverlay");
-            if (modal) {
-                modal.style.display = "flex";
-            }
-        });
-    }
-
-    // 2. Tab Isolation Check (ONLY FOR LOGGED IN USERS)
-    var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
-    if (!isLoggedIn) return; // Login page par ye script run nahi hogi (NO LOOP)
-
-    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
-
-    if (isFreshLogin) {
-        sessionStorage.setItem("app_tab_session", "active");
-    } else {
-        var isTabActive = sessionStorage.getItem("app_tab_session") === "active";
-        
-        // System ke andar link par right click / Ctrl+click karke naya tab kholne ki permission
-        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
-        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
-
-        // Agar Tab close ho chuka hai ya direct URL paste karke naya tab khola -> FORCE LOGOUT
-        if (!isTabActive && !isBridgeValid) {
-            window.location.href = "logout.php?msg=tab_closed";
-            return;
-        }
-
-        sessionStorage.setItem("app_tab_session", "active");
-    }
-})();
-
-function confirmRedeployLogout() {
-    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>";
-    localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    window.location.href = "logout.php?msg=updated";
-}
-
-// App ke navigation links ke liye tab bridge
-document.addEventListener("mousedown", function(e) {
-    if (e.target.closest("a")) {
-        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
-    }
-});
-</script>
-
 <title>
 <?php
 if (!empty($page_title)){
@@ -155,20 +48,72 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
+<script>
+(function() {
+    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
+    var savedVersion = localStorage.getItem("app_deploy_version");
+
+    // 🚀 1. REDEPLOYMENT CHECK (SWEETALERT TOAST)
+    if (!savedVersion) {
+        localStorage.setItem("app_deploy_version", CURRENT_VERSION);
+    } else if (savedVersion !== CURRENT_VERSION) {
+        window.addEventListener("DOMContentLoaded", function() {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: '🚀 System Updated!',
+                text: 'New version deployed. Re-login required.',
+                showConfirmButton: true,
+                confirmButtonText: 'Login Again',
+                confirmButtonColor: '#2563eb',
+                timer: 10000,
+                timerProgressBar: true
+            }).then((result) => {
+                confirmRedeployLogout();
+            });
+        });
+    }
+
+    // 🔒 2. TAB ISOLATION CHECK (SIRF LOGGED IN USERS KE LIYE)
+    var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
+    if (!isLoggedIn) return;
+
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+
+    if (isFreshLogin) {
+        sessionStorage.setItem("app_tab_session", "active");
+    } else {
+        var isTabActive = sessionStorage.getItem("app_tab_session") === "active";
+        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
+        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
+
+        // Tab close / Direct URL paste karne par Re-Login
+        if (!isTabActive && !isBridgeValid) {
+            window.location.href = "logout.php?msg=tab_closed";
+            return;
+        }
+
+        sessionStorage.setItem("app_tab_session", "active");
+    }
+})();
+
+function confirmRedeployLogout() {
+    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>";
+    localStorage.setItem("app_deploy_version", CURRENT_VERSION);
+    window.location.href = "logout.php?msg=updated";
+}
+
+// System ke navigation links ke liye bridge token
+document.addEventListener("mousedown", function(e) {
+    if (e.target.closest("a")) {
+        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
+    }
+});
+</script>
+
 </head>
 <body>
-
-<!-- ✅ REDEPLOYMENT POPUP OVERLAY HTML -->
-<div id="deployModalOverlay">
-  <div class="deploy-modal-card">
-    <div class="deploy-icon">🚀</div>
-    <h3 style="margin: 0 0 8px 0; font-weight: 700; color: #0f172a;">System Updated</h3>
-    <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
-      A new update has been deployed. Please click below to refresh and log in again.
-    </p>
-    <button class="deploy-btn" onclick="confirmRedeployLogout()">OK, Login Again</button>
-  </div>
-</div>
 
 <?php if(isset($_SESSION['username'])): ?>
 
