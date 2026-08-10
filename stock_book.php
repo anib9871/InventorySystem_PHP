@@ -3,97 +3,104 @@ require_once('includes/load.php');
 // page_require_level(2);
 
 $products = find_all('products');
+
+/* ===== FETCH ORGANIZATION DETAILS FOR PDF BRANDING ===== */
+$org_id = $_SESSION['org_id'] ?? 1;
+
+$org_data = find_by_sql("
+    SELECT * FROM organization_master 
+    WHERE id = '{$org_id}' 
+    LIMIT 1
+");
+$org = !empty($org_data) ? $org_data[0] : [
+    'org_name' => 'ORGANIZATION NAME',
+    'address'  => 'Organization Address Details',
+    'phone'    => '',
+    'gst_no'   => ''
+];
+
+$master_org = find_by_sql("
+    SELECT org_name 
+    FROM master_inventory.master_organization 
+    WHERE org_id = '{$org_id}' 
+    LIMIT 1
+");
+$company_name = !empty($master_org) ? $master_org[0]['org_name'] : ($org['org_name'] ?? 'ORGANIZATION');
+
 ?>
 
 <?php include_once('layouts/header.php'); ?>
 
 <style>
-@media print {
-    @page {
-        size: A4 portrait;
-        margin: 10mm;
-    }
-
-    body * {
-        visibility: hidden;
-    }
-
-    .panel, .panel * {
-        visibility: visible;
-    }
-
-    .panel {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        box-shadow: none !important;
-        border: 1px solid #000 !important;
-    }
-
-    body {
-        font-size: 12px;
-    }
-
-    .btn {
-        display: none !important;
-    }
-
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-    }
-
-    th, td {
-        border: 1px solid #000 !important;
-        padding: 6px !important;
-        text-align: center;
-    }
-
-    .panel-heading {
-        font-size: 20px;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 15px;
-    }
+/* BASE STYLES */
+body {
+    background: #f1f5f9;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.stock-card {
+    border: none;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 18px rgba(15,23,42,.06);
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+/* TABLE STYLING & SORT ARROWS FIX */
 #stockTable th {
+    background: #0f172a !important;
+    color: #fff !important;
     cursor: pointer;
     position: relative;
-    padding-right: 20px;
+    padding-right: 25px !important;
     font-size: 12px;
     white-space: nowrap;
+    border: none !important;
+    user-select: none;
+}
+
+/* Default Sort Arrow (Both Up & Down) */
+#stockTable th.sortable:after {
+    content: " ↕";
+    position: absolute;
+    right: 8px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Ascending Order Arrow (Up) */
+#stockTable th.asc:after {
+    content: " ▲";
+    position: absolute;
+    right: 8px;
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Descending Order Arrow (Down) */
+#stockTable th.desc:after {
+    content: " ▼";
+    position: absolute;
+    right: 8px;
+    color: #38bdf8;
+    font-size: 10px;
+    font-weight: bold;
 }
 
 #stockTable td {
     font-size: 13px;
-    padding: 8px 10px !important;
+    padding: 10px 12px !important;
     vertical-align: middle;
-}
-
-#stockTable th:after {
-    font-family: FontAwesome;
-    content: "\f0dc";   /* sort */
-    position: absolute;
-    right: 6px;
-    color: #c5c5c5;
-}
-
-#stockTable th.asc:after {
-    content: "\f0de";   /* sort-up */
-    color: #007bff;
-}
-
-#stockTable th.desc:after {
-    content: "\f0dd";   /* sort-down */
-    color: #007bff;
+    border-color: #f1f5f9;
 }
 
 .reorder-link {
     color: #2563eb;
     font-weight: bold;
-    text-decoration: underline;
+    text-decoration: none !important;
     cursor: pointer;
 }
 
@@ -111,36 +118,196 @@ $products = find_all('products');
     text-decoration: none !important;
 }
 
-.web-link:hover {
-    background: #cbd5e1;
+/* GREEN BUTTON MATCHED WITH ORGANIZATION MASTER */
+.btn-generate-report {
+    background-color: #00a65a !important;
+    border-color: #00a65a !important;
+    color: #ffffff !important;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 18px;
+    transition: all 0.2s ease;
+}
+
+.btn-generate-report:hover {
+    background-color: #008d4c !important;
+    border-color: #008d4c !important;
+    color: #ffffff !important;
+}
+
+/* ================= PRINT / PDF EXPORT SPECIFIC STYLES ================= */
+.print-org-header {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    /* Print container visibility */
+    .printable-area, .printable-area * {
+        visibility: visible;
+    }
+
+    .printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide non-essential UI elements and sort arrows in PDF */
+    .no-print, 
+    .btn, 
+    #stockSearch, 
+    .reorder-pencil, 
+    .web-link,
+    .dataTables_filter {
+        display: none !important;
+    }
+
+    /* Hide Sort Arrows in PDF Print */
+    #stockTable th:after {
+        content: "" !important;
+        display: none !important;
+    }
+
+    /* Prevent URL Expansion in PDF */
+    a[href]:after {
+        content: none !important;
+    }
+
+    /* Organization Branding Header for PDF */
+    .print-org-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid #2563eb;
+        padding-bottom: 12px;
+        margin-bottom: 15px;
+    }
+
+    .print-org-brand {
+        flex: 1;
+    }
+
+    .print-org-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 4px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .print-org-sub {
+        font-size: 11px;
+        color: #475569;
+        line-height: 1.4;
+    }
+
+    .print-doc-badge {
+        text-align: right;
+    }
+
+    .print-doc-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 4px 0;
+    }
+
+    .print-doc-date {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    /* Table Adjustments for Print */
+    table#stockTable {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 10px !important;
+    }
+
+    table#stockTable th {
+        background-color: #0f172a !important;
+        color: #ffffff !important;
+        font-size: 11px !important;
+        padding: 8px 6px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    table#stockTable td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+    }
+
+    .status-cell {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .reorder-link {
+        text-decoration: none !important;
+        color: #0f172a !important;
+    }
 }
 </style>
 
-<div class="panel panel-default">
-    <div class="panel-heading">
-        <strong>Stock Book Report</strong>
-    </div>
-
-    <div class="panel-body">
-
-        <div class="row" style="margin-bottom:15px;">
-            <div class="col-md-4 pull-right">
-                <input
-                    type="text"
-                    id="stockSearch"
-                    class="form-control"
-                    placeholder="Search Product Name..."
-                >
+<div class="container-fluid py-4 px-4">
+    <div class="stock-card printable-area">
+        
+        <!-- 🔥 PDF / PRINT EXPORT HEADER 🔥 -->
+        <div class="print-org-header">
+            <div class="print-org-brand">
+                <h1 class="print-org-title"><?= strtoupper($company_name); ?></h1>
+                <div class="print-org-sub">
+                    <?= htmlspecialchars($org['address'] ?? ''); ?><br>
+                    <?php if(!empty($org['gst_no'])): ?>
+                        <b>GSTIN:</b> <?= htmlspecialchars($org['gst_no']); ?> | 
+                    <?php endif; ?>
+                    <?php if(!empty($org['phone'])): ?>
+                        <b>Phone:</b> <?= htmlspecialchars($org['phone']); ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="print-doc-badge">
+                <div class="print-doc-title">STOCK REPORT</div>
+                <div class="print-doc-date">Generated on: <?= date("d/M/Y h:i A"); ?></div>
             </div>
         </div>
 
-        <div style="margin-bottom:15px; text-align:right;">
-            <button
-                type="button"
-                onclick="window.print();"
-                class="btn btn-danger">
-                <i class="fa fa-file-pdf-o"></i> Export PDF
-            </button>
+        <!-- SCREEN HEADER -->
+        <div class="mb-4 pb-2 border-bottom no-print">
+            <h4 class="m-0 font-weight-bold text-dark" style="font-size: 20px;">Stock Report</h4>
+            <p class="text-muted m-0" style="font-size: 13px;"><?= htmlspecialchars($company_name); ?> - Inventory & Reorder Level Tracking</p>
+        </div>
+
+        <!-- SEARCH BAR & GENERATE REPORT BUTTON -->
+        <div class="row align-items-center mb-3 no-print">
+            <div class="col-md-5">
+                <input type="text" id="stockSearch" class="form-control" placeholder="🔍 Search Product Name..." style="border-radius: 8px;">
+            </div>
+            <div class="col-md-7 text-right">
+                <button type="button" onclick="window.print();" class="btn btn-generate-report">
+                    <i class="fa fa-file-pdf-o mr-1"></i> Generate Report
+                </button>
+            </div>
         </div>
 
         <?php
@@ -192,18 +359,19 @@ $products = find_all('products');
             ORDER BY p.name ASC
         ");
         ?>
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped align-middle" id="stockTable">
+<br>
+        <!-- STOCK REPORT TABLE WITH SORTABLE HEADERS -->
+        <div class="table-responsive" style="border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+            <table class="table table-bordered align-middle mb-0" id="stockTable">
                 <thead>
-                    <tr style="background:#f2f2f2;">
-                        <th width="40">#</th>
-                        <th>Product Name</th>
-                        <th width="110" class="text-center">On Demo / Hold</th>
-                        <th width="120" class="text-center">Available Stock</th>
-                        <th width="110" class="text-center">Reorder Level</th>
-                        <th width="90" class="text-center">Website</th>
-                        <th width="120" class="text-center">Status</th>
+                    <tr>
+                        <th width="40" class="text-center">#</th>
+                        <th class="sortable">Product Name</th>
+                        <th width="130" class="text-center sortable">On Demo / Hold</th>
+                        <th width="140" class="text-center sortable">Available Stock</th>
+                        <th width="130" class="text-center sortable">Reorder Level</th>
+                        <th width="100" class="text-center no-print">Website</th>
+                        <th width="130" class="text-center sortable">Status</th>
                     </tr>
                 </thead>
 
@@ -222,31 +390,32 @@ $products = find_all('products');
                     // Net Available Stock for sale
                     $available_stock = $physical_stock - $demo_hold_qty;
 
-                    // Formatted numbers without trailing zeros
-                    // Decimals ko round karke clean integer (Whole Quantity) banane ke liye
-$display_available = (int)round($available_stock);
-$display_demo      = (int)round($demo_hold_qty);
+                    // Clean integer formatting
+                    $display_available = (int)round($available_stock);
+                    $display_demo      = (int)round($demo_hold_qty);
 
                     $reorder = (float)$row['reorder_level'];
 
                     $status = "In Stock";
-                    $color  = "#b6d7a8";
+                    $color  = "#b6d7a8"; // Light Green
 
                     if($available_stock <= $reorder){
                         $status = "Low Stock";
-                        $color  = "#f9cb9c";
+                        $color  = "#f9cb9c"; // Light Orange
                     }
 
                     if($available_stock <= ($reorder / 2)){
                         $status = "Critically Low";
-                        $color  = "#f4cccc";
+                        $color  = "#f4cccc"; // Light Red
                     }
                     ?>
 
                     <tr>
-                        <td><?= $i++; ?></td>
+                        <td class="text-center"><?= $i++; ?></td>
 
-                        <td style="text-align:left; font-weight:600;"><?= htmlspecialchars($row['name']); ?></td>
+                        <td style="text-align:left; font-weight:600; color:#0f172a;">
+                            <?= htmlspecialchars($row['name']); ?>
+                        </td>
 
                         <!-- Demo Stock with Clients -->
                         <td style="color:#d9534f; font-weight:bold;" class="text-center">
@@ -261,12 +430,13 @@ $display_demo      = (int)round($demo_hold_qty);
                         <!-- Clickable Reorder Level -> Direct Edit in product.php -->
                         <td class="text-center">
                             <a href="product.php?edit=<?= $row['id']; ?>" class="reorder-link" title="Click to edit Reorder Level in Product Master">
-                                <?= (int)$reorder; ?> <i class="fa fa-pencil" style="font-size:10px; margin-left:2px;"></i>
+                                <?= (int)$reorder; ?> 
+                                <i class="fa fa-pencil reorder-pencil" style="font-size:11px; margin-left:2px;"></i>
                             </a>
                         </td>
 
-                        <!-- Website Link -->
-                        <td class="text-center">
+                        <!-- Website Link (Hidden in PDF) -->
+                        <td class="text-center no-print">
                             <?php if(!empty($row['website_link'])): ?>
                                 <a href="<?= htmlspecialchars($row['website_link']); ?>" target="_blank" class="web-link">
                                     <i class="fa fa-globe"></i> Visit
@@ -276,7 +446,7 @@ $display_demo      = (int)round($demo_hold_qty);
                             <?php endif; ?>
                         </td>
 
-                        <td style="background:<?= $color ?>; font-weight:bold; text-align:center;">
+                        <td class="status-cell" style="background:<?= $color ?>; font-weight:bold; text-align:center;">
                             <?= $status ?>
                         </td>
                     </tr>
@@ -290,6 +460,7 @@ $display_demo      = (int)round($demo_hold_qty);
 </div>
 
 <script>
+// Search Filter
 document.getElementById("stockSearch").addEventListener("keyup", function () {
     var value = this.value.toLowerCase();
     var rows = document.querySelectorAll("#stockTable tbody tr");
@@ -304,30 +475,34 @@ document.getElementById("stockSearch").addEventListener("keyup", function () {
     });
 });
 
+// Table Header Sorting Logic with Visual Arrow Updates
 const table = document.getElementById("stockTable");
-const headers = table.querySelectorAll("th");
+const headers = table.querySelectorAll("th.sortable");
 
-headers.forEach((header, index) => {
+headers.forEach((header) => {
     let asc = true;
 
     header.addEventListener("click", function () {
-        headers.forEach(h=>{
-            if(h!==header){
-                h.classList.remove("asc","desc");
+        const index = Array.from(header.parentNode.children).indexOf(header);
+
+        // Reset all sortable headers
+        headers.forEach(h => {
+            if (h !== header) {
+                h.classList.remove("asc", "desc");
             }
         });
 
         const tbody = table.querySelector("tbody");
         const rows = Array.from(tbody.querySelectorAll("tr"));
 
-        rows.sort(function(a,b){
+        rows.sort(function (a, b) {
             let x = a.cells[index].innerText.trim();
             let y = b.cells[index].innerText.trim();
 
-            if(!isNaN(parseFloat(x)) && !isNaN(parseFloat(y))){
+            if (!isNaN(parseFloat(x)) && !isNaN(parseFloat(y))) {
                 return asc
-                    ? parseFloat(x)-parseFloat(y)
-                    : parseFloat(y)-parseFloat(x);
+                    ? parseFloat(x) - parseFloat(y)
+                    : parseFloat(y) - parseFloat(x);
             }
 
             return asc
@@ -335,17 +510,17 @@ headers.forEach((header, index) => {
                 : y.localeCompare(x);
         });
 
-        rows.forEach(row=>tbody.appendChild(row));
+        rows.forEach(row => tbody.appendChild(row));
 
-        if(asc){
+        if (asc) {
             header.classList.remove("desc");
             header.classList.add("asc");
-        }else{
+        } else {
             header.classList.remove("asc");
             header.classList.add("desc");
         }
 
-        asc=!asc;
+        asc = !asc;
     });
 });
 </script>
