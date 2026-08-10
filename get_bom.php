@@ -33,11 +33,11 @@ $max = PHP_INT_MAX;
 
 foreach($bom as $b){
 
-    $stock = find_by_sql("
+$stock = find_by_sql("
         SELECT
-        IFNULL(SUM(CASE WHEN transaction_type=1 THEN quantity ELSE 0 END),0)
+        IFNULL(SUM(CASE WHEN transaction_type IN (1, 4) THEN quantity ELSE 0 END),0)
         -
-        IFNULL(SUM(CASE WHEN transaction_type=2 THEN quantity ELSE 0 END),0)
+        IFNULL(SUM(CASE WHEN transaction_type IN (2, 3, 5, 6) THEN quantity ELSE 0 END),0)
         AS stock
         FROM transaction_master
         WHERE product_id=".$b['raw_product_id']
