@@ -500,6 +500,27 @@ if(isset($_POST['save_invoice'])){
             )
             ");
 
+            /* ================= UPDATE DEMO ITEM QTY & STATUS ================= */
+            $demo_row = find_by_sql("
+                SELECT id, qty FROM demo_item_detail 
+                WHERE customer_id = '$cust' AND product_id = '$pid' AND status = 1 
+                LIMIT 1
+            ");
+
+            if(!empty($demo_row)){
+                $demo_id = $demo_row[0]['id'];
+                $old_qty = (float)$demo_row[0]['qty'];
+                $new_qty = $old_qty - $qty; // $qty = Invoiced Quantity
+
+                if($new_qty <= 0){
+                    // Agar Poora Stock Bill ho gaya -> status = 0 (Completed)
+                    $db->query("UPDATE demo_item_detail SET qty = 0, status = 0 WHERE id = '$demo_id'");
+                } else {
+                    // Agar Partial Bill hua -> Bachi hui Qty update hogi aur status = 1 (Active) hi rahega
+                    $db->query("UPDATE demo_item_detail SET qty = '$new_qty' WHERE id = '$demo_id'");
+                }
+            }
+
             if(!$trans){
                 echo "<script>alert('Transaction Error');window.location='invoice_create.php';</script>";
                 exit;
@@ -1108,7 +1129,7 @@ body{
 </style>
 
 <div class="card-body">
-<form method="post" target="_blank" onsubmit="return validateCustomer()">
+<form method="post" onsubmit="return validateCustomer()">
 
 <!-- CUSTOMER -->
 <div class="card p-3 mb-3 top-filter-card">
@@ -1474,6 +1495,50 @@ No Product Selected
     </div>
 
 </div>
+</div>
+<!-- COMPACT DEMO POP-UP MODAL (PRO ENGLISH) -->
+<div class="modal fade" id="demoModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+      
+      <!-- Header -->
+      <div class="modal-header bg-primary text-white" style="border-top-left-radius:14px; border-top-right-radius:14px; padding:12px 18px;">
+        <h6 class="modal-title font-weight-bold m-0" style="font-size:15px;">📦 Active Demo Items Found</h6>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:0.9;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body p-3">
+        <p class="text-muted mb-2" style="font-size:12px;">Active demo items exist for this customer. Adjust the quantity to be invoiced and import to the billing grid:</p>
+        
+        <div class="table-responsive" style="border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
+          <table class="table table-sm table-bordered table-striped align-middle mb-0" style="font-size:12px;">
+            <thead class="thead-dark">
+              <tr>
+                <th width="35" class="text-center"><input type="checkbox" id="checkAllDemo" checked></th>
+                <th>Product Name</th>
+                <th width="110" class="text-center">Dealer Qty</th>
+                <th width="120" class="text-center">Invoiced Qty</th>
+                <th width="90" class="text-right">Rate</th>
+              </tr>
+            </thead>
+            <tbody id="demoModalTableBody">
+              <!-- Dynamic Rows via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer p-2 bg-light" style="border-bottom-left-radius:14px; border-bottom-right-radius:14px;">
+        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="border-radius:6px; font-size:12px;">Skip (Direct Invoice)</button>
+        <button type="button" class="btn btn-sm btn-success font-weight-bold" id="importDemoBtn" style="border-radius:6px; font-size:12px; padding:6px 14px;">Import to Invoice Grid</button>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 
@@ -1882,6 +1947,111 @@ document.addEventListener("DOMContentLoaded", function () {
         disableMobile: true
     });
 
+});
+
+/* 🔥 DEMO ITEM AUTO POP-UP & IMPORT LOGIC (COMPACT & PRO ENGLISH) 🔥 */
+let currentDemoData = [];
+
+document.querySelector("select[name='customer_id']").addEventListener("change", function () {
+    let custId = this.value;
+    if (!custId || custId == "0") return;
+
+    fetch(`get_demo_items.php?customer_id=${custId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                currentDemoData = data;
+                let tbody = document.getElementById("demoModalTableBody");
+                tbody.innerHTML = "";
+
+                data.forEach((item, index) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="text-center align-middle"><input type="checkbox" class="demoItemCheck" value="${index}" checked></td>
+                            <td class="align-middle"><b>${item.product_name}</b></td>
+                            <td class="text-center align-middle">
+                                <span class="badge badge-secondary px-2 py-1" style="font-size:11px;">${item.qty} PCS</span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <input type="number" 
+                                       class="form-control form-control-sm text-center invoiceDemoQty" 
+                                       data-max="${item.qty}" 
+                                       value="${item.qty}" 
+                                       min="1" 
+                                       max="${item.qty}" 
+                                       style="font-weight:bold; color:#2563eb; border-color:#93c5fd; height:30px; font-size:12px;">
+                            </td>
+                            <td class="text-right align-middle">₹${item.sale_price}</td>
+                        </tr>
+                    `;
+                });
+
+                if (typeof $ !== 'undefined' && $.fn.modal) {
+                    $('#demoModal').modal('show');
+                }
+            }
+        })
+        .catch(err => console.error("Error fetching demo items:", err));
+});
+
+// Select All Checkbox Handler
+document.getElementById("checkAllDemo")?.addEventListener("change", function() {
+    document.querySelectorAll(".demoItemCheck").forEach(cb => cb.checked = this.checked);
+});
+
+// Input Validation: Restrict Invoiced Qty from exceeding Dealer Qty
+document.addEventListener("input", function(e) {
+    if(e.target.classList.contains("invoiceDemoQty")){
+        let max = parseFloat(e.target.getAttribute("data-max")) || 0;
+        let val = parseFloat(e.target.value) || 0;
+        if(val > max){
+            alert("Invoiced quantity cannot exceed the available dealer quantity (" + max + " PCS)!");
+            e.target.value = max;
+        }
+    }
+});
+
+// Import Items to Invoice Grid
+document.getElementById("importDemoBtn")?.addEventListener("click", function () {
+    let selectedBoxes = document.querySelectorAll(".demoItemCheck:checked");
+
+    if(selectedBoxes.length === 0){
+        alert("Please select at least one item to import!");
+        return;
+    }
+
+    selectedBoxes.forEach(cb => {
+        let index = cb.value;
+        let item  = currentDemoData[index];
+        let row   = cb.closest("tr");
+        
+        // Fetch edited Invoiced Qty
+        let customQty = parseFloat(row.querySelector(".invoiceDemoQty").value) || item.qty;
+
+        let pObj = {
+            id: item.product_id,
+            name: item.product_name,
+            sale_price: item.sale_price,
+            gst_percent: item.gst_percent || 0,
+            current_stock: 999
+        };
+
+        // Add item to grid
+        addProduct(pObj);
+
+        // Update Qty in grid row with the custom invoiced Qty
+        let rows = document.querySelectorAll("#billBody tr");
+        let lastRow = rows[rows.length - 1];
+        if (lastRow) {
+            let qtyInput = lastRow.querySelector(".qty");
+            if(qtyInput){
+                qtyInput.value = customQty;
+                calculate(lastRow);
+            }
+        }
+    });
+
+    $('#demoModal').modal('hide');
 });
 
 </script>
