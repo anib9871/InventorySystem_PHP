@@ -76,7 +76,7 @@ IFNULL(SUM(
 
 IFNULL(SUM(
     CASE
-    WHEN transaction_type = 2
+    transaction_type IN (2, 3, 5, 6)
     THEN quantity
     ELSE 0
     END
@@ -127,7 +127,7 @@ VALUES
     NOW(),
     {$total_required},
     {$gst_id},
-    2,
+    6,
     'Manufacture Raw Material',
     NOW()
 )
