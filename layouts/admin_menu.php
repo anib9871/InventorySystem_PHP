@@ -92,6 +92,7 @@ if(!empty($config)){
         <!-- <li><a href="create_quotation.php">Quotation</a></li> -->
         <li><a href="quotation_list.php">Quotation</a></li>
         <!-- <li><a href="invoice_create.php?system=inventory">Invoice</a></li> -->
+        <li><a href="demo_item_list.php">Demo Item Detail </a></li>
         <li><a href="invoice_list.php">Invoice</a></li>
         <li><a href="manufacture.php">Manufacture</a></li>
         <li><a href="return_master.php">Return</a></li>
