@@ -328,7 +328,7 @@ body {
 
             SUM(
                 CASE
-                    WHEN t.transaction_type IN (2,3,5)
+                    WHEN t.transaction_type IN (2,3,5,6)
                     THEN t.quantity
                     ELSE 0
                 END
