@@ -76,7 +76,7 @@ IFNULL(SUM(
 
 IFNULL(SUM(
     CASE
-    transaction_type IN (2, 3, 5, 6)
+    WHEN transaction_type IN (2, 3, 5, 6)
     THEN quantity
     ELSE 0
     END
