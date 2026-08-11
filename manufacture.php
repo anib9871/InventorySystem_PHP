@@ -66,7 +66,7 @@ SELECT
 
 IFNULL(SUM(
     CASE
-    WHEN transaction_type = 1
+    WHEN transaction_type = (1,4)
     THEN quantity
     ELSE 0
     END
