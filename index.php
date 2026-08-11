@@ -12,57 +12,66 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body, html {
-      width: 100%;
-      height: 100%;
+  /* 🚫 Lock Screen Page - Absolute No Scroll */
+  html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden !important;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #f1f5f9;
-      overflow-x: hidden;
+      background: #0f172a; /* Rich Slate Theme */
   }
 
   .login-container {
-      min-height: 100vh;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
-      position: relative;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 99999;
+      background: radial-gradient(circle at 80% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
   }
 
-  /* Soft Ambient Background Lighting */
+  /* Vibrant Background Ambient Lights */
   .bg-glow-1 {
       position: absolute;
-      width: 450px;
-      height: 450px;
-      background: rgba(37, 99, 235, 0.08);
+      width: 500px;
+      height: 500px;
+      background: rgba(99, 102, 241, 0.15);
       border-radius: 50%;
-      filter: blur(100px);
-      top: 10%;
-      left: 15%;
+      filter: blur(120px);
+      top: -10%;
+      right: 10%;
       pointer-events: none;
   }
 
   .bg-glow-2 {
       position: absolute;
-      width: 400px;
-      height: 400px;
-      background: rgba(168, 0, 0, 0.06);
+      width: 450px;
+      height: 450px;
+      background: rgba(168, 85, 247, 0.12);
       border-radius: 50%;
-      filter: blur(100px);
-      bottom: 10%;
-      right: 15%;
+      filter: blur(120px);
+      bottom: -10%;
+      left: 10%;
       pointer-events: none;
   }
 
-  /* Main Split Card Frame */
+  /* Main Card Glassmorphism Frame */
   .main-card-frame {
       position: relative;
       width: 100%;
-      max-width: 920px;
-      background: #ffffff;
-      border-radius: 28px;
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
-      border: 1px solid rgba(226, 232, 240, 0.8);
+      max-width: 900px;
+      height: 500px; /* Fixed Height to Ensure No Scroll */
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       overflow: hidden;
       z-index: 10;
@@ -71,7 +80,7 @@
   /* Left Side: Form Section */
   .form-section {
       flex: 1;
-      padding: 55px 45px;
+      padding: 40px 45px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -79,27 +88,27 @@
   }
 
   .brand-header {
-      margin-bottom: 35px;
+      margin-bottom: 25px;
   }
 
   .brand-header h2 {
       font-size: 28px;
       font-weight: 800;
-      color: #0f172a;
+      color: #f8fafc;
       letter-spacing: -0.5px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
   }
 
   .brand-header p {
       font-size: 13px;
-      color: #64748b;
+      color: #94a3b8;
       margin-top: 4px;
   }
 
   .form-group {
-      margin-bottom: 22px;
+      margin-bottom: 18px;
       text-align: left;
   }
 
@@ -109,7 +118,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #334155;
+      color: #cbd5e1;
       margin-bottom: 8px;
   }
 
@@ -122,48 +131,48 @@
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #94a3b8;
+      color: #64748b;
       font-size: 15px;
       transition: color 0.3s ease;
   }
 
   .form-control {
       width: 100%;
-      height: 48px;
-      background: #f8fafc;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 0 15px 0 48px;
-      color: #0f172a;
+      height: 46px;
+      background: rgba(15, 23, 42, 0.6) !important;
+      border: 1.5px solid rgba(51, 65, 85, 0.8) !important;
+      border-radius: 12px !important;
+      padding: 0 15px 0 48px !important;
+      color: #f8fafc !important;
       font-size: 14px;
       outline: none;
       transition: all 0.3s ease;
   }
 
   .form-control:focus {
-      border-color: #2563eb;
-      background: #ffffff;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      border-color: #6366f1 !important;
+      background: rgba(15, 23, 42, 0.9) !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
   }
 
   .form-control:focus + i {
-      color: #2563eb;
+      color: #818cf8;
   }
 
   .btn-submit {
       width: 100%;
-      height: 50px;
-      margin-top: 10px;
+      height: 48px;
+      margin-top: 8px;
       border: none;
       border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
       color: #ffffff;
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
@@ -173,18 +182,19 @@
 
   .btn-submit:hover {
       transform: translateY(-2px);
-      box-shadow: 0 14px 24px -5px rgba(37, 99, 235, 0.5);
+      box-shadow: 0 14px 28px -5px rgba(99, 102, 241, 0.6);
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
   }
 
   /* Right Side: Live Illustration Section */
   .illustration-section {
       flex: 1.1;
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
       position: relative;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding: 30px;
+      padding: 20px;
       overflow: hidden;
   }
 
@@ -192,24 +202,23 @@
       position: absolute;
       width: 320px;
       height: 320px;
-      background: #bfdbfe;
+      background: rgba(99, 102, 241, 0.25);
       border-radius: 50%;
-      top: 15%;
-      right: -40px;
-      opacity: 0.6;
+      top: 10%;
+      right: -30px;
+      filter: blur(40px);
   }
 
   .pos-vector-art {
       width: 100%;
-      max-width: 420px;
+      max-width: 380px;
       height: auto;
       z-index: 5;
-      filter: drop-shadow(0 15px 25px rgba(30, 58, 138, 0.15));
+      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
   }
 
   /* ------------------- LIVE ANIMATIONS ------------------- */
   
-  /* Natural Breathing Movement */
   .anim-character-body {
       animation: characterBreathe 3.5s infinite ease-in-out;
       transform-origin: bottom center;
@@ -220,7 +229,6 @@
       50% { transform: translateY(-4px) rotate(0.5deg); }
   }
 
-  /* Eye Blinking Animation */
   .anim-eyes {
       animation: eyeBlink 4s infinite;
       transform-origin: center;
@@ -231,7 +239,6 @@
       96% { transform: scaleY(0.1); }
   }
 
-  /* Hand Typing Motion */
   .anim-hand {
       animation: handType 2s infinite alternate ease-in-out;
       transform-origin: 210px 170px;
@@ -242,14 +249,13 @@
       100% { transform: rotate(-3deg) translateY(-3px); }
   }
 
-  /* POS Screen Glow & Line Scan */
   .anim-pos-screen {
       animation: screenPulse 2.5s infinite alternate ease-in-out;
   }
 
   @keyframes screenPulse {
-      0% { fill: #ffffff; opacity: 0.9; }
-      100% { fill: #f0f9ff; opacity: 1; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)); }
+      0% { fill: #0f172a; opacity: 0.95; }
+      100% { fill: #1e1b4b; opacity: 1; filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.8)); }
   }
 
   .anim-pos-line {
@@ -263,10 +269,10 @@
   }
 
   @media (max-width: 768px) {
-      .main-card-frame { flex-direction: column-reverse; max-width: 440px; }
-      .illustration-section { padding: 20px; min-height: 220px; }
-      .pos-vector-art { max-width: 280px; }
-      .form-section { padding: 35px 25px; }
+      .main-card-frame { flex-direction: column-reverse; height: auto; max-height: 90vh; }
+      .illustration-section { padding: 15px; min-height: 180px; }
+      .pos-vector-art { max-width: 240px; }
+      .form-section { padding: 25px 20px; }
   }
 </style>
 
@@ -279,7 +285,7 @@
         <!-- LEFT COLUMN: LOGIN FORM -->
         <div class="form-section">
             <div class="brand-header">
-                <h2><i class="fa-solid fa-store" style="color:#2563eb;"></i> Storly</h2>
+                <h2><i class="fa-solid fa-store" style="color:#818cf8;"></i> Storly</h2>
                 <p>Online Inventory & Store Management System</p>
             </div>
 
@@ -310,28 +316,28 @@
             </form>
         </div>
 
-        <!-- RIGHT COLUMN: LIVE ANIMATED POS CHARACTER VECTOR ART -->
+        <!-- RIGHT COLUMN: LIVE ANIMATED VECTOR ART (Sapphire Theme) -->
         <div class="illustration-section">
             <div class="illustration-backdrop"></div>
 
             <svg class="pos-vector-art" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
                 
-                <path d="M50 220 Q 20 180 60 140 Q 120 100 200 130 Q 280 90 350 150 Q 390 200 350 250 Z" fill="#e0f2fe" opacity="0.7"/>
+                <path d="M50 220 Q 20 180 60 140 Q 120 100 200 130 Q 280 90 350 150 Q 390 200 350 250 Z" fill="#312e81" opacity="0.6"/>
 
                 <!-- Live Character Group -->
                 <g class="anim-character-body">
-                    <!-- Body / Shirt -->
-                    <path d="M 240 180 Q 280 150 320 180 L 340 300 L 220 300 Z" fill="#2563eb" />
+                    <!-- Body / Indigo Blazer -->
+                    <path d="M 240 180 Q 280 150 320 180 L 340 300 L 220 300 Z" fill="#4f46e5" />
                     <polygon points="270,180 290,180 280,210" fill="#ffffff" />
-                    <polygon points="260,180 270,180 275,200" fill="#93c5fd" />
-                    <polygon points="290,180 300,180 285,200" fill="#93c5fd" />
+                    <polygon points="260,180 270,180 275,200" fill="#818cf8" />
+                    <polygon points="290,180 300,180 285,200" fill="#818cf8" />
 
                     <!-- Neck & Head -->
-                    <rect x="272" y="160" width="16" height="22" rx="4" fill="#fbcfe8" />
+                    <rect x="272" y="160" width="16" height="22" rx="4" fill="#fed7aa" />
                     <path d="M 255 140 C 255 115, 305 115, 305 140 C 305 165, 255 165, 255 140 Z" fill="#fed7aa" />
 
                     <!-- Hair -->
-                    <path d="M 250 135 Q 260 95 295 105 Q 315 115 310 135 Q 295 120 275 125 Z" fill="#1e293b" />
+                    <path d="M 250 135 Q 260 95 295 105 Q 315 115 310 135 Q 295 120 275 125 Z" fill="#0f172a" />
 
                     <!-- Eyes & Smile -->
                     <g class="anim-eyes">
@@ -340,33 +346,33 @@
                     </g>
                     <path d="M 272 150 Q 279 156 286 150" stroke="#0f172a" stroke-width="2" stroke-linecap="round" fill="none" />
 
-                    <!-- Pointing Hand -->
+                    <!-- Hand -->
                     <g class="anim-hand">
                         <path d="M 240 200 Q 200 195 175 200" stroke="#fed7aa" stroke-width="12" stroke-linecap="round" fill="none" />
                         <circle cx="172" cy="200" r="7" fill="#fed7aa" />
                     </g>
                 </g>
 
-                <!-- Counter Desk & POS Machine -->
-                <rect x="180" y="240" width="200" height="70" rx="8" fill="#ea580c" />
-                <rect x="175" y="235" width="210" height="12" rx="4" fill="#f97316" />
-                <rect x="175" y="247" width="210" height="4" fill="#c2410c" />
+                <!-- Counter Desk & POS Terminal -->
+                <rect x="180" y="240" width="200" height="70" rx="8" fill="#334155" />
+                <rect x="175" y="235" width="210" height="12" rx="4" fill="#475569" />
+                <rect x="175" y="247" width="210" height="4" fill="#1e293b" />
 
-                <rect x="200" y="210" width="55" height="26" rx="4" fill="#475569" />
-                <rect x="205" y="200" width="45" height="12" rx="2" fill="#334155" />
-                <rect x="222" y="185" width="10" height="18" fill="#64748b" />
+                <rect x="200" y="210" width="55" height="26" rx="4" fill="#1e293b" />
+                <rect x="205" y="200" width="45" height="12" rx="2" fill="#0f172a" />
+                <rect x="222" y="185" width="10" height="18" fill="#475569" />
 
-                <!-- POS Screen (Live Glow) -->
+                <!-- POS Screen (Glow Effect) -->
                 <g id="posScreenGroup">
-                    <rect x="185" y="125" width="70" height="60" rx="6" fill="#1e293b" transform="rotate(-8 220 155)" />
-                    <rect class="anim-pos-screen" x="190" y="130" width="60" height="50" rx="4" fill="#ffffff" transform="rotate(-8 220 155)" />
+                    <rect x="185" y="125" width="70" height="60" rx="6" fill="#0f172a" transform="rotate(-8 220 155)" />
+                    <rect class="anim-pos-screen" x="190" y="130" width="60" height="50" rx="4" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" transform="rotate(-8 220 155)" />
                     
-                    <rect x="196" y="138" width="25" height="4" rx="2" fill="#2563eb" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="146" width="40" height="3" rx="1.5" fill="#94a3b8" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="152" width="32" height="3" rx="1.5" fill="#94a3b8" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="162" width="18" height="8" rx="2" fill="#22c55e" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="138" width="25" height="4" rx="2" fill="#818cf8" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="146" width="40" height="3" rx="1.5" fill="#475569" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="152" width="32" height="3" rx="1.5" fill="#475569" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="162" width="18" height="8" rx="2" fill="#10b981" transform="rotate(-8 220 155)" />
                     
-                    <line class="anim-pos-line" x1="190" y1="140" x2="250" y2="140" stroke="#38bdf8" stroke-width="2" transform="rotate(-8 220 155)" />
+                    <line class="anim-pos-line" x1="190" y1="140" x2="250" y2="140" stroke="#818cf8" stroke-width="2" transform="rotate(-8 220 155)" />
                 </g>
 
             </svg>
@@ -383,7 +389,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var posScreen = document.getElementById("posScreenGroup");
 
     function highlightPosScreen() {
-        if (posScreen) { posScreen.style.filter = "drop-shadow(0 0 12px #38bdf8)"; }
+        if (posScreen) { posScreen.style.filter = "drop-shadow(0 0 14px #818cf8)"; }
     }
 
     function resetPosScreen() {
@@ -416,7 +422,7 @@ window.addEventListener("DOMContentLoaded", function() {
             title: '🚀 System Updated!',
             text: 'A new update was deployed. Please log in again.',
             confirmButtonText: 'OK, Login',
-            confirmButtonColor: '#2563eb'
+            confirmButtonColor: '#6366f1'
         });
     } 
     else if (msg === 'session_expired' || msg === 'tab_closed') {
