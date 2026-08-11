@@ -13,7 +13,7 @@ if(isset($_SESSION['role_id'])){
   $user['role_id'] = 0;
 }
 
-// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
+// FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
 $is_fresh_login = false;
 if (!empty($_SESSION['just_logged_in'])) {
     $is_fresh_login = true;
@@ -48,9 +48,8 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 SUPER PREMIUM 3D METALLIC SHUTTER STYLING -->
+<!-- 🏬 ULTRA PREMIUM 3D METALLIC SHUTTER STYLING -->
 <style>
-/* Shutter Container with Ultra-Realistic Metallic Slats & Dynamic Light Reflections */
 .shutter-overlay {
     position: fixed;
     top: 0;
@@ -58,14 +57,11 @@ else{
     width: 100vw;
     height: 100vh;
     background: 
-        /* Dynamic Metallic Light Sweep Reflection */
         linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.08) 55%, rgba(255,255,255,0) 100%),
-        /* Side Vignette Shadows for 3D Depth */
         linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 6%, transparent 12%, transparent 88%, rgba(0,0,0,0.1) 94%, rgba(0,0,0,0.6) 100%),
-        /* Metallic Galvanized Steel Slats */
         repeating-linear-gradient(
             180deg,
-            #e2e8f0 0px,
+            #f1f5f9 0px,
             #cbd5e1 3px,
             #94a3b8 8px,
             #475569 14px,
@@ -79,7 +75,7 @@ else{
     border-bottom: 28px solid #0f172a;
     box-shadow: 0 25px 50px rgba(0,0,0,0.9), inset 0 -15px 30px rgba(0,0,0,0.8);
     z-index: 9999999;
-    transition: transform 1.3s cubic-bezier(0.77, 0, 0.175, 1);
+    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
     transform: translateY(0%);
     display: flex;
     flex-direction: column;
@@ -100,7 +96,60 @@ else{
     transform: translateY(-100%);
 }
 
-/* Bottom Lock Rail */
+.character-3d-wrapper {
+    position: absolute;
+    bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+}
+
+.character-3d-badge {
+    background: linear-gradient(135deg, #1e1b4b 0%, #431407 100%);
+    border: 2px solid #f59e0b;
+    color: #fbbf24;
+    font-weight: 900;
+    font-size: 13px;
+    padding: 8px 26px;
+    border-radius: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px rgba(245, 158, 11, 0.4);
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.character-3d-svg {
+    width: 135px;
+    height: 135px;
+    filter: drop-shadow(0 20px 25px rgba(0,0,0,0.6));
+    animation: characterMotion 1.4s infinite alternate ease-in-out;
+}
+
+@keyframes characterMotion {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-8px) scale(1.02); }
+}
+
+.shutter-handle-bar {
+    width: 310px;
+    height: 32px;
+    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 30%, #475569 70%, #0f172a 100%);
+    border-radius: 12px;
+    border: 2px solid #94a3b8;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.7), inset 0 2px 2px rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: 2.5px;
+    margin-top: -12px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+
 .shutter-bottom-rail {
     position: absolute;
     bottom: 0;
@@ -123,67 +172,9 @@ else{
     border-radius: 50%;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.4);
 }
-
-/* 3D Character & Store Badge Overlay */
-.character-3d-wrapper {
-    position: absolute;
-    bottom: 48px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 100;
-}
-
-/* Modern Glowing Badge */
-.character-3d-badge {
-    background: linear-gradient(135deg, #1e1b4b 0%, #431407 100%);
-    border: 2px solid #f59e0b;
-    color: #fbbf24;
-    font-weight: 900;
-    font-size: 13px;
-    padding: 8px 26px;
-    border-radius: 30px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px rgba(245, 158, 11, 0.4);
-    margin-bottom: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-}
-
-/* SVG Character Animation */
-.character-3d-svg {
-    width: 140px;
-    height: 140px;
-    filter: drop-shadow(0 20px 25px rgba(0,0,0,0.6));
-    animation: characterMotion 1.4s infinite alternate ease-in-out;
-}
-
-@keyframes characterMotion {
-    0% { transform: translateY(0px) scale(1); }
-    100% { transform: translateY(-10px) scale(1.02); }
-}
-
-/* Realistic Chrome Handle Bar */
-.shutter-handle-bar {
-    width: 320px;
-    height: 32px;
-    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 30%, #475569 70%, #0f172a 100%);
-    border-radius: 12px;
-    border: 2px solid #94a3b8;
-    box-shadow: 0 12px 25px rgba(0,0,0,0.7), inset 0 2px 2px rgba(255,255,255,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 900;
-    color: #0f172a;
-    letter-spacing: 2.5px;
-    margin-top: -12px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
-}
 </style>
 
-<!-- 🏬 REALISTIC SHUTTER SOUNDS & CONTROLLER -->
+<!-- 🏬 SHUTTER SOUND & ANIMATION CONTROLLER -->
 <script>
 function playLockClickSound() {
     try {
@@ -213,12 +204,12 @@ function playRollingShutterSound() {
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.3;
+        var bufferSize = ctx.sampleRate * 1.25;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
         for (var i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * 0.8;
+            data[i] = (Math.random() * 2 - 1) * 0.75;
         }
 
         var noise = ctx.createBufferSource();
@@ -227,12 +218,12 @@ function playRollingShutterSound() {
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(350, ctx.currentTime);
-        filter.frequency.linearRampToValueAtTime(850, ctx.currentTime + 1.2);
-        filter.Q.value = 3.0;
+        filter.frequency.linearRampToValueAtTime(800, ctx.currentTime + 1.1);
+        filter.Q.value = 2.8;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.4, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.3);
+        gain.gain.setValueAtTime(0.35, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -253,12 +244,12 @@ window.addEventListener("DOMContentLoaded", function() {
         
         setTimeout(function() {
             playLockClickSound();
-        }, 100);
+        }, 80);
 
         setTimeout(function() {
             playRollingShutterSound();
             shutter.classList.add("shutter-open");
-        }, 350);
+        }, 250);
     }
 });
 
@@ -276,18 +267,18 @@ function animateLogout(e) {
 
         setTimeout(function() {
             playLockClickSound();
-        }, 850);
+        }, 900);
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1200);
+        }, 1150);
     } else {
         window.location.href = targetUrl;
     }
 }
 </script>
 
-<!-- ✅ REDEPLOYMENT & TAB GUARD -->
+<!-- REDEPLOYMENT & TAB GUARD -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -337,7 +328,6 @@ document.addEventListener("mousedown", function(e) {
     <div class="character-3d-wrapper">
         <div id="shutterStatusBadge" class="character-3d-badge">⚡ STORE OPENING...</div>
         
-        <!-- Modern High-Detail 3D Business Avatar SVG -->
         <svg class="character-3d-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <radialGradient id="headGlow" cx="50%" cy="30%" r="70%">
@@ -360,24 +350,16 @@ document.addEventListener("mousedown", function(e) {
                     <stop offset="100%" stop-color="#334155"/>
                 </linearGradient>
             </defs>
-            <!-- Shadow -->
             <ellipse cx="60" cy="115" rx="35" ry="5" fill="rgba(0,0,0,0.4)" />
-            <!-- Hair/Cap -->
             <path d="M 32,42 Q 60,10 88,42 Q 92,20 60,12 Q 28,20 32,42 Z" fill="#0f172a" />
-            <!-- Head -->
             <circle cx="60" cy="48" r="22" fill="url(#headGlow)" stroke="#ea580c" stroke-width="0.5"/>
-            <!-- Glasses -->
             <rect x="40" y="40" width="16" height="12" rx="4" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="2"/>
             <rect x="64" y="40" width="16" height="12" rx="4" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="2"/>
             <line x1="56" y1="45" x2="64" y2="45" stroke="#fbbf24" stroke-width="2.5"/>
-            <!-- Smile -->
             <path d="M 50,58 Q 60,66 70,58" stroke="#7c2d12" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <!-- Suit Body -->
             <path d="M 28,74 Q 60,64 92,74 L 100,115 L 20,115 Z" fill="url(#suitGrad)" />
-            <!-- Shirt & Gold/Red Tie -->
             <polygon points="50,72 70,72 60,92" fill="#ffffff" />
             <polygon points="56,74 64,74 66,104 60,112 54,104" fill="url(#tieGrad)" />
-            <!-- Hands Opening Gate -->
             <path d="M 22,82 Q 8,50 22,30" stroke="url(#headGlow)" stroke-width="9" stroke-linecap="round" fill="none"/>
             <path d="M 98,82 Q 112,50 98,30" stroke="url(#headGlow)" stroke-width="9" stroke-linecap="round" fill="none"/>
             <circle cx="22" cy="28" r="7" fill="url(#chromeGrad)"/>
@@ -389,7 +371,6 @@ document.addEventListener("mousedown", function(e) {
         </div>
     </div>
 
-    <!-- Bottom Lock Rail Bolts -->
     <div class="shutter-bottom-rail">
         <div class="shutter-lock-bolt"></div>
         <div class="shutter-lock-bolt"></div>
@@ -406,7 +387,7 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <header id="header">
 
-<!-- ✅ ROLE BASED LOGO -->
+<!-- ROLE BASED LOGO -->
 <?php if($user['role_id'] != 1): ?>
 <div class="logo pull-left" id="menuToggle"
      style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
