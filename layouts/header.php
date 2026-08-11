@@ -165,27 +165,41 @@ else{
 }
 </style>
 
-<!-- 🏬 HEAVY SOUND & LOGOUT SHUTTER CONTROLLER -->
+<!-- 🏬 SHUTTER CLOSING SOUND & LOGOUT CONTROLLER -->
 <script>
-function playHeavyRollingSound() {
+function playShutterClosingSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var osc = ctx.createOscillator();
+        var bufferSize = ctx.sampleRate * 1.2;
+        var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        var data = buffer.getChannelData(0);
+
+        for (var i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.7;
+        }
+
+        var noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        var filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        // High pitch to Low pitch (Downwards roll & closing slam)
+        filter.frequency.setValueAtTime(850, ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(200, ctx.currentTime + 1.0);
+        filter.Q.value = 3.0;
+
         var gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(140, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(50, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
 
-        gain.gain.setValueAtTime(0.35, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
-
-        osc.connect(gain);
+        noise.connect(filter);
+        filter.connect(gain);
         gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 1.2);
+
+        noise.start();
     } catch (e) {}
 }
 
@@ -197,7 +211,7 @@ function animateLogout(e) {
     if (shutter) {
         shutter.classList.remove("shutter-hidden");
         shutter.classList.add("shutter-close");
-        playHeavyRollingSound();
+        playShutterClosingSound();
 
         setTimeout(function() {
             window.location.href = targetUrl;
