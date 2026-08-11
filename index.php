@@ -58,7 +58,7 @@
   .main-card-frame {
       position: relative;
       width: 100%;
-      max-width: 960px;
+      max-width: 920px;
       background: #ffffff;
       border-radius: 28px;
       box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
@@ -71,7 +71,7 @@
   /* Left Side: Form Section */
   .form-section {
       flex: 1;
-      padding: 50px 45px;
+      padding: 55px 45px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -79,11 +79,11 @@
   }
 
   .brand-header {
-      margin-bottom: 30px;
+      margin-bottom: 35px;
   }
 
   .brand-header h2 {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: -0.5px;
@@ -99,7 +99,7 @@
   }
 
   .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       text-align: left;
   }
 
@@ -150,57 +150,10 @@
       color: #2563eb;
   }
 
-  .form-options {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      font-size: 13px;
-      color: #64748b;
-  }
-
-  .remember-switch {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-  }
-
-  .remember-switch input { display: none; }
-
-  .slider {
-      width: 36px;
-      height: 20px;
-      background-color: #cbd5e1;
-      border-radius: 20px;
-      position: relative;
-      transition: 0.3s;
-  }
-
-  .slider::before {
-      content: "";
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: white;
-      top: 3px;
-      left: 3px;
-      transition: 0.3s;
-  }
-
-  .remember-switch input:checked + .slider {
-      background-color: #2563eb;
-  }
-
-  .remember-switch input:checked + .slider::before {
-      transform: translateX(16px);
-  }
-
   .btn-submit {
       width: 100%;
       height: 50px;
+      margin-top: 10px;
       border: none;
       border-radius: 12px;
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -221,34 +174,6 @@
   .btn-submit:hover {
       transform: translateY(-2px);
       box-shadow: 0 14px 24px -5px rgba(37, 99, 235, 0.5);
-  }
-
-  .quick-touch-badge {
-      margin-top: 25px;
-      text-align: center;
-      padding-top: 18px;
-      border-top: 1px dashed #e2e8f0;
-  }
-
-  .touch-icon {
-      width: 44px;
-      height: 44px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #2563eb;
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      background: #f8fafc;
-  }
-
-  .touch-icon:hover {
-      border-color: #2563eb;
-      background: #eff6ff;
-      transform: scale(1.05);
   }
 
   /* Right Side: Live Illustration Section */
@@ -354,7 +279,7 @@
         <!-- LEFT COLUMN: LOGIN FORM -->
         <div class="form-section">
             <div class="brand-header">
-                <h2><i class="fa-solid fa-boxes-stacked" style="color:#2563eb;"></i> E-Inventory</h2>
+                <h2><i class="fa-solid fa-store" style="color:#2563eb;"></i> Storly</h2>
                 <p>Online Inventory & Store Management System</p>
             </div>
 
@@ -365,7 +290,7 @@
                 <div class="form-group">
                     <label for="username">Username / Email</label>
                     <div class="input-wrapper">
-                        <input type="text" class="form-control" id="usernameInput" name="username" placeholder="Enter your username" required autocomplete="off">
+                        <input type="text" class="form-control" id="usernameInput" name="username" placeholder="Enter username" required autocomplete="off">
                         <i class="fa-solid fa-user"></i>
                     </div>
                 </div>
@@ -378,24 +303,9 @@
                     </div>
                 </div>
 
-                <div class="form-options">
-                    <label class="remember-switch">
-                        <input type="checkbox" name="remember" checked>
-                        <span class="slider"></span>
-                        Keep me logged in
-                    </label>
-                </div>
-
                 <button type="submit" id="submitBtn" class="btn-submit">
                     Log In <i class="fa-solid fa-arrow-right"></i>
                 </button>
-
-                <div class="quick-touch-badge">
-                    <div class="touch-icon" title="Login with TouchID / Quick Access">
-                        <i class="fa-solid fa-fingerprint"></i>
-                    </div>
-                    <p style="font-size:11px; color:#94a3b8; margin-top:6px;">Quick Biometric Access</p>
-                </div>
 
             </form>
         </div>
