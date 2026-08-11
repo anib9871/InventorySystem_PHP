@@ -13,7 +13,7 @@
     redirect('home.php', false);
   }
 
-  // Flag so header.php knows NOT to show duplicate shutter overlay here
+  // Flag so header.php knows NOT to render duplicate shutter on login page
   $is_login_page = true;
 ?>
 
@@ -40,6 +40,7 @@
       font-family: 'Segoe UI', Roboto, sans-serif;
   }
 
+  /* Soft Color Lighting */
   .glow-circle-1 {
       position: absolute;
       width: 380px;
@@ -64,6 +65,7 @@
       pointer-events: none;
   }
 
+  /* Main Floating Card */
   .login-page-card {
       position: relative;
       width: 100%;
@@ -123,7 +125,11 @@
       transition: all 0.3s ease;
   }
 
-  /* 🏬 SINGLE SHUTTER OVERLAY FOR LOGIN_V2 */
+  .btn-theme:hover {
+      background: #8e0000;
+  }
+
+  /* 🏬 REALISTIC 3D METALLIC SHUTTER OVERLAY */
   .shutter-overlay-v2 {
       position: fixed;
       top: 0;
@@ -145,7 +151,7 @@
       border-bottom: 28px solid #0f172a;
       box-shadow: 0 25px 50px rgba(0,0,0,0.9);
       z-index: 99999999;
-      transform: translateY(-100%); /* Default Open so form is visible */
+      transform: translateY(0%); /* Default closed so it opens on login */
       transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
       display: flex;
       flex-direction: column;
@@ -154,9 +160,8 @@
       pointer-events: none;
   }
 
-  .shutter-overlay-v2.shutter-closed {
-      transform: translateY(0%) !important; /* Close on Login click */
-      pointer-events: all;
+  .shutter-overlay-v2.shutter-open {
+      transform: translateY(-100%) !important; /* Roll UP effect */
   }
 
   .character-3d-wrapper {
@@ -180,6 +185,12 @@
       text-transform: uppercase;
   }
 
+  .character-3d-svg {
+      width: 135px;
+      height: 135px;
+      filter: drop-shadow(0 20px 25px rgba(0,0,0,0.6));
+  }
+
   .shutter-handle-bar {
       width: 310px;
       height: 32px;
@@ -197,10 +208,26 @@
   }
 </style>
 
-<!-- 🏬 SHUTTER OVERLAY -->
+<!-- 🏬 SINGLE LOGIN SHUTTER OVERLAY -->
 <div id="v2Shutter" class="shutter-overlay-v2">
     <div class="character-3d-wrapper">
         <div id="shutterStatusBadge" class="character-3d-badge">⚡ AUTHENTICATING & OPENING STORE...</div>
+        
+        <svg class="character-3d-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="headGlow" cx="50%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="#ffedd5"/>
+                    <stop offset="100%" stop-color="#c2410c"/>
+                </radialGradient>
+            </defs>
+            <ellipse cx="60" cy="115" rx="35" ry="5" fill="rgba(0,0,0,0.4)" />
+            <path d="M 32,42 Q 60,10 88,42 Q 92,20 60,12 Q 28,20 32,42 Z" fill="#0f172a" />
+            <circle cx="60" cy="48" r="22" fill="url(#headGlow)"/>
+            <rect x="40" y="40" width="16" height="12" rx="4" fill="#0f172a" stroke="#fbbf24" stroke-width="2"/>
+            <rect x="64" y="40" width="16" height="12" rx="4" fill="#0f172a" stroke="#fbbf24" stroke-width="2"/>
+            <path d="M 28,74 Q 60,64 92,74 L 100,115 L 20,115 Z" fill="#1e1b4b" />
+        </svg>
+
         <div class="shutter-handle-bar">
             <i class="fa-solid fa-store" style="margin-right: 8px; color: #d97706;"></i> STORE FRONT GATE
         </div>
@@ -247,9 +274,10 @@
     </div>
 </div>
 
-<!-- 🔊 HEAVY SOUND & ANIMATION SCRIPT -->
+<!-- 🔊 REAL SHUTTER OPENING SOUND & SYNC CONTROLLER -->
 <script>
-function playHeavyRollingSound() {
+// 1. Lock Unlatch / Click Sound
+function playUnlockClickSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
@@ -257,23 +285,68 @@ function playHeavyRollingSound() {
 
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(60, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(140, ctx.currentTime + 1.2);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.05);
 
-        gain.gain.setValueAtTime(0.35, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 1.2);
+        osc.stop(ctx.currentTime + 0.07);
+    } catch (e) {}
+}
+
+// 2. Heavy Metal Slats Rolling UP (Opening Pitch)
+function playShutterOpeningSound() {
+    try {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        var ctx = new AudioContext();
+
+        var bufferSize = ctx.sampleRate * 1.3;
+        var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        var data = buffer.getChannelData(0);
+
+        for (var i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.6;
+        }
+
+        var noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        var filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        // Low pitch to High pitch (Simulates rolling UP into casing)
+        filter.frequency.setValueAtTime(250, ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(950, ctx.currentTime + 1.2);
+        filter.Q.value = 2.5;
+
+        var gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.3);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        noise.start();
     } catch (e) {}
 }
 
 window.addEventListener("DOMContentLoaded", function() {
     var form = document.getElementById("loginFormV2");
     var shutter = document.getElementById("v2Shutter");
+
+    // Clear overlay on load so user can type credentials cleanly
+    if (shutter) {
+        setTimeout(function(){
+            shutter.classList.add("shutter-open");
+        }, 100);
+    }
 
     if (form) {
         form.addEventListener("submit", function(e) {
@@ -285,20 +358,26 @@ window.addEventListener("DOMContentLoaded", function() {
             btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin"></i>';
 
             if (shutter) {
-                // Shutter rolls down with heavy audio, then submits
-                shutter.classList.add("shutter-closed");
-                playHeavyRollingSound();
+                // Step 1: Lock click
+                playUnlockClickSound();
 
+                // Step 2: 100ms later Shutter Roll UP + Opening Sound
+                setTimeout(function() {
+                    playShutterOpeningSound();
+                    shutter.classList.add("shutter-open");
+                }, 100);
+
+                // Step 3: Form Submit
                 setTimeout(function() {
                     form.submit();
-                }, 1100);
+                }, 1150);
             } else {
                 form.submit();
             }
         });
     }
 
-    // SweetAlert handling
+    // SweetAlert Handling
     var urlParams = new URLSearchParams(window.location.search);
     var msg = urlParams.get('msg');
 
