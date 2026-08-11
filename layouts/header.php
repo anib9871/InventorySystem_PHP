@@ -12,6 +12,13 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
+
+// ✅ FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
+$is_fresh_login = false;
+if (!empty($_SESSION['just_logged_in'])) {
+    $is_fresh_login = true;
+    unset($_SESSION['just_logged_in']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -41,7 +48,7 @@ else{
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- 🏬 ULTRA PREMIUM 3D METALLIC SHUTTER STYLING FOR DASHBOARD & LOGOUT -->
+<!-- 🏬 3D CARTOON CHARACTER & METALLIC SHUTTER STYLING -->
 <style>
 .shutter-overlay {
     position: fixed;
@@ -49,47 +56,38 @@ else{
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: 
-        linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.08) 55%, rgba(255,255,255,0) 100%),
-        linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 6%, transparent 12%, transparent 88%, rgba(0,0,0,0.1) 94%, rgba(0,0,0,0.6) 100%),
-        repeating-linear-gradient(
-            180deg,
-            #cbd5e1 0px,
-            #94a3b8 4px,
-            #475569 10px,
-            #1e293b 16px,
-            #0f172a 22px,
-            #334155 26px
-        );
-    background-size: 200% 100%, 100% 100%, 100% 100%;
-    animation: metallicShine 4s infinite linear;
-    border-bottom: 28px solid #0f172a;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.9), inset 0 -15px 30px rgba(0,0,0,0.8);
+    background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, transparent 4%, transparent 96%, rgba(0,0,0,0.2) 100%),
+                repeating-linear-gradient(
+                    180deg,
+                    #f8fafc 0px,
+                    #cbd5e1 4px,
+                    #94a3b8 10px,
+                    #64748b 16px,
+                    #cbd5e1 22px
+                );
+    border-bottom: 25px solid #1e293b;
+    box-shadow: inset 0 -35px 50px rgba(0, 0, 0, 0.3);
     z-index: 9999999;
-    transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
-    transform: translateY(-100%); /* Default Hidden on Top */
+    transition: transform 1.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transform: translateY(0%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
 }
 
-@keyframes metallicShine {
-    0% { background-position: -200% 0, 0 0, 0 0; }
-    100% { background-position: 200% 0, 0 0, 0 0; }
-}
-
 .shutter-overlay.shutter-hidden {
     display: none !important;
 }
 
-.shutter-overlay.shutter-close {
-    transform: translateY(0%) !important; /* Close on Logout */
+.shutter-overlay.shutter-open {
+    transform: translateY(-100%);
 }
 
+/* 3D Character & Store Badge Overlay */
 .character-3d-wrapper {
     position: absolute;
-    bottom: 48px;
+    bottom: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -97,88 +95,84 @@ else{
 }
 
 .character-3d-badge {
-    background: linear-gradient(135deg, #1e1b4b 0%, #431407 100%);
-    border: 2px solid #f59e0b;
-    color: #fbbf24;
-    font-weight: 900;
+    background: #ffffff;
+    border: 2px solid #a80000;
+    color: #a80000;
+    font-weight: 800;
     font-size: 13px;
-    padding: 8px 26px;
-    border-radius: 30px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px rgba(245, 158, 11, 0.4);
+    padding: 6px 22px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     margin-bottom: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 1.5px;
 }
 
 .character-3d-svg {
-    width: 135px;
-    height: 135px;
-    filter: drop-shadow(0 20px 25px rgba(0,0,0,0.6));
-    animation: characterMotion 1.4s infinite alternate ease-in-out;
+    width: 130px;
+    height: 130px;
+    filter: drop-shadow(0 15px 20px rgba(0,0,0,0.25));
+    animation: characterMotion 1.2s infinite alternate ease-in-out;
 }
 
 @keyframes characterMotion {
     0% { transform: translateY(0px) scale(1); }
-    100% { transform: translateY(-8px) scale(1.02); }
+    100% { transform: translateY(-8px) scale(1.03); }
 }
 
 .shutter-handle-bar {
-    width: 310px;
-    height: 32px;
-    background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 30%, #475569 70%, #0f172a 100%);
-    border-radius: 12px;
-    border: 2px solid #94a3b8;
-    box-shadow: 0 12px 25px rgba(0,0,0,0.7), inset 0 2px 2px rgba(255,255,255,0.9);
+    width: 280px;
+    height: 24px;
+    background: linear-gradient(180deg, #ffffff, #94a3b8);
+    border-radius: 8px;
+    border: 2px solid #334155;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 900;
+    font-size: 11px;
+    font-weight: 800;
     color: #0f172a;
-    letter-spacing: 2.5px;
-    margin-top: -12px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
-}
-
-.shutter-bottom-rail {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 38px;
-    background: linear-gradient(180deg, #334155 0%, #0f172a 50%, #020617 100%);
-    border-top: 3px solid #64748b;
-    border-bottom: 4px solid #020617;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 10%;
-}
-
-.shutter-lock-bolt {
-    width: 18px;
-    height: 18px;
-    background: radial-gradient(circle, #f8fafc 20%, #64748b 80%);
-    border-radius: 50%;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), 0 0 6px rgba(255,255,255,0.4);
+    letter-spacing: 2px;
+    margin-top: -10px;
 }
 </style>
 
-<!-- 🏬 SHUTTER CLOSING SOUND & LOGOUT CONTROLLER -->
+<!-- 🏬 SHUTTER SOUND & 3D ANIMATION CONTROLLER -->
 <script>
-function playShutterClosingSound() {
+function playLockClickSound() {
+    try {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        var ctx = new AudioContext();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1100, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+    } catch (e) {}
+}
+
+function playRollingShutterSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
-        var bufferSize = ctx.sampleRate * 1.2;
+        var bufferSize = ctx.sampleRate * 1.25;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
         for (var i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * 0.7;
+            data[i] = Math.random() * 2 - 1;
         }
 
         var noise = ctx.createBufferSource();
@@ -186,14 +180,13 @@ function playShutterClosingSound() {
 
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        // High pitch to Low pitch (Downwards roll & closing slam)
-        filter.frequency.setValueAtTime(850, ctx.currentTime);
-        filter.frequency.linearRampToValueAtTime(200, ctx.currentTime + 1.0);
-        filter.Q.value = 3.0;
+        filter.frequency.setValueAtTime(450, ctx.currentTime);
+        filter.frequency.linearRampToValueAtTime(750, ctx.currentTime + 1.1);
+        filter.Q.value = 2.0;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.4, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.1);
+        gain.gain.setValueAtTime(0.35, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -203,26 +196,52 @@ function playShutterClosingSound() {
     } catch (e) {}
 }
 
+window.addEventListener("DOMContentLoaded", function() {
+    var shutter = document.getElementById("shopShutter");
+    var statusText = document.getElementById("shutterStatusBadge");
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+
+    if (isFreshLogin && shutter) {
+        if (statusText) statusText.innerText = "STORE OPENING...";
+        shutter.classList.remove("shutter-hidden");
+        
+        setTimeout(function() {
+            playLockClickSound();
+        }, 100);
+
+        setTimeout(function() {
+            playRollingShutterSound();
+            shutter.classList.add("shutter-open");
+        }, 350);
+    }
+});
+
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
+    var statusText = document.getElementById("shutterStatusBadge");
     var targetUrl = e.currentTarget.href;
 
     if (shutter) {
+        if (statusText) statusText.innerText = "STORE CLOSING...";
         shutter.classList.remove("shutter-hidden");
-        shutter.classList.add("shutter-close");
-        playShutterClosingSound();
+        shutter.classList.remove("shutter-open");
+        playRollingShutterSound();
+
+        setTimeout(function() {
+            playLockClickSound();
+        }, 850);
 
         setTimeout(function() {
             window.location.href = targetUrl;
-        }, 1100);
+        }, 1200);
     } else {
         window.location.href = targetUrl;
     }
 }
 </script>
 
-<!-- REDEPLOYMENT & TAB GUARD -->
+<!-- ✅ REDEPLOYMENT & TAB GUARD -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -238,69 +257,83 @@ function animateLogout(e) {
 
     var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
     if (!isLoggedIn) return;
+
+    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
+
+    if (isFreshLogin) {
+        sessionStorage.setItem("app_tab_session", "active");
+    } else {
+        var isTabActive = sessionStorage.getItem("app_tab_session") === "active";
+        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
+        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
+
+        if (!isTabActive && !isBridgeValid) {
+            window.location.href = "logout.php?msg=tab_closed";
+            return;
+        }
+
+        sessionStorage.setItem("app_tab_session", "active");
+    }
 })();
+
+document.addEventListener("mousedown", function(e) {
+    if (e.target.closest("a")) {
+        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
+    }
+});
 </script>
 
 </head>
 <body>
 
-<!-- 🏬 DASHBOARD SHUTTER OVERLAY (Only rendered outside login page) -->
-<?php if (!isset($is_login_page) || !$is_login_page): ?>
+<!-- 🏬 3D CARTOON CHARACTER METALLIC SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
     <div class="character-3d-wrapper">
-        <div id="shutterStatusBadge" class="character-3d-badge">🔒 STORE CLOSING...</div>
+        <div id="shutterStatusBadge" class="character-3d-badge">STORE OPENING...</div>
         
+        <!-- Modern 3D Business Cartoon Character Vector Overlay -->
         <svg class="character-3d-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <radialGradient id="headGlow" cx="50%" cy="30%" r="70%">
+                <linearGradient id="skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#ffedd5"/>
-                    <stop offset="70%" stop-color="#fdba74"/>
-                    <stop offset="100%" stop-color="#c2410c"/>
-                </radialGradient>
-                <linearGradient id="suitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#1e1b4b"/>
-                    <stop offset="50%" stop-color="#312e81"/>
+                    <stop offset="100%" stop-color="#fed7aa"/>
+                </linearGradient>
+                <linearGradient id="suitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#1e293b"/>
                     <stop offset="100%" stop-color="#0f172a"/>
                 </linearGradient>
-                <linearGradient id="tieGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#ef4444"/>
-                    <stop offset="100%" stop-color="#991b1b"/>
-                </linearGradient>
-                <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#ffffff"/>
-                    <stop offset="50%" stop-color="#94a3b8"/>
-                    <stop offset="100%" stop-color="#334155"/>
+                <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#475569"/>
+                    <stop offset="100%" stop-color="#1e293b"/>
                 </linearGradient>
             </defs>
-            <ellipse cx="60" cy="115" rx="35" ry="5" fill="rgba(0,0,0,0.4)" />
-            <path d="M 32,42 Q 60,10 88,42 Q 92,20 60,12 Q 28,20 32,42 Z" fill="#0f172a" />
-            <circle cx="60" cy="48" r="22" fill="url(#headGlow)" stroke="#ea580c" stroke-width="0.5"/>
-            <rect x="40" y="40" width="16" height="12" rx="4" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="2"/>
-            <rect x="64" y="40" width="16" height="12" rx="4" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="2"/>
-            <line x1="56" y1="45" x2="64" y2="45" stroke="#fbbf24" stroke-width="2.5"/>
-            <path d="M 50,58 Q 60,66 70,58" stroke="#7c2d12" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <path d="M 28,74 Q 60,64 92,74 L 100,115 L 20,115 Z" fill="url(#suitGrad)" />
-            <polygon points="50,72 70,72 60,92" fill="#ffffff" />
-            <polygon points="56,74 64,74 66,104 60,112 54,104" fill="url(#tieGrad)" />
-            <path d="M 22,82 Q 8,50 22,30" stroke="url(#headGlow)" stroke-width="9" stroke-linecap="round" fill="none"/>
-            <path d="M 98,82 Q 112,50 98,30" stroke="url(#headGlow)" stroke-width="9" stroke-linecap="round" fill="none"/>
-            <circle cx="22" cy="28" r="7" fill="url(#chromeGrad)"/>
-            <circle cx="98" cy="28" r="7" fill="url(#chromeGrad)"/>
+            <!-- Hair -->
+            <path d="M 35,40 Q 60,15 85,40 Q 90,25 60,18 Q 30,25 35,40 Z" fill="url(#hairGrad)" />
+            <!-- Head -->
+            <circle cx="60" cy="48" r="20" fill="url(#skinGrad)" />
+            <!-- Glasses -->
+            <rect x="42" y="42" width="14" height="10" rx="3" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+            <rect x="64" y="42" width="14" height="10" rx="3" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+            <line x1="56" y1="46" x2="64" y2="46" stroke="#0f172a" stroke-width="2.5"/>
+            <!-- Smile -->
+            <path d="M 52,58 Q 60,64 68,58" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <!-- Suit Body -->
+            <path d="M 32,72 Q 60,65 88,72 L 95,115 L 25,115 Z" fill="url(#suitGrad)" />
+            <!-- Shirt & Crimson Tie -->
+            <polygon points="52,70 68,70 60,88" fill="#ffffff" />
+            <polygon points="57,72 63,72 65,100 60,108 55,100" fill="#a80000" />
+            <!-- Hands Lifting Handle Bar -->
+            <path d="M 28,78 Q 12,50 25,32" stroke="url(#skinGrad)" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <path d="M 92,78 Q 108,50 95,32" stroke="url(#skinGrad)" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <circle cx="25" cy="30" r="6" fill="#a80000"/>
+            <circle cx="95" cy="30" r="6" fill="#a80000"/>
         </svg>
 
         <div class="shutter-handle-bar">
-            <i class="fa-solid fa-store" style="margin-right: 8px; color: #d97706;"></i> STORE FRONT GATE
+            <i class="fa-solid fa-store" style="margin-right: 6px;"></i> STORE GATE
         </div>
     </div>
-
-    <div class="shutter-bottom-rail">
-        <div class="shutter-lock-bolt"></div>
-        <div class="shutter-lock-bolt"></div>
-        <div class="shutter-lock-bolt"></div>
-        <div class="shutter-lock-bolt"></div>
-    </div>
 </div>
-<?php endif; ?>
 
 <?php if(isset($_SESSION['username'])): ?>
 
@@ -310,12 +343,12 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <header id="header">
 
-<!-- ROLE BASED LOGO -->
+<!-- ✅ ROLE BASED LOGO -->
 <?php if($user['role_id'] != 1): ?>
 <div class="logo pull-left" id="menuToggle"
      style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
 
-<?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'MY STORE'; ?>
+<?php echo $_SESSION['org_name']; ?>
 
 </div>
 <?php else: ?>
@@ -383,6 +416,7 @@ Logout
 <?php
 
 /* SUPER ADMIN */
+
 if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
 
     include_once('superadmin_menu.php');
@@ -390,6 +424,7 @@ if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
 }
 
 /* ORGANIZATION USERS */
+
 else{
 
     if(isset($_SESSION['user_level']) && $_SESSION['user_level'] == 1){
