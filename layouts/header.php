@@ -28,7 +28,7 @@ elseif(!empty($user) && isset($user['name'])){
   echo ucfirst($user['name']);
 }
 else{
-  echo "Storly - Inventory Management System";
+  echo "Storely - Inventory Management System";
 }
 ?>
 </title>
@@ -76,12 +76,12 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 <div class="logo pull-left" id="menuToggle"
      style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
 
-<?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'STORLY'; ?>
+<?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'STORELY'; ?>
 
 </div>
 <?php else: ?>
   <div class="logo pull-left">
-    STORLY INVENTORY
+    STORELY INVENTORY
   </div>
 <?php endif; ?>
 
