@@ -12,13 +12,6 @@ if(isset($_SESSION['role_id'])){
 }else{
   $user['role_id'] = 0;
 }
-
-// FRESH LOGIN FLAG CONSUMPTION FOR SHUTTER
-$is_fresh_login = false;
-if (!empty($_SESSION['just_logged_in'])) {
-    $is_fresh_login = true;
-    unset($_SESSION['just_logged_in']);
-}
 ?>
 
 <!DOCTYPE html>
@@ -76,24 +69,19 @@ else{
     box-shadow: 0 25px 50px rgba(0,0,0,0.9), inset 0 -15px 30px rgba(0,0,0,0.8);
     z-index: 9999999;
     transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
-    transform: translateY(0%);
+    transform: translateY(-100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
 }
 
-@keyframes metallicShine {
-    0% { background-position: -200% 0, 0 0, 0 0; }
-    100% { background-position: 200% 0, 0 0, 0 0; }
-}
-
 .shutter-overlay.shutter-hidden {
     display: none !important;
 }
 
-.shutter-overlay.shutter-open {
-    transform: translateY(-100%);
+.shutter-overlay.shutter-close {
+    transform: translateY(0%) !important;
 }
 
 .character-3d-wrapper {
@@ -233,26 +221,6 @@ function playRollingShutterSound() {
     } catch (e) {}
 }
 
-window.addEventListener("DOMContentLoaded", function() {
-    var shutter = document.getElementById("shopShutter");
-    var statusText = document.getElementById("shutterStatusBadge");
-    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
-
-    if (isFreshLogin && shutter) {
-        if (statusText) statusText.innerText = "⚡ STORE OPENING...";
-        shutter.classList.remove("shutter-hidden");
-        
-        setTimeout(function() {
-            playLockClickSound();
-        }, 80);
-
-        setTimeout(function() {
-            playRollingShutterSound();
-            shutter.classList.add("shutter-open");
-        }, 250);
-    }
-});
-
 function animateLogout(e) {
     e.preventDefault();
     var shutter = document.getElementById("shopShutter");
@@ -262,7 +230,7 @@ function animateLogout(e) {
     if (shutter) {
         if (statusText) statusText.innerText = "🔒 STORE CLOSING...";
         shutter.classList.remove("shutter-hidden");
-        shutter.classList.remove("shutter-open");
+        shutter.classList.add("shutter-close");
         playRollingShutterSound();
 
         setTimeout(function() {
@@ -278,55 +246,13 @@ function animateLogout(e) {
 }
 </script>
 
-<!-- REDEPLOYMENT & TAB GUARD -->
-<script>
-(function() {
-    var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
-    var savedVersion = localStorage.getItem("app_deploy_version");
-
-    if (!savedVersion) {
-        localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-    } else if (savedVersion !== CURRENT_VERSION) {
-        localStorage.setItem("app_deploy_version", CURRENT_VERSION);
-        window.location.href = "logout.php?msg=updated";
-        return;
-    }
-
-    var isLoggedIn = <?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>;
-    if (!isLoggedIn) return;
-
-    var isFreshLogin = <?php echo $is_fresh_login ? 'true' : 'false'; ?>;
-
-    if (isFreshLogin) {
-        sessionStorage.setItem("app_tab_session", "active");
-    } else {
-        var isTabActive = sessionStorage.getItem("app_tab_session") === "active";
-        var bridgeTime = localStorage.getItem("app_tab_bridge_time");
-        var isBridgeValid = bridgeTime && (Date.now() - parseInt(bridgeTime)) < 5000;
-
-        if (!isTabActive && !isBridgeValid) {
-            window.location.href = "logout.php?msg=tab_closed";
-            return;
-        }
-
-        sessionStorage.setItem("app_tab_session", "active");
-    }
-})();
-
-document.addEventListener("mousedown", function(e) {
-    if (e.target.closest("a")) {
-        localStorage.setItem("app_tab_bridge_time", Date.now().toString());
-    }
-});
-</script>
-
 </head>
 <body>
 
 <!-- 🏬 SUPER PREMIUM 3D METALLIC SHUTTER OVERLAY -->
 <div id="shopShutter" class="shutter-overlay shutter-hidden">
     <div class="character-3d-wrapper">
-        <div id="shutterStatusBadge" class="character-3d-badge">⚡ STORE OPENING...</div>
+        <div id="shutterStatusBadge" class="character-3d-badge">🔒 STORE CLOSING...</div>
         
         <svg class="character-3d-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -387,19 +313,9 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 
 <header id="header">
 
-<!-- ROLE BASED LOGO -->
-<?php if($user['role_id'] != 1): ?>
-<div class="logo pull-left" id="menuToggle"
-     style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
-
-<?php echo $_SESSION['org_name']; ?>
-
-</div>
-<?php else: ?>
-  <div class="logo pull-left">
+<div class="logo pull-left">
     INVENTORY SYSTEM
-  </div>
-<?php endif; ?>
+</div>
 
 <div class="header-content">
 
@@ -416,23 +332,8 @@ $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
 <img src="uploads/users/no_image.png" class="img-circle img-inline">
 
 <span>
-
-<?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2): ?>
-
-    Logout
-
-<?php else: ?>
-
     <?php echo $_SESSION['username']; ?>
-
-    <?php if(!empty($_SESSION['center_name'])): ?>
-        | <?php echo $_SESSION['center_name']; ?>
-    <?php endif; ?>
-
-<?php endif; ?>
-
 <i class="caret"></i>
-
 </span>
 
 </a>
@@ -454,37 +355,18 @@ Logout
 </div>
 </header>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
-
 <?php
-
-/* SUPER ADMIN */
-
 if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
-
     include_once('superadmin_menu.php');
-
-}
-
-/* ORGANIZATION USERS */
-
-else{
-
+}else{
     if(isset($_SESSION['user_level']) && $_SESSION['user_level'] == 1){
-
         include_once('admin_menu.php');
-
     }else{
-
         include_once('user_menu.php');
-
     }
-
 }
-
 ?>
-
 </div>
 
 <?php endif; ?>
