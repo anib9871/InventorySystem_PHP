@@ -18,7 +18,7 @@
       height: 100vh;
       overflow: hidden !important;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #0f172a; /* Rich Slate Theme */
+      background: #0f172a; /* Deep Navy Slate */
   }
 
   .login-container {
@@ -32,15 +32,15 @@
       top: 0;
       left: 0;
       z-index: 99999;
-      background: radial-gradient(circle at 80% 20%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+      background: radial-gradient(circle at 80% 20%, #1a0505 0%, #0f172a 60%, #020617 100%);
   }
 
-  /* Vibrant Background Ambient Lights */
+  /* Crimson Red & Navy Background Ambient Glows */
   .bg-glow-1 {
       position: absolute;
       width: 500px;
       height: 500px;
-      background: rgba(99, 102, 241, 0.15);
+      background: rgba(168, 0, 0, 0.18); /* Crimson Red Glow */
       border-radius: 50%;
       filter: blur(120px);
       top: -10%;
@@ -52,7 +52,7 @@
       position: absolute;
       width: 450px;
       height: 450px;
-      background: rgba(168, 85, 247, 0.12);
+      background: rgba(19, 28, 42, 0.25); /* Deep Navy Glow */
       border-radius: 50%;
       filter: blur(120px);
       bottom: -10%;
@@ -60,17 +60,17 @@
       pointer-events: none;
   }
 
-  /* Main Card Glassmorphism Frame */
+  /* Main Card Glassmorphism Frame with Crimson Divider */
   .main-card-frame {
       position: relative;
       width: 100%;
       max-width: 900px;
-      height: 500px; /* Fixed Height to Ensure No Scroll */
-      background: rgba(30, 41, 59, 0.7);
+      height: 500px; /* Fixed Height = No Scroll */
+      background: rgba(19, 28, 42, 0.85); /* Deep Navy */
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-radius: 24px;
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       overflow: hidden;
@@ -94,7 +94,7 @@
   .brand-header h2 {
       font-size: 28px;
       font-weight: 800;
-      color: #f8fafc;
+      color: #ffffff;
       letter-spacing: -0.5px;
       display: flex;
       align-items: center;
@@ -139,7 +139,7 @@
   .form-control {
       width: 100%;
       height: 46px;
-      background: rgba(15, 23, 42, 0.6) !important;
+      background: rgba(15, 23, 42, 0.8) !important;
       border: 1.5px solid rgba(51, 65, 85, 0.8) !important;
       border-radius: 12px !important;
       padding: 0 15px 0 48px !important;
@@ -150,29 +150,30 @@
   }
 
   .form-control:focus {
-      border-color: #6366f1 !important;
-      background: rgba(15, 23, 42, 0.9) !important;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+      border-color: #a80000 !important; /* Crimson Red Focus */
+      background: rgba(15, 23, 42, 0.95) !important;
+      box-shadow: 0 0 0 4px rgba(168, 0, 0, 0.25) !important;
   }
 
   .form-control:focus + i {
-      color: #818cf8;
+      color: #ef4444;
   }
 
+  /* Crimson Red Accent Button */
   .btn-submit {
       width: 100%;
       height: 48px;
       margin-top: 8px;
       border: none;
       border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      background: linear-gradient(135deg, #a80000 0%, #7f0000 100%);
       color: #ffffff;
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
+      box-shadow: 0 10px 25px -5px rgba(168, 0, 0, 0.5);
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
@@ -182,14 +183,15 @@
 
   .btn-submit:hover {
       transform: translateY(-2px);
-      box-shadow: 0 14px 28px -5px rgba(99, 102, 241, 0.6);
-      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      box-shadow: 0 14px 28px -5px rgba(168, 0, 0, 0.65);
+      background: linear-gradient(135deg, #c40000 0%, #8e0000 100%);
   }
 
   /* Right Side: Live Illustration Section */
   .illustration-section {
       flex: 1.1;
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-left: 2px solid #a80000; /* Red-Navy Border Line */
       position: relative;
       display: flex;
       align-items: flex-end;
@@ -202,11 +204,11 @@
       position: absolute;
       width: 320px;
       height: 320px;
-      background: rgba(99, 102, 241, 0.25);
+      background: rgba(168, 0, 0, 0.2);
       border-radius: 50%;
       top: 10%;
       right: -30px;
-      filter: blur(40px);
+      filter: blur(45px);
   }
 
   .pos-vector-art {
@@ -214,11 +216,10 @@
       max-width: 380px;
       height: auto;
       z-index: 5;
-      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
   }
 
   /* ------------------- LIVE ANIMATIONS ------------------- */
-  
   .anim-character-body {
       animation: characterBreathe 3.5s infinite ease-in-out;
       transform-origin: bottom center;
@@ -255,7 +256,7 @@
 
   @keyframes screenPulse {
       0% { fill: #0f172a; opacity: 0.95; }
-      100% { fill: #1e1b4b; opacity: 1; filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.8)); }
+      100% { fill: #1e293b; opacity: 1; filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)); }
   }
 
   .anim-pos-line {
@@ -270,7 +271,7 @@
 
   @media (max-width: 768px) {
       .main-card-frame { flex-direction: column-reverse; height: auto; max-height: 90vh; }
-      .illustration-section { padding: 15px; min-height: 180px; }
+      .illustration-section { padding: 15px; min-height: 180px; border-left: none; border-bottom: 2px solid #a80000; }
       .pos-vector-art { max-width: 240px; }
       .form-section { padding: 25px 20px; }
   }
@@ -285,7 +286,7 @@
         <!-- LEFT COLUMN: LOGIN FORM -->
         <div class="form-section">
             <div class="brand-header">
-                <h2><i class="fa-solid fa-store" style="color:#818cf8;"></i> Storly</h2>
+                <h2><i class="fa-solid fa-store" style="color:#a80000;"></i> Storely</h2>
                 <p>Online Inventory & Store Management System</p>
             </div>
 
@@ -316,21 +317,21 @@
             </form>
         </div>
 
-        <!-- RIGHT COLUMN: LIVE ANIMATED VECTOR ART (Sapphire Theme) -->
+        <!-- RIGHT COLUMN: LIVE ANIMATED VECTOR ART (Red + Navy Theme) -->
         <div class="illustration-section">
             <div class="illustration-backdrop"></div>
 
             <svg class="pos-vector-art" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
                 
-                <path d="M50 220 Q 20 180 60 140 Q 120 100 200 130 Q 280 90 350 150 Q 390 200 350 250 Z" fill="#312e81" opacity="0.6"/>
+                <path d="M50 220 Q 20 180 60 140 Q 120 100 200 130 Q 280 90 350 150 Q 390 200 350 250 Z" fill="#1e293b" opacity="0.6"/>
 
                 <!-- Live Character Group -->
                 <g class="anim-character-body">
-                    <!-- Body / Indigo Blazer -->
-                    <path d="M 240 180 Q 280 150 320 180 L 340 300 L 220 300 Z" fill="#4f46e5" />
+                    <!-- Crimson Red Jacket with Navy Accents -->
+                    <path d="M 240 180 Q 280 150 320 180 L 340 300 L 220 300 Z" fill="#a80000" />
                     <polygon points="270,180 290,180 280,210" fill="#ffffff" />
-                    <polygon points="260,180 270,180 275,200" fill="#818cf8" />
-                    <polygon points="290,180 300,180 285,200" fill="#818cf8" />
+                    <polygon points="260,180 270,180 275,200" fill="#1e293b" />
+                    <polygon points="290,180 300,180 285,200" fill="#1e293b" />
 
                     <!-- Neck & Head -->
                     <rect x="272" y="160" width="16" height="22" rx="4" fill="#fed7aa" />
@@ -354,25 +355,25 @@
                 </g>
 
                 <!-- Counter Desk & POS Terminal -->
-                <rect x="180" y="240" width="200" height="70" rx="8" fill="#334155" />
-                <rect x="175" y="235" width="210" height="12" rx="4" fill="#475569" />
-                <rect x="175" y="247" width="210" height="4" fill="#1e293b" />
+                <rect x="180" y="240" width="200" height="70" rx="8" fill="#1e293b" />
+                <rect x="175" y="235" width="210" height="12" rx="4" fill="#334155" />
+                <rect x="175" y="247" width="210" height="4" fill="#a80000" />
 
-                <rect x="200" y="210" width="55" height="26" rx="4" fill="#1e293b" />
-                <rect x="205" y="200" width="45" height="12" rx="2" fill="#0f172a" />
-                <rect x="222" y="185" width="10" height="18" fill="#475569" />
+                <rect x="200" y="210" width="55" height="26" rx="4" fill="#0f172a" />
+                <rect x="205" y="200" width="45" height="12" rx="2" fill="#1e293b" />
+                <rect x="222" y="185" width="10" height="18" fill="#334155" />
 
-                <!-- POS Screen (Glow Effect) -->
+                <!-- POS Screen (Crimson Red Glow) -->
                 <g id="posScreenGroup">
                     <rect x="185" y="125" width="70" height="60" rx="6" fill="#0f172a" transform="rotate(-8 220 155)" />
-                    <rect class="anim-pos-screen" x="190" y="130" width="60" height="50" rx="4" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" transform="rotate(-8 220 155)" />
+                    <rect class="anim-pos-screen" x="190" y="130" width="60" height="50" rx="4" fill="#1e293b" stroke="#a80000" stroke-width="1.5" transform="rotate(-8 220 155)" />
                     
-                    <rect x="196" y="138" width="25" height="4" rx="2" fill="#818cf8" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="146" width="40" height="3" rx="1.5" fill="#475569" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="152" width="32" height="3" rx="1.5" fill="#475569" transform="rotate(-8 220 155)" />
-                    <rect x="196" y="162" width="18" height="8" rx="2" fill="#10b981" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="138" width="25" height="4" rx="2" fill="#ef4444" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="146" width="40" height="3" rx="1.5" fill="#64748b" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="152" width="32" height="3" rx="1.5" fill="#64748b" transform="rotate(-8 220 155)" />
+                    <rect x="196" y="162" width="18" height="8" rx="2" fill="#22c55e" transform="rotate(-8 220 155)" />
                     
-                    <line class="anim-pos-line" x1="190" y1="140" x2="250" y2="140" stroke="#818cf8" stroke-width="2" transform="rotate(-8 220 155)" />
+                    <line class="anim-pos-line" x1="190" y1="140" x2="250" y2="140" stroke="#ef4444" stroke-width="2" transform="rotate(-8 220 155)" />
                 </g>
 
             </svg>
@@ -389,7 +390,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var posScreen = document.getElementById("posScreenGroup");
 
     function highlightPosScreen() {
-        if (posScreen) { posScreen.style.filter = "drop-shadow(0 0 14px #818cf8)"; }
+        if (posScreen) { posScreen.style.filter = "drop-shadow(0 0 14px #ef4444)"; }
     }
 
     function resetPosScreen() {
@@ -422,7 +423,7 @@ window.addEventListener("DOMContentLoaded", function() {
             title: '🚀 System Updated!',
             text: 'A new update was deployed. Please log in again.',
             confirmButtonText: 'OK, Login',
-            confirmButtonColor: '#6366f1'
+            confirmButtonColor: '#a80000'
         });
     } 
     else if (msg === 'session_expired' || msg === 'tab_closed') {
