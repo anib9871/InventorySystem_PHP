@@ -152,7 +152,7 @@
       box-shadow: 0 25px 50px rgba(0,0,0,0.9);
       z-index: 99999999;
       transform: translateY(0%); /* Default closed so it opens on login */
-      transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+      transition: transform 1.25s cubic-bezier(0.77, 0, 0.175, 1);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -274,9 +274,9 @@
     </div>
 </div>
 
-<!-- 🔊 REAL SHUTTER OPENING SOUND & SYNC CONTROLLER -->
+<!-- 🔊 UPGRADED SHUTTER OPENING SOUND & SYNC CONTROLLER -->
 <script>
-// 1. Lock Unlatch / Click Sound
+// 1. Heavy Metal Lock Unlatch Sound
 function playUnlockClickSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -285,55 +285,72 @@ function playUnlockClickSound() {
 
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + 0.05);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(900, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(2200, ctx.currentTime + 0.08);
 
-        gain.gain.setValueAtTime(0.5, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.6, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.09);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.07);
+        osc.stop(ctx.currentTime + 0.1);
     } catch (e) {}
 }
 
-// 2. Heavy Metal Slats Rolling UP (Opening Pitch)
+// 2. Realistic Heavy Shop Shutter Rolling UP Sound (Metallic Slats & Gear Rattle)
 function playShutterOpeningSound() {
     try {
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         var ctx = new AudioContext();
 
+        // Mechanical Metallic Slats Noise with Rhythmic Rattle
         var bufferSize = ctx.sampleRate * 1.3;
         var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         var data = buffer.getChannelData(0);
 
         for (var i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * 0.6;
+            var metallicRattle = Math.sin(i * 0.08) * 0.25;
+            data[i] = ((Math.random() * 2 - 1) + metallicRattle) * 0.5;
         }
 
         var noise = ctx.createBufferSource();
         noise.buffer = buffer;
 
+        // Bandpass Filter for Metallic Resonance (Low to High Pitch Sweep)
         var filter = ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        // Low pitch to High pitch (Simulates rolling UP into casing)
-        filter.frequency.setValueAtTime(250, ctx.currentTime);
-        filter.frequency.linearRampToValueAtTime(950, ctx.currentTime + 1.2);
-        filter.Q.value = 2.5;
+        filter.frequency.setValueAtTime(280, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 1.15);
+        filter.Q.value = 3.5;
 
         var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.45, ctx.currentTime + 0.2);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.3);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.25);
+
+        // Heavy Gear / Spring Hum Motor Tone
+        var gearOsc = ctx.createOscillator();
+        var gearGain = ctx.createGain();
+        gearOsc.type = 'sawtooth';
+        gearOsc.frequency.setValueAtTime(80, ctx.currentTime);
+        gearOsc.frequency.linearRampToValueAtTime(240, ctx.currentTime + 1.1);
+
+        gearGain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gearGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.15);
 
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
 
+        gearOsc.connect(gearGain);
+        gearGain.connect(ctx.destination);
+
         noise.start();
+        gearOsc.start();
+        gearOsc.stop(ctx.currentTime + 1.2);
     } catch (e) {}
 }
 
@@ -341,7 +358,7 @@ window.addEventListener("DOMContentLoaded", function() {
     var form = document.getElementById("loginFormV2");
     var shutter = document.getElementById("v2Shutter");
 
-    // Clear overlay on load so user can type credentials cleanly
+    // Clear overlay on load so form is visible
     if (shutter) {
         setTimeout(function(){
             shutter.classList.add("shutter-open");
@@ -358,19 +375,19 @@ window.addEventListener("DOMContentLoaded", function() {
             btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin"></i>';
 
             if (shutter) {
-                // Step 1: Lock click
+                // Step 1: Unlatch click sound
                 playUnlockClickSound();
 
-                // Step 2: 100ms later Shutter Roll UP + Opening Sound
+                // Step 2: Shutter upward roll sound + smooth opening animation
                 setTimeout(function() {
                     playShutterOpeningSound();
                     shutter.classList.add("shutter-open");
                 }, 100);
 
-                // Step 3: Form Submit
+                // Step 3: Page Submission
                 setTimeout(function() {
                     form.submit();
-                }, 1150);
+                }, 1200);
             } else {
                 form.submit();
             }
