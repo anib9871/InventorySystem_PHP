@@ -198,7 +198,7 @@ body {
                                     <td class="text-center"><?php echo $i + 1;?></td>
                                     <td><strong><?php echo remove_junk(ucwords($a_user['name']))?></strong></td>
                                     <td><?php echo remove_junk($a_user['username'])?></td>
-                                    <td><?php echo remove_junk($a_user['center_name']); ?></td>
+                                    <td><?php echo remove_junk($a_user['center_name'] ?? ''); ?></td>
                                     <td class="text-center"><?php echo remove_junk(ucwords($a_user['group_name']))?></td>
                                     <td class="text-center">
                                         <?php if($a_user['status'] === '1'): ?>
