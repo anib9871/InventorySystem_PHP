@@ -110,7 +110,7 @@ if(!empty($config)){
       <ul class="submenu">
         <li><a href="supplier_advance.php">Supplier Advance</a></li>
          <li><a href="payments.php">Manage Payments</a></li>
-        <!-- <li><a href="payment_report.php">Payments Report</a></li> -->
+        <!-- <li><a href="payment_report.php">Payment Pendency Report</a></li> -->
         
       </ul>
     </li>
