@@ -487,18 +487,16 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
     <input type="hidden" id="hsn_code">
     <input type="hidden" id="sac_code">
 
-    <!-- ITEM ENTRY FORM (SECTION 2) -->
-    <div class="section-block">
-      <div class="flex-row-balanced">
-        <div style="flex: 3.5;">
-          <label class="form-label-custom">Product <span style="color:red;">*</span></label>
-          <div class="input-group">
-            <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose to select product..." readonly>
-            <span class="input-group-btn">
-              <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()">Choose</button>
-            </span>
-          </div>
-        </div>
+<!-- ITEM ENTRY FORM (SECTION 2) -->
+<div class="section-block">
+  <div class="flex-row-balanced">
+    <div style="width: 220px;">
+      <label class="form-label-custom">Product <span style="color:red;">*</span></label>
+      <div style="display: flex; align-items: center;">
+        <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose..." readonly style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; border-right: 0 !important;">
+        <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()" style="border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center;">Choose</button>
+      </div>
+    </div>
 
         <div style="width: 100px;">
           <label class="form-label-custom">Qty <span style="color:red;">*</span></label>
@@ -1397,17 +1395,91 @@ if(useAdvance){
   });
 }
 
+// 1. फिलहाल एडिट हो रहे charge के इंडेक्स को ट्रैक करने के लिए वैरिएबल
+let editingChargeIndex = null;
+
+// 2. Edit Button Function (अब यह डेटा तुरंत डिलीट नहीं करेगा)
 function editCharge(index){
+  editingChargeIndex = index; // ट्रैक करें कि कौन सा आइटम एडिट हो रहा है
   let c = charges[index];
+  
+  // Modal के Inputs में पुराना डेटा भरें
   document.getElementById("modal_charge_type").value = c.shipping_type_id;
   document.getElementById("modal_charge_amount").value = c.amount;
-  document.getElementById("modal_charge_gst_id").value = c.gst_id;
-  document.getElementById("modal_charge_gst_type").value = c.gst_type;
+  document.getElementById("modal_charge_gst_id").value = c.gst_id || "";
+  document.getElementById("modal_charge_gst_type").value = c.gst_type ? c.gst_type.toUpperCase() : "EXCLUSIVE";
 
-  charges.splice(index,1);
-  renderCharges();
+  // Pop-up Modal Open करें
   $('#shippingModal').modal('show');
 }
+
+// 3. Modal Save Function (नया ऐड करेगा या पुराने को अपडेट करेगा)
+function saveShippingModal(){
+  let amountVal = document.getElementById("modal_charge_amount").value;
+  let typeVal = document.getElementById("modal_charge_type").value;
+
+  if(!typeVal || !amountVal || parseFloat(amountVal) <= 0){
+      Swal.fire({ icon: 'warning', title: 'Incomplete Details', text: 'Please select Shipping Type and enter a valid Amount.' });
+      return;
+  }
+
+  let select = document.getElementById("modal_charge_type");
+  let type_name = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : 'Shipping';
+  
+  let gstSelect = document.getElementById("modal_charge_gst_id");
+  let gst_id = gstSelect.value;
+  let gst_percent = parseFloat(gstSelect.options[gstSelect.selectedIndex]?.dataset.gst || 0);
+  let gst_type = document.getElementById("modal_charge_gst_type").value;
+  let amount = parseFloat(amountVal) || 0;
+
+  let taxable = 0, gst_amount = 0, total = 0;
+  if (gst_type === "EXCLUSIVE") {
+    taxable = amount;
+    gst_amount = taxable * gst_percent / 100;
+    total = taxable + gst_amount;
+  } else {
+    taxable = amount / (1 + gst_percent / 100);
+    gst_amount = amount - taxable;
+    total = amount;
+  }
+
+  let updatedCharge = { 
+    shipping_type_id: parseInt(typeVal), 
+    type_name: type_name, 
+    gst_id: gst_id ? parseInt(gst_id) : '', 
+    amount: amount, 
+    gst_percent: gst_percent, 
+    gst_type: gst_type, 
+    gst_amount: gst_amount, 
+    total: total 
+  };
+
+  // अगर एडिट हो रहा था तो पुरानी जगह रिप्लेस करें, वरना नया आइटम ऐड करें
+  if (editingChargeIndex !== null) {
+    charges[editingChargeIndex] = updatedCharge;
+    editingChargeIndex = null; // रीसेट करें
+  } else {
+    charges.push(updatedCharge);
+  }
+
+  renderCharges();
+  resetShippingModalInputs();
+  $('#shippingModal').modal('hide');
+}
+
+// 4. Modal Inuts Reset करने का हेल्पर फंक्शन
+function resetShippingModalInputs(){
+  document.getElementById("modal_charge_type").value = "";
+  document.getElementById("modal_charge_amount").value = "";
+  document.getElementById("modal_charge_gst_id").value = "";
+  document.getElementById("modal_charge_gst_type").value = "EXCLUSIVE";
+  editingChargeIndex = null;
+}
+
+// 5. जब भी Modal Cancel या Close (X) हो, तो ट्रैकर रीसेट कर दें
+$('#shippingModal').on('hidden.bs.modal', function () {
+  resetShippingModalInputs();
+});
 
 function openProductModal(){
   $('#productModal').modal('show');
