@@ -568,7 +568,22 @@ foreach($payments as $d){
 
 <tr>
 <td><?= $i+1; ?></td>
-<td><?= $p['invoice_no']; ?></td>
+
+<!-- Dynamic Link for Invoice / GRN (Opens in New Tab) -->
+<td>
+    <?php if($type == 'customer'): ?>
+        <!-- Customer Invoice Link -->
+        <a href="invoice_print.php?id=<?= $p['id']; ?>" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: underline;">
+            <?= $p['invoice_no']; ?>
+        </a>
+    <?php else: ?>
+        <!-- Supplier GRN Link -->
+        <a href="print_grn.php?bill=<?= urlencode($p['invoice_no']); ?>" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: underline;">
+            <?= $p['invoice_no']; ?>
+        </a>
+    <?php endif; ?>
+</td>
+
 <td><?= htmlspecialchars($p['party_name']); ?></td>
 
 <?php if($type == 'customer'){ ?>
