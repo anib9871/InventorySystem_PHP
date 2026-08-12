@@ -140,13 +140,16 @@ else{
         ? "WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'" 
         : "WHERE customer_id='{$party_id}' AND DATE(payment_date) BETWEEN '{$from}' AND '{$to}'";
 
-    $payments = find_by_sql("
-    SELECT payment_date txn_date,
-           CONCAT('PAY-',id) voucher_no,
-           amount
-    FROM payments
-    {$where_payments}
-    ");
+// LEFT JOIN add kiya hai invoice_no ke liye
+$payments = find_by_sql("
+SELECT p.payment_date txn_date,
+       CONCAT('PAY-', p.id) voucher_no,
+       p.amount,
+       i.invoice_no
+FROM payments p
+LEFT JOIN invoice i ON p.invoice_id = i.id
+{$where_payments}
+");
 
 foreach($payments as $p){
     // Dynamic reference for Customer Invoice No.
