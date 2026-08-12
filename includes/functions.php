@@ -11,9 +11,9 @@ function real_escape($str){
 }
 
 function remove_junk($str){
+  $str = $str ?? ''; // null handle karne ke liye
   $str = nl2br($str);
-  $str = htmlspecialchars(strip_tags($str, ENT_QUOTES));
-  return $str;
+  return htmlspecialchars(strip_tags($str));
 }
 
 function first_character($str){
