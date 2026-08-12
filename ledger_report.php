@@ -93,18 +93,19 @@ if($type == 'supplier'){
             ORDER BY payment_date,payment_id
             ");
 
-            foreach($payments as $p){
+foreach($payments as $p){
+    // Dynamic reference for Supplier GRN No.
+    $ref_text = !empty($l['bill_no']) ? " (GRN: {$l['bill_no']})" : "";
 
-                $rows[] = [
-                    'date'       => $p['payment_date'],
-                    'particular' => 'Payment',
-                    'type'       => 'Payment',
-                    'voucher'    => 'PAY-'.$p['payment_id'],
-                    'debit'      => $p['payment_amount'],
-                    'credit'     => 0
-                ];
-
-            }
+    $rows[] = [
+        'date'       => $p['payment_date'],
+        'particular' => 'Payment' . $ref_text, // <-- Yahan update hua hai
+        'type'       => 'Payment',
+        'voucher'    => 'PAY-'.$p['payment_id'],
+        'debit'      => $p['payment_amount'],
+        'credit'     => 0
+    ];
+}
 
         }
 
@@ -147,16 +148,19 @@ else{
     {$where_payments}
     ");
 
-    foreach($payments as $p){
-        $rows[] = [
-            'date'       => $p['txn_date'],
-            'particular' => 'Payment',
-            'type'       => 'Payment',
-            'voucher'    => $p['voucher_no'],
-            'debit'      => 0,
-            'credit'     => $p['amount']
-        ];
-    }
+foreach($payments as $p){
+    // Dynamic reference for Customer Invoice No.
+    $ref_text = !empty($p['invoice_no']) ? " (INV: {$p['invoice_no']})" : "";
+
+    $rows[] = [
+        'date'       => $p['txn_date'],
+        'particular' => 'Payment' . $ref_text, // <-- Yahan update hua hai
+        'type'       => 'Payment',
+        'voucher'    => $p['voucher_no'],
+        'debit'      => 0,
+        'credit'     => $p['amount']
+    ];
+}
 
 }
 
