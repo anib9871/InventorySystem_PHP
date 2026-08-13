@@ -173,6 +173,19 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #4a5568; t
 .badge-critical { background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
 </style>
 
+<!-- DATALIST SEARCH OPTIONS -->
+<datalist id="finished_products_list">
+    <?php foreach($bom_products_dropdown as $p): ?>
+        <option data-id="<?php echo $p['id']; ?>" value="<?php echo htmlspecialchars($p['name']); ?>"></option>
+    <?php endforeach; ?>
+</datalist>
+
+<datalist id="raw_products_list">
+    <?php foreach($raw_products as $p): ?>
+        <option data-id="<?php echo $p['id']; ?>" value="<?php echo htmlspecialchars($p['name']); ?>"></option>
+    <?php endforeach; ?>
+</datalist>
+
 <div class="row">
 
 <!-- ================= ADD / EDIT FORM ================= -->
@@ -185,16 +198,22 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #4a5568; t
 
         <div class="panel-body">
             <form method="post" id="bomForm">
+                
+                <!-- Hidden Field for Product ID -->
+                <input type="hidden" name="product_id" id="selected_product_id" value="<?php echo $edit_pid; ?>">
+
                 <div class="form-group form-group-compact">
                     <label>Select Finished Product</label>
-                    <select name="product_id" class="form-control" required>
-                        <option value="">-- Select Product --</option>
-                        <?php foreach($bom_products_dropdown as $p): ?>
-                            <option value="<?php echo $p['id']; ?>" <?php if($edit_pid==$p['id']) echo "selected"; ?>>
-                                <?php echo $p['name']; ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <?php 
+                        $edit_pname = "";
+                        if($edit_pid){
+                            foreach($bom_products_dropdown as $p){
+                                if($p['id'] == $edit_pid) { $edit_pname = $p['name']; break; }
+                            }
+                        }
+                    ?>
+                    <!-- Search Input Input Box -->
+                    <input type="text" list="finished_products_list" class="form-control finished-search" placeholder="Type or click to search product..." value="<?php echo htmlspecialchars($edit_pname); ?>" required autocomplete="off">
                 </div>
 
                 <div style="margin-top: 15px; margin-bottom: 8px;">
@@ -205,17 +224,15 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #4a5568; t
                 <?php 
                 if($edit_pid && $edit_rows->num_rows>0){
                     while($er=$edit_rows->fetch_assoc()){
+                        $raw_pname = "";
+                        foreach($raw_products as $rp){
+                            if($rp['id'] == $er['raw_product_id']){ $raw_pname = $rp['name']; break; }
+                        }
                 ?>
                 <div class="row bom_row" style="margin-bottom:8px">
                     <div class="col-xs-6" style="padding-right: 4px;">
-                        <select name="raw_product_id[]" class="form-control" required>
-                            <option value="">Select Raw Material</option>
-                            <?php foreach($raw_products as $p): ?>
-                                <option value="<?php echo $p['id']; ?>" <?php if($p['id']==$er['raw_product_id']) echo "selected"; ?>>
-                                    <?php echo $p['name']; ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
+                        <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." value="<?php echo htmlspecialchars($raw_pname); ?>" required autocomplete="off">
                     </div>
                     <div class="col-xs-4" style="padding-left: 4px; padding-right: 4px;">
                         <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
@@ -227,12 +244,8 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #4a5568; t
                 <?php } } else { ?>
                 <div class="row bom_row" style="margin-bottom:8px">
                     <div class="col-xs-6" style="padding-right: 4px;">
-                        <select name="raw_product_id[]" class="form-control" required>
-                            <option value="">Select Raw Material</option>
-                            <?php foreach($raw_products as $p): ?>
-                                <option value="<?php echo $p['id']; ?>"><?php echo $p['name']; ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
+                        <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
                     </div>
                     <div class="col-xs-4" style="padding-left: 4px; padding-right: 4px;">
                         <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
@@ -453,13 +466,42 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #4a5568; t
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-/* Pass PHP fetched Org details into JS Object */
 const ORG_DETAILS = {
     name: "<?php echo addslashes($org_info['name']); ?>",
     address: "<?php echo addslashes($org_info['address']); ?>",
     gst: "<?php echo addslashes($org_info['gst']); ?>",
     phone: "<?php echo addslashes($org_info['phone']); ?>"
 };
+
+// Map selected input text to real database product IDs
+document.addEventListener("change", function(e) {
+    if (e.target.classList.contains("finished-search")) {
+        let val = e.target.value;
+        let opts = document.getElementById("finished_products_list").options;
+        let foundId = 0;
+        for (let i = 0; i < opts.length; i++) {
+            if (opts[i].value === val) {
+                foundId = opts[i].getAttribute("data-id");
+                break;
+            }
+        }
+        document.getElementById("selected_product_id").value = foundId;
+    }
+
+    if (e.target.classList.contains("raw-search")) {
+        let val = e.target.value;
+        let opts = document.getElementById("raw_products_list").options;
+        let hiddenInput = e.target.closest(".bom_row").querySelector(".raw_id_hidden");
+        let foundId = 0;
+        for (let i = 0; i < opts.length; i++) {
+            if (opts[i].value === val) {
+                foundId = opts[i].getAttribute("data-id");
+                break;
+            }
+        }
+        hiddenInput.value = foundId;
+    }
+});
 
 document.getElementById("bomSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
@@ -471,7 +513,7 @@ document.getElementById("bomSearch").addEventListener("keyup", function() {
 document.addEventListener("click", function(e){
     if(e.target.classList.contains("addRow")){
         let r = document.querySelector(".bom_row").cloneNode(true);
-        r.querySelectorAll("input,select").forEach(x => x.value = "");
+        r.querySelectorAll("input").forEach(x => x.value = "");
         let btn = r.querySelector(".addRow");
         btn.classList.remove("addRow", "btn-success-custom");
         btn.classList.add("removeRow", "btn-danger");
@@ -486,24 +528,29 @@ document.addEventListener("click", function(e){
 });
 
 function confirmDelete(id) {
-    Swal.fire({
-        title: 'Kya aap sure hain?',
-        text: "Is pure BOM configuration ko delete kar diya jayega!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmColor: '#ef4444',
-        cancelColor: '#6b7280',
-        confirmButtonText: 'Haan, Delete Karo!',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
+    if(typeof Swal !== 'undefined'){
+        Swal.fire({
+            title: 'Kya aap sure hain?',
+            text: "Is pure BOM configuration ko delete kar diya jayega!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmColor: '#ef4444',
+            cancelColor: '#6b7280',
+            confirmButtonText: 'Haan, Delete Karo!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "bom_master.php?delete=" + id;
+            }
+        });
+    } else {
+        if(confirm("Kya aap is BOM configuration ko delete karna chahte hain?")){
             window.location.href = "bom_master.php?delete=" + id;
         }
-    });
+    }
 }
 
 /* EXPORT FUNCTIONS WITH ORG HEADER */
-
 function exportTableToExcel(tableID, filename = ''){
     let tableSelect = document.getElementById(tableID);
     if(!tableSelect) return;
@@ -525,7 +572,6 @@ function exportTableToPDF(tableID, filename = '') {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // 1. HEADER - Organization Info
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(29, 53, 87);
@@ -550,19 +596,16 @@ function exportTableToPDF(tableID, filename = '') {
         currentY += 5;
     }
 
-    // Line Divider
     doc.setDrawColor(200);
     doc.line(14, currentY, 196, currentY);
     currentY += 7;
 
-    // 2. DOCUMENT TITLE
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(0);
     doc.text(tableID === 'bomTable' ? "BOM MASTER LIST" : "BOM DETAILED COSTING", 14, currentY);
     currentY += 5;
 
-    // 3. TABLE AUTO GENERATION
     let config = { 
         startY: currentY,
         theme: 'grid',
