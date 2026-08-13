@@ -100,8 +100,8 @@ foreach($invoices as $inv){
 
 <td>
 
+<!-- Naya Code (Same tab mein open hoga) -->
 <a href="invoice_print.php?id=<?php echo $inv['id']; ?>"
-   target="_blank"
    class="btn btn-danger btn-xs"
    title="Print">
     <i class="fa fa-print"></i>
