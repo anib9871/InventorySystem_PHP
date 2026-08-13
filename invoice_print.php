@@ -382,14 +382,20 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
-        <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
-            <!-- Input width width: 220px kardi hai taaki comma separated emails easily fit aayein -->
+ <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
             <input type="text" name="target_email" 
-                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 220px;" 
+                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
                    value="<?= htmlspecialchars($invoice['customer_email'] ?? '') ?>" 
-                   placeholder="Emails (comma separated)" title="Use comma to separate multiple emails (e.g. a@b.com, c@d.com)" required>
+                   placeholder="Emails (comma separated)" title="Use comma to separate multiple emails" required>
             <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
         </form>
+
+        <a href="shippers_declaration_entry.php?invoice_id=<?= $id ?>" 
+           target="_blank" 
+           class="btn" 
+           style="background: #8b5cf6; color: #ffffff; border-color: #8b5cf6; font-weight: 600;">
+           📜 Shipper's Declaration
+        </a>
 
         <button onclick="window.print()" class="btn btn-primary">🖨 Print <?= $is_proforma ? 'Proforma' : 'Invoice' ?></button>
     </div>
