@@ -410,25 +410,32 @@ window.addEventListener("DOMContentLoaded", function() {
     var urlParams = new URLSearchParams(window.location.search);
     var msg = urlParams.get('msg');
 
-    if (msg === 'updated') {
-        Swal.fire({
+    // SweetAlert Reusable Toast Mixin
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4500,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    // Redeploy / System Update Toast Trigger
+    if (msg === 'updated' || msg === 'redeploy' || msg === 'redeployed') {
+        Toast.fire({
             icon: 'info',
-            title: '🚀 System Updated!',
-            text: 'A new update was deployed. Please log in again.',
-            confirmButtonText: 'OK, Login',
-            confirmButtonColor: '#a80000'
+            title: '🚀 System Redeployed',
+            text: 'System has been updated. Please log in again.'
         });
     } 
     else if (msg === 'session_expired' || msg === 'tab_closed') {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
+        Toast.fire({
             icon: 'warning',
             title: 'Session Expired!',
-            text: 'Please log in again to continue.',
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true
+            text: 'Please log in again to continue.'
         });
     }
 });
