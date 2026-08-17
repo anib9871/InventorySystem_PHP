@@ -598,29 +598,26 @@ if($type=='supplier'){
 <td class="text-right"><?= $r['credit']?number_format($r['credit'],2):'-'; ?></td>
 <td class="text-right">
 <?php
+$current_bal = round($balance, 2);
 
-if($type=='supplier'){
-
-    if($balance > 0){
-        echo "<span class='badge-bal badge-cr'>₹ ".number_format($balance,2)." Cr</span>";
-    }elseif($balance < 0){
-        echo "<span class='badge-bal badge-adv'>₹ ".number_format(abs($balance),2)." Adv</span>";
-    }else{
-        echo "<span class='text-muted'>₹ 0.00</span>";
+// 0.50 paise tak ke minor round-off fark ko 0.00 manega
+if(abs($current_bal) <= 0.50){
+    echo "<span class='text-muted'>₹ 0.00</span>";
+} else {
+    if($type == 'supplier'){
+        if($current_bal > 0){
+            echo "<span class='badge-bal badge-cr'>₹ ".number_format($current_bal, 2)." Cr</span>";
+        } else {
+            echo "<span class='badge-bal badge-adv'>₹ ".number_format(abs($current_bal), 2)." Adv</span>";
+        }
+    } else {
+        if($current_bal > 0){
+            echo "<span class='badge-bal badge-dr'>₹ ".number_format($current_bal, 2)." Dr</span>";
+        } else {
+            echo "<span class='badge-bal badge-cr'>₹ ".number_format(abs($current_bal), 2)." Cr</span>";
+        }
     }
-
-}else{
-
-    if($balance > 0){
-        echo "<span class='badge-bal badge-dr'>₹ ".number_format($balance,2)." Dr</span>";
-    }elseif($balance < 0){
-        echo "<span class='badge-bal badge-cr'>₹ ".number_format(abs($balance),2)." Cr</span>";
-    }else{
-        echo "<span class='text-muted'>₹ 0.00</span>";
-    }
-
 }
-
 ?>
 </td>
 </tr>
@@ -632,10 +629,10 @@ if($type=='supplier'){
 <tfoot>
 <tr>
 <th colspan="4" class="text-right">Grand Total:</th>
-<th class="text-right" style="color:#2563eb;"><?= number_format($totalDebit,2); ?></th>
-<th class="text-right" style="color:#dc2626;"><?= number_format($totalCredit,2); ?></th>
+<th class="text-right" style="color:#2563eb;"><?= number_format($totalDebit, 2); ?></th>
+<th class="text-right" style="color:#dc2626;"><?= number_format($totalCredit, 2); ?></th>
 <th class="text-right">
-    ₹ <?= number_format(abs($balance),2); ?>
+    ₹ <?= (abs(round($balance, 2)) <= 0.50) ? '0.00' : number_format(abs($balance), 2); ?>
 </th>
 </tr>
 </tfoot>
