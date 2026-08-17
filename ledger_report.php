@@ -82,14 +82,16 @@ if($type == 'supplier'){
         } else {
             // Purchase Entry & Payments...
 
-            // Purchase Entry
+// Purchase Entry (Round figure bill amount so it matches rounded payments)
+            $bill_val = round((float)$l['bill_amount']);
+
             $rows[] = [
                 'date'       => $l['bill_date'],
                 'particular' => 'Purchase',
                 'type'       => 'Purchase (GRN)',
                 'voucher'    => $l['bill_no'],
                 'debit'      => 0,
-                'credit'     => $l['bill_amount']
+                'credit'     => $bill_val
             ];
 
             // Payments of this GRN
