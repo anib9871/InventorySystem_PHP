@@ -301,14 +301,14 @@ include_once('layouts/header.php');
     border: 1px solid #e2e8f0;
 }
 
-/* --- PRINT-ONLY OVERRIDES (Ensures full page width & no sidebar) --- */
+/* --- PRINT-ONLY OVERRIDES (Tax Invoice Theme) --- */
 @media print {
     @page {
         size: A4 portrait;
         margin: 10mm;
     }
 
-    /* Force hide everything on page except printArea */
+    /* Baki sab hide karega sirf printArea dikhayega */
     body * {
         visibility: hidden !important;
     }
@@ -324,6 +324,8 @@ include_once('layouts/header.php');
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
+        border-top: 4px solid #2563eb !important; /* Top Blue Bar */
+        background: #fff !important;
     }
 
     .no-print, .ledger-filter-card, .panel-heading, form, nav, .sidebar, header, footer {
@@ -340,79 +342,127 @@ include_once('layouts/header.php');
 
     #printHeader {
         display: block !important;
+        margin-top: 15px;
         margin-bottom: 15px;
-        text-align: center;
+    }
+
+    .print-header-top {
+        display: table !important;
+        width: 100% !important;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 12px;
+        margin-bottom: 15px;
+    }
+
+    .print-org-col {
+        display: table-cell !important;
+        width: 60% !important;
+        vertical-align: top;
+    }
+
+    .print-title-col {
+        display: table-cell !important;
+        width: 40% !important;
+        vertical-align: top;
+        text-align: right;
     }
 
     .org-title {
-        font-size: 20px !important;
-        font-weight: bold;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
         text-transform: uppercase;
     }
 
     .org-details {
-        font-size: 11px !important;
-        color: #333;
-        margin-bottom: 8px;
+        font-size: 10px !important;
+        color: #64748b !important;
+        margin-top: 4px;
+        line-height: 1.4;
     }
 
-    .report-heading {
-        font-size: 14px !important;
-        font-weight: bold;
-        margin: 10px 0;
+    .report-title-badge {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #2563eb !important;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .print-meta-table {
-        width: 100% !important;
-        border-collapse: collapse;
+    .report-period-text {
+        font-size: 10px !important;
+        color: #64748b !important;
+        margin-top: 4px;
+    }
+
+    /* Light Blue Box (Invoice Style) */
+    .party-info-card {
+        background-color: #f0f7ff !important;
+        border: 1px solid #bfdbfe !important;
+        border-radius: 6px;
+        padding: 8px 12px;
         margin-bottom: 15px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .print-meta-table td {
-        border: 1px solid #000 !important;
-        padding: 6px 10px !important;
-        font-size: 11px !important;
+    .party-info-label {
+        font-size: 9px !important;
+        font-weight: 700 !important;
+        color: #2563eb !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
+    .party-info-name {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #1e293b !important;
+        margin-top: 2px;
+    }
+
+    /* Invoice Table Styling */
     .custom-table {
         width: 100% !important;
         border-collapse: collapse !important;
+        border: 1px solid #e2e8f0 !important;
     }
 
     .custom-table thead th {
-        background-color: #2d3748 !important;
-        color: #fff !important;
-        font-size: 10px !important;
-        font-weight: bold !important;
-        padding: 7px 5px !important;
-        border: 1px solid #000 !important;
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+        font-size: 9px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        padding: 7px 8px !important;
+        border: 1px solid #e2e8f0 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
     .custom-table td {
-        padding: 6px 5px !important;
+        padding: 6px 8px !important;
         font-size: 10px !important;
-        border: 1px solid #000 !important;
-        color: #000 !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
     }
 
     .custom-table tfoot th {
-        background-color: #edf2f7 !important;
-        border: 1px solid #000 !important;
-        padding: 8px 5px !important;
+        background-color: #eff6ff !important;
+        color: #1e3a8a !important;
+        border: 1px solid #bfdbfe !important;
+        padding: 8px !important;
         font-size: 11px !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
     .voucher-code {
-        background: none !important;
+        background: transparent !important;
         border: none !important;
-        color: #000 !important;
-        font-weight: bold;
+        color: #1e293b !important;
+        font-weight: 600;
         padding: 0 !important;
     }
 
@@ -421,11 +471,11 @@ include_once('layouts/header.php');
         border: none !important;
         padding: 0 !important;
         font-size: 10px !important;
-        font-weight: bold !important;
+        font-weight: 700 !important;
     }
-    .badge-cr { color: #b91c1c !important; }
-    .badge-dr { color: #1d4ed8 !important; }
-    .badge-adv { color: #15803d !important; }
+    .badge-cr { color: #dc2626 !important; }
+    .badge-dr { color: #2563eb !important; }
+    .badge-adv { color: #16a34a !important; }
 }
 </style>
 
@@ -470,20 +520,27 @@ if($type == 'supplier'){
 
 <!-- PRINT HEADER (Only shows when printing) -->
 <div id="printHeader" style="display:none;">
-    <div class="org-title"><?= $org[0]['org_name']; ?></div>
-    <div class="org-details">
-        <?= $org[0]['address']; ?> | <strong>GSTIN:</strong> <?= $org[0]['gst_no']; ?>
+    <div class="print-header-top">
+        <div class="print-org-col">
+            <div class="org-title"><?= $org[0]['org_name']; ?></div>
+            <div class="org-details">
+                <?= $org[0]['address']; ?><br>
+                <strong>GSTIN:</strong> <?= $org[0]['gst_no']; ?>
+            </div>
+        </div>
+        <div class="print-title-col">
+            <div class="report-title-badge">LEDGER REPORT</div>
+            <div class="report-period-text">
+                <strong>Period:</strong> <?= date('d/M/Y', strtotime($from)); ?> To <?= date('d/M/Y', strtotime($to)); ?>
+            </div>
+        </div>
     </div>
-    
-    <div class="report-heading">LEDGER REPORT</div>
 
-    <table class="print-meta-table">
-        <tr>
-            <td width="33%"><strong>Ledger Type:</strong> <?= ucfirst($type); ?></td>
-            <td width="33%"><strong><?= ucfirst($type); ?> Name:</strong> <?= $party_name; ?></td>
-            <td width="34%"><strong>Period:</strong> <?= date('d/M/Y',strtotime($from)); ?> To <?= date('d/M/Y',strtotime($to)); ?></td>
-        </tr>
-    </table>
+    <!-- Billed To / Party Box -->
+    <div class="party-info-card">
+        <div class="party-info-label"><?= strtoupper($type); ?> DETAILS</div>
+        <div class="party-info-name"><?= $party_name; ?></div>
+    </div>
 </div>
 
 <div class="panel panel-default panel-ledger">
@@ -580,12 +637,17 @@ autocomplete="off">
 $totalDebit += $r['debit'];
 $totalCredit += $r['credit'];
 
-if($type=='supplier'){
+if($type == 'supplier'){
     $balance += $r['credit'];
     $balance -= $r['debit'];
-}else{
+} else {
     $balance += $r['debit'];
     $balance -= $r['credit'];
+}
+
+// Agar minor round-off fark (0.50 paise) hai to balance ko 0 kar dein taaki aage carry na ho
+if(abs(round($balance, 2)) <= 0.50){
+    $balance = 0;
 }
 ?>
 
@@ -594,27 +656,24 @@ if($type=='supplier'){
 <td><strong><?= $r['particular']; ?></strong></td>
 <td><span class="text-muted"><?= $r['type']; ?></span></td>
 <td><span class="voucher-code"><?= $r['voucher']; ?></span></td>
-<td class="text-right"><?= $r['debit']?number_format($r['debit'],2):'-'; ?></td>
-<td class="text-right"><?= $r['credit']?number_format($r['credit'],2):'-'; ?></td>
+<td class="text-right"><?= $r['debit'] ? number_format($r['debit'], 2) : '-'; ?></td>
+<td class="text-right"><?= $r['credit'] ? number_format($r['credit'], 2) : '-'; ?></td>
 <td class="text-right">
 <?php
-$current_bal = round($balance, 2);
-
-// 0.50 paise tak ke minor round-off fark ko 0.00 manega
-if(abs($current_bal) <= 0.50){
+if($balance == 0){
     echo "<span class='text-muted'>₹ 0.00</span>";
 } else {
     if($type == 'supplier'){
-        if($current_bal > 0){
-            echo "<span class='badge-bal badge-cr'>₹ ".number_format($current_bal, 2)." Cr</span>";
+        if($balance > 0){
+            echo "<span class='badge-bal badge-cr'>₹ ".number_format($balance, 2)." Cr</span>";
         } else {
-            echo "<span class='badge-bal badge-adv'>₹ ".number_format(abs($current_bal), 2)." Adv</span>";
+            echo "<span class='badge-bal badge-adv'>₹ ".number_format(abs($balance), 2)." Adv</span>";
         }
     } else {
-        if($current_bal > 0){
-            echo "<span class='badge-bal badge-dr'>₹ ".number_format($current_bal, 2)." Dr</span>";
+        if($balance > 0){
+            echo "<span class='badge-bal badge-dr'>₹ ".number_format($balance, 2)." Dr</span>";
         } else {
-            echo "<span class='badge-bal badge-cr'>₹ ".number_format(abs($current_bal), 2)." Cr</span>";
+            echo "<span class='badge-bal badge-cr'>₹ ".number_format(abs($balance), 2)." Cr</span>";
         }
     }
 }
@@ -646,7 +705,20 @@ if(abs($current_bal) <= 0.50){
 
 <script>
 function printLedger(){
+    var originalTitle = document.title;
+    
+    // PHP se dynamically party name aur report name le lega
+    var partyName = <?= json_encode(!empty($party_name) ? $party_name : ucfirst($type)); ?>;
+    
+    // PDF Save karte waqt name format: "[Party Name] - Ledger Report"
+    document.title = partyName + " - Ledger Report";
+    
     window.print();
+    
+    // Print window band hone ke baad wapas normal title kar dega
+    setTimeout(function(){
+        document.title = originalTitle;
+    }, 1000);
 }
 </script>
 
