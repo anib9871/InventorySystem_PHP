@@ -1,21 +1,36 @@
 <?php
 require_once('includes/load.php');
 
+$type    = isset($_GET['type']) ? trim($_GET['type']) : 'customer';
 $cust_id = isset($_GET['cust_id']) ? (int)$_GET['cust_id'] : 0;
+$supp_id = isset($_GET['supp_id']) ? (int)$_GET['supp_id'] : 0;
 $org_id  = isset($_GET['org_id']) ? (int)$_GET['org_id'] : 0;
 
-if(!$cust_id || !$org_id){
-    die("Invalid request! Please select both Customer and Organization.");
+if((!$cust_id && !$supp_id) || !$org_id){
+    die("Invalid request! Please select both Party and Organization.");
 }
 
-/* FETCH CUSTOMER DETAILS (TO) */
-$customer = find_by_sql("
-    SELECT cm.*, gsm.state_name 
-    FROM customer_master cm 
-    LEFT JOIN gst_state_master gsm ON gsm.id = cm.state_id 
-    WHERE cm.id = '{$cust_id}' 
-    LIMIT 1
-");
+/* FETCH TO PARTY DETAILS (CUSTOMER YA SUPPLIER) */
+if($type == 'supplier' || $supp_id > 0){
+    $target_id = $supp_id ? $supp_id : $cust_id;
+    $party_query = find_by_sql("
+        SELECT sm.supplier_name AS party_name, sm.contact_person, sm.phone AS contact_no, 
+               sm.email, sm.address, sm.state_code, sm.gst_no, gsm.state_name 
+        FROM supplier_master sm 
+        LEFT JOIN gst_state_master gsm ON gsm.id = sm.state_id 
+        WHERE sm.id = '{$target_id}' 
+        LIMIT 1
+    ");
+} else {
+    $party_query = find_by_sql("
+        SELECT cm.customer_name AS party_name, '' AS contact_person, cm.contact_no, 
+               cm.email, cm.address, cm.state_code, cm.gst_no, gsm.state_name 
+        FROM customer_master cm 
+        LEFT JOIN gst_state_master gsm ON gsm.id = cm.state_id 
+        WHERE cm.id = '{$cust_id}' 
+        LIMIT 1
+    ");
+}
 
 /* FETCH ORGANIZATION DETAILS (FROM) */
 $organization = find_by_sql("
@@ -26,18 +41,18 @@ $organization = find_by_sql("
     LIMIT 1
 ");
 
-if(!$customer || !$organization){
+if(!$party_query || !$organization){
     die("Record not found!");
 }
 
-$cust = $customer[0];
-$org  = $organization[0];
+$to_party = $party_query[0];
+$org      = $organization[0];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dispatch Address Label - <?php echo htmlspecialchars($cust['customer_name']); ?></title>
+    <title>Dispatch Address Label - <?php echo htmlspecialchars($to_party['party_name']); ?></title>
     <style>
         * {
             box-sizing: border-box;
@@ -209,7 +224,6 @@ $org  = $organization[0];
             <div class="header-title">PARCEL / DISPATCH SLIP</div>
             
             <div class="address-grid">
-                <!-- FROM ADDRESS (SENDER) -->
                 <div class="address-box from-box">
                     <span class="box-badge badge-from">FROM (SENDER)</span>
                     <div class="party-name"><?php echo htmlspecialchars($org['org_name']); ?></div>
@@ -232,29 +246,35 @@ $org  = $organization[0];
                     </div>
                 </div>
 
-                <!-- TO ADDRESS (RECIPIENT) -->
                 <div class="address-box to-box">
                     <span class="box-badge badge-to">TO (RECIPIENT)</span>
                     <div class="party-name" style="font-size: 18px; color: #000;">
-                        <?php echo htmlspecialchars($cust['customer_name']); ?>
+                        <?php echo htmlspecialchars($to_party['party_name']); ?>
                     </div>
                     <div class="party-detail" style="font-size: 14px;">
+                        <?php if(!empty($to_party['contact_person'])): ?>
+                            <div><strong>Attn:</strong> <?php echo htmlspecialchars($to_party['contact_person']); ?></div>
+                        <?php endif; ?>
+
                         <div class="address-text" style="font-size: 14px; font-weight: 500;">
-                            <?php echo htmlspecialchars($cust['address']); ?>
+                            <?php echo htmlspecialchars($to_party['address']); ?>
                         </div>
                         
-                        <div><strong>State:</strong> <?php echo htmlspecialchars($cust['state_name']); ?> (Code: <?php echo htmlspecialchars($cust['state_code']); ?>)</div>
+                        <div><strong>State:</strong> <?php echo htmlspecialchars($to_party['state_name']); ?> (Code: <?php echo htmlspecialchars($to_party['state_code']); ?>)</div>
                         
-                        <?php if(!empty($cust['contact_no'])): ?>
+                        <?php if(!empty($to_party['contact_no'])): ?>
                             <div style="font-size: 15px; margin-top: 5px;">
-                                <strong>Mobile/Ph:</strong> <?php echo htmlspecialchars($cust['contact_no']); ?>
+                                <strong>Mobile/Ph:</strong> <?php echo htmlspecialchars($to_party['contact_no']); ?>
                             </div>
                         <?php endif; ?>
                         
-                        <?php if(!empty($cust['email'])): ?>
-                            <div><strong>Email:</strong> <?php echo htmlspecialchars($cust['email']); ?></div>
+                        <?php if(!empty($to_party['email'])): ?>
+                            <div><strong>Email:</strong> <?php echo htmlspecialchars($to_party['email']); ?></div>
                         <?php endif; ?>
                         
+                        <?php if(!empty($to_party['gst_no'])): ?>
+                            <div><strong>GSTIN:</strong> <?php echo htmlspecialchars($to_party['gst_no']); ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
