@@ -56,21 +56,31 @@ if($type == 'supplier'){
     ORDER BY bill_date ASC, ledger_id ASC
     ");
 
+// supplier_ledger query ke baad loop me yeh condition lagayein:
     foreach($ledger as $l){
 
         // Advance Entry
         if($l['entry_type'] == 'ADVANCE'){
 
+            // Agar advance pura adjust/clear ho chuka hai to skip karein
+            if (isset($l['balance_amount']) && floatval($l['balance_amount']) <= 0) {
+                continue; 
+            }
+
+            // Agar unadjusted advance bacha hai to sirf bacha hua amount dikhayein
+            $adv_amount = (floatval($l['balance_amount']) > 0) ? $l['balance_amount'] : $l['paid_amount'];
+
             $rows[] = [
                 'date'       => $l['bill_date'],
-                'particular' => 'Advance',
+                'particular' => 'Advance (Unadjusted)',
                 'type'       => 'Advance',
                 'voucher'    => 'ADVANCE',
-                'debit'      => $l['paid_amount'],
+                'debit'      => $adv_amount,
                 'credit'     => 0
             ];
 
-        }else{
+        } else {
+            // Purchase Entry & Payments...
 
             // Purchase Entry
             $rows[] = [
@@ -136,20 +146,20 @@ else{
         ];
     }
 
-    $where_payments = ($party_id == 'all') 
-        ? "WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'" 
-        : "WHERE customer_id='{$party_id}' AND DATE(payment_date) BETWEEN '{$from}' AND '{$to}'";
+$where_payments = ($party_id == 'all') 
+        ? "WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'" 
+        : "WHERE p.customer_id='{$party_id}' AND DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
 
-// LEFT JOIN add kiya hai invoice_no ke liye
-$payments = find_by_sql("
-SELECT p.payment_date txn_date,
-       CONCAT('PAY-', p.id) voucher_no,
-       p.amount,
-       i.invoice_no
-FROM payments p
-LEFT JOIN invoice i ON p.invoice_id = i.id
-{$where_payments}
-");
+    // LEFT JOIN add kiya hai invoice_no ke liye
+    $payments = find_by_sql("
+    SELECT p.payment_date txn_date,
+           CONCAT('PAY-', p.id) voucher_no,
+           p.amount,
+           i.invoice_no
+    FROM payments p
+    LEFT JOIN invoice i ON p.invoice_id = i.id
+    {$where_payments}
+    ");
 
 foreach($payments as $p){
     // Dynamic reference for Customer Invoice No.
