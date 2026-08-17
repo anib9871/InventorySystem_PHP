@@ -12,6 +12,8 @@ $suppliers = find_by_sql("SELECT sm.*, gsm.state_name
 /* FETCH STATE LIST */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
+/* FETCH ALL ORGANIZATIONS FOR PRINT MODAL */
+$all_orgs = find_by_sql("SELECT id, org_name, mnemonic FROM organization_master ORDER BY org_name ASC");
 /* ---------- ADD SUPPLIER ---------- */
 if(isset($_POST['add_supplier'])){
 
@@ -490,6 +492,13 @@ textarea.form-control {
                                             <button type="button" onclick="confirmDelete(<?php echo $s['id']; ?>)" class="btn btn-danger btn-xs equal-btn" title="Delete">
                                                 <i class="glyphicon glyphicon-trash"></i>
                                             </button>
+
+                                          <button type="button" 
+        onclick="openPrintModal(<?php echo $s['id']; ?>, '<?php echo addslashes($s['supplier_name']); ?>')" 
+        class="btn btn-info btn-xs equal-btn" 
+        title="Print Address Label">
+    <i class="glyphicon glyphicon-envelope"></i>
+</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -505,6 +514,48 @@ textarea.form-control {
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="printLabelModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #18233b; color: #fff;">
+        <button type="button" class="close" data-dismiss="modal" style="color: #fff;">&times;</button>
+        <h4 class="modal-title" style="font-size: 14px; font-weight: 700;">
+            <i class="glyphicon glyphicon-print"></i> Print Address Label
+        </h4>
+      </div>
+      <form action="address_label_print.php" method="GET" target="_blank">
+          <div class="modal-body">
+              <input type="hidden" name="type" value="supplier">
+              <input type="hidden" name="supp_id" id="modal_supp_id">
+              
+              <div class="form-group">
+                  <label>Selected Supplier (TO)</label>
+                  <input type="text" id="modal_supp_name" class="form-control" readonly style="font-weight: bold;">
+              </div>
+
+              <div class="form-group">
+                  <label>Select Organization (FROM) *</label>
+                  <select name="org_id" class="form-control" required>
+                      <option value="">-- Choose Organization --</option>
+                      <?php foreach($all_orgs as $o): ?>
+                          <option value="<?php echo $o['id']; ?>" <?php if(isset($_SESSION['org_id']) && $_SESSION['org_id'] == $o['id']) echo 'selected'; ?>>
+                              <?php echo $o['org_name']; ?> (<?php echo $o['mnemonic']; ?>)
+                          </option>
+                      <?php endforeach; ?>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-xs" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success btn-xs" style="font-weight: 600;">
+                  <i class="glyphicon glyphicon-print"></i> Generate & Print
+              </button>
+          </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -556,6 +607,12 @@ function confirmDelete(id) {
             window.location.href = "supplier_master.php?del=" + id;
         }
     });
+}
+
+function openPrintModal(suppId, suppName) {
+    document.getElementById('modal_supp_id').value = suppId;
+    document.getElementById('modal_supp_name').value = suppName;
+    $('#printLabelModal').modal('show');
 }
 </script>
 
