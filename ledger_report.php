@@ -42,6 +42,7 @@ if($type == 'supplier'){
         ? "WHERE bill_date BETWEEN '{$from}' AND '{$to}'" 
         : "WHERE supplier_id='{$party_id}' AND bill_date BETWEEN '{$from}' AND '{$to}'";
 
+    // 1. Saare Purchases/Bills fetch karein
     $ledger = find_by_sql("
     SELECT
         ledger_id,
@@ -53,23 +54,17 @@ if($type == 'supplier'){
         entry_type
     FROM supplier_ledger
     {$where_party}
-    ORDER BY bill_date ASC, ledger_id ASC
     ");
 
-// supplier_ledger query ke baad loop me yeh condition lagayein:
     foreach($ledger as $l){
+        // Agar 0 amount wali blank entry hai to skip karein
+        if(floatval($l['bill_amount']) <= 0 && floatval($l['paid_amount']) <= 0) continue;
 
         // Advance Entry
         if($l['entry_type'] == 'ADVANCE'){
+            if (isset($l['balance_amount']) && floatval($l['balance_amount']) <= 0) continue;
 
-            // Agar advance pura adjust/clear ho chuka hai to skip karein
-            if (isset($l['balance_amount']) && floatval($l['balance_amount']) <= 0) {
-                continue; 
-            }
-
-            // Agar unadjusted advance bacha hai to sirf bacha hua amount dikhayein
             $adv_amount = (floatval($l['balance_amount']) > 0) ? $l['balance_amount'] : $l['paid_amount'];
-
             $rows[] = [
                 'date'       => $l['bill_date'],
                 'particular' => 'Advance (Unadjusted)',
@@ -78,49 +73,45 @@ if($type == 'supplier'){
                 'debit'      => $adv_amount,
                 'credit'     => 0
             ];
-
         } else {
-            // Purchase Entry & Payments...
-
-// Purchase Entry (Round figure bill amount so it matches rounded payments)
-            $bill_val = round((float)$l['bill_amount']);
-
+            // Purchase Bill Entry (Credit)
             $rows[] = [
                 'date'       => $l['bill_date'],
                 'particular' => 'Purchase',
                 'type'       => 'Purchase (GRN)',
                 'voucher'    => $l['bill_no'],
                 'debit'      => 0,
-                'credit'     => $bill_val
+                'credit'     => round((float)$l['bill_amount'])
             ];
-
-            // Payments of this GRN
-            $payments = find_by_sql("
-            SELECT
-                payment_id,
-                payment_date,
-                payment_amount
-            FROM supplier_payment
-            WHERE ledger_id='{$l['ledger_id']}'
-            ORDER BY payment_date,payment_id
-            ");
-
-foreach($payments as $p){
-    // Dynamic reference for Supplier GRN No.
-    $ref_text = !empty($l['bill_no']) ? " (GRN: {$l['bill_no']})" : "";
-
-    $rows[] = [
-        'date'       => $p['payment_date'],
-        'particular' => 'Payment' . $ref_text, // <-- Yahan update hua hai
-        'type'       => 'Payment',
-        'voucher'    => 'PAY-'.$p['payment_id'],
-        'debit'      => $p['payment_amount'],
-        'credit'     => 0
-    ];
-}
-
         }
+    }
 
+    // 2. Date Range ke saare Payments directly fetch karein (Chahe Bill purana ho)
+    $where_sp = ($party_id == 'all') 
+        ? "WHERE DATE(sp.payment_date) BETWEEN '{$from}' AND '{$to}'" 
+        : "WHERE sl.supplier_id='{$party_id}' AND DATE(sp.payment_date) BETWEEN '{$from}' AND '{$to}'";
+
+    $payments = find_by_sql("
+    SELECT 
+        sp.payment_id,
+        sp.payment_date,
+        sp.payment_amount,
+        sl.bill_no
+    FROM supplier_payment sp
+    INNER JOIN supplier_ledger sl ON sp.ledger_id = sl.ledger_id
+    {$where_sp}
+    ");
+
+    foreach($payments as $p){
+        $ref_text = !empty($p['bill_no']) ? " (GRN: {$p['bill_no']})" : "";
+        $rows[] = [
+            'date'       => $p['payment_date'],
+            'particular' => 'Payment' . $ref_text,
+            'type'       => 'Payment',
+            'voucher'    => 'PAY-'.$p['payment_id'],
+            'debit'      => $p['payment_amount'],
+            'credit'     => 0
+        ];
     }
 
 }
