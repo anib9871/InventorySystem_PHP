@@ -4,10 +4,11 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="libs/js/functions.js"></script>
 
-    <!-- ✅ MOBILE SIDEBAR DRAWER TOGGLE SCRIPT -->
+    <!-- ✅ MOBILE TOGGLE & NESTED ACCORDION SCRIPT -->
     <script>
     $(document).ready(function() {
-        // Menu Toggle click event
+
+        // 1. Mobile Sidebar Open/Close Toggle
         $(document).on('click', '#menuToggle, .logo', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -20,68 +21,41 @@
             e.stopPropagation();
         });
 
-        // Screen ke bahar kahin bhi tap karne par sidebar close ho jaye
+        // Screen ke bahar tap karne par sidebar band ho
         $(document).on('click', function(e) {
-            if ($('.sidebar').hasClass('show-sidebar')) {
+            if ($('body').hasClass('sidebar-open') || $('.sidebar').hasClass('show-sidebar')) {
                 $('.sidebar').removeClass('show-sidebar');
                 $('body').removeClass('sidebar-open');
             }
         });
-    });
-    </script>
 
-    <!-- ✅ FIXED NESTED ACCORDION SCRIPT -->
-    <script>
-    $(document).ready(function(){
-
-        // 1. Purane global click handlers unbind karo
-        $('.submenu-toggle').off('click');
-        $(document).off('click', '.submenu-toggle');
-
-        // 2. Initial State: Sabhi submenus ko default hide rakho
-        $('.submenu').hide();
-        $('.arrow').removeClass('rotate');
-
-        // 3. Purana open menu restore karo (Session storage se)
-        var activeMenu = sessionStorage.getItem('active_sidebar_menu');
-        if (activeMenu) {
-            var $activeToggle = $('.submenu-toggle[data-menu="' + activeMenu + '"]');
-            if ($activeToggle.length) {
-                // Self + Parents (Level 1 & Level 2) dono ko show karo
-                $activeToggle.parents('.submenu').show();
-                $activeToggle.parents('li').find('> .submenu-toggle > .arrow').addClass('rotate');
-                $activeToggle.next('.submenu').show();
-                $activeToggle.find('> .arrow').addClass('rotate');
-            }
-        }
-
-        // 4. Strict Level-Based Accordion Click
-        $(document).on('click', '.submenu-toggle', function(e){
-            e.preventDefault();
-            e.stopPropagation();
-
+        // 2. Submenu Dropdown & Arrow Rotation Toggle
+        $(document).off('click', '.submenu-toggle, .sidebar li > a');
+        $(document).on('click', '.submenu-toggle, .sidebar li > a', function(e) {
             var $this = $(this);
-            var $targetSubmenu = $this.next('.submenu');
-            var $targetArrow = $this.find('.arrow');
-            var menuKey = $this.attr('data-menu');
+            var $submenu = $this.next('.nav-submenu, .submenu, ul');
 
-            var isAlreadyOpen = $targetSubmenu.is(':visible');
+            // Agar submenu exist karta hai
+            if ($submenu.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            // Parent menu ko bina chede, SIRF same level ke baki sibling menus ko close karo
-            $this.closest('li').siblings().find('> .submenu').slideUp(150);
-            $this.closest('li').siblings().find('> a .arrow').removeClass('rotate');
+                var $arrow = $this.find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right');
 
-            if (isAlreadyOpen) {
-                $targetSubmenu.slideUp(150);
-                $targetArrow.removeClass('rotate');
-                if (menuKey) {
-                    sessionStorage.removeItem('active_sidebar_menu');
-                }
-            } else {
-                $targetSubmenu.slideDown(150);
-                $targetArrow.addClass('rotate');
-                if (menuKey) {
-                    sessionStorage.setItem('active_sidebar_menu', menuKey);
+                // Dusre open sibling menus ko close karo
+                $this.closest('li').siblings().find('.nav-submenu, .submenu, ul').slideUp(200);
+                $this.closest('li').siblings().find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right').removeClass('rotate');
+                $this.closest('li').siblings().find('> a').removeClass('open');
+
+                // Current submenu toggle karo
+                if ($submenu.is(':visible')) {
+                    $submenu.slideUp(200);
+                    $arrow.removeClass('rotate');
+                    $this.removeClass('open');
+                } else {
+                    $submenu.slideDown(200);
+                    $arrow.addClass('rotate');
+                    $this.addClass('open');
                 }
             }
         });
