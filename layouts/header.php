@@ -18,7 +18,7 @@ if(isset($_SESSION['role_id'])){
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Mobile responsiveness ke liye sabse important tag -->
+<!-- Mobile responsiveness ke liye sabse important viewport tag -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
@@ -36,15 +36,15 @@ else{
 ?>
 </title>
 
-<!-- Bootstrap CSS -->
+<!-- Bootstrap & Plugins CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
-<link rel="stylesheet" href="libs/css/main.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<!-- Central Custom Responsive CSS -->
-<link rel="stylesheet" href="assets/css/custom_master.css"/>
+<!-- Aapka Central Main CSS Location -->
+<link rel="stylesheet" href="libs/css/main.css"/>
 
+<!-- JS Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
@@ -94,7 +94,7 @@ else{
 
 <div class="header-content">
 
-<!-- Header Date (Hidden on very small screens for clean mobile UI) -->
+<!-- Header Date (Mobile pe auto-hide taaki header bar overflow na kare) -->
 <div class="header-date pull-left hidden-xs">
   <strong><?php echo date("F j, Y, g:i a");?></strong>
 </div>
