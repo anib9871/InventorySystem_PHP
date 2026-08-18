@@ -15,9 +15,35 @@ if($_SESSION['role_id'] == 3){
     $customers = find_all('customer_master');
 }
 
-$products = array_values(array_filter(join_product_table(), function($p){
-    return $p['is_active'] == 1;
-}));
+// Replace with this:
+$products = find_by_sql("
+    SELECT 
+        p.id,
+        p.name,
+        p.sale_price,
+        p.type,
+        g.gst_percent,
+        (
+            COALESCE(SUM(
+                CASE 
+                    WHEN t.transaction_type IN (1,4) THEN t.quantity 
+                    WHEN t.transaction_type IN (2,3,5,6) THEN -t.quantity 
+                    ELSE 0 
+                END
+            ), 0)
+            -
+            COALESCE((
+                SELECT SUM(d.qty) 
+                FROM demo_item_detail d 
+                WHERE d.product_id = p.id AND d.status = 1
+            ), 0)
+        ) AS current_stock
+    FROM products p
+    LEFT JOIN transaction_master t ON p.id = t.product_id
+    LEFT JOIN gst_master g ON p.gst_id = g.id
+    WHERE p.is_active = 1
+    GROUP BY p.id, p.name, p.sale_price, p.type, g.gst_percent
+");
 $payment_modes = find_by_sql("SELECT id, mode_name FROM payment_mode_master WHERE is_active = 1");
 
 /* TERMS & CONDITIONS */
@@ -337,22 +363,29 @@ if(isset($_POST['save_invoice'])){
 
             $product = find_by_id('products',$pid);
 
-            if($product['type'] == 1){
+          if($product['type'] == 1){
                 $stock_row = find_by_sql("
                 SELECT 
-                COALESCE(SUM(
-                CASE
-                WHEN transaction_type = 1 THEN quantity
-                WHEN transaction_type = 2 THEN -quantity
-                WHEN transaction_type = 3 THEN -quantity
-                WHEN transaction_type = 4 THEN quantity
-                END
-                ),0) AS stock
+                (
+                    COALESCE(SUM(
+                        CASE
+                            WHEN transaction_type IN (1,4) THEN quantity
+                            WHEN transaction_type IN (2,3,5,6) THEN -quantity
+                            ELSE 0
+                        END
+                    ), 0)
+                    -
+                    COALESCE((
+                        SELECT SUM(qty) 
+                        FROM demo_item_detail 
+                        WHERE product_id = {$pid} AND status = 1
+                    ), 0)
+                ) AS stock
                 FROM transaction_master
                 WHERE product_id = {$pid}
                 ");
 
-                $current_stock = $stock_row[0]['stock'] ?? 0;
+                $current_stock = (float)($stock_row[0]['stock'] ?? 0);
 
                 if($qty > $current_stock){
                     $db->query("DELETE FROM invoice WHERE id = $qid");
