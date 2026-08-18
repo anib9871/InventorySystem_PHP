@@ -267,7 +267,7 @@ label {
 #header .logo {
     width: 250px !important;
     height: 50px !important;
-    background: linear-gradient(135deg, #881337 0%, #991b1b 100%) !important; /* Rich Dark Crimson Red */
+    background: #a10805 !important; 
     color: #ffffff !important;
     font-weight: 700;
     font-size: 13px;
