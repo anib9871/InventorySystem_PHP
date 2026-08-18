@@ -18,7 +18,7 @@ if(isset($_SESSION['role_id'])){
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Mobile responsiveness ke liye sabse important viewport tag -->
+<!-- Mobile responsiveness viewport -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
@@ -41,7 +41,7 @@ else{
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<!-- Aapka Central Main CSS Location -->
+<!-- Central Main CSS Location -->
 <link rel="stylesheet" href="libs/css/main.css"/>
 
 <!-- JS Libraries -->
@@ -78,10 +78,9 @@ else{
 
 <header id="header">
 
-<!-- ROLE BASED LOGO / SIDEBAR TOGGLE -->
+<!-- ROLE BASED RED LOGO / SIDEBAR TOGGLE -->
 <?php if($user['role_id'] != 1): ?>
-<div class="logo pull-left" id="menuToggle"
-     style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
+<div class="logo pull-left" id="menuToggle" style="cursor:pointer;">
   <i class="fa-solid fa-bars visible-xs-inline-block" style="margin-right: 6px;"></i>
   <span><?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'STORELY'; ?></span>
 </div>
@@ -94,41 +93,37 @@ else{
 
 <div class="header-content">
 
-<!-- Header Date (Mobile pe auto-hide taaki header bar overflow na kare) -->
+<!-- Header Date -->
 <div class="header-date pull-left hidden-xs">
   <strong><?php echo date("F j, Y, g:i a");?></strong>
 </div>
 
-<div class="pull-right clearfix">
-<ul class="info-menu list-inline list-unstyled" style="margin-bottom: 0;">
-
-<li class="profile">
-<a href="#" data-toggle="dropdown" class="toggle" aria-expanded="false">
-<img src="uploads/users/no_image.png" class="img-circle img-inline" alt="user-image" style="width:28px; height:28px; object-fit:cover;">
-<span>
-<?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2): ?>
-    Logout
-<?php else: ?>
-    <?php echo $_SESSION['username']; ?>
-    <?php if(!empty($_SESSION['center_name'])): ?>
-        <span class="hidden-xs">| <?php echo $_SESSION['center_name']; ?></span>
-    <?php endif; ?>
-<?php endif; ?>
-<i class="caret"></i>
-</span>
-</a>
-
-<ul class="dropdown-menu dropdown-menu-right">
-<li>
-<a href="logout.php">
-<i class="glyphicon glyphicon-off"></i>
-Logout
-</a>
-</li>
-</ul>
-
-</li>
-
+<!-- Logout Menu Section -->
+<div class="pull-right">
+<ul class="info-menu list-inline list-unstyled">
+  <li class="profile dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+      <i class="fa-solid fa-circle-user" style="font-size: 22px; color: #0284c7;"></i>
+      <span>
+        <?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2): ?>
+            Logout
+        <?php else: ?>
+            <?php echo $_SESSION['username']; ?>
+            <?php if(!empty($_SESSION['center_name'])): ?>
+                <span class="hidden-xs">| <?php echo $_SESSION['center_name']; ?></span>
+            <?php endif; ?>
+        <?php endif; ?>
+      </span>
+      <i class="caret"></i>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-right">
+      <li>
+        <a href="logout.php">
+          <i class="fa-solid fa-power-off" style="color: #ef4444;"></i> Logout
+        </a>
+      </li>
+    </ul>
+  </li>
 </ul>
 </div>
 
