@@ -158,7 +158,7 @@ function numberToWords($amount) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title><?= htmlspecialchars($invoice['customer_name']) ?>_Document_<?= htmlspecialchars($invoice['invoice_no']) ?></title>
+<title><?= htmlspecialchars($invoice['customer_name']) ?> - <?= $is_proforma ? 'PROFORMA INVOICE' : 'TAX INVOICE' ?> (<?= htmlspecialchars(str_replace('/', '-', $invoice['invoice_no'])) ?>)</title>
 
 <style>
 :root {
