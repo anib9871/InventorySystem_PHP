@@ -4,11 +4,42 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="libs/js/functions.js"></script>
 
-    <!-- ✅ MOBILE TOGGLE & NESTED ACCORDION SCRIPT -->
+    <!-- ✅ AUTO ACTIVE MENU RETENTION + ACCORDION SCRIPT -->
     <script>
     $(document).ready(function() {
 
-        // 1. Mobile Sidebar Open/Close Toggle
+        // ================= 1. AUTO OPEN CURRENT ACTIVE MENU =================
+        var currentUrl = window.location.pathname.split("/").pop(); // e.g. "customer_master.php"
+        
+        if (currentUrl === "" || currentUrl === "index.php") {
+            currentUrl = "admin.php";
+        }
+
+        // Sidebar ke saare links check karo jo current URL se match karte hain
+        $('.sidebar ul li a').each(function() {
+            var href = $(this).attr('href');
+            if (href && href.indexOf(currentUrl) !== -1 && currentUrl !== "") {
+                // Active link highlight
+                $(this).closest('li').addClass('active');
+                
+                // Parent submenus ko open rakho
+                var $parentSubmenu = $(this).closest('.nav-submenu, .submenu, ul');
+                $parentSubmenu.show(); // Submenu open
+                
+                var $parentToggle = $parentSubmenu.prev('a');
+                $parentToggle.addClass('open');
+                $parentToggle.find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right').addClass('rotate');
+
+                // Agar 2-level nested submenu ho
+                var $superParent = $parentSubmenu.parents('.nav-submenu, .submenu, ul');
+                if ($superParent.length) {
+                    $superParent.show();
+                    $superParent.prev('a').addClass('open').find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right').addClass('rotate');
+                }
+            }
+        });
+
+        // ================= 2. MOBILE DRAWER TOGGLE =================
         $(document).on('click', '#menuToggle, .logo', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -16,12 +47,12 @@
             $('body').toggleClass('sidebar-open');
         });
 
-        // Sidebar ke andar click karne par drawer band na ho
+        // Sidebar ke andar click par drawer close na ho
         $(document).on('click', '.sidebar', function(e) {
             e.stopPropagation();
         });
 
-        // Screen ke bahar tap karne par sidebar band ho
+        // Bahar click par mobile drawer band ho
         $(document).on('click', function(e) {
             if ($('body').hasClass('sidebar-open') || $('.sidebar').hasClass('show-sidebar')) {
                 $('.sidebar').removeClass('show-sidebar');
@@ -29,25 +60,25 @@
             }
         });
 
-        // 2. Submenu Dropdown & Arrow Rotation Toggle
+        // ================= 3. SUBMENU CLICK ACCORDION =================
         $(document).off('click', '.submenu-toggle, .sidebar li > a');
         $(document).on('click', '.submenu-toggle, .sidebar li > a', function(e) {
             var $this = $(this);
             var $submenu = $this.next('.nav-submenu, .submenu, ul');
 
-            // Agar submenu exist karta hai
+            // Agar dropdown menu hai (page link nahi hai)
             if ($submenu.length > 0) {
                 e.preventDefault();
                 e.stopPropagation();
 
                 var $arrow = $this.find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right');
 
-                // Dusre open sibling menus ko close karo
+                // Sibling open menus ko band karo
                 $this.closest('li').siblings().find('.nav-submenu, .submenu, ul').slideUp(200);
                 $this.closest('li').siblings().find('.arrow, .fa-chevron-right, .fa-angle-right, .glyphicon-chevron-right').removeClass('rotate');
                 $this.closest('li').siblings().find('> a').removeClass('open');
 
-                // Current submenu toggle karo
+                // Current menu toggle karo
                 if ($submenu.is(':visible')) {
                     $submenu.slideUp(200);
                     $arrow.removeClass('rotate');
