@@ -288,7 +288,6 @@ if($edit_mode){
   $ledger_data = find_by_sql("SELECT * FROM supplier_ledger WHERE bill_no = '{$edit_bill}' LIMIT 1");
   $edit_ledger = $ledger_data ? $ledger_data[0] : null;
 
-  // Extract advance paid if any
   foreach($edit_payments as $p){
     if(strtoupper($p['payment_mode']) == 'ADVANCE'){
       $edit_advance += (float)$p['payment_amount'];
@@ -304,133 +303,6 @@ $shipping_types = find_by_sql("SELECT * FROM shipping_type_master WHERE is_activ
 include_once('layouts/header.php');
 ?>
 
-<!-- BALANCED PREMIUM ENTERPRISE UI STYLING -->
-<style>
-  .grn-card {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(11, 23, 54, 0.08);
-    border: 1px solid #e2e8f0;
-    margin-bottom: 15px;
-  }
-  .grn-card-header {
-    background: #0B1736;
-    color: #fff;
-    padding: 10px 18px;
-    border-top-left-radius: 7px;
-    border-top-right-radius: 7px;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-  }
-  .grn-card-body {
-    padding: 16px;
-  }
-  .section-block {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 14px;
-  }
-  .form-label-custom {
-    font-size: 11px;
-    font-weight: 700;
-    color: #334155;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-    display: block;
-  }
-  .grn-input-custom {
-    height: 32px !important;
-    padding: 4px 8px !important;
-    font-size: 12px !important;
-    border-radius: 4px !important;
-    border: 1px solid #cbd5e1 !important;
-    background-color: #ffffff !important;
-    box-shadow: none !important;
-  }
-  .grn-input-custom:focus {
-    border-color: #2563eb !important;
-    background-color: #ffffff !important;
-  }
-  .btn-custom {
-    height: 32px !important;
-    padding: 0 12px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    line-height: 30px !important;
-    border-radius: 4px !important;
-  }
-  
-  .flex-row-balanced {
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    margin-bottom: 10px;
-  }
-  .flex-row-balanced:last-child {
-    margin-bottom: 0;
-  }
-  
-  .table-responsive-balanced {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    margin-bottom: 14px;
-  }
-  #grnItemsTable {
-    margin-bottom: 0;
-  }
-  #grnItemsTable thead th {
-    position: sticky;
-    top: 0;
-    background: #0B1736 !important;
-    color: #ffffff !important;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 8px 10px;
-    border: none;
-    z-index: 10;
-  }
-  #grnItemsTable tbody td {
-    font-size: 11px;
-    padding: 6px 10px;
-    vertical-align: middle;
-  }
-
-  .bottom-layout-balanced {
-    display: flex;
-    gap: 16px;
-  }
-  .bottom-left-balanced {
-    flex: 1;
-  }
-  .bottom-right-balanced {
-    width: 360px;
-  }
-  
-  .payment-box-balanced {
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 8px 10px;
-    max-height: 145px;
-    overflow-y: auto;
-  }
-  .pay-row-balanced {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 4px 0;
-    border-bottom: 1px dashed #e2e8f0;
-  }
-  .pay-row-balanced:last-child {
-    border-bottom: none;
-  }
-</style>
-
 <?php if(isset($_GET['created'])){ ?>
 <script>
 Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Created Successfully', showConfirmButton: false, timer: 1800 });
@@ -443,307 +315,308 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
 </script>
 <?php } ?>
 
-<div class="row" style="margin-bottom:5px;">
-  <div class="col-md-12"><?php echo display_msg($msg); ?></div>
+<div class="row">
+  <div class="col-xs-12"><?php echo display_msg($msg); ?></div>
 </div>
 
-<div class="grn-card">
-  <div class="grn-card-header">
-    <i class="fa fa-file-text-o"></i> GOODS RECEIPT NOTE (GRN)
-  </div>
-  <div class="grn-card-body">
-    
-    <!-- HEADER INPUTS (SECTION 1) -->
-    <div class="section-block">
-      <div class="flex-row-balanced">
-        <div style="flex: 2.5;">
-          <label class="form-label-custom">Supplier <span style="color:red;">*</span></label>
-          <select name="supplier_id" id="supplier_id" form="grnForm" class="form-control grn-input-custom" required>
-            <option value="">Select Supplier</option>
-            <?php foreach ($suppliers as $s) { ?>
-              <option value="<?= $s['id']; ?>" <?= ($edit_mode && $grn_info['supplier_id'] == $s['id']) ? 'selected' : ''; ?>>
-                <?= $s['supplier_name']; ?>
-              </option>
-            <?php } ?>
-          </select>
-        </div>
-
-        <div style="flex: 1.2;">
-          <label class="form-label-custom">Bill / GRN No <span style="color:red;">*</span></label>
-          <input type="text" name="bill_no" value="<?= $edit_mode ? $grn_info['bill_indent_no'] : ''; ?>" class="form-control grn-input-custom" form="grnForm" placeholder="Enter Bill No" required>
-        </div>
-
-        <div style="flex: 1.2;">
-          <label class="form-label-custom">Bill Date <span style="color:red;">*</span></label>
-          <input type="text" name="bill_date" id="bill_date" value="<?= $edit_mode ? date('d/M/Y', strtotime($grn_info['bill_indent_date'])) : date('d/M/Y'); ?>" class="form-control grn-input-custom" form="grnForm" required>
-        </div>
+<div class="row">
+  <div class="col-xs-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <i class="fa fa-file-text-o" style="color: #2b8cff; margin-right: 5px;"></i>
+        <strong><?= $edit_mode ? 'EDIT GOODS RECEIPT NOTE (GRN)' : 'GOODS RECEIPT NOTE (GRN)' ?></strong>
       </div>
-    </div>
-
-    <!-- PREVIOUS RATE BOX -->
-    <div id="previousRateBox" style="display:none; padding:6px 12px; background:#eff6ff; border-left:4px solid #2563eb; border-radius:4px; font-size:11px; margin-bottom:12px;"></div>
-
-    <input type="hidden" id="product">
-    <input type="hidden" id="hsn_code">
-    <input type="hidden" id="sac_code">
-
-<!-- ITEM ENTRY FORM (SECTION 2) -->
-<div class="section-block">
-  <div class="flex-row-balanced">
-    <div style="width: 220px;">
-      <label class="form-label-custom">Product <span style="color:red;">*</span></label>
-      <div style="display: flex; align-items: center;">
-        <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose..." readonly style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; border-right: 0 !important;">
-        <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()" style="border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center;">Choose</button>
-      </div>
-    </div>
-
-        <div style="width: 100px;">
-          <label class="form-label-custom">Qty <span style="color:red;">*</span></label>
-          <input id="qty" type="number" class="form-control grn-input-custom" oninput="calculateDiscount()" placeholder="0">
-        </div>
-
-        <div style="width: 100px;">
-          <label class="form-label-custom">Free Qty</label>
-          <input id="free_qty" type="number" class="form-control grn-input-custom" placeholder="0">
-        </div>
-
-        <div style="display:flex; gap:6px;">
-          <button type="button" onclick="addItem()" class="btn btn-success btn-custom"><i class="fa fa-plus"></i> Add Item</button>
-          <button type="button" onclick="cancelEditItem()" class="btn btn-danger btn-custom">Cancel</button>
-          <button type="button" class="btn btn-info btn-custom" onclick="$('#shippingModal').modal('show');"><i class="fa fa-truck"></i> Shipping</button>
-        </div>
-      </div>
-
-      <div class="flex-row-balanced" style="margin-top: 10px;">
-        <div style="flex: 1;">
-          <label class="form-label-custom">Rate</label>
-          <input id="rate" type="number" step="any" min="0" class="form-control grn-input-custom" oninput="calculateDiscount()" placeholder="0.00">
-        </div>
-        <div style="width: 80px;">
-          <label class="form-label-custom">Disc %</label>
-          <input id="disc_percent" type="number" step="any" class="form-control grn-input-custom" oninput="calculateDiscount()" placeholder="%">
-        </div>
-        <div style="flex: 1;">
-          <label class="form-label-custom">Disc Amt</label>
-          <input id="discount" type="number" step="any" class="form-control grn-input-custom" oninput="calculateDiscountFromAmount()" placeholder="0.00">
-        </div>
-        <div style="width: 90px;">
-          <label class="form-label-custom">Misc</label>
-          <input id="misc" type="number" step="any" class="form-control grn-input-custom" placeholder="0">
-        </div>
-        <div style="flex: 1;">
-          <label class="form-label-custom">MRP</label>
-          <input id="mrp" type="number" step="any" min="0" class="form-control grn-input-custom" placeholder="MRP">
-        </div>
-        <div style="flex: 1.3;">
-          <label class="form-label-custom">GST Rate</label>
-          <select id="gst" class="form-control grn-input-custom">
-            <option value="">Select GST</option>
-            <?php foreach ($gst_list as $g) { ?>
-              <option value="<?= $g['id']; ?>" data-gst="<?= $g['gst_percent']; ?>"><?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)</option>
-            <?php } ?>
-          </select>
-        </div>
-        <div style="flex: 1.2;">
-          <label class="form-label-custom">GST Type</label>
-          <select id="buy_type" class="form-control grn-input-custom">
-            <option value="exclusive">Exclusive</option>
-            <option value="inclusive">Inclusive</option>
-          </select>
-        </div>
-        <div style="flex: 1.3;">
-          <label class="form-label-custom">Net Amt</label>
-          <input id="net_amount" type="number" class="form-control grn-input-custom" readonly placeholder="0.00">
-        </div>
-      </div>
-    </div>
-
-    <!-- SHIPPING SUMMARY -->
-    <div id="shippingSummary" style="display:none; padding:6px 12px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:10px; font-size:11px;"></div>
-
-    <!-- MAIN FORM -->
-    <form method="post" id="grnForm">
-      <input type="hidden" name="round_off" id="round_off" value="0">
-      <input type="hidden" name="charges_json" id="charges_json">
-      <input type="hidden" name="items_json" id="items_json">
-      <input type="hidden" name="payments_json" id="payments_json">
-      <input type="hidden" name="used_advance" id="used_advance" value="<?= $edit_mode ? $edit_advance : 0; ?>">
-      <?php if($edit_mode){ ?>
-        <input type="hidden" name="old_bill_no" value="<?= $edit_bill; ?>">
-      <?php } ?>
-
-      <!-- ITEMS TABLE -->
-      <div class="table-responsive-balanced">
-        <table id="grnItemsTable" class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th width="35">#</th>
-              <th>Product</th>
-              <th width="80">HSN</th>
-              <th width="100">Qty</th>
-              <th width="80">Rate</th>
-              <th width="90">Total Amt</th>
-              <th width="65">Disc %</th>
-              <th width="80">Disc Amt</th>
-              <th width="90">Net Amt</th>
-              <th width="60">GST %</th>
-              <th width="80">GST Amt</th>
-              <th width="95">Net Total</th>
-              <th width="65">Action</th>
-            </tr>
-          </thead>
-          <tbody id="itemBody"></tbody>
-        </table>
-      </div>
-
-      <!-- HIDDEN CHARGES CONTAINER -->
-      <div style="display:none;">
-        <select id="charge_type"><option value="">Type</option></select>
-        <input type="number" id="charge_amount">
-        <select id="charge_gst_type"><option value="EXCLUSIVE">Exclusive</option></select>
-        <select id="charge_gst_id"><option value="">GST</option></select>
-      </div>
-      <div id="chargeBody" style="display:none;"></div>
-
-      <!-- BOTTOM SECTION: ADVANCE, COMMENTS & PAYMENTS -->
-      <div class="bottom-layout-balanced">
+      
+      <div class="panel-body">
         
-        <!-- LEFT: ADVANCE & COMMENTS -->
-        <div class="bottom-left-balanced">
-          <!-- ADVANCE BOX -->
-          <div class="alert alert-info" id="advanceSection" style="display:none; padding:8px 12px; font-size:11px; margin-bottom:10px; border-radius:4px;">
-            <strong>Available Advance: ₹ <span id="advanceAmount">0.00</span></strong> | 
-            <strong style="color:#0369a1;">Balance Advance: ₹ <span id="balanceAdvance">0.00</span></strong>
-            <span id="useAdvanceWrapper" style="margin-left:12px;">
-              <label style="margin:0; font-weight:600;"><input type="checkbox" id="useAdvance" <?= ($edit_mode && $edit_advance > 0) ? 'checked' : ''; ?>> Use Advance</label>
-            </span>
-            <input type="number" id="advanceInput" class="form-control grn-input-custom" style="margin-top:6px; display:<?= ($edit_mode && $edit_advance > 0) ? 'block' : 'none'; ?>; width:160px;" placeholder="Enter Advance" min="0" step="any" value="<?= $edit_mode ? $edit_advance : ''; ?>">
-          </div>
+        <!-- SECTION 1: SUPPLIER & BILL DETAILS -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 15px;">
+          <div class="row">
+            <div class="col-xs-12 col-sm-6 col-md-5 form-group-compact">
+              <label>Supplier <span style="color:red;">*</span></label>
+              <select name="supplier_id" id="supplier_id" form="grnForm" class="form-control" required autofocus>
+                <option value="">Select Supplier</option>
+                <?php foreach ($suppliers as $s) { ?>
+                  <option value="<?= $s['id']; ?>" <?= ($edit_mode && $grn_info['supplier_id'] == $s['id']) ? 'selected' : ''; ?>>
+                    <?= $s['supplier_name']; ?>
+                  </option>
+                <?php } ?>
+              </select>
+            </div>
 
-          <!-- COMMENTS -->
-          <div>
-            <label class="form-label-custom">Comments / Remarks</label>
-            <textarea name="comments" class="form-control" placeholder="Enter Remarks / Comments..." rows="3" style="font-size:12px; border-radius:4px; resize:none; border:1px solid #cbd5e1; padding:6px 8px;"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
+            <div class="col-xs-12 col-sm-3 col-md-4 form-group-compact">
+              <label>Bill / GRN No <span style="color:red;">*</span></label>
+              <input type="text" name="bill_no" value="<?= $edit_mode ? $grn_info['bill_indent_no'] : ''; ?>" class="form-control" form="grnForm" placeholder="Enter Bill No" required>
+            </div>
+
+            <div class="col-xs-12 col-sm-3 col-md-3 form-group-compact">
+              <label>Bill Date <span style="color:red;">*</span></label>
+              <input type="text" name="bill_date" id="bill_date" value="<?= $edit_mode ? date('d/M/Y', strtotime($grn_info['bill_indent_date'])) : date('d/M/Y'); ?>" class="form-control" form="grnForm" required>
+            </div>
           </div>
         </div>
 
-        <!-- RIGHT: PAYMENTS & TOTAL -->
-        <div class="bottom-right-balanced">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <strong style="font-size:12px; color:#1e293b; text-transform:uppercase;">Payment Modes</strong>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <label style="margin:0; font-size:11px; font-weight:600; cursor:pointer;">
-                <input type="checkbox" id="roundOffToggle" onchange="updateGrandTotal()"> Round Off
-              </label>
-              <div style="font-size:14px; font-weight:800; color:#0f172a;">
-                Total: ₹ <span id="grandTotal">0.00</span>
+        <!-- PREVIOUS RATE INFO BOX -->
+        <div id="previousRateBox" style="display:none; padding:8px 12px; background:#eff6ff; border-left:4px solid #2b8cff; border-radius:4px; font-size:11px; margin-bottom:15px;"></div>
+
+        <input type="hidden" id="product">
+        <input type="hidden" id="hsn_code">
+        <input type="hidden" id="sac_code">
+
+        <!-- SECTION 2: ITEM ENTRY FORM -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 15px;">
+          <div class="row">
+            <div class="col-xs-12 col-sm-6 col-md-4 form-group-compact">
+              <label>Product <span style="color:red;">*</span></label>
+              <div style="display: flex; align-items: center;">
+                <input type="text" id="product_name" class="form-control" placeholder="Click Choose..." readonly style="border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0;">
+                <button type="button" class="btn btn-primary-custom btn-custom" onclick="openProductModal()" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">Choose</button>
+              </div>
+            </div>
+
+            <div class="col-xs-6 col-sm-3 col-md-2 form-group-compact">
+              <label>Qty <span style="color:red;">*</span></label>
+              <input id="qty" type="number" class="form-control" oninput="calculateDiscount()" placeholder="0">
+            </div>
+
+            <div class="col-xs-6 col-sm-3 col-md-2 form-group-compact">
+              <label>Free Qty</label>
+              <input id="free_qty" type="number" class="form-control" placeholder="0">
+            </div>
+
+            <div class="col-xs-12 col-sm-12 col-md-4 form-group-compact">
+              <label class="hidden-xs">&nbsp;</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" onclick="addItem()" class="btn btn-success-custom btn-custom" style="flex: 1;"><i class="fa fa-plus"></i> Add Item</button>
+                <button type="button" onclick="cancelEditItem()" class="btn btn-clear btn-custom">Cancel</button>
+                <button type="button" class="btn btn-primary-custom btn-custom" onclick="$('#shippingModal').modal('show');"><i class="fa fa-truck"></i> Shipping</button>
               </div>
             </div>
           </div>
 
-          <!-- PAYMENT CHECKBOXES -->
-          <div class="payment-box-balanced">
-            <?php foreach($payment_modes as $pm){ ?>
-              <div class="pay-row-balanced">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <input type="checkbox" class="pay-check" onchange="togglePaymentInput(this)" value="<?= $pm['mode_name']; ?>" id="pay_<?= $pm['id']; ?>">
-                  <label for="pay_<?= $pm['id']; ?>" style="margin:0; font-size:11px; font-weight:600; text-transform:uppercase; cursor:pointer;">
-                    <?= $pm['mode_name']; ?>
-                  </label>
-                </div>
-                <div style="display:flex; gap:6px;">
-                  <input type="number" step="any" min="0" class="form-control grn-input-custom pay-amount" style="display:none; width:85px;" data-mode="<?= $pm['mode_name']; ?>" placeholder="Amount">
-                  <input type="text" class="form-control grn-input-custom pay-utr" style="display:none; width:95px;" data-mode="<?= $pm['mode_name']; ?>" placeholder="UTR No">
-                </div>
-              </div>
-            <?php } ?>
+          <div class="row" style="margin-top: 5px;">
+            <div class="col-xs-6 col-sm-4 col-md-2 form-group-compact">
+              <label>Rate</label>
+              <input id="rate" type="number" step="any" min="0" class="form-control" oninput="calculateDiscount()" placeholder="0.00">
+            </div>
+            <div class="col-xs-6 col-sm-2 col-md-1 form-group-compact">
+              <label>Disc %</label>
+              <input id="disc_percent" type="number" step="any" class="form-control" oninput="calculateDiscount()" placeholder="%">
+            </div>
+            <div class="col-xs-6 col-sm-3 col-md-2 form-group-compact">
+              <label>Disc Amt</label>
+              <input id="discount" type="number" step="any" class="form-control" oninput="calculateDiscountFromAmount()" placeholder="0.00">
+            </div>
+            <div class="col-xs-6 col-sm-3 col-md-1 form-group-compact">
+              <label>Misc</label>
+              <input id="misc" type="number" step="any" class="form-control" placeholder="0">
+            </div>
+            <div class="col-xs-6 col-sm-4 col-md-2 form-group-compact">
+              <label>MRP</label>
+              <input id="mrp" type="number" step="any" min="0" class="form-control" placeholder="MRP">
+            </div>
+            <div class="col-xs-6 col-sm-4 col-md-2 form-group-compact">
+              <label>GST Rate</label>
+              <select id="gst" class="form-control">
+                <option value="">Select GST</option>
+                <?php foreach ($gst_list as $g) { ?>
+                  <option value="<?= $g['id']; ?>" data-gst="<?= $g['gst_percent']; ?>"><?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)</option>
+                <?php } ?>
+              </select>
+            </div>
+            <div class="col-xs-6 col-sm-4 col-md-1 form-group-compact">
+              <label>Type</label>
+              <select id="buy_type" class="form-control" style="padding: 4px 6px;">
+                <option value="exclusive">Excl</option>
+                <option value="inclusive">Incl</option>
+              </select>
+            </div>
+            <div class="col-xs-6 col-sm-4 col-md-1 form-group-compact">
+              <label>Net</label>
+              <input id="net_amount" type="number" class="form-control" readonly placeholder="0.00">
+            </div>
           </div>
-
-          <!-- SUBMIT BUTTON -->
-          <div style="margin-top:10px; text-align:right;">
-            <?php if($edit_mode){ ?>
-              <button name="update_grn" class="btn btn-primary btn-custom" style="padding:0 24px !important; font-size:13px !important;">Update GRN</button>
-            <?php } else { ?>
-              <button name="save_grn" class="btn btn-success btn-custom" style="padding:0 24px !important; font-size:13px !important;">Create GRN</button>
-            <?php } ?>
-          </div>
-
         </div>
 
+        <!-- SHIPPING SUMMARY -->
+        <div id="shippingSummary" style="display:none; padding:8px 12px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; margin-bottom:12px; font-size:11px;"></div>
+
+        <!-- MAIN FORM -->
+        <form method="post" id="grnForm">
+          <input type="hidden" name="round_off" id="round_off" value="0">
+          <input type="hidden" name="charges_json" id="charges_json">
+          <input type="hidden" name="items_json" id="items_json">
+          <input type="hidden" name="payments_json" id="payments_json">
+          <input type="hidden" name="used_advance" id="used_advance" value="<?= $edit_mode ? $edit_advance : 0; ?>">
+          <?php if($edit_mode){ ?>
+            <input type="hidden" name="old_bill_no" value="<?= $edit_bill; ?>">
+          <?php } ?>
+
+          <!-- ITEMS TABLE (RESPONSIVE) -->
+          <div class="table-scrollable" style="margin-bottom: 15px; max-height: 250px;">
+            <table id="grnItemsTable" class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th width="35" class="text-center">#</th>
+                  <th>Product</th>
+                  <th width="80">HSN</th>
+                  <th width="90">Qty</th>
+                  <th width="80">Rate</th>
+                  <th width="90">Total Amt</th>
+                  <th width="65">Disc %</th>
+                  <th width="80">Disc Amt</th>
+                  <th width="90">Net Amt</th>
+                  <th width="60">GST %</th>
+                  <th width="80">GST Amt</th>
+                  <th width="95">Net Total</th>
+                  <th width="65" class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="itemBody"></tbody>
+            </table>
+          </div>
+
+          <!-- HIDDEN CHARGES FIELDS -->
+          <div style="display:none;">
+            <select id="charge_type"><option value="">Type</option></select>
+            <input type="number" id="charge_amount">
+            <select id="charge_gst_type"><option value="EXCLUSIVE">Exclusive</option></select>
+            <select id="charge_gst_id"><option value="">GST</option></select>
+          </div>
+          <div id="chargeBody" style="display:none;"></div>
+
+          <!-- BOTTOM SECTION: ADVANCE, REMARKS & PAYMENTS -->
+          <div class="row">
+            
+            <!-- LEFT COLUMN: ADVANCE & REMARKS -->
+            <div class="col-xs-12 col-md-6 form-group-compact">
+              <!-- ADVANCE BOX -->
+              <div id="advanceSection" style="display:none; padding:10px 12px; font-size:11px; margin-bottom:10px; border-radius:5px; background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1;">
+                <strong>Available Advance: ₹ <span id="advanceAmount">0.00</span></strong> | 
+                <strong>Balance Advance: ₹ <span id="balanceAdvance">0.00</span></strong>
+                <span id="useAdvanceWrapper" style="margin-left:12px; display: inline-block;">
+                  <label style="margin:0; font-weight:700; cursor:pointer;"><input type="checkbox" id="useAdvance" <?= ($edit_mode && $edit_advance > 0) ? 'checked' : ''; ?>> Use Advance</label>
+                </span>
+                <input type="number" id="advanceInput" class="form-control" style="margin-top:6px; display:<?= ($edit_mode && $edit_advance > 0) ? 'block' : 'none'; ?>; max-width:200px;" placeholder="Enter Advance" min="0" step="any" value="<?= $edit_mode ? $edit_advance : ''; ?>">
+              </div>
+
+              <!-- COMMENTS -->
+              <div>
+                <label>Comments / Remarks</label>
+                <textarea name="comments" class="form-control" placeholder="Enter Remarks / Comments..." rows="3" style="font-size:12px; resize:none;"><?= $edit_mode ? $grn_info['comments'] : ''; ?></textarea>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: PAYMENTS & TOTAL -->
+            <div class="col-xs-12 col-md-6 form-group-compact">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                <label style="margin:0;">PAYMENT MODES</label>
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <label style="margin:0; font-size:11px; font-weight:700; cursor:pointer;">
+                    <input type="checkbox" id="roundOffToggle" onchange="updateGrandTotal()"> Round Off
+                  </label>
+                  <div style="font-size:15px; font-weight:800; color:#1e293b;">
+                    Total: ₹ <span id="grandTotal">0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PAYMENT CHECKBOXES CONTAINER -->
+              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; max-height: 160px; overflow-y: auto;">
+                <?php foreach($payment_modes as $pm){ ?>
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; flex-wrap: wrap; gap: 6px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <input type="checkbox" class="pay-check" onchange="togglePaymentInput(this)" value="<?= $pm['mode_name']; ?>" id="pay_<?= $pm['id']; ?>">
+                      <label for="pay_<?= $pm['id']; ?>" style="margin:0; font-size:11px; font-weight:600; text-transform:uppercase; cursor:pointer;">
+                        <?= $pm['mode_name']; ?>
+                      </label>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                      <input type="number" step="any" min="0" class="form-control pay-amount" style="display:none; width:95px; height:28px; padding:2px 6px; font-size:11px;" data-mode="<?= $pm['mode_name']; ?>" placeholder="Amount">
+                      <input type="text" class="form-control pay-utr" style="display:none; width:105px; height:28px; padding:2px 6px; font-size:11px;" data-mode="<?= $pm['mode_name']; ?>" placeholder="UTR No">
+                    </div>
+                  </div>
+                <?php } ?>
+              </div>
+
+              <!-- SUBMIT BUTTON -->
+              <div class="btn-group-flex">
+                <?php if($edit_mode){ ?>
+                  <a href="grn.php" class="btn btn-clear btn-custom">Cancel</a>
+                  <button type="submit" name="update_grn" class="btn btn-primary-custom btn-custom">Update GRN</button>
+                <?php } else { ?>
+                  <button type="submit" name="save_grn" class="btn btn-success-custom btn-custom">Create GRN</button>
+                <?php } ?>
+              </div>
+            </div>
+
+          </div>
+
+        </form>
+
       </div>
-
-    </form>
-
+    </div>
   </div>
 </div>
 
 <!-- ================= SHIPPING MODAL ================= -->
 <div class="modal fade" id="shippingModal" data-backdrop="static" data-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 450px; margin: 50px auto;">
-    <div class="modal-content" style="border-radius: 10px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
+  <div class="modal-dialog modal-sm" style="margin: 50px auto;">
+    <div class="modal-content" style="border-radius: 8px; overflow: hidden;">
       
-      <div class="modal-header" style="background: #0B1736; color: #ffffff; padding: 12px 20px; border: none; display: flex; align-items: center; justify-content: space-between;">
-        <h4 class="modal-title" style="font-size: 15px; font-weight: 600; margin: 0; color: #fff;">
-          <i class="fa fa-truck" style="margin-right: 8px;"></i> Add Shipping Charge
+      <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 10px 15px; border: none; display: flex; align-items: center; justify-content: space-between;">
+        <h4 class="modal-title" style="font-size: 14px; font-weight: 700; margin: 0; color: #fff;">
+          <i class="fa fa-truck" style="margin-right: 6px;"></i> Add Shipping Charge
         </h4>
-        <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.8; font-size: 20px; outline: none; border: none; background: transparent; cursor: pointer;">&times;</button>
+        <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.9; font-size: 20px; outline: none; border: none; background: transparent; cursor: pointer;">&times;</button>
       </div>
 
-      <div class="modal-body" style="padding: 20px; background-color: #fcfcfc;">
-        <div class="form-group" style="margin-bottom: 15px;">
-          <label style="font-size: 11px; font-weight: 600; color: #444; margin-bottom: 4px; display: block;">
-            Shipping Type <span style="color:red;">*</span>
-          </label>
+      <div class="modal-body" style="padding: 15px;">
+        <div class="form-group form-group-compact">
+          <label>Shipping Type <span style="color:red;">*</span></label>
           <div style="display: flex; gap: 6px;">
-            <select id="modal_charge_type" class="form-control" style="height: 32px; font-size: 12px; border-radius: 4px;">
+            <select id="modal_charge_type" class="form-control">
               <option value="">Select Type</option>
               <?php foreach($shipping_types as $st){ ?>
                 <option value="<?= $st['id']; ?>"><?= $st['type_name']; ?></option>
               <?php } ?>
             </select>
-            <button type="button" class="btn btn-default" onclick="refreshShippingTypesModal()" title="Refresh Shipping Types" style="height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid #ccc; background: #fff;">
+            <button type="button" class="btn btn-clear btn-custom" onclick="refreshShippingTypesModal()" title="Refresh Shipping Types" style="padding: 0 10px;">
               <i class="fa fa-refresh" id="refreshIcon"></i>
             </button>
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 15px;">
-          <label style="font-size: 11px; font-weight: 600; color: #444; margin-bottom: 4px; display: block;">
-            Amount (₹) <span style="color:red;">*</span>
-          </label>
-          <input type="number" step="any" min="0" id="modal_charge_amount" class="form-control" placeholder="0.00" style="height: 32px; font-size: 12px; border-radius: 4px;">
+        <div class="form-group form-group-compact">
+          <label>Amount (₹) <span style="color:red;">*</span></label>
+          <input type="number" step="any" min="0" id="modal_charge_amount" class="form-control" placeholder="0.00">
         </div>
 
-        <div class="row" style="margin-left: -5px; margin-right: -5px;">
-          <div class="col-xs-6" style="padding-left: 5px; padding-right: 5px;">
-            <div class="form-group" style="margin-bottom: 10px;">
-              <label style="font-size: 11px; font-weight: 600; color: #444; margin-bottom: 4px; display: block;">GST Type</label>
-              <select id="modal_charge_gst_type" class="form-control" style="height: 32px; font-size: 12px; border-radius: 4px;">
-                <option value="EXCLUSIVE">Exclusive</option>
-                <option value="INCLUSIVE">Inclusive</option>
-              </select>
-            </div>
+        <div class="row">
+          <div class="col-xs-6 form-group-compact">
+            <label>GST Type</label>
+            <select id="modal_charge_gst_type" class="form-control">
+              <option value="EXCLUSIVE">Exclusive</option>
+              <option value="INCLUSIVE">Inclusive</option>
+            </select>
           </div>
-          <div class="col-xs-6" style="padding-left: 5px; padding-right: 5px;">
-            <div class="form-group" style="margin-bottom: 10px;">
-              <label style="font-size: 11px; font-weight: 600; color: #444; margin-bottom: 4px; display: block;">GST Percent</label>
-              <select id="modal_charge_gst_id" class="form-control" style="height: 32px; font-size: 12px; border-radius: 4px;">
-                <option value="">Select GST</option>
-                <?php foreach ($gst_list as $g) { ?>
-                  <option value="<?= $g['id']; ?>" data-gst="<?= $g['gst_percent']; ?>">
-                    <?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)
-                  </option>
-                <?php } ?>
-              </select>
-            </div>
+          <div class="col-xs-6 form-group-compact">
+            <label>GST Percent</label>
+            <select id="modal_charge_gst_id" class="form-control">
+              <option value="">Select GST</option>
+              <?php foreach ($gst_list as $g) { ?>
+                <option value="<?= $g['id']; ?>" data-gst="<?= $g['gst_percent']; ?>">
+                  <?= $g['gst_name']; ?> (<?= $g['gst_percent']; ?>%)
+                </option>
+              <?php } ?>
+            </select>
           </div>
         </div>
       </div>
 
-      <div class="modal-footer" style="padding: 10px 20px; background: #f1f3f5; border-top: 1px solid #e9ecef; display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal" style="height: 30px; font-size: 12px; border-radius: 4px;">Cancel</button>
-        <button type="button" class="btn btn-success btn-sm" onclick="saveShippingModal()" style="height: 30px; font-size: 12px; font-weight: 600; border-radius: 4px; padding: 0 15px;">
+      <div class="modal-footer" style="padding: 10px 15px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-clear btn-custom" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success-custom btn-custom" onclick="saveShippingModal()">
           <i class="fa fa-check" style="margin-right: 4px;"></i> Add Charge
         </button>
       </div>
@@ -752,29 +625,32 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
   </div>
 </div>
 
-<!-- PRODUCT SEARCH MODAL -->
+<!-- ================= PRODUCT SEARCH MODAL ================= -->
 <div class="modal fade" id="productModal">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header" style="background:#0B1736; color:#fff; padding:12px 18px;">
+    <div class="modal-content" style="border-radius: 8px; overflow: hidden;">
+      <div class="modal-header" style="background:#0f172a; color:#fff; padding:12px 18px;">
         <button type="button" class="close" data-dismiss="modal" style="color:#fff;">&times;</button>
-        <h4 class="modal-title" style="font-size:15px; color:#fff;">Select Product</h4>
+        <h4 class="modal-title" style="font-size:14px; font-weight:700; color:#fff;">Select Product</h4>
       </div>
       <div class="modal-body" style="padding:15px;">
-        <input type="text" id="searchProduct" class="form-control grn-input-custom" placeholder="Search product name or HSN..." autofocus style="margin-bottom:12px;">
-        <div style="max-height:320px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:4px;">
-          <table class="table table-bordered table-hover" style="margin:0; font-size:12px;">
+        <div class="search-box" style="max-width:100%; margin-bottom:12px;">
+          <i class="glyphicon glyphicon-search"></i>
+          <input type="text" id="searchProduct" class="form-control" placeholder="Search product name or HSN..." autofocus>
+        </div>
+        <div class="table-scrollable" style="max-height:300px;">
+          <table class="table table-bordered table-striped table-hover" style="margin:0;">
             <thead>
-              <tr style="background:#f1f5f9;">
-                <th width="10%">#</th>
-                <th width="70%">Product Name</th>
-                <th width="20%">HSN Code</th>
+              <tr>
+                <th width="40" class="text-center">#</th>
+                <th>Product Name</th>
+                <th width="120">HSN Code</th>
               </tr>
             </thead>
             <tbody id="productTable">
               <?php $i=1; foreach($products as $p){ ?>
                 <tr onclick="selectProduct('<?= $p['id']; ?>', '<?= addslashes($p['name']); ?>', '<?= $p['hsn_code']; ?>')" style="cursor:pointer;">
-                  <td><?= $i++; ?></td>
+                  <td class="text-center"><?= $i++; ?></td>
                   <td><b><?= $p['name']; ?></b></td>
                   <td><?= $p['hsn_code']; ?></td>
                 </tr>
@@ -835,13 +711,11 @@ let backupItem = null;
     document.getElementById("items_json").value = JSON.stringify(items);
     document.getElementById("charges_json").value = JSON.stringify(charges);
 
-    // AUTO-CHECK ROUND OFF IF SAVED AMOUNT WAS WHOLE NUMBER
     if(editBillAmount > 0 && Number.isInteger(editBillAmount)){
       document.getElementById("roundOffToggle").checked = true;
       updateGrandTotal();
     }
 
-    // AUTO-POPULATE PAYMENT MODES AND UTR NUMBERS
     editPayments.forEach(p => {
       let mode = p.payment_mode;
       if(mode.toUpperCase() !== 'ADVANCE'){
@@ -986,7 +860,7 @@ function renderItems() {
     it.sno = i + 1;
     tb.innerHTML += `
     <tr>
-      <td>${it.sno}</td>
+      <td class="text-center">${it.sno}</td>
       <td><b>${it.name}</b></td>
       <td>${it.hsn_code || '-'}</td>
       <td>${parseFloat(it.qty).toFixed(2)} (+${parseFloat(it.free_qty).toFixed(2)})</td>
@@ -998,9 +872,11 @@ function renderItems() {
       <td>${it.gst_percent}%</td>
       <td>${it.gst_amount.toFixed(2)}</td>
       <td><b>${it.total.toFixed(2)}</b></td>
-      <td>
-        <button type="button" onclick="editItem(${i})" class="btn btn-xs btn-info"><i class="fa fa-pencil"></i></button>
-        <button type="button" onclick="items.splice(${i},1);renderItems()" class="btn btn-xs btn-danger"><i class="fa fa-trash"></i></button>
+      <td class="action-td">
+        <div class="action-cell">
+          <button type="button" onclick="editItem(${i})" class="btn btn-primary btn-xs equal-btn"><i class="glyphicon glyphicon-pencil"></i></button>
+          <button type="button" onclick="items.splice(${i},1);renderItems()" class="btn btn-danger btn-xs equal-btn"><i class="glyphicon glyphicon-trash"></i></button>
+        </div>
       </td>
     </tr>`;
   });
@@ -1037,30 +913,6 @@ function updateGrandTotal() {
       }
     });
   }
-}
-
-function saveShippingModal(){
-    let amountVal = document.getElementById("modal_charge_amount").value;
-    let typeVal = document.getElementById("modal_charge_type").value;
-
-    if(!typeVal || !amountVal || parseFloat(amountVal) <= 0){
-        Swal.fire({ icon: 'warning', title: 'Incomplete Details', text: 'Please select Shipping Type and enter a valid Amount.' });
-        return;
-    }
-
-    document.getElementById("charge_type").value = typeVal;
-    document.getElementById("charge_amount").value = amountVal;
-    document.getElementById("charge_gst_type").value = document.getElementById("modal_charge_gst_type").value;
-    document.getElementById("charge_gst_id").value = document.getElementById("modal_charge_gst_id").value;
-
-    addCharge();
-
-    document.getElementById("modal_charge_type").value = "";
-    document.getElementById("modal_charge_amount").value = "";
-    document.getElementById("modal_charge_gst_id").value = "";
-    document.getElementById("modal_charge_gst_type").value = "EXCLUSIVE";
-
-    $('#shippingModal').modal('hide');
 }
 
 function refreshShippingTypesModal() {
@@ -1136,10 +988,10 @@ function renderCharges() {
 
   charges.forEach((c, i) => {
     summary.innerHTML += `
-      <span style="display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; margin-right:6px;">
+      <span style="display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; margin-right:6px; margin-bottom:4px;">
         <b>${c.type_name || 'Shipping'}:</b> ₹${c.total.toFixed(2)} (${c.gst_type})
-        <button type="button" onclick="editCharge(${i})" class="btn btn-xs btn-info" style="padding:0 4px;"><i class="fa fa-pencil"></i></button>
-        <button type="button" onclick="charges.splice(${i},1);renderCharges()" class="btn btn-xs btn-danger" style="padding:0 4px;"><i class="fa fa-trash"></i></button>
+        <button type="button" onclick="editCharge(${i})" class="btn btn-xs btn-primary equal-btn" style="width:20px; height:20px; line-height:20px;"><i class="glyphicon glyphicon-pencil" style="font-size:9px;"></i></button>
+        <button type="button" onclick="charges.splice(${i},1);renderCharges()" class="btn btn-xs btn-danger equal-btn" style="width:20px; height:20px; line-height:20px;"><i class="glyphicon glyphicon-trash" style="font-size:9px;"></i></button>
       </span>`;
   });
 
@@ -1395,25 +1247,20 @@ if(useAdvance){
   });
 }
 
-// 1. फिलहाल एडिट हो रहे charge के इंडेक्स को ट्रैक करने के लिए वैरिएबल
 let editingChargeIndex = null;
 
-// 2. Edit Button Function (अब यह डेटा तुरंत डिलीट नहीं करेगा)
 function editCharge(index){
-  editingChargeIndex = index; // ट्रैक करें कि कौन सा आइटम एडिट हो रहा है
+  editingChargeIndex = index;
   let c = charges[index];
   
-  // Modal के Inputs में पुराना डेटा भरें
   document.getElementById("modal_charge_type").value = c.shipping_type_id;
   document.getElementById("modal_charge_amount").value = c.amount;
   document.getElementById("modal_charge_gst_id").value = c.gst_id || "";
   document.getElementById("modal_charge_gst_type").value = c.gst_type ? c.gst_type.toUpperCase() : "EXCLUSIVE";
 
-  // Pop-up Modal Open करें
   $('#shippingModal').modal('show');
 }
 
-// 3. Modal Save Function (नया ऐड करेगा या पुराने को अपडेट करेगा)
 function saveShippingModal(){
   let amountVal = document.getElementById("modal_charge_amount").value;
   let typeVal = document.getElementById("modal_charge_type").value;
@@ -1454,10 +1301,9 @@ function saveShippingModal(){
     total: total 
   };
 
-  // अगर एडिट हो रहा था तो पुरानी जगह रिप्लेस करें, वरना नया आइटम ऐड करें
   if (editingChargeIndex !== null) {
     charges[editingChargeIndex] = updatedCharge;
-    editingChargeIndex = null; // रीसेट करें
+    editingChargeIndex = null;
   } else {
     charges.push(updatedCharge);
   }
@@ -1467,7 +1313,6 @@ function saveShippingModal(){
   $('#shippingModal').modal('hide');
 }
 
-// 4. Modal Inuts Reset करने का हेल्पर फंक्शन
 function resetShippingModalInputs(){
   document.getElementById("modal_charge_type").value = "";
   document.getElementById("modal_charge_amount").value = "";
@@ -1476,7 +1321,6 @@ function resetShippingModalInputs(){
   editingChargeIndex = null;
 }
 
-// 5. जब भी Modal Cancel या Close (X) हो, तो ट्रैकर रीसेट कर दें
 $('#shippingModal').on('hidden.bs.modal', function () {
   resetShippingModalInputs();
 });
