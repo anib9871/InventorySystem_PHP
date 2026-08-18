@@ -18,6 +18,9 @@ if(isset($_SESSION['role_id'])){
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Mobile responsiveness ke liye sabse important tag -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 
 <title>
 <?php
@@ -33,10 +36,14 @@ else{
 ?>
 </title>
 
+<!-- Bootstrap CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
 <link rel="stylesheet" href="libs/css/main.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- Central Custom Responsive CSS -->
+<link rel="stylesheet" href="assets/css/custom_master.css"/>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
@@ -66,62 +73,52 @@ else{
 <?php if(isset($_SESSION['username'])): ?>
 
   <?php
-$system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
-?>
+  $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
+  ?>
 
 <header id="header">
 
-<!-- ROLE BASED LOGO -->
+<!-- ROLE BASED LOGO / SIDEBAR TOGGLE -->
 <?php if($user['role_id'] != 1): ?>
 <div class="logo pull-left" id="menuToggle"
      style="cursor:pointer; font-size:13px; white-space:nowrap; font-weight:600;">
-
-<?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'STORELY'; ?>
-
+  <i class="fa-solid fa-bars visible-xs-inline-block" style="margin-right: 6px;"></i>
+  <span><?php echo isset($_SESSION['org_name']) ? $_SESSION['org_name'] : 'STORELY'; ?></span>
 </div>
 <?php else: ?>
-  <div class="logo pull-left">
-    STORELY INVENTORY
+  <div class="logo pull-left" id="menuToggle" style="cursor:pointer;">
+    <i class="fa-solid fa-bars visible-xs-inline-block" style="margin-right: 6px;"></i>
+    <span>STORELY INVENTORY</span>
   </div>
 <?php endif; ?>
 
 <div class="header-content">
 
-<div class="header-date pull-left">
+<!-- Header Date (Hidden on very small screens for clean mobile UI) -->
+<div class="header-date pull-left hidden-xs">
   <strong><?php echo date("F j, Y, g:i a");?></strong>
 </div>
 
 <div class="pull-right clearfix">
-<ul class="info-menu list-inline list-unstyled">
+<ul class="info-menu list-inline list-unstyled" style="margin-bottom: 0;">
 
 <li class="profile">
-<a href="#" data-toggle="dropdown" class="toggle">
-
-<img src="uploads/users/no_image.png" class="img-circle img-inline">
-
+<a href="#" data-toggle="dropdown" class="toggle" aria-expanded="false">
+<img src="uploads/users/no_image.png" class="img-circle img-inline" alt="user-image" style="width:28px; height:28px; object-fit:cover;">
 <span>
-
 <?php if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2): ?>
-
     Logout
-
 <?php else: ?>
-
     <?php echo $_SESSION['username']; ?>
-
     <?php if(!empty($_SESSION['center_name'])): ?>
-        | <?php echo $_SESSION['center_name']; ?>
+        <span class="hidden-xs">| <?php echo $_SESSION['center_name']; ?></span>
     <?php endif; ?>
-
 <?php endif; ?>
-
 <i class="caret"></i>
-
 </span>
-
 </a>
 
-<ul class="dropdown-menu">
+<ul class="dropdown-menu dropdown-menu-right">
 <li>
 <a href="logout.php">
 <i class="glyphicon glyphicon-off"></i>
@@ -139,37 +136,24 @@ Logout
 </header>
 
 <!-- SIDEBAR -->
-<div class="sidebar">
-
+<div class="sidebar" id="sidebarNav">
 <?php
-
 /* SUPER ADMIN */
 if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
-
     include_once('superadmin_menu.php');
-
 }
-
 /* ORGANIZATION USERS */
 else{
-
     if(isset($_SESSION['user_level']) && $_SESSION['user_level'] == 1){
-
         include_once('admin_menu.php');
-
     }else{
-
         include_once('user_menu.php');
-
     }
-
 }
-
 ?>
-
 </div>
 
 <?php endif; ?>
 
 <div class="page">
-<div class="container-fluid">
+<div class="container-fluid" style="padding-top: 15px;">
