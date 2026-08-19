@@ -177,27 +177,6 @@ $demo_records = find_by_sql("
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
 
-<style>
-body { background: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
-.card-master { border: none; border-radius: 18px; background: #fff; box-shadow: 0 4px 18px rgba(15, 23, 42, .06); padding: 24px; }
-.master-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.master-table th { background: #0f172a !important; color: #fff !important; font-size: 13px; font-weight: 600; padding: 12px 14px !important; border: none !important; }
-.master-table td { padding: 12px 14px !important; font-size: 13px; vertical-align: middle; border-bottom: 1px solid #f1f5f9 !important; }
-.master-table tbody tr:hover td { background: #f8fafc; }
-.badge-demo-active { background-color: #fef3c7; color: #d97706; border: 1px solid #fcd34d; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; white-space: nowrap; }
-.badge-demo-completed { background-color: #d1fae5; color: #059669; border: 1px solid #6ee7b7; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; white-space: nowrap; }
-.form-control, .form-select { height: 38px; border-radius: 10px !important; border: 1px solid #dbe2ea; font-size: 13px; box-shadow: none !important; }
-.form-control:focus { border-color: #2563eb; }
-.btn-dispatch { background: #2563eb; color: #fff; border-radius: 10px; font-weight: 600; font-size: 13px; padding: 8px 18px; border: none; transition: .2s; }
-.btn-dispatch:hover { background: #1d4ed8; color: #fff; }
-.filter-btn { border-radius: 8px !important; font-size: 12px; font-weight: 600; padding: 6px 14px; }
-.modal-content-compact { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); }
-.modal-header-compact { background: #0f172a; color: #fff; border-top-left-radius: 16px; border-top-right-radius: 16px; padding: 14px 20px; }
-.modal-header-compact .modal-title { font-size: 15px; font-weight: 600; }
-.modal-header-compact .close { color: #fff; opacity: 0.8; }
-.modal-header-compact .close:hover { opacity: 1; }
-</style>
-
 <div class="container-fluid py-4 px-4">
     <div class="card-master">
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
