@@ -302,6 +302,384 @@ window.location='quotation_list.php?print_id=".$qid."';
 <form method="post" onsubmit="return validateQuotation();">
 
 
+<style>
+
+body{
+    background:#f1f5f9;
+    font-family:'Segoe UI',sans-serif;
+}
+
+/* =========================
+   MAIN CARDS
+========================= */
+
+.card{
+    border:none;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 4px 18px rgba(15,23,42,.06);
+}
+
+/* =========================
+   FORM CONTROLS
+========================= */
+
+.form-control,
+.form-control-sm{
+    height:38px;
+    border-radius:10px !important;
+    border:1px solid #dbe2ea;
+    font-size:14px;
+    box-shadow:none !important;
+}
+
+.form-control:focus,
+.form-control-sm:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 0.15rem rgba(37,99,235,.15) !important;
+}
+
+/* =========================
+   GRID GAP FIX
+========================= */
+
+.row.align-items-stretch{
+    --bs-gutter-x:10px !important;
+}
+
+.col-lg-3{
+    padding-right:5px !important;
+}
+
+.col-lg-9{
+    padding-left:5px !important;
+}
+
+/* =========================
+   LEFT PANEL
+========================= */
+
+.left-panel{
+    position:sticky;
+    top:10px;
+    height:100%;
+}
+
+/* =========================
+   PRODUCT CARD
+========================= */
+
+.product-card{
+    height:220px;
+    overflow:hidden;
+}
+
+#productSearch{
+    height:38px;
+    margin-bottom:8px;
+}
+
+/* =========================
+   PRODUCT SCROLL
+========================= */
+
+.product-scroll{
+    height:160px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    border:1px solid #eef2f7;
+    border-radius:10px;
+}
+
+.product-scroll::-webkit-scrollbar{
+    width:6px;
+}
+
+.product-scroll::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+/* =========================
+   PRODUCT TABLE
+========================= */
+
+.product-scroll table{
+    width:100%;
+    margin-bottom:0 !important;
+    border-collapse:collapse;
+}
+
+#productList tr{
+    cursor:pointer;
+    transition:.2s;
+}
+
+#productList tr:hover{
+    background:#eef4ff;
+}
+
+#productList th{
+    background:#0f172a;
+    color:#fff;
+    position:sticky;
+    top:0;
+    z-index:10;
+    padding:12px 10px !important;
+    font-size:13px;
+    border:none !important;
+    white-space:nowrap;
+}
+
+#productList td{
+    padding:12px 10px !important;
+    font-size:13px;
+    white-space:nowrap;
+    border-color:#eef2f7 !important;
+}
+
+/* =========================
+   TOP CARD
+========================= */
+
+.card.p-3.mb-3{
+    padding:16px 18px !important;
+}
+
+.top-row-fix{
+    min-height:58px;
+}
+
+.top-row-fix label{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.top-row-fix .form-control{
+    height:40px;
+}
+
+.top-row-fix .btn{
+    height:40px;
+    margin-top:20px;
+    border-radius:10px !important;
+    font-weight:600;
+}
+
+/* =========================
+   BILL GRID
+========================= */
+
+.bill-grid{
+    background:#fff;
+    border-radius:18px;
+    min-height:220px;
+    max-height:220px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    box-shadow:0 4px 18px rgba(15,23,42,.06);
+    position:relative;
+}
+
+.bill-grid::-webkit-scrollbar{
+    height:7px;
+    width:7px;
+}
+
+.bill-grid::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+/* =========================
+   ITEM TABLE
+========================= */
+
+#itemTable{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:auto;
+}
+
+/* HEADER */
+
+#itemTable thead th{
+    position:sticky;
+    top:0;
+    background:#0f172a !important;
+    color:#fff;
+    border:none !important;
+    padding:14px 10px;
+    font-size:13px;
+    white-space:nowrap;
+    z-index:99;
+}
+
+/* BODY */
+
+#itemTable tbody tr{
+    transition:.2s;
+}
+
+#itemTable tbody tr:hover td{
+    background:#eef4ff;
+}
+
+#itemTable td{
+    background:#f8fafc;
+    border:none !important;
+    padding:12px 8px;
+    vertical-align:middle;
+    white-space:nowrap;
+    height:72px;
+}
+
+/* COLUMN WIDTHS */
+
+/* COLUMN WIDTHS */
+
+#itemTable th:nth-child(1),
+#itemTable td:nth-child(1){
+    width:28%;
+}
+
+#itemTable th:nth-child(2),
+#itemTable td:nth-child(2){
+    width:9%;
+}
+
+#itemTable th:nth-child(3),
+#itemTable td:nth-child(3){
+    width:14%;
+}
+
+#itemTable th:nth-child(4),
+#itemTable td:nth-child(4){
+    width:10%;
+}
+
+#itemTable th:nth-child(5),
+#itemTable td:nth-child(5){
+    width:12%;
+}
+
+#itemTable th:nth-child(6),
+#itemTable td:nth-child(6){
+    width:10%;
+}
+
+#itemTable th:nth-child(7),
+#itemTable td:nth-child(7){
+    width:12%;
+}
+
+#itemTable th:nth-child(8),
+#itemTable td:nth-child(8){
+    width:15%;
+}
+
+#itemTable th:last-child,
+#itemTable td:last-child{
+    width:50px;
+}
+
+/* INPUTS */
+
+#itemTable input{
+    width:100%;
+    min-width:70px;
+    height:38px;
+    border-radius:8px;
+    border:1px solid #dbe2ea;
+    background:#fff;
+    font-size:13px;
+}
+
+/* REMOVE BUTTON */
+
+.remove{
+    width:34px;
+    height:34px;
+    border-radius:8px !important;
+    padding:0;
+}
+
+/* =========================
+   SUMMARY CARD
+========================= */
+
+.summary-card{
+    background:#fff;
+    border-radius:16px;
+    padding:14px !important;
+    margin-top:14px;
+    min-height:250px;
+    box-shadow:0 3px 12px rgba(15,23,42,.05);
+}
+
+.summary-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 2px;
+    border-bottom:1px dashed #e2e8f0;
+    font-size:13px;
+}
+
+.summary-row:last-child{
+    border-bottom:none;
+}
+
+.summary-row strong{
+    font-size:13px;
+    font-weight:600;
+}
+
+.summary-card label{
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:5px;
+}
+
+.summary-card .form-control{
+    height:38px;
+    font-size:13px;
+}
+
+/* =========================
+   TERMS BOX
+========================= */
+
+#termsBox{
+    min-height:90px;
+    resize:none;
+    padding:10px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:991px){
+
+    .left-panel{
+        position:relative;
+        top:0;
+    }
+
+    .bill-grid{
+        max-height:none;
+    }
+
+    .summary-card .col-lg-4{
+        border-right:none !important;
+        margin-bottom:20px;
+    }
+}
+
+</style>
 
 
 <!-- LEFT -->
