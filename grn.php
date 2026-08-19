@@ -381,11 +381,17 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
           <input id="free_qty" type="number" class="form-control grn-input-custom" placeholder="0">
         </div>
 
-        <div style="display:flex; gap:6px;">
-          <button type="button" onclick="addItem()" class="btn btn-success btn-custom"><i class="fa fa-plus"></i> Add Item</button>
-          <button type="button" onclick="cancelEditItem()" class="btn btn-danger btn-custom">Cancel</button>
-          <button type="button" class="btn btn-info btn-custom" onclick="$('#shippingModal').modal('show');"><i class="fa fa-truck"></i> Shipping</button>
-        </div>
+   <div class="grn-btn-group">
+  <button type="button" onclick="addItem()" class="btn btn-success grn-btn-custom">
+    <i class="fa fa-plus"></i> Add Item
+  </button>
+  <button type="button" onclick="cancelEditItem()" class="btn btn-danger grn-btn-custom">
+    Cancel
+  </button>
+  <button type="button" class="btn btn-info grn-btn-custom" onclick="$('#shippingModal').modal('show');">
+    <i class="fa fa-truck"></i> Shipping
+  </button>
+</div>
       </div>
 
       <div class="flex-row-balanced" style="margin-top: 10px;">
