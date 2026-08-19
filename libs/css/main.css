@@ -585,12 +585,32 @@ label {
   border-radius: 4px !important;
 }
 
+/* 3 Buttons Group Layout */
+.grn-btn-group {
+  display: flex !important;
+  gap: 6px !important;
+  width: 100% !important;
+  align-items: center !important;
+}
+
+.grn-btn-group .btn {
+  flex: 1 !important;
+  height: 32px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+}
+
 .flex-row-balanced {
   display: flex;
   gap: 12px;
   align-items: flex-end;
   margin-bottom: 10px;
-  flex-wrap: wrap; /* Mobile responsiveness */
+  flex-wrap: wrap;
 }
 
 .flex-row-balanced:last-child {
@@ -672,10 +692,30 @@ label {
     width: 100% !important;
     flex: none !important;
   }
+  
   .bottom-layout-balanced {
     flex-direction: column;
   }
+  
   .bottom-right-balanced {
     width: 100% !important;
+  }
+
+  /* Mobile par buttons ek hi line me compact ho jayenge */
+  .grn-btn-group {
+    gap: 4px !important;
+    margin-top: 6px !important;
+  }
+
+  .grn-btn-group .btn {
+    height: 28px !important;
+    font-size: 10px !important;
+    padding: 0 4px !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  .grn-btn-group .btn i {
+    font-size: 9px !important;
+    margin-right: 2px !important;
   }
 }
