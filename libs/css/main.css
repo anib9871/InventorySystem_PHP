@@ -716,5 +716,161 @@ label {
     margin-right: 2px !important;
   }
 }
+/* ================= DEMO ITEMS PAGE (EXACT ORIGINAL UI) ================= */
+.card-master {
+    border: none !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .06) !important;
+    padding: 24px !important;
+    margin-bottom: 20px;
+}
 
+.master-table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.master-table th {
+    background: #0f172a !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    padding: 12px 14px !important;
+    border: none !important;
+    white-space: nowrap !important;
+}
+
+.master-table td {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    white-space: nowrap !important;
+}
+
+.master-table tbody tr:hover td {
+    background: #f8fafc !important;
+}
+
+.badge-demo-active {
+    background-color: #fef3c7 !important;
+    color: #d97706 !important;
+    border: 1px solid #fcd34d !important;
+    padding: 5px 12px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+}
+
+.badge-demo-completed {
+    background-color: #d1fae5 !important;
+    color: #059669 !important;
+    border: 1px solid #6ee7b7 !important;
+    padding: 5px 12px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+}
+
+.btn-dispatch {
+    background: #2563eb !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    padding: 8px 18px !important;
+    border: none !important;
+    transition: .2s !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+.btn-dispatch:hover {
+    background: #1d4ed8 !important;
+    color: #fff !important;
+}
+
+.filter-btn {
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 6px 14px !important;
+}
+
+.modal-content-compact {
+    border-radius: 16px !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.modal-header-compact {
+    background: #0f172a !important;
+    color: #fff !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    padding: 14px 20px !important;
+}
+
+.modal-header-compact .modal-title {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    margin: 0 !important;
+}
+
+.modal-header-compact .close {
+    color: #fff !important;
+    opacity: 0.8 !important;
+}
+
+.modal-header-compact .close:hover {
+    opacity: 1 !important;
+}
+
+/* Mobile Responsive Adjustments (Desktop ko bina chede) */
+@media (max-width: 768px) {
+    .card-master {
+        padding: 15px !important;
+        border-radius: 14px !important;
+    }
+
+    .demo-header-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .demo-header-flex .btn-dispatch {
+        width: 100% !important;
+    }
+
+    .demo-filter-row {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .demo-filter-row .text-right {
+        text-align: left !important;
+    }
+
+    .demo-filter-row .btn-group {
+        display: flex !important;
+        width: 100% !important;
+    }
+
+    .demo-filter-row .btn-group .btn {
+        flex: 1 !important;
+        padding: 6px 4px !important;
+        font-size: 11px !important;
+    }
+}
 
