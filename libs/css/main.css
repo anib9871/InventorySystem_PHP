@@ -716,3 +716,125 @@ label {
     margin-right: 2px !important;
   }
 }
+
+/* ================= QUOTATION / CREATE BILL STYLES ================= */
+.quotation-card {
+    border: none;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.product-scroll {
+    height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+}
+
+.product-scroll table {
+    width: 100%;
+    margin-bottom: 0 !important;
+}
+
+#productList tr {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#productList tr:hover {
+    background: #eef4ff;
+}
+
+#productList th {
+    background: #0f172a;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 8px 10px !important;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+#productList td {
+    padding: 8px 10px !important;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.bill-grid {
+    background: #fff;
+    border-radius: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+}
+
+#itemTable {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+#itemTable thead th {
+    position: sticky;
+    top: 0;
+    background: #0f172a !important;
+    color: #fff;
+    padding: 10px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    z-index: 20;
+}
+
+#itemTable tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+#itemTable input.form-control {
+    height: 32px;
+    font-size: 12px;
+    padding: 2px 6px;
+    min-width: 70px;
+}
+
+.summary-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 2px;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 13px;
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustment */
+@media (max-width: 991px) {
+    .product-scroll {
+        height: 140px;
+    }
+    .bill-grid {
+        max-height: 240px;
+    }
+}
