@@ -717,65 +717,83 @@ label {
   }
 }
 
-/* ================= QUOTATION / CREATE BILL STYLES ================= */
-.quotation-card {
-    border: none;
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
-    padding: 15px;
-    margin-bottom: 15px;
+/* ================= SS3 ORIGINAL QUOTATION STYLES ================= */
+.quot-card {
+    border: none !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06) !important;
+    padding: 16px !important;
+    margin-bottom: 14px !important;
 }
 
-.product-scroll {
+.quot-form-control {
+    height: 38px !important;
+    border-radius: 10px !important;
+    border: 1px solid #dbe2ea !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+}
+
+.quot-form-control:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Product Panel */
+.quot-product-scroll {
     height: 180px;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #eef2f7;
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
-.product-scroll table {
+.quot-product-table {
     width: 100%;
     margin-bottom: 0 !important;
+    border-collapse: collapse;
 }
 
-#productList tr {
+.quot-product-table tr {
     cursor: pointer;
     transition: background 0.2s;
 }
 
-#productList tr:hover {
+.quot-product-table tr:hover {
     background: #eef4ff;
 }
 
-#productList th {
-    background: #0f172a;
-    color: #fff;
+.quot-product-table th {
+    background: #0f172a !important;
+    color: #ffffff !important;
     position: sticky;
     top: 0;
     z-index: 10;
-    padding: 8px 10px !important;
+    padding: 10px !important;
     font-size: 12px;
+    border: none !important;
     white-space: nowrap;
 }
 
-#productList td {
-    padding: 8px 10px !important;
+.quot-product-table td {
+    padding: 10px !important;
     font-size: 12px;
     white-space: nowrap;
+    border-color: #eef2f7 !important;
 }
 
-.bill-grid {
-    background: #fff;
-    border-radius: 12px;
-    max-height: 280px;
+/* Item Table Card */
+.quot-bill-grid {
+    background: #ffffff;
+    border-radius: 18px;
+    max-height: 240px;
     overflow-y: auto;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
-    border: 1px solid #e2e8f0;
-    margin-bottom: 15px;
+    margin-bottom: 14px;
 }
 
 #itemTable {
@@ -787,54 +805,60 @@ label {
     position: sticky;
     top: 0;
     background: #0f172a !important;
-    color: #fff;
-    padding: 10px 8px;
-    font-size: 11px;
-    text-transform: uppercase;
+    color: #ffffff !important;
+    padding: 12px 10px;
+    font-size: 12px;
+    border: none !important;
     white-space: nowrap;
-    z-index: 20;
+    z-index: 10;
 }
 
 #itemTable tbody td {
-    padding: 6px 8px;
+    background: #f8fafc;
+    border: none !important;
+    padding: 8px 6px;
     vertical-align: middle;
     white-space: nowrap;
 }
 
+#itemTable tbody tr:hover td {
+    background: #eef4ff;
+}
+
 #itemTable input.form-control {
-    height: 32px;
+    height: 34px !important;
+    border-radius: 8px !important;
+    border: 1px solid #dbe2ea;
     font-size: 12px;
-    padding: 2px 6px;
-    min-width: 70px;
+    min-width: 65px;
 }
 
-.summary-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
-    border: 1px solid #e2e8f0;
+.btn-remove-row {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    line-height: 28px !important;
+    text-align: center;
 }
 
-.summary-row {
+/* Summary Card */
+.quot-summary-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 16px !important;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.quot-summary-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 2px;
+    padding: 8px 0;
     border-bottom: 1px dashed #e2e8f0;
     font-size: 13px;
 }
 
-.summary-row:last-child {
+.quot-summary-row:last-child {
     border-bottom: none;
-}
-
-/* Responsive adjustment */
-@media (max-width: 991px) {
-    .product-scroll {
-        height: 140px;
-    }
-    .bill-grid {
-        max-height: 240px;
-    }
 }
