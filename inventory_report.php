@@ -364,44 +364,54 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 
 /* ════════════════ PRINT ════════════════ */
 @media print {
-  @page { size: A4 portrait; margin: 10mm; }
+  @page { size: A4 portrait; margin: 8mm 6mm; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
   body {
     margin: 0; padding: 0;
-    font-size: 14px !important; line-height: 1.6 !important;
+    font-size: 10px !important; line-height: 1.2 !important;
     background: #fff;
   }
 
   .pdf-period-box{
     display:block !important; background:#b30000 !important; color:#fff !important;
-    padding:5px 9px !important; border-radius:3px !important; margin-bottom:6px !important;
-    font-size:13px !important; font-weight:700 !important; line-height:1.2 !important;
+    padding:4px 8px !important; border-radius:3px !important; margin-bottom:5px !important;
+    font-size:11px !important; font-weight:700 !important;
   }
 
   .pdf-total-box{
     display:block !important; background:#0f172a !important; color:#fff !important;
-    padding:5px 9px !important; border-radius:3px !important; margin-bottom:6px !important;
-    font-size:13px !important; font-weight:700 !important; line-height:1.2 !important;
+    padding:5px 8px !important; border-radius:3px !important; margin-bottom:5px !important;
+    font-size:11px !important; font-weight:700 !important;
   }
 
   .no-print        { display: none !important; }
   .rpt-top         { display: none !important; }
 
-  .rpt-header { margin-bottom: 8px; padding-bottom: 6px; }
-  .rpt-header h2 { font-size: 15px !important; }
-  .rpt-header p  { font-size: 10px !important; }
+  .rpt-header { margin-bottom: 6px; padding-bottom: 4px; }
+  .rpt-header h2 { font-size: 14px !important; }
+  .rpt-header p  { font-size: 9px !important; }
 
   .pdf-collection-box{
     display:block !important; background:linear-gradient(90deg,#a10805,#111827) !important;
-    color:#fff !important; padding:6px 10px !important; border-radius:4px !important;
-    margin-bottom:8px !important; width:100% !important; font-size:12px !important; line-height:1.2 !important;
+    color:#fff !important; padding:5px 8px !important; border-radius:4px !important;
+    margin-bottom:6px !important; width:100% !important; font-size:10px !important; line-height:1.2 !important;
   }
 
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
-  .rpt { width: 96% !important; margin: 0 auto !important; }
-  .rpt-card-title  { font-size: 10px !important; margin-bottom: 6px !important; }
-  .rpt-tbl th, .rpt-tbl td { font-size: 13px !important; padding: 8px 10px !important; }
+  .rpt { width: 100% !important; margin: 0 auto !important; }
+  .rpt-card-title  { font-size: 10px !important; margin-bottom: 4px !important; }
+  
+  .rpt-tbl { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+  .rpt-tbl th, .rpt-tbl td { 
+    font-size: 10px !important; 
+    padding: 4px 4px !important; 
+    white-space: nowrap !important;
+  }
+  .rpt-tbl td.customer-cell, .rpt-tbl td.product-cell {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
   .rpt-tbl thead   { display: table-header-group; }
   .rpt-tbl tfoot   { display: table-row-group; }
   tr               { page-break-inside: avoid; }
@@ -661,20 +671,19 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     <?php if (empty($sales)): ?>
       <p style="color:#94a3b8;">No records found for selected period.</p>
     <?php else: ?>
-    <div style="overflow-x:auto;">
-      <table class="rpt-tbl">
-<table class="rpt-tbl" style="table-layout: fixed; width: 100%;">
+   <div style="overflow-x:auto;">
+      <table class="rpt-tbl" style="table-layout: fixed; width: 100%;">
         <thead>
           <tr style="background:#f1f5f9;">
             <th style="width: 11%;">Date</th>
-            <th style="width: 9%;">Inv No</th>
-            <th style="width: 23%;">Customer</th>
+            <th style="width: 10%;">Inv No</th>
+            <th style="width: 24%;">Customer</th>
             <th style="width: 17%;">Product</th>
             <th style="width: 5%; text-align:center;">Qty</th>
-            <th style="width: 11%; text-align:right;">Price</th>
-            <th style="width: 9%; text-align:right;">Disc</th>
-            <th style="width: 8%; text-align:right;">GST</th>
-            <th style="width: 12%; text-align:right;">Total</th>
+            <th style="width: 9%; text-align:right;">Price</th>
+            <th style="width: 7%; text-align:right;">Disc</th>
+            <th style="width: 6%; text-align:right;">GST</th>
+            <th style="width: 11%; text-align:right;">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -682,13 +691,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
             <td><?= htmlspecialchars($s['invoice_no']) ?></td>
-            <td><?= htmlspecialchars($s['customer_name'] ?? '-') ?></td>
-            <td><?= htmlspecialchars($s['name']) ?></td>
+            <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
+            <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
             <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
-            <td><?= number_format($s['sell_price'], 2) ?></td>
-            <td>₹ <?= number_format($s['discount_amount'], 2) ?></td>
-            <td>₹ <?= number_format($s['gst_amount'], 2) ?></td>
-            <td><b style="color:#2563eb;">₹ <?= number_format($s['total_sale'], 2) ?></b></td>
+            <td style="text-align:right;"><?= number_format($s['sell_price'], 2) ?></td>
+            <td style="text-align:right;"><?= number_format($s['discount_amount'], 2) ?></td>
+            <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
+            <td style="text-align:right;"><b style="color:#2563eb;">₹ <?= number_format($s['total_sale'], 2) ?></b></td>
           </tr>
           <?php endforeach; ?>
         </tbody>
