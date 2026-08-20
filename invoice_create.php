@@ -1184,18 +1184,26 @@ body{
 
 
 <div class="col-md-3 d-flex flex-column justify-content-center">
-  <div class="d-flex justify-content-between align-items-center mb-1">
-    <label class="m-0 font-weight-bold" style="font-size: 13px;">Customer</label>
-    <button type="button" class="btn btn-primary btn-sm px-2 py-0" style="font-size: 11px; height: 22px; border-radius: 4px;" data-toggle="modal" data-target="#quickAddCustomerModal" title="Add New Customer">
-      <i class="glyphicon glyphicon-plus"></i> + Add
-    </button>
+  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">CUSTOMER</label>
+  <div class="input-group">
+    <select name="customer_id" id="customer_select" class="form-control" style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important;">
+      <option value="">Select Customer</option>
+      <?php foreach($customers as $c): ?>
+        <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
+      <?php endforeach; ?>
+    </select>
+    <div class="input-group-append">
+      <button 
+        type="button" 
+        class="btn btn-primary" 
+        style="height: 34px; padding: 0 12px; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; display: flex; align-items: center; justify-content: center;" 
+        data-toggle="modal" 
+        data-target="#quickAddCustomerModal" 
+        title="Add New Customer">
+        <i class="glyphicon glyphicon-plus" style="font-size: 12px;"></i>
+      </button>
+    </div>
   </div>
-  <select name="customer_id" id="customer_select" class="form-control">
-    <option value="">Select Customer</option>
-    <?php foreach($customers as $c): ?>
-      <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
-    <?php endforeach; ?>
-  </select>
 </div>
 
 <?php if($system == 'billing'): ?> <div class="col-md-4 d-flex flex-column justify-content-center">
