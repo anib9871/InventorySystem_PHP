@@ -1183,17 +1183,20 @@ body{
 <div class="row align-items-end g-2">
 
 
-   <div class="col-md-3 d-flex flex-column justify-content-center">
-      <label>Customer</label>
-      <select name="customer_id" class="form-control">
-        <option value="">Select Customer</option>
-        <?php foreach($customers as $c): ?>
-<option value="<?=$c['id'];?>">
-<?=$c['customer_name'];?>
-</option>
-        <?php endforeach; ?>
-      </select>
-    </div>
+<div class="col-md-3 d-flex flex-column justify-content-center">
+  <div class="d-flex justify-content-between align-items-center mb-1">
+    <label class="m-0 font-weight-bold" style="font-size: 13px;">Customer</label>
+    <button type="button" class="btn btn-primary btn-sm px-2 py-0" style="font-size: 11px; height: 22px; border-radius: 4px;" data-toggle="modal" data-target="#quickAddCustomerModal" title="Add New Customer">
+      <i class="glyphicon glyphicon-plus"></i> + Add
+    </button>
+  </div>
+  <select name="customer_id" id="customer_select" class="form-control">
+    <option value="">Select Customer</option>
+    <?php foreach($customers as $c): ?>
+      <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
+    <?php endforeach; ?>
+  </select>
+</div>
 
 <?php if($system == 'billing'): ?> <div class="col-md-4 d-flex flex-column justify-content-center">
   <label>Name</label>
@@ -1569,6 +1572,46 @@ No Product Selected
         <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="border-radius:6px; font-size:12px;">Skip (Direct Invoice)</button>
         <button type="button" class="btn btn-sm btn-success font-weight-bold" id="importDemoBtn" style="border-radius:6px; font-size:12px; padding:6px 14px;">Import to Invoice Grid</button>
       </div>
+
+    </div>
+  </div>
+</div>
+
+      <!-- QUICK ADD CUSTOMER MODAL -->
+<div class="modal fade" id="quickAddCustomerModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+      
+      <div class="modal-header bg-primary text-white" style="border-top-left-radius:12px; border-top-right-radius:12px; padding:10px 15px;">
+        <h6 class="modal-title font-weight-bold m-0" style="font-size:14px;">➕ Quick Add Customer</h6>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:0.9;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form id="quickCustomerForm">
+        <div class="modal-body p-3">
+          <div class="form-group mb-2">
+            <label style="font-size: 11px; font-weight: 600;">Customer Name <span class="text-danger">*</span></label>
+            <input type="text" id="quick_cust_name" name="customer_name" class="form-control form-control-sm" placeholder="Enter customer name" required autocomplete="off">
+          </div>
+
+          <div class="form-group mb-2">
+            <label style="font-size: 11px; font-weight: 600;">Contact No (Optional)</label>
+            <input type="text" id="quick_cust_phone" name="contact_no" class="form-control form-control-sm" placeholder="Enter mobile number" autocomplete="off">
+          </div>
+
+          <div class="form-group mb-2">
+            <label style="font-size: 11px; font-weight: 600;">GST No (Optional)</label>
+            <input type="text" id="quick_cust_gst" name="gst_no" class="form-control form-control-sm" placeholder="GST number" maxlength="15" style="text-transform:uppercase;">
+          </div>
+        </div>
+
+        <div class="modal-footer p-2 bg-light" style="border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
+          <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="font-size:12px;">Cancel</button>
+          <button type="submit" id="saveQuickCustBtn" class="btn btn-sm btn-success font-weight-bold" style="font-size:12px;">Save & Select</button>
+        </div>
+      </form>
 
     </div>
   </div>
@@ -2085,6 +2128,62 @@ document.getElementById("importDemoBtn")?.addEventListener("click", function () 
     });
 
     $('#demoModal').modal('hide');
+});
+
+/* QUICK ADD CUSTOMER VIA AJAX */
+document.getElementById("quickCustomerForm")?.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    let name = document.getElementById("quick_cust_name").value.trim();
+    let contact = document.getElementById("quick_cust_phone").value.trim();
+    let gst = document.getElementById("quick_cust_gst").value.trim();
+
+    if (!name) {
+        alert("Please enter customer name!");
+        return;
+    }
+
+    let btn = document.getElementById("saveQuickCustBtn");
+    btn.disabled = true;
+    btn.innerText = "Saving...";
+
+    let formData = new FormData();
+    formData.append("customer_name", name);
+    formData.append("contact_no", contact);
+    formData.append("gst_no", gst);
+
+    fetch("ajax_add_customer.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerText = "Save & Select";
+
+        if (data.status === "success") {
+            let select = document.getElementById("customer_select");
+            
+            // Add new option and select it
+            let newOption = new Option(data.name, data.id, true, true);
+            select.add(newOption);
+            
+            // Trigger change event for demo items check
+            select.dispatchEvent(new Event("change"));
+
+            // Reset & Close Modal
+            document.getElementById("quickCustomerForm").reset();
+            $('#quickAddCustomerModal').modal('hide');
+        } else {
+            alert(data.message || "Something went wrong!");
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerText = "Save & Select";
+        console.error("Error adding customer:", err);
+        alert("Server error occurred!");
+    });
 });
 
 </script>
