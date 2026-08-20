@@ -254,8 +254,20 @@ $customer_price  = array_column($customer_data, 'price');
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
 
-if (!$is_pdf) include_once('layouts/header.php');
+/* ── PDF FILE SAVE AS NAME ── */
+$pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 ?>
+
+<?php if ($is_pdf): ?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title><?= $pdf_save_title ?></title>
+<?php else: ?>
+<?php include_once('layouts/header.php'); ?>
+<script>document.title = "<?= $pdf_save_title ?>";</script>
+<?php endif; ?>
 <style>
 /* ════ BASE ════ */
 .rpt * { box-sizing: border-box; }
@@ -505,13 +517,29 @@ if (!$is_pdf) include_once('layouts/header.php');
     </table>
   </div>
 
-  <div class="pdf-total-box" style="display:none;">
-    <b>Total Sales Amount :</b><br>
-    ₹ <?= number_format($grand, 2) ?><br>
-    <?php if (abs($round_off) > 0.001) { ?>
-        Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off, 2) ?><br>
-        <b>Net Total : ₹ <?= number_format($grand_round, 2) ?></b>
-    <?php } ?>
+<!-- ── PDF SALES & RECEIVED BOX (SIDE BY SIDE) ── -->
+  <div class="pdf-total-box" style="display:<?= $is_pdf ? 'block' : 'none' ?>;">
+    <table style="width:100%; border-collapse:collapse; color:#fff;">
+      <tr>
+        <td style="width:50%; vertical-align:top; border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;">
+          <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Sales Amount</span><br>
+          <span style="font-size:14px; font-weight:800;">₹ <?= number_format($grand, 2) ?></span>
+          <?php if (abs($round_off) > 0.001) { ?>
+            <div style="font-size:9px; margin-top:2px;">
+              Round Off: <?= ($round_off >= 0 ? '+' : '') . number_format($round_off, 2) ?> | 
+              <b>Net: ₹ <?= number_format($grand_round, 2) ?></b>
+            </div>
+          <?php } ?>
+        </td>
+        <td style="width:50%; vertical-align:top; padding-left:12px;">
+          <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Payment Received</span><br>
+          <span style="font-size:14px; font-weight:800; color:#4ade80;">₹ <?= number_format($total_collection, 2) ?></span>
+          <div style="font-size:9px; opacity:0.8; margin-top:2px;">
+            Mode-wise Grand Total
+          </div>
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="pdf-collection-box" style="display:none;">
@@ -635,17 +663,18 @@ if (!$is_pdf) include_once('layouts/header.php');
     <?php else: ?>
     <div style="overflow-x:auto;">
       <table class="rpt-tbl">
+<table class="rpt-tbl" style="table-layout: fixed; width: 100%;">
         <thead>
           <tr style="background:#f1f5f9;">
-            <th>Date</th>
-            <th>Invoice No</th>
-            <th>Customer</th>
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Discount</th>
-            <th>GST</th>
-            <th>Total</th>
+            <th style="width: 11%;">Date</th>
+            <th style="width: 9%;">Inv No</th>
+            <th style="width: 23%;">Customer</th>
+            <th style="width: 17%;">Product</th>
+            <th style="width: 5%; text-align:center;">Qty</th>
+            <th style="width: 11%; text-align:right;">Price</th>
+            <th style="width: 9%; text-align:right;">Disc</th>
+            <th style="width: 8%; text-align:right;">GST</th>
+            <th style="width: 12%; text-align:right;">Total</th>
           </tr>
         </thead>
         <tbody>
