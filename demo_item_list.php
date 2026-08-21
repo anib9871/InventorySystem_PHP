@@ -2,8 +2,8 @@
 require_once('includes/load.php');
 // page_require_level(2);
 
-$customers = find_all('customer_master');
-$products  = find_all('products');
+$customers = find_by_sql("SELECT * FROM customer_master ORDER BY customer_name ASC");
+$products  = find_by_sql("SELECT * FROM products ORDER BY name ASC");
 
 $swal_script = "";
 
@@ -173,6 +173,12 @@ $demo_records = find_by_sql("
 ?>
 
 <?php include_once('layouts/header.php'); ?>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+.select2-container .select2-selection--single { height: 38px !important; border: 1px solid #ced4da; border-radius: 6px; padding: 5px; }
+.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px; }
+.select2-dropdown { z-index: 99999 !important; }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
@@ -274,7 +280,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Select Customer</label>
-                        <select name="customer_id" class="form-control" required>
+                        <select name="customer_id" class="form-control select2-search" style="width:100%;" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -294,7 +300,7 @@ $demo_records = find_by_sql("
                         <tbody id="demoInputBody">
                             <tr>
                                 <td>
-                                    <select name="product_id[]" class="form-control form-control-sm" required>
+                                   <select name="product_id[]" class="form-control form-control-sm select2-search" style="width:100%;" required>
                                         <option value="">-- Select Product --</option>
                                         <?php foreach ($products as $p): ?>
                                             <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
@@ -338,7 +344,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Customer</label>
-                        <select name="edit_customer_id" id="edit_customer_id" class="form-control" required>
+                        <select name="edit_customer_id" id="edit_customer_id" class="form-control select2-search" style="width:100%;" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -348,7 +354,7 @@ $demo_records = find_by_sql("
 
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
-                        <select name="edit_product_id" id="edit_product_id" class="form-control" required>
+                        <select name="edit_product_id" id="edit_product_id" class="form-control select2-search" style="width:100%;" required>
                             <option value="">-- Select Product --</option>
                             <?php foreach ($products as $p): ?>
                                 <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
@@ -445,6 +451,34 @@ document.addEventListener("click", function(e) {
         $('#editDemoModal').modal('show');
     }
 });
+
+<!-- Yeh JS script tag footer se theek pehle lagayein -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+function initSelect2() {
+    $('.select2-search').each(function() {
+        var modal = $(this).closest('.modal');
+        $(this).select2({
+            dropdownParent: modal.length ? modal : $(document.body),
+            width: '100%'
+        });
+    });
+}
+
+$(document).ready(function() {
+    initSelect2();
+
+    // Modal khulte hi search load hoga
+    $('#addDemoModal, #editDemoModal').on('shown.bs.modal', function () {
+        initSelect2();
+    });
+
+    // Add More Product button par search connect hoga
+    $('#addRowBtn').on('click', function() {
+        setTimeout(initSelect2, 50);
+    });
+});
+
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
