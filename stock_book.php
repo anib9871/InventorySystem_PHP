@@ -118,6 +118,37 @@ body {
     text-decoration: none !important;
 }
 
+/* HOVER BADGE & POPOVER STYLES */
+.demo-hold-badge {
+    color: #dc2626;
+    font-weight: bold;
+    cursor: pointer;
+    border-bottom: 1px dashed #dc2626;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.demo-hold-badge:hover {
+    background-color: #fee2e2;
+}
+
+.popover-header {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    font-size: 12px;
+    font-weight: 600;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.popover-body {
+    font-size: 12px;
+    padding: 8px 12px;
+    color: #334155;
+    line-height: 1.5;
+}
+
 /* GREEN BUTTON MATCHED WITH ORGANIZATION MASTER */
 .btn-generate-report {
     background-color: #00a65a !important;
@@ -136,6 +167,30 @@ body {
     color: #ffffff !important;
 }
 
+/* ================= MOBILE RESPONSIVE FIXES ================= */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    .stock-card {
+        padding: 14px !important;
+        border-radius: 8px;
+    }
+    .btn-generate-report {
+        width: 100%;
+        margin-top: 10px;
+        text-align: center;
+    }
+    .table-responsive {
+        border: 1px solid #e2e8f0;
+        -webkit-overflow-scrolling: touch;
+    }
+    #stockTable {
+        min-width: 680px; /* Mobile par clean scroll layout */
+    }
+}
+
 /* ================= PRINT / PDF EXPORT SPECIFIC STYLES ================= */
 .print-org-header {
     display: none;
@@ -151,7 +206,6 @@ body {
         visibility: hidden;
     }
 
-    /* Print container visibility */
     .printable-area, .printable-area * {
         visibility: visible;
     }
@@ -166,28 +220,25 @@ body {
         box-shadow: none !important;
     }
 
-    /* Hide non-essential UI elements and sort arrows in PDF */
     .no-print, 
     .btn, 
     #stockSearch, 
     .reorder-pencil, 
     .web-link,
+    .popover,
     .dataTables_filter {
         display: none !important;
     }
 
-    /* Hide Sort Arrows in PDF Print */
     #stockTable th:after {
         content: "" !important;
         display: none !important;
     }
 
-    /* Prevent URL Expansion in PDF */
     a[href]:after {
         content: none !important;
     }
 
-    /* Organization Branding Header for PDF */
     .print-org-header {
         display: flex !important;
         justify-content: space-between;
@@ -235,7 +286,6 @@ body {
         font-weight: 600;
     }
 
-    /* Table Adjustments for Print */
     table#stockTable {
         width: 100% !important;
         border-collapse: collapse !important;
@@ -340,14 +390,16 @@ body {
                 FROM demo_item_detail d
                 WHERE d.product_id = p.id
                 AND d.status = 1
-            ), 0) AS demo_hold_qty
+            ), 0) AS demo_hold_qty,
 
-(
-    SELECT GROUP_CONCAT(CONCAT('• ', c.customer_name, ' (', d.qty, ' PCS)') SEPARATOR '<br>')
-    FROM demo_item_detail d
-    LEFT JOIN customer_master c ON d.customer_id = c.id
-    WHERE d.product_id = p.id AND d.status = 1
-) AS demo_client_details
+            -- Group Concatenated Client Details for Hover View
+            (
+                SELECT GROUP_CONCAT(CONCAT('• ', c.customer_name, ' (', d.qty, ' PCS)') SEPARATOR '<br>')
+                FROM demo_item_detail d
+                LEFT JOIN customer_master c ON d.customer_id = c.id
+                WHERE d.product_id = p.id
+                AND d.status = 1
+            ) AS demo_client_details
             
             FROM products p
 
@@ -374,7 +426,7 @@ body {
                     <tr>
                         <th width="40" class="text-center">#</th>
                         <th class="sortable">Product Name</th>
-                        <th width="130" class="text-center sortable">On Demo / Hold</th>
+                        <th width="140" class="text-center sortable">On Demo / Hold</th>
                         <th width="140" class="text-center sortable">Available Stock</th>
                         <th width="130" class="text-center sortable">Reorder Level</th>
                         <th width="100" class="text-center no-print">Website</th>
@@ -424,7 +476,6 @@ body {
                             <?= htmlspecialchars($row['name']); ?>
                         </td>
 
-                        <!-- Demo Stock with Clients -->
                         <!-- Demo Stock with Clients (Hover Tooltip) -->
                         <td class="text-center">
                             <?php if ($display_demo > 0): ?>
@@ -543,6 +594,8 @@ headers.forEach((header) => {
         asc = !asc;
     });
 });
+
+// Initialize Bootstrap Popovers for Hover Details
 $(document).ready(function(){
     $('[data-toggle="popover"]').popover({
         html: true,
