@@ -15,7 +15,6 @@ if($_SESSION['role_id'] == 3){
     $customers = find_all('customer_master');
 }
 
-// Replace with this:
 $products = find_by_sql("
     SELECT 
         p.id,
@@ -131,7 +130,7 @@ if(isset($_POST['save_invoice'])){
         $fy_name = substr($fy[0]['fy_name'], 2);
         $inv_no = $fy_name . "/" . $next;
 
-        /* 🔥 CALCULATE TOTAL PAID TO CHECK PROFORMA VS TAX INVOICE 🔥 */
+        /* CALCULATE TOTAL PAID */
         $total_paid = 0;
         if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
             foreach($_POST['payment_amount'] as $amt){
@@ -139,9 +138,7 @@ if(isset($_POST['save_invoice'])){
             }
         }
 
-        // Save Proforma vs Tax Invoice mark in remarks
         $doc_type = ($total_paid > 0) ? 'TAX_INVOICE' : 'PROFORMA';
-
         $cust = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
 
         if($system != 'inventory'){
@@ -167,28 +164,14 @@ if(isset($_POST['save_invoice'])){
                         $db->query("INSERT INTO customer_master
                         (customer_name, contact_no, address, gst_no, center_id)
                         VALUES
-                        (
-                        '$name',
-                        '$phone',
-                        '$addr',
-                        '$gst',
-                        '$center_id'
-                        )");
-
+                        ('$name', '$phone', '$addr', '$gst', '$center_id')");
                         $cust = $db->insert_id();
                     }
                 }else{
                     $db->query("INSERT INTO customer_master
                     (customer_name, contact_no, address, gst_no, center_id)
                     VALUES
-                    (
-                    '$name',
-                    '',
-                    '$addr',
-                    '$gst',
-                    '$center_id'
-                    )");
-
+                    ('$name', '', '$addr', '$gst', '$center_id')");
                     $cust = $db->insert_id();
                 }
             }
@@ -212,9 +195,7 @@ if(isset($_POST['save_invoice'])){
 
         $org_id = $_SESSION['org_id'];
 
-        /* ===============================
-           STATE CODE CHECK
-        ================================ */
+        /* STATE CODE CHECK */
         $org_data = find_by_sql("
         SELECT gst_no 
         FROM organization_master 
@@ -272,9 +253,7 @@ if(isset($_POST['save_invoice'])){
         $net_total = 0;
         $total_gst = 0;
 
-        /* ===============================
-           INSERT MASTER
-        ================================*/
+        /* INSERT MASTER */
         $insertMaster = $db->query("
         INSERT INTO invoice
         (
@@ -320,7 +299,6 @@ if(isset($_POST['save_invoice'])){
         }
 
         $qid = $db->insert_id();
-
         $debug[] = "Invoice ID : ".$qid;
 
         if(!$qid){
@@ -340,9 +318,7 @@ if(isset($_POST['save_invoice'])){
             exit;
         }
 
-        /* ===============================
-           INSERT ITEMS
-        ================================*/
+        /* INSERT ITEMS */
         $itemInserted = false;
 
         foreach($_POST['product_id'] as $i => $pid){
@@ -363,7 +339,7 @@ if(isset($_POST['save_invoice'])){
 
             $product = find_by_id('products',$pid);
 
-          if($product['type'] == 1){
+            if($product['type'] == 1){
                 $stock_row = find_by_sql("
                 SELECT 
                 (
@@ -389,12 +365,10 @@ if(isset($_POST['save_invoice'])){
 
                 if($qty > $current_stock){
                     $db->query("DELETE FROM invoice WHERE id = $qid");
-
                     echo "<script>
                     alert('Stock not available. Available stock: ".$current_stock."');
                     window.history.back();
                     </script>";
-
                     exit;
                 }
             }
@@ -463,7 +437,7 @@ if(isset($_POST['save_invoice'])){
                 exit;
             }
 
-            /* ================= TRANSACTION MASTER ENTRY ================= */
+            /* TRANSACTION MASTER ENTRY */
             $trans = $db->query("
             INSERT INTO transaction_master
             (
@@ -533,7 +507,7 @@ if(isset($_POST['save_invoice'])){
             )
             ");
 
-            /* ================= UPDATE DEMO ITEM QTY & STATUS ================= */
+            /* DEMO DETAILS UPDATE */
             $demo_row = find_by_sql("
                 SELECT id, qty FROM demo_item_detail 
                 WHERE customer_id = '$cust' AND product_id = '$pid' AND status = 1 
@@ -543,13 +517,11 @@ if(isset($_POST['save_invoice'])){
             if(!empty($demo_row)){
                 $demo_id = $demo_row[0]['id'];
                 $old_qty = (float)$demo_row[0]['qty'];
-                $new_qty = $old_qty - $qty; // $qty = Invoiced Quantity
+                $new_qty = $old_qty - $qty;
 
                 if($new_qty <= 0){
-                    // Agar Poora Stock Bill ho gaya -> status = 0 (Completed)
                     $db->query("UPDATE demo_item_detail SET qty = 0, status = 0 WHERE id = '$demo_id'");
                 } else {
-                    // Agar Partial Bill hua -> Bachi hui Qty update hogi aur status = 1 (Active) hi rahega
                     $db->query("UPDATE demo_item_detail SET qty = '$new_qty' WHERE id = '$demo_id'");
                 }
             }
@@ -569,9 +541,7 @@ if(isset($_POST['save_invoice'])){
             exit;
         }
 
-        /* ===============================
-           UPDATE TOTALS
-        ================================*/
+        /* UPDATE TOTALS */
         $due_amount = round($net_total - $total_paid, 2);
 
         if($due_amount <= 0){
@@ -582,11 +552,6 @@ if(isset($_POST['save_invoice'])){
         }else{
             $payment_status = "Unpaid";
         }
-
-        $debug[] = "Net Total : ".$net_total;
-        $debug[] = "Total Paid : ".$total_paid;
-        $debug[] = "Due Amount : ".$due_amount;
-        $debug[] = "Payment Status : ".$payment_status;
 
         $gst_total = $total_gst;
 
@@ -637,7 +602,7 @@ if(isset($_POST['save_invoice'])){
             }
         }
 
-        // ================= LEDGER ENTRY =================
+        /* LEDGER ENTRY */
         $db->query("
         INSERT INTO ledger_entries (invoice_id, customer_id, account, type, amount)
         VALUES ($qid, $cust, 'CUSTOMER', 'DEBIT', '$net_total')
@@ -715,1483 +680,986 @@ if(isset($_POST['save_invoice'])){
 ?>
 
 <?php include_once('layouts/header.php'); ?>
+
 <style>
-
-body{
-    background:#f1f5f9;
-    font-family:'Segoe UI',sans-serif;
-}
-
-/* ===== CARDS ===== */
-
-.card{
-    border:none;
-    border-radius:18px;
-    background:#fff;
-    box-shadow:0 4px 18px rgba(15,23,42,.06);
-}
-
-/* ===== FORM ===== */
-
-.form-control,
-.form-control-sm{
-    height:34px;
-    border-radius:10px !important;
-    border:1px solid #dbe2ea;
-    font-size:14px;
-    box-shadow:none !important;
-}
-
-.form-control:focus,
-.form-control-sm:focus{
-    border-color:#2563eb;
-    box-shadow:0 0 0 0.15rem rgba(37,99,235,.15) !important;
-}
-
-/* ===== LEFT PANEL ===== */
-
-.left-panel{
-    position:sticky;
-    top:10px;
-}
-
-/* ===== PRODUCT SEARCH ===== */
-
-.product-card{
-    margin-bottom:24px;
-}
-
-
-.product-scroll{
-    height:180px;
-    overflow-y:auto;
-    border-radius:10px;
-}
-
-.product-scroll::-webkit-scrollbar{
-    width:6px;
-}
-
-.product-scroll::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-#productSearch{
-    height:38px;
-    font-size:14px;
-}
-
-/* ===== PRODUCT LIST ===== */
-
-#productList tr{
-    transition:.2s;
-    cursor:pointer;
-}
-
-#productList tr:hover{
-    background:#eef4ff;
-}
-
-#productList td{
-    padding:12px 10px !important;
-    font-size:14px;
-}
-
-#productList th{
-    background:#0f172a;
-    color:#fff;
-    position:sticky;
-    top:0;
-    z-index:10;
-    padding:12px 10px !important;
-    font-size:13px;
-}
-
-/* ===== BILL GRID ===== */
-
-.bill-grid{
-    background:#fff;
-    border-radius:18px;
-    height:220px;
-    overflow-y:auto;
-    overflow-x:hidden;
-    box-shadow:0 4px 18px rgba(15,23,42,.06);
-    position:relative;
-}
-
-.bill-grid::-webkit-scrollbar{
-    width:6px;
-}
-
-.bill-grid::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-
-/* ===== TABLE ===== */
-
-#itemTable{
-    width:100%;
-    table-layout:fixed;
-    border-collapse:separate;
-    border-spacing:0;
-    margin-top:0;
-}
-
-/* HEADER */
-
-#itemTable thead{
-    position:sticky;
-    top:0;
-    z-index:999;
-}
-
-#itemTable thead th{
-    position:sticky;
-    top:0;
-    background:#0f172a !important;
-    color:#fff;
-    border:none !important;
-    padding:14px 8px;
-    font-size:13px;
-    white-space:nowrap;
-    z-index:999;
-    box-shadow:0 2px 4px rgba(0,0,0,.08);
-}
-
-/* ROWS */
-
-#itemTable tbody tr{
-    transition:.2s;
-}
-
-#itemTable tbody tr:hover td{
-    background:#eef4ff;
-}
-
-/* CELLS */
-
-#itemTable td{
-    background:#f8fafc;
-    border:none !important;
-    padding:8px 6px;
-    vertical-align:middle;
-    height:72px;
-}
-
-/* INPUTS */
-
-#itemTable input{
-    width:100%;
-    min-width:60px;
-    height:38px;
-    border-radius:8px;
-    border:1px solid #dbe2ea;
-    background:#fff;
-    font-size:13px;
-}
-
-
-
-/* ===== PAYMENT ===== */
-
-.payment-box{
-    min-height:235px;
-    padding:12px !important;
-}
-
-.payment-header{
-    font-size:14px;
-    font-weight:600;
-    margin-bottom:10px;
-}
-
-.payment-scroll{
-    height:190px;
-    overflow-y:auto;
-}
-
-.payment-scroll::-webkit-scrollbar{
-    width:6px;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:10px;
-}
-
-/* PAYMENT TABLE COMPACT */
-
-.payment-box table td{
-    padding:6px 4px !important;
-    vertical-align:middle;
-    font-size:13px;
-}
-
-.payment-box .form-control{
-    height:34px !important;
-    font-size:12px;
-    padding:4px 8px;
-    border-radius:8px !important;
-}
-
-.payment-box .payCheck{
-    transform:scale(.9);
-}
-
-.payment-header{
-    margin-bottom:6px !important;
-    font-size:13px;
-}
-
-.payment-box hr{
-    margin:6px 0;
-}
-
-
-
-/* ===== SUMMARY ===== */
-
-.summary-card{
-    background:#fff;
-    border-radius:16px;
-    padding:12px !important;
-    margin-top:10px;
-    box-shadow:0 3px 12px rgba(15,23,42,.05);
-}
-
-.summary-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:7px 2px;
-    font-size:13px;
-    border-bottom:1px dashed #e2e8f0;
-}
-
-.summary-row strong{
-    font-weight:600;
-    font-size:13px;
-}
-
-.summary-row:last-child{
-    border-bottom:none;
-}
-
-/* RIGHT SIDE */
-
-.summary-card label{
-    font-size:12px;
-    font-weight:600;
-    margin-bottom:3px;
-}
-
-.summary-card .form-control{
-    height:34px;
-    font-size:13px;
-    border-radius:8px !important;
-}
-
-#termsTemplate{
-    margin-top:0;
-    margin-bottom:8px;
-}
-
-#termsBox{
-    margin-top:0;
-    min-height:75px;
-    resize:none;
-    padding:8px;
-    font-size:13px;
-}
-
-/* REMOVE EXTRA SPACE */
-
-.summary-card .col-lg-4{
-    padding-right:12px;
-}
-
-.summary-card .col-lg-8{
-    padding-left:12px;
-}
-/* ===== BUTTON ===== */
-
-.save-btn{
-    width:220px;
-    height:42px;
-    border:none;
-    border-radius:10px !important;
-    font-size:14px;
-    font-weight:600;
-    background:#22c55e;
-    transition:.2s;
-    display:block;
-    margin:18px auto 0;
-}
-
-.save-btn:hover{
-    background:#16a34a;
-}
-
-/* ===== REMOVE BUTTON ===== */
-
-.remove{
-    border-radius:8px !important;
-    width:34px;
-    height:34px;
-    padding:0;
-}
-
-
-#termsTemplate{
-    margin-top:12px;
+/* Enterprise POS Terminal Pro */
+:root {
+  --navy-dark: #0f172a;
+  --navy-light: #1e293b;
+  --border-slate: #cbd5e1;
+  --border-light: #e2e8f0;
+  --blue-accent: #2563eb;
+  --blue-hover: #1d4ed8;
+  --emerald-accent: #059669;
+  --emerald-hover: #047857;
+  --danger-accent: #dc2626;
+}
+
+body {
+  background-color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  color: #0f172a;
+}
+
+.invoice-terminal {
+  padding: 8px 14px 14px;
+}
+
+.pos-card {
+  background: #ffffff;
+  border: 1px solid var(--border-slate);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+}
+
+.pos-title-lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* Controls */
+.form-control, .form-control-sm {
+  height: 32px !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--border-slate);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: none !important;
+}
+
+.form-control:focus {
+  border-color: var(--blue-accent);
+}
+
+.input-group-btn .btn {
+  height: 32px !important;
+  border-radius: 0 4px 4px 0 !important;
+  background: var(--blue-accent);
+  color: #ffffff;
+  border: 1px solid var(--blue-accent);
+  padding: 0 10px;
+}
+
+.btn-top-trigger {
+  height: 32px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+/* Full Width Billing Grid (Perfect Height: 220px) */
+.grid-container-full {
+  height: 220px !important;
+  max-height: 220px !important;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#itemTable {
+  width: 100%;
+  min-width: 720px;
+  margin-bottom: 0;
+  border-collapse: collapse;
+}
+
+#itemTable thead th {
+  background: var(--navy-dark) !important;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border: none;
+  white-space: nowrap;
 }
 
-#termsBox{
-    margin-top:10px;
-    min-height:90px;
-    resize:none;
+#itemTable tbody tr td {
+  padding: 0 !important;
+  vertical-align: middle;
+  border-top: 1px solid var(--border-light);
+  background: #ffffff;
 }
 
-.summary-card label{
-    font-size:13px;
-    font-weight:600;
-    margin-bottom:5px;
+#itemTable tbody tr:hover td {
+  background-color: #f8fafc;
 }
 
-.summary-card select{
-    height:40px;
+#itemTable input.grid-cell {
+  width: 100%;
+  height: 34px !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 2px 8px;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+#itemTable input.grid-cell:focus {
+  background: #eff6ff !important;
+  color: var(--blue-hover) !important;
+}
+
+#itemTable input.grid-cell[readonly] {
+  color: #334155;
+  cursor: default;
+}
+
+.btn-del-cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  background: #fee2e2;
+  color: var(--danger-accent);
+  border: 1px solid #fca5a5;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: auto;
+}
+
+.btn-del-cell:hover {
+  background: var(--danger-accent);
+  color: #ffffff;
+}
+
+.empty-grid-msg {
+  padding: 50px 0 !important;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* 50/50 Bottom Summary Layout */
+.summary-container {
+  padding: 10px 14px;
+}
+
+.summary-metric-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  padding: 6px 14px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.summary-metric-card .stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+  font-size: 12px;
+  border-bottom: 1px dashed var(--border-slate);
+}
+
+.summary-metric-card .stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row.net-bold strong {
+  color: var(--blue-accent);
+  font-size: 14.5px;
+}
+
+.stat-row.due-bold strong,
+.stat-row.due-bold span {
+  color: var(--danger-accent);
+  font-weight: 700;
+}
+
+.stock-tag-box {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #065f46;
+  white-space: nowrap;
+}
+
+.btn-save-master {
+  height: 36px;
+  background: var(--emerald-accent);
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  width: 100%;
+  transition: 0.15s ease;
+}
+
+.btn-save-master:hover {
+  background: var(--emerald-hover);
+  color: #ffffff;
+}
+
+/* Compact Modal Widths */
+.modal-dialog-compact {
+  max-width: 430px;
+  margin: 35px auto;
+}
+
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 991px) {
+  .invoice-terminal {
+    padding: 6px;
+  }
+  .grid-container-full {
+    height: auto !important;
+    max-height: 220px !important;
+  }
+  .modal-dialog-compact {
+    max-width: 92%;
+    margin: 20px auto;
+  }
+  .summary-metric-card {
+    margin-bottom: 10px;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
-
-.summary-card textarea{
-    margin-top:6px;
-}
-
-.left-panel .card{
-    margin-bottom:22px;
-}
-
-.product-scroll{
-    border-bottom:1px solid #e2e8f0;
-    padding-bottom:8px;
-}
-
-.bill-grid::-webkit-scrollbar{
-    display:none;
-}
-
-#itemTable tbody tr:first-child td{
-    padding-top:18px;
-}
-
-
-
-.top-filter-card{
-    border-radius:3px;
-    padding:6px 7px !important;
-    margin-bottom:5px !important;
-}
-
-.top-filter-card label{
-    font-size:14px;
-    font-weight:600;
-    margin-bottom:6px;
-}
-
-.top-save-btn{
-    height:38px;
-    border-radius:8px !important;
-    font-size:14px;
-    font-weight:600;
-    padding:0 18px;
-    width:auto !important;
-    min-width:150px;
-}
-
-.top-filter-card .row{
-    margin-bottom:0 !important;
-}
-
-
-
-/* ===== RESPONSIVE ===== */
-
-@media(max-width:991px){
-
-    .left-panel{
-        position:relative;
-        top:0;
-    }
-
-    .bill-grid{
-        height:auto;
-    }
-
-    .summary-card{
-        margin-top:20px;
-    }
-}
-
-/* EQUAL HEIGHT LAYOUT */
-
-.left-panel{
-    display:flex;
-    flex-direction:column;
-    height:100%;
-}
-
-.product-card{
-    height:220px;
-}
-
-.payment-box{
-    flex:1;
-    min-height:248px;
-}
-
-.bill-grid{
-    height:220px;
-}
-
-.summary-card{
-    min-height:248px;
-}
-
 </style>
 
-<div class="card-body">
+<div class="invoice-terminal">
 <form method="post" onsubmit="return validateCustomer()">
 
-<!-- CUSTOMER -->
-<div class="card p-3 mb-3 top-filter-card">
-
-<div class="col-md-1 d-flex flex-column justify-content-center" style="min-width:180px;">
-    <label>Invoice Date</label>
-
-<input
-    type="text"
-    name="invoice_date"
-    id="invoice_date"
-    class="form-control"
-    value="<?= date('d/M/Y'); ?>"
-    autocomplete="off">
-</div>
-
- 
-<div class="row align-items-end g-2">
-
-
-<div class="col-md-3 d-flex flex-column justify-content-center">
-  <label style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">CUSTOMER</label>
-  <div class="input-group">
-    <select name="customer_id" id="customer_select" class="form-control" style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important;">
-      <option value="">Select Customer</option>
-      <?php foreach($customers as $c): ?>
-        <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
-      <?php endforeach; ?>
-    </select>
-    <div class="input-group-append">
-      <button 
-        type="button" 
-        class="btn btn-primary" 
-        style="height: 34px; padding: 0 12px; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; display: flex; align-items: center; justify-content: center;" 
-        data-toggle="modal" 
-        data-target="#quickAddCustomerModal" 
-        title="Add New Customer">
-        <i class="glyphicon glyphicon-plus" style="font-size: 12px;"></i>
-      </button>
-    </div>
-  </div>
-</div>
-
-<?php if($system == 'billing'): ?> <div class="col-md-4 d-flex flex-column justify-content-center">
-  <label>Name</label>
-  <input type="text"
-  name="manual_name"
-  class="form-control">
-</div>
-
-<div class="col-md-4">
-  <label>Contact</label>
-  <input type="text"
-  name="manual_phone"
-  class="form-control">
-</div>
-
-<?php endif; ?>
-
-<?php if($_SESSION['role_id'] == 2 && $system != 'inventory'): ?>
-
-<div class="col-md-4">
-<label>Center</label>
-
-<select name="center_id" class="form-control" required>
-
-<?php
-$centers = find_all('master_center');
-
-foreach($centers as $c):
-?>
-
-<option value="<?= $c['center_id']; ?>">
-<?= $c['center_name']; ?>
-</option>
-
-<?php endforeach; ?>
-
-</select>
-</div>
-
-<?php endif; ?>
-
-
-
-<?php if($system != 'billing'): ?>
-
-<div class="col-md-2 d-flex flex-column justify-content-center">
-  <label>GST Type</label>
-
-<select name="gst_type" class="form-control">
-
-<option value="exclusive" selected>
-Exclusive GST
-</option>
-
-<option value="inclusive">
-Inclusive GST
-</option>
-
-<option value="nogst">
-No GST
-</option>
-
-</select>
-
-</div>
-
-<!-- SAVE BUTTON -->
-<div class="col-md-2 d-flex flex-column justify-content-end">
-<label style="visibility:hidden;">Save</label>
-<button
-type="submit"
-name="save_invoice"
-class="btn btn-success top-save-btn">
-
-💾 Save Invoice
-
-</button>
-
-</div>
-
-<div class="col-md-2 d-flex flex-column justify-content-end">
-
-<label style="visibility:hidden;">Stock</label>
-
-<div id="stockInfo"
-style="
-height:38px;
-display:flex;
-align-items:center;
-justify-content:center;
-background:#fff;
-border:1px solid #dbe2ea;
-border-radius:8px;
-font-weight:600;
-padding:0 10px;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-">
-No Product Selected
-</div>
-
-</div>
-
-<?php endif; ?>
-
-
-  </div>
-</div>
-<br>
-
-
-<div class="row align-items-stretch">
-
-<div class="container-fluid px-4 py-3">
-
-<div class="row">
-
-  <!-- LEFT SIDE -->
-  <div class="col-lg-3 left-panel">
-
-    <!-- PRODUCT SEARCH -->
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 product-card">
-
-      <input type="text"
-      id="productSearch"
-      class="form-control form-control-sm mb-2"
-      placeholder="Search Product...">
-
-      <div class="product-scroll">
-
-        <table class="table table-sm table-bordered mb-0">
-
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th width="90">₹ Rate</th>
-            </tr>
-          </thead>
-
-          <tbody id="productList"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-    <!-- PAYMENT -->
-    <div class="card border-0 shadow-sm p-3 payment-box">
-
-      <div class="payment-header mb-2">
-        <b>Payment</b>
-      </div>
-
-      <div class="payment-scroll">
-
-        <table class="table table-sm mb-0">
-
-          <?php foreach($payment_modes as $pm): ?>
-
-          <tr>
-
-            <td width="30">
-              <input type="checkbox"
-              class="payCheck"
-              data-mode="<?=$pm['id'];?>">
-            </td>
-
-            <td>
-              <?= strtoupper($pm['mode_name']); ?>
-            </td>
-
-            <td>
-
-             <input type="number"
-                step="0.01"
-                min="0"
-                name="payment_amount[<?=$pm['id'];?>]"
-                class="form-control form-control-sm payAmt"
-                disabled
-                data-mode="<?=$pm['id'];?>"
-                value="0">
-
-              <?php if(strtolower($pm['mode_name']) != 'cash'): ?>
-
-              <input type="text"
-              name="utr_no[<?=$pm['id'];?>]"
-              class="form-control form-control-sm mt-1 utrField"
-              placeholder="Enter UTR No"
-              disabled
-              data-mode="<?=$pm['id'];?>">
-
-              <?php endif; ?>
-
-            </td>
-
-          </tr>
-
-          <?php endforeach; ?>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- RIGHT SIDE -->
-  <div class="col-lg-9 ps-lg-3">
-
-    <!-- BILL GRID -->
-    <div class="bill-grid mb-3">
-
-      <table class="table table-bordered mb-0" id="itemTable">
-
-        <thead>
-
-          <tr>
-
-            <th>Product</th>
-            <th>Qty</th>
-            <th>Price</th>
-
-            <?php if($gst_enabled == "Yes"): ?>
-            <th>GST%</th>
-            <th>GST</th>
-            <?php endif; ?>
-
-            <th>Disc %</th>
-            <th>Disc ₹</th>
-            <th>Total</th>
-            <th width="50"></th>
-
-          </tr>
-
-        </thead>
-
-        <tbody id="billBody">
-
-          <!-- EXISTING ITEMS -->
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-    <!-- SUMMARY -->
-<div class="card border-0 shadow-sm rounded-4 p-3 mt-3 summary-card">
-
-<div class="row">
-
-    <!-- LEFT : TOTALS -->
-    <div class="col-lg-4 border-end">
-
-      <div class="summary-row">
-        <span>Gross</span>
-        <strong>₹ <span id="gross">0</span></strong>
-      </div>
-
-      <div class="summary-row">
-        <span>Net</span>
-        <strong class="text-primary">
-          ₹ <span id="net">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row">
-        <span>Paid</span>
-        <strong class="text-success">
-          ₹ <span id="paid">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row text-danger">
-        <span>Balance</span>
-        <strong>
-          ₹ <span id="balance">0</span>
-        </strong>
-      </div>
-
-      <div class="summary-row text-success">
-        <span>Return</span>
-        <strong>
-          ₹ <span id="returnAmt">0</span>
-        </strong>
-      </div>
-
-    </div>
-
-    <!-- RIGHT : TERMS -->
-    <div class="col-lg-8">
-
-      <label class="mb-1">
-        Terms & Conditions Template
-      </label>
-
-      <select
-      id="termsTemplate"
-      class="form-control mb-2">
-
-        <option value="">
-          Select Template
-        </option>
-
-        <?php foreach($terms_templates as $t): ?>
-
-        <option
-        value="<?= htmlspecialchars($t['template']); ?>">
-
-          <?= htmlspecialchars($t['template_name']); ?>
-
-        </option>
-
-        <?php endforeach; ?>
-
-      </select>
-
-      <label class="mb-1">
-        Terms & Conditions
-      </label>
-
-      <textarea
-      name="terms_conditions"
-      id="termsBox"
-      rows="5"
-      class="form-control"
-      placeholder="Terms & Conditions..."></textarea>
-
-    </div>
-
-</div>
-</div>
-<!-- COMPACT DEMO POP-UP MODAL (PRO ENGLISH) -->
-<div class="modal fade" id="demoModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
-    <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+  <!-- TOP HEADER ROW -->
+  <div class="pos-card" style="padding: 8px 14px;">
+    <div class="row align-items-end">
       
-      <!-- Header -->
-      <div class="modal-header bg-primary text-white" style="border-top-left-radius:14px; border-top-right-radius:14px; padding:12px 18px;">
-        <h6 class="modal-title font-weight-bold m-0" style="font-size:15px;">📦 Active Demo Items Found</h6>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:0.9;">
-          <span aria-hidden="true">&times;</span>
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Invoice Date</label>
+        <input type="text" name="invoice_date" id="invoice_date" class="form-control" value="<?= date('d/M/Y'); ?>" autocomplete="off">
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-3" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Customer</label>
+        <div class="input-group">
+          <select name="customer_id" id="customer_select" class="form-control">
+            <option value="">Select Customer</option>
+            <?php foreach($customers as $c): ?>
+              <option value="<?=$c['id'];?>"><?=$c['customer_name'];?></option>
+            <?php endforeach; ?>
+          </select>
+          <span class="input-group-btn">
+            <button type="button" class="btn" data-toggle="modal" data-target="#quickAddCustomerModal" title="Add Customer">
+              <i class="glyphicon glyphicon-plus" style="font-size: 10px;"></i>
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">GST Mode</label>
+        <select name="gst_type" class="form-control">
+          <option value="exclusive" selected>Exclusive GST</option>
+          <option value="inclusive">Inclusive GST</option>
+          <option value="nogst">No GST</option>
+        </select>
+      </div>
+
+      <div class="col-xs-6 col-sm-3 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl" style="visibility:hidden;">Products</label>
+        <button type="button" class="btn btn-primary btn-top-trigger" data-toggle="modal" data-target="#productCatalogueModal">
+          <i class="glyphicon glyphicon-search" style="font-size: 11px;"></i> Add Products
         </button>
       </div>
 
-      <!-- Body -->
-      <div class="modal-body p-3">
-        <p class="text-muted mb-2" style="font-size:12px;">Active demo items exist for this customer. Adjust the quantity to be invoiced and import to the billing grid:</p>
+      <div class="col-xs-6 col-sm-3 col-md-3" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl" style="visibility:hidden;">Payment</label>
+        <button type="button" class="btn btn-info btn-top-trigger" data-toggle="modal" data-target="#paymentModal" style="background:#0284c7; border-color:#0284c7; color:#fff;">
+          <i class="glyphicon glyphicon-credit-card" style="font-size: 11px;"></i> Payment (<span id="btnPaidDisplay">₹0.00</span>)
+        </button>
+      </div>
+
+      <?php if($system == 'billing'): ?>
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Customer Name</label>
+        <input type="text" name="manual_name" class="form-control" placeholder="Name">
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Contact No</label>
+        <input type="text" name="manual_phone" class="form-control" placeholder="Phone">
+      </div>
+      <?php endif; ?>
+
+      <?php if($_SESSION['role_id'] == 2 && $system != 'inventory'): ?>
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Center</label>
+        <select name="center_id" class="form-control" required>
+          <?php foreach(find_all('master_center') as $c): ?>
+            <option value="<?= $c['center_id']; ?>"><?= $c['center_name']; ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+
+    </div>
+  </div>
+
+  <!-- FULL-WIDTH BILLING DATA GRID (PERFECT SWEET SPOT: 220px) -->
+  <div class="pos-card" style="padding:0; overflow:hidden;">
+    <div class="grid-container-full">
+      <table class="table" id="itemTable">
+        <thead>
+          <tr>
+            <th style="width: 32%; padding-left: 12px;">Product Description</th>
+            <th style="width: 8%;" class="text-center">Qty</th>
+            <th style="width: 12%;" class="text-right">Price (₹)</th>
+            <?php if($gst_enabled == "Yes"): ?>
+            <th style="width: 8%;" class="text-center">GST %</th>
+            <th style="width: 10%;" class="text-right">GST (₹)</th>
+            <?php endif; ?>
+            <th style="width: 8%;" class="text-center">Disc %</th>
+            <th style="width: 10%;" class="text-right">Disc (₹)</th>
+            <th style="width: 10%;" class="text-right">Line Total (₹)</th>
+            <th style="width: 2%; text-align:center;"></th>
+          </tr>
+        </thead>
+        <tbody id="billBody">
+          <tr id="emptyRowMsg">
+            <td colspan="<?= ($gst_enabled == 'Yes') ? 9 : 7; ?>" class="empty-grid-msg">
+              No products added to bill. Click <b>"Add Products"</b> above to insert items.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EQUAL 50/50 BOTTOM SUMMARY, EXPANDED NOTES & SAVE -->
+  <div class="pos-card summary-container">
+    <div class="row">
+      
+      <!-- LEFT 50%: Financial Metrics -->
+      <div class="col-xs-12 col-md-6" style="margin-bottom: 6px;">
+        <div class="summary-metric-card">
+          <div class="stat-row">
+            <span>Gross Total</span>
+            <strong>₹ <span id="gross">0.00</span></strong>
+          </div>
+          <div class="stat-row net-bold">
+            <span>Net Payable</span>
+            <strong>₹ <span id="net">0.00</span></strong>
+          </div>
+          <div class="stat-row" style="color:var(--emerald-accent);">
+            <span>Paid Amount</span>
+            <strong>₹ <span id="paid">0.00</span></strong>
+          </div>
+          <div class="stat-row due-bold">
+            <span>Balance Due</span>
+            <strong>₹ <span id="balance">0.00</span></strong>
+          </div>
+          <div class="stat-row">
+            <span>Change / Return</span>
+            <strong>₹ <span id="returnAmt">0.00</span></strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT 50%: Terms, Stock & Save Action Button -->
+      <div class="col-xs-12 col-md-6" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div class="row" style="margin-bottom: 6px;">
+            <div class="col-xs-8">
+              <select id="termsTemplate" class="form-control" style="font-size:12px; height:30px !important;">
+                <option value="">Select Terms Template</option>
+                <?php foreach($terms_templates as $t): ?>
+                  <option value="<?= htmlspecialchars($t['template']); ?>"><?= htmlspecialchars($t['template_name']); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-xs-4">
+              <div id="stockInfo" class="stock-tag-box" title="Stock Info">Stock: —</div>
+            </div>
+          </div>
+          
+          <textarea name="terms_conditions" id="termsBox" class="form-control" style="height: 75px !important; resize: none; font-size:12px; margin-bottom: 6px;" placeholder="Add invoice terms, bank details or remarks..."></textarea>
+        </div>
         
-        <div class="table-responsive" style="border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;">
-          <table class="table table-sm table-bordered table-striped align-middle mb-0" style="font-size:12px;">
-            <thead class="thead-dark">
-              <tr>
-                <th width="35" class="text-center"><input type="checkbox" id="checkAllDemo" checked></th>
-                <th>Product Name</th>
-                <th width="110" class="text-center">Dealer Qty</th>
-                <th width="120" class="text-center">Invoiced Qty</th>
-                <th width="90" class="text-right">Rate</th>
-              </tr>
-            </thead>
-            <tbody id="demoModalTableBody">
-              <!-- Dynamic Rows via JS -->
-            </tbody>
+        <button type="submit" name="save_invoice" class="btn btn-save-master">
+          💾 Save & Print Invoice
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COMPACT PAYMENT BREAKDOWN MODAL -->
+  <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-compact" role="document">
+      <div class="modal-content" style="border-radius:6px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.25);">
+        <div class="modal-header" style="background:#0284c7; color:#ffffff; border-top-left-radius:6px; border-top-right-radius:6px; padding:8px 14px;">
+          <button type="button" class="close" data-dismiss="modal" style="color:#ffffff; opacity:0.9;">&times;</button>
+          <h5 class="modal-title" style="font-weight:700; margin:0; font-size:13px;">Payment Modes</h5>
+        </div>
+        <div class="modal-body" style="padding:10px 14px;">
+          <table class="table mb-0" style="margin-bottom:0;">
+            <?php foreach($payment_modes as $pm): ?>
+            <tr>
+              <td width="26" style="vertical-align:middle; padding: 4px 2px;">
+                <input type="checkbox" class="payCheck" data-mode="<?=$pm['id'];?>" style="margin:0; cursor:pointer;">
+              </td>
+              <td style="font-size:11.5px; font-weight:700; vertical-align:middle; padding: 4px 2px;">
+                <?= strtoupper($pm['mode_name']); ?>
+              </td>
+              <td width="150" style="padding: 4px 2px;">
+                <input type="number" step="0.01" min="0" name="payment_amount[<?=$pm['id'];?>]" class="form-control payAmt text-right" disabled data-mode="<?=$pm['id'];?>" value="0" style="height: 26px !important; font-size: 11.5px; margin-bottom: 2px;">
+                <?php if(strtolower($pm['mode_name']) != 'cash'): ?>
+                <input type="text" name="utr_no[<?=$pm['id'];?>]" class="form-control utrField" placeholder="Ref / UTR" disabled data-mode="<?=$pm['id'];?>" style="height: 24px !important; font-size: 11px;">
+                <?php endif; ?>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+          </table>
+        </div>
+        <div class="modal-footer" style="padding:6px 14px; background:#f8fafc; border-bottom-left-radius:6px; border-bottom-right-radius:6px;">
+          <button type="button" class="btn btn-primary btn-sm font-weight-bold" data-dismiss="modal" style="font-size: 11.5px; padding: 3px 12px;">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</form>
+</div>
+
+<!-- COMPACT PRODUCT CATALOGUE MODAL -->
+<div class="modal fade" id="productCatalogueModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-compact" role="document">
+    <div class="modal-content" style="border-radius:6px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.25);">
+      <div class="modal-header" style="background:var(--navy-dark); color:#ffffff; border-top-left-radius:6px; border-top-right-radius:6px; padding:8px 14px;">
+        <button type="button" class="close" data-dismiss="modal" style="color:#ffffff; opacity:0.9;">&times;</button>
+        <h5 class="modal-title" style="font-weight:700; margin:0; font-size:13px;">Product Catalogue</h5>
+      </div>
+      <div class="modal-body" style="padding:10px 14px;">
+        <input type="text" id="productSearch" class="form-control mb-2" placeholder="Search product..." style="height: 28px !important; font-size: 11.5px;">
+        <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 4px;">
+          <table class="table table-hover mb-0">
+            <tbody id="productList"></tbody>
           </table>
         </div>
       </div>
-
-      <!-- Footer -->
-      <div class="modal-footer p-2 bg-light" style="border-bottom-left-radius:14px; border-bottom-right-radius:14px;">
-        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="border-radius:6px; font-size:12px;">Skip (Direct Invoice)</button>
-        <button type="button" class="btn btn-sm btn-success font-weight-bold" id="importDemoBtn" style="border-radius:6px; font-size:12px; padding:6px 14px;">Import to Invoice Grid</button>
+      <div class="modal-footer" style="padding:6px 14px; background:#f8fafc; border-bottom-left-radius:6px; border-bottom-right-radius:6px;">
+        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal" style="font-size: 11.5px; padding: 3px 12px;">Close</button>
       </div>
-
     </div>
   </div>
 </div>
 
-      <!-- QUICK ADD CUSTOMER MODAL -->
-<div class="modal fade" id="quickAddCustomerModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
-    <div class="modal-content" style="border-radius:12px; border:none; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
-      
-      <div class="modal-header bg-primary text-white" style="border-top-left-radius:12px; border-top-right-radius:12px; padding:10px 15px;">
-        <h6 class="modal-title font-weight-bold m-0" style="font-size:14px;">➕ Quick Add Customer</h6>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:0.9;">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<!-- DEMO POP-UP MODAL -->
+<div class="modal fade" id="demoModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-compact" role="document">
+    <div class="modal-content" style="border-radius:6px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.25);">
+      <div class="modal-header" style="background:var(--navy-dark); color:#ffffff; border-top-left-radius:6px; border-top-right-radius:6px; padding:8px 14px;">
+        <button type="button" class="close" data-dismiss="modal" style="color:#ffffff; opacity:0.9;">&times;</button>
+        <h5 class="modal-title" style="font-weight:700; margin:0; font-size:13px;">Active Demo Items</h5>
       </div>
+      <div class="modal-body" style="padding:10px 14px;">
+        <p class="text-muted" style="font-size:11px; margin-bottom:6px;">Select quantities to import:</p>
+        <div class="table-responsive" style="border: 1px solid var(--border-slate); border-radius:4px;">
+          <table class="table table-bordered table-striped" style="font-size:11.5px; margin-bottom:0;">
+            <thead style="background:var(--navy-light); color:#ffffff;">
+              <tr>
+                <th width="30" class="text-center"><input type="checkbox" id="checkAllDemo" checked></th>
+                <th>Product</th>
+                <th width="70" class="text-center">Hold</th>
+                <th width="90" class="text-center">Qty</th>
+                <th width="70" class="text-right">Price</th>
+              </tr>
+            </thead>
+            <tbody id="demoModalTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding:6px 14px; background:#f8fafc; border-bottom-left-radius:6px; border-bottom-right-radius:6px;">
+        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal" style="font-size: 11.5px;">Skip</button>
+        <button type="button" class="btn btn-success btn-sm font-weight-bold" id="importDemoBtn" style="font-size: 11.5px;">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<!-- QUICK ADD CUSTOMER MODAL -->
+<div class="modal fade" id="quickAddCustomerModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-compact" role="document">
+    <div class="modal-content" style="border-radius:6px; border:none; box-shadow:0 15px 35px rgba(0,0,0,0.25);">
+      <div class="modal-header" style="background:var(--blue-accent); color:#ffffff; border-top-left-radius:6px; border-top-right-radius:6px; padding:8px 14px;">
+        <button type="button" class="close" data-dismiss="modal" style="color:#ffffff; opacity:0.9;">&times;</button>
+        <h5 class="modal-title" style="font-weight:700; margin:0; font-size:13px;">Quick Add Customer</h5>
+      </div>
       <form id="quickCustomerForm">
-        <div class="modal-body p-3">
-          <div class="form-group mb-2">
-            <label style="font-size: 11px; font-weight: 600;">Customer Name <span class="text-danger">*</span></label>
-            <input type="text" id="quick_cust_name" name="customer_name" class="form-control form-control-sm" placeholder="Enter customer name" required autocomplete="off">
+        <div class="modal-body" style="padding:10px 14px;">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="pos-title-lbl">Customer Name <span class="text-danger">*</span></label>
+            <input type="text" id="quick_cust_name" name="customer_name" class="form-control" style="height:28px !important; font-size:11.5px;" placeholder="Full name" required autocomplete="off">
           </div>
-
-          <div class="form-group mb-2">
-            <label style="font-size: 11px; font-weight: 600;">Contact No (Optional)</label>
-            <input type="text" id="quick_cust_phone" name="contact_no" class="form-control form-control-sm" placeholder="Enter mobile number" autocomplete="off">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="pos-title-lbl">Contact No</label>
+            <input type="text" id="quick_cust_phone" name="contact_no" class="form-control" style="height:28px !important; font-size:11.5px;" placeholder="Mobile" autocomplete="off">
           </div>
-
-          <div class="form-group mb-2">
-            <label style="font-size: 11px; font-weight: 600;">GST No (Optional)</label>
-            <input type="text" id="quick_cust_gst" name="gst_no" class="form-control form-control-sm" placeholder="GST number" maxlength="15" style="text-transform:uppercase;">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="pos-title-lbl">GST No</label>
+            <input type="text" id="quick_cust_gst" name="gst_no" class="form-control" style="height:28px !important; font-size:11.5px;" placeholder="GSTIN" maxlength="15" style="text-transform:uppercase;">
           </div>
         </div>
-
-        <div class="modal-footer p-2 bg-light" style="border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
-          <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="font-size:12px;">Cancel</button>
-          <button type="submit" id="saveQuickCustBtn" class="btn btn-sm btn-success font-weight-bold" style="font-size:12px;">Save & Select</button>
+        <div class="modal-footer" style="padding:6px 14px; background:#f8fafc; border-bottom-left-radius:6px; border-bottom-right-radius:6px;">
+          <button type="button" class="btn btn-default btn-sm" data-dismiss="modal" style="font-size: 11.5px;">Cancel</button>
+          <button type="submit" id="saveQuickCustBtn" class="btn btn-success btn-sm font-weight-bold" style="font-size: 11.5px;">Save & Select</button>
         </div>
       </form>
-
     </div>
   </div>
 </div>
 
-
 <?php include_once('layouts/footer.php'); ?>
-
 
 <script>
 const products = <?= json_encode($products); ?>;
 
-/* PRODUCT LIST */
+/* RENDER PRODUCTS IN MODAL */
 function renderProducts(filter=""){
- let list = document.getElementById("productList");
- list.innerHTML="";
+  let list = document.getElementById("productList");
+  list.innerHTML = "";
 
- products
- .filter(p=>p.name.toLowerCase().includes(filter.toLowerCase()))
- .forEach(p=>{
-
-  let tr=document.createElement("tr");
-  tr.style.cursor="pointer";
-
-  tr.innerHTML=`
-    <td>${p.name}</td>
-    <td>₹${p.sale_price}</td>
-  `;
-
-  tr.addEventListener("click",()=>addProduct(p));
-
-  list.appendChild(tr);
- });
+  products
+  .filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+  .forEach(p => {
+    let tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.innerHTML = `
+      <td style="font-size:11.5px; font-weight:600; padding: 6px 8px;">${p.name}</td>
+      <td class="text-right" style="font-size:11.5px; font-weight:700; color:#475569; padding: 6px 8px;">₹${parseFloat(p.sale_price).toFixed(2)}</td>
+    `;
+    tr.addEventListener("click", () => {
+      addProduct(p);
+      $('#productCatalogueModal').modal('hide');
+    });
+    list.appendChild(tr);
+  });
 }
 renderProducts();
 
-document.getElementById("productSearch")
-.addEventListener("input",e=>renderProducts(e.target.value));
+document.getElementById("productSearch").addEventListener("input", e => renderProducts(e.target.value));
 
-/* ADD PRODUCT */
+/* ADD PRODUCT TO BILLING GRID */
 function addProduct(p){
+  document.getElementById("stockInfo").innerHTML = `Stock: ${Math.floor(Number(p.current_stock || 0))} PCS`;
 
-let shortName = p.name.length > 20
-? p.name.substring(0,20) + "..."
-: p.name;
+  let emptyMsg = document.getElementById("emptyRowMsg");
+  if(emptyMsg) emptyMsg.remove();
 
-document.getElementById("stockInfo").innerHTML =
-`Available Stock: ${Math.floor(Number(p.current_stock || 0))} PCS`;
+  let rows = document.querySelectorAll("#billBody tr:not(#emptyRowMsg)");
+  for(let r of rows){
+    let pId = r.querySelector(".productName").dataset.productId;
+    if(pId == p.id){
+      let qtyInput = r.querySelector(".qty");
+      qtyInput.value = parseInt(qtyInput.value || 0) + 1;
+      calculate(r);
+      return;
+    }
+  }
 
-let rows = document.querySelectorAll("#billBody tr");
+  let row = document.createElement("tr");
+  row.innerHTML = `
+    <td class="productName" data-product-id="${p.id}" style="font-size:12px; font-weight:700; padding-left: 12px !important;">
+      ${p.name}
+      <input type="hidden" name="product_id[]" value="${p.id}">
+    </td>
+    <td><input type="number" name="qty[]" class="grid-cell qty text-center" value="1" min="1"></td>
+    <td><input type="number" step="0.01" name="rate[]" class="grid-cell base text-right" value="${p.sale_price}"></td>
+    <?php if($gst_enabled == "Yes"): ?>
+    <td><input type="number" name="gst[]" class="grid-cell gst text-center" value="${p.gst_percent}"></td>
+    <td><input type="text" class="grid-cell gstAmt text-right" readonly></td>
+    <?php endif; ?>
+    <td><input type="number" step="0.01" class="grid-cell discPer text-center" value="0"></td>
+    <td><input type="number" step="0.01" name="discount[]" class="grid-cell discAmt text-right" value="0"></td>
+    <td><input type="text" class="grid-cell totalRow text-right font-weight-bold" style="color:var(--blue-accent);" readonly></td>
+    <td class="text-center" style="padding-right: 6px !important;"><button type="button" class="btn-del-cell remove" title="Remove">&times;</button></td>
+  `;
 
- for(let r of rows){
-   let name = r.querySelector("td").innerText.trim();
-
-   if(name === p.name){
-     let qtyInput = r.querySelector(".qty");
-     qtyInput.value = parseInt(qtyInput.value || 0) + 1;
-     calculate(r);
-     return;
-   }
- }
-
- let row=document.createElement("tr");
-
- row.innerHTML=`
- <td class="productName" data-product-id="${p.id}">
-${p.name}
-<input type="hidden" name="product_id[]" value="${p.id}">
-</td>
-
-  <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1"></td>
-
-  <td><input type="number" name="rate[]" class="form-control form-control-sm base" value="${p.sale_price}"></td>
-
-  <?php if($gst_enabled == "Yes"): ?>
-
-<td>
-<input type="number" name="gst[]"
-class="form-control form-control-sm gst"
-value="${p.gst_percent}">
-</td>
-
-<td>
-<input type="text"
-class="form-control form-control-sm gstAmt"
-readonly>
-</td>
-
-<?php endif; ?>
-
-  <td><input
-type="number"
-step="0.0001"
-class="form-control form-control-sm discPer"
-value="0"></td>
-
-  <td><input
-type="number"
-step="0.0001"
-name="discount[]"
-class="form-control form-control-sm discAmt"
-value="0"></td>
-
-  <td><input type="text" class="form-control form-control-sm totalRow" readonly></td>
-
-  <td><button type="button" class="btn btn-danger btn-sm remove">×</button></td>
- `;
-
- document.getElementById("billBody").appendChild(row);
-
- calculate(row);
+  document.getElementById("billBody").appendChild(row);
+  calculate(row);
 }
 
-
-/* 🔥 INPUT FIX */
+/* EVENT DELEGATION */
 document.addEventListener("input", function(e){
-
- if(
-   e.target.classList.contains("qty") ||
-   e.target.classList.contains("base") ||
-   e.target.classList.contains("gst") ||
-   e.target.classList.contains("discPer") ||
-   e.target.classList.contains("discAmt")
- ){
-   calculate(e.target.closest("tr"));
- }
-
+  if(
+    e.target.classList.contains("qty") ||
+    e.target.classList.contains("base") ||
+    e.target.classList.contains("gst") ||
+    e.target.classList.contains("discPer") ||
+    e.target.classList.contains("discAmt")
+  ){
+    calculate(e.target.closest("tr"));
+  }
 });
 
 document.addEventListener("change", function(e){
-
- if(e.target.name == "gst_type"){
-
-   document.querySelectorAll("#billBody tr").forEach(r=>{
-      calculate(r);
-   });
-
- }
-
+  if(e.target.name == "gst_type"){
+    document.querySelectorAll("#billBody tr:not(#emptyRowMsg)").forEach(r => calculate(r));
+  }
 });
 
-
-/* REMOVE FIX */
+/* REMOVE ROW */
 document.addEventListener("click", function(e){
+  if(e.target.classList.contains("remove")){
+    let row = e.target.closest("tr");
+    row.remove();
+    updateSummary();
 
-   if(e.target.classList.contains("remove")){
-
-      let row = e.target.closest("tr");
-      row.remove();
-
-      updateSummary();
-
-      let rows = document.querySelectorAll("#billBody tr");
-
-      if(rows.length === 0){
-
-         document.getElementById("stockInfo").innerHTML =
-         "No Product Selected";
-
-      }else{
-
-         let lastRow = rows[rows.length - 1];
-
-let productId =
-lastRow.querySelector(".productName").dataset.productId;
-
-let productObj =
-products.find(p => p.id == productId);
-
-if(productObj){
-
-   document.getElementById("stockInfo").innerHTML =
-   `Available Stock: ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
-}
+    let rows = document.querySelectorAll("#billBody tr:not(#emptyRowMsg)");
+    if(rows.length === 0){
+      document.getElementById("stockInfo").innerHTML = "Stock: —";
+      document.getElementById("billBody").innerHTML = `
+        <tr id="emptyRowMsg">
+          <td colspan="<?= ($gst_enabled == 'Yes') ? 9 : 7; ?>" class="empty-grid-msg">
+            No products added to bill. Click <b>"Add Products"</b> above to insert items.
+          </td>
+        </tr>`;
+    }else{
+      let lastRow = rows[rows.length - 1];
+      let productId = lastRow.querySelector(".productName").dataset.productId;
+      let productObj = products.find(p => p.id == productId);
+      if(productObj){
+        document.getElementById("stockInfo").innerHTML = `Stock: ${Math.floor(Number(productObj.current_stock || 0))} PCS`;
       }
-   }
-
+    }
+  }
 });
 
-
-/* CALC */
+/* CALCULATION ENGINE */
 function calculate(r){
+  let qty  = parseFloat(r.querySelector(".qty").value) || 0;
+  let base = parseFloat(r.querySelector(".base").value) || 0;
+  let gst = 0;
 
- let qty  = parseFloat(r.querySelector(".qty").value) || 0;
- let base = parseFloat(r.querySelector(".base").value) || 0;
-let gst = 0;
-
-let gstField = r.querySelector(".gst");
-
-if(gstField){
-   gst = parseFloat(gstField.value) || 0;
-}
-
- let dPer = parseFloat(r.querySelector(".discPer").value) || 0;
- let dAmt = parseFloat(r.querySelector(".discAmt").value) || 0;
-
- let total = qty * base;
-
- if(total === 0){
-   r.querySelector(".discAmt").value = 0;
-   r.querySelector(".discPer").value = 0;
- }
-
-let active = document.activeElement;
-
-if(active && active.classList.contains("discPer")){
-
-   dAmt = (total * dPer) / 100;
-
-   r.querySelector(".discAmt").value =
-   dAmt.toFixed(2);
-
-}
-else if(active && active.classList.contains("discAmt")){
-
-   dPer = total > 0
-   ? (dAmt / total) * 100
-   : 0;
-
-   r.querySelector(".discPer").value =
-   dPer.toFixed(2);
-}
-
- let afterDisc = total - dAmt;
-
-/* GST TYPE */
-let gstType = "exclusive";
-
-let gstSelect = document.querySelector("select[name='gst_type']");
-
-if(gstSelect){
-   gstType = gstSelect.value;
-}
-
-let gstAmt = 0;
-let final = 0;
-
-if(gstType == "nogst"){
-
-    gstAmt = 0;
-    final = afterDisc;
-
-}
-else if(gstType == "exclusive"){
-
-    gstAmt = (afterDisc * gst) / 100;
-
-    final = afterDisc + gstAmt;
-
-}
-else{
-
-    gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
-
-    final = afterDisc;
-}
-
-let gstAmtField = r.querySelector(".gstAmt");
-
-if(gstAmtField){
-   gstAmtField.value = gstAmt.toFixed(2);
-}
- r.querySelector(".totalRow").value = final.toFixed(2);
-
- updateSummary();
-}
-
-
-/* SUMMARY */
-function updateSummary(){
-
- let gross=0;
-
- document.querySelectorAll(".totalRow").forEach(t=>{
-  gross += parseFloat(t.value) || 0;
- });
-
- document.getElementById("gross").innerText = gross.toFixed(2);
- document.getElementById("net").innerText   = gross.toFixed(2);
-
- let paid=0;
-
- document.querySelectorAll(".payAmt").forEach(i=>{
-  paid += parseFloat(i.value) || 0;
- });
-
- document.getElementById("paid").innerText = paid.toFixed(2);
-
- let balance = gross - paid;
- let returnAmt = 0;
-
- if(paid > gross){
-
- alert("Payment is greater than bill amount");
-  returnAmt = paid - gross;
-  balance = 0;
- }
-
- document.getElementById("balance").innerText   = balance.toFixed(2);
- document.getElementById("returnAmt").innerText = returnAmt.toFixed(2);
-
-highlightSummary();
-}
-
-
-
-/* PAYMENT */
-document.querySelectorAll(".payCheck").forEach(chk=>{
- chk.addEventListener("change",function(){
-
-  let net = parseFloat(document.getElementById("net").innerText) || 0;
-
-  let input = document.querySelector(`.payAmt[data-mode='${chk.dataset.mode}']`);
-
-  if(chk.checked){
-
-    input.disabled = false;
-
-    let utr = document.querySelector(`.utrField[data-mode='${chk.dataset.mode}']`);
-
-if(utr){
-   utr.disabled = false;
-}
-
-    let remaining = net;
-
-    document.querySelectorAll(".payAmt").forEach(i=>{
-      if(i !== input){
-        remaining -= parseFloat(i.value) || 0;
-      }
-    });
-
-    input.value = remaining > 0 ? remaining.toFixed(2) : 0;
-
-  } else {
-    input.value = 0;
-    input.disabled = true;
-
-    if(utr){
-   utr.disabled = true;
-   utr.value = '';
-}
+  let gstField = r.querySelector(".gst");
+  if(gstField){
+    gst = parseFloat(gstField.value) || 0;
   }
 
+  let dPer = parseFloat(r.querySelector(".discPer").value) || 0;
+  let dAmt = parseFloat(r.querySelector(".discAmt").value) || 0;
+
+  let total = qty * base;
+
+  let active = document.activeElement;
+  if(active && active.classList.contains("discPer")){
+    dAmt = (total * dPer) / 100;
+    r.querySelector(".discAmt").value = dAmt.toFixed(2);
+  } else if(active && active.classList.contains("discAmt")){
+    dPer = total > 0 ? (dAmt / total) * 100 : 0;
+    r.querySelector(".discPer").value = dPer.toFixed(2);
+  }
+
+  let afterDisc = total - dAmt;
+
+  let gstType = "exclusive";
+  let gstSelect = document.querySelector("select[name='gst_type']");
+  if(gstSelect){
+    gstType = gstSelect.value;
+  }
+
+  let gstAmt = 0;
+  let final = 0;
+
+  if(gstType == "nogst"){
+    gstAmt = 0;
+    final = afterDisc;
+  } else if(gstType == "exclusive"){
+    gstAmt = (afterDisc * gst) / 100;
+    final = afterDisc + gstAmt;
+  } else {
+    gstAmt = afterDisc - (afterDisc * 100 / (100 + gst));
+    final = afterDisc;
+  }
+
+  let gstAmtField = r.querySelector(".gstAmt");
+  if(gstAmtField){
+    gstAmtField.value = gstAmt.toFixed(2);
+  }
+  r.querySelector(".totalRow").value = final.toFixed(2);
+
   updateSummary();
- });
-});
-
-document.querySelectorAll(".payAmt").forEach(input=>{
-  input.addEventListener("input", function(){
-
-  if(parseFloat(this.value) < 0){
-   this.value = 0;
 }
+
+/* UPDATE TOTALS SUMMARY */
+function updateSummary(){
+  let gross = 0;
+  document.querySelectorAll(".totalRow").forEach(t => {
+    gross += parseFloat(t.value) || 0;
+  });
+
+  document.getElementById("gross").innerText = gross.toFixed(2);
+  document.getElementById("net").innerText   = gross.toFixed(2);
+
+  let paid = 0;
+  document.querySelectorAll(".payAmt").forEach(i => {
+    paid += parseFloat(i.value) || 0;
+  });
+
+  document.getElementById("paid").innerText = paid.toFixed(2);
+  document.getElementById("btnPaidDisplay").innerText = `₹${paid.toFixed(2)}`;
+
+  let balance = gross - paid;
+  let returnAmt = 0;
+
+  if(paid > gross){
+    returnAmt = paid - gross;
+    balance = 0;
+  }
+
+  document.getElementById("balance").innerText   = balance.toFixed(2);
+  document.getElementById("returnAmt").innerText = returnAmt.toFixed(2);
+}
+
+/* PAYMENT HANDLERS */
+document.querySelectorAll(".payCheck").forEach(chk => {
+  chk.addEventListener("change", function(){
+    let net = parseFloat(document.getElementById("net").innerText) || 0;
+    let input = document.querySelector(`.payAmt[data-mode='${chk.dataset.mode}']`);
+    let utr = document.querySelector(`.utrField[data-mode='${chk.dataset.mode}']`);
+
+    if(chk.checked){
+      input.disabled = false;
+      if(utr) utr.disabled = false;
+
+      let remaining = net;
+      document.querySelectorAll(".payAmt").forEach(i => {
+        if(i !== input) remaining -= parseFloat(i.value) || 0;
+      });
+
+      input.value = remaining > 0 ? remaining.toFixed(2) : 0;
+    } else {
+      input.value = 0;
+      input.disabled = true;
+      if(utr){
+        utr.disabled = true;
+        utr.value = '';
+      }
+    }
     updateSummary();
   });
 });
 
-function highlightSummary(){
-
- let balance = parseFloat(document.getElementById("balance").innerText) || 0;
- let ret = parseFloat(document.getElementById("returnAmt").innerText) || 0;
-
- let balEl = document.getElementById("balance").parentElement;
- let retEl = document.getElementById("returnAmt").parentElement;
-
- balEl.style.color = balance > 0 ? "red" : "#333";
- retEl.style.color = ret > 0 ? "green" : "#333";
-}
-
-highlightSummary();
+document.querySelectorAll(".payAmt").forEach(input => {
+  input.addEventListener("input", function(){
+    if(parseFloat(this.value) < 0) this.value = 0;
+    updateSummary();
+  });
+});
 
 function validateCustomer(){
-
-  let cust   = document.querySelector("select[name='customer_id']").value;
-  let name   = document.querySelector("input[name='manual_name']").value.trim();
-  let phone  = document.querySelector("input[name='manual_phone']").value.trim();
+  let cust  = document.querySelector("select[name='customer_id']").value;
+  let nameEl = document.querySelector("input[name='manual_name']");
+  let name  = nameEl ? nameEl.value.trim() : "";
+  let phoneEl = document.querySelector("input[name='manual_phone']");
+  let phone = phoneEl ? phoneEl.value.trim() : "";
 
   if(cust == "" && name == "" && phone == ""){
-    alert("⚠️ Please select customer OR enter name & contact");
+    alert("Please select customer OR enter name & contact");
     return false;
   }
-
   return true;
 }
 
-/* TERMS TEMPLATE */
-
-document.getElementById("termsTemplate")
-
-.addEventListener("change", function(){
-
-document.getElementById("termsBox").value =
-this.value;
-
+/* TEMPLATE HANDLER */
+document.getElementById("termsTemplate")?.addEventListener("change", function(){
+  document.getElementById("termsBox").value = this.value;
 });
 
-/* EXISTING ITEMS CALCULATE */
-
-document.querySelectorAll("#billBody tr").forEach(r=>{
-   calculate(r);
-});
-
+/* FLATPICKR INITIALIZATION */
 document.addEventListener("DOMContentLoaded", function () {
-
+  if (typeof flatpickr !== 'undefined') {
     flatpickr("#invoice_date", {
-        dateFormat: "d/M/Y",
-        allowInput: false,
-        disableMobile: true
+      dateFormat: "d/M/Y",
+      allowInput: false,
+      disableMobile: true
     });
-
+  }
 });
 
-/* 🔥 DEMO ITEM AUTO POP-UP & IMPORT LOGIC (COMPACT & PRO ENGLISH) 🔥 */
+/* DEMO POPUP LOGIC */
 let currentDemoData = [];
+document.querySelector("select[name='customer_id']")?.addEventListener("change", function () {
+  let custId = this.value;
+  if (!custId || custId == "0") return;
 
-document.querySelector("select[name='customer_id']").addEventListener("change", function () {
-    let custId = this.value;
-    if (!custId || custId == "0") return;
-
-    fetch(`get_demo_items.php?customer_id=${custId}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                currentDemoData = data;
-                let tbody = document.getElementById("demoModalTableBody");
-                tbody.innerHTML = "";
-
-                data.forEach((item, index) => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="text-center align-middle"><input type="checkbox" class="demoItemCheck" value="${index}" checked></td>
-                            <td class="align-middle"><b>${item.product_name}</b></td>
-                            <td class="text-center align-middle">
-                                <span class="badge badge-secondary px-2 py-1" style="font-size:11px;">${item.qty} PCS</span>
-                            </td>
-                            <td class="text-center align-middle">
-                                <input type="number" 
-                                       class="form-control form-control-sm text-center invoiceDemoQty" 
-                                       data-max="${item.qty}" 
-                                       value="${item.qty}" 
-                                       min="1" 
-                                       max="${item.qty}" 
-                                       style="font-weight:bold; color:#2563eb; border-color:#93c5fd; height:30px; font-size:12px;">
-                            </td>
-                            <td class="text-right align-middle">₹${item.sale_price}</td>
-                        </tr>
-                    `;
-                });
-
-                if (typeof $ !== 'undefined' && $.fn.modal) {
-                    $('#demoModal').modal('show');
-                }
-            }
-        })
-        .catch(err => console.error("Error fetching demo items:", err));
-});
-
-// Select All Checkbox Handler
-document.getElementById("checkAllDemo")?.addEventListener("change", function() {
-    document.querySelectorAll(".demoItemCheck").forEach(cb => cb.checked = this.checked);
-});
-
-// Input Validation: Restrict Invoiced Qty from exceeding Dealer Qty
-document.addEventListener("input", function(e) {
-    if(e.target.classList.contains("invoiceDemoQty")){
-        let max = parseFloat(e.target.getAttribute("data-max")) || 0;
-        let val = parseFloat(e.target.value) || 0;
-        if(val > max){
-            alert("Invoiced quantity cannot exceed the available dealer quantity (" + max + " PCS)!");
-            e.target.value = max;
-        }
-    }
-});
-
-// Import Items to Invoice Grid
-document.getElementById("importDemoBtn")?.addEventListener("click", function () {
-    let selectedBoxes = document.querySelectorAll(".demoItemCheck:checked");
-
-    if(selectedBoxes.length === 0){
-        alert("Please select at least one item to import!");
-        return;
-    }
-
-    selectedBoxes.forEach(cb => {
-        let index = cb.value;
-        let item  = currentDemoData[index];
-        let row   = cb.closest("tr");
-        
-        // Fetch edited Invoiced Qty
-        let customQty = parseFloat(row.querySelector(".invoiceDemoQty").value) || item.qty;
-
-        let pObj = {
-            id: item.product_id,
-            name: item.product_name,
-            sale_price: item.sale_price,
-            gst_percent: item.gst_percent || 0,
-            current_stock: 999
-        };
-
-        // Add item to grid
-        addProduct(pObj);
-
-        // Update Qty in grid row with the custom invoiced Qty
-        let rows = document.querySelectorAll("#billBody tr");
-        let lastRow = rows[rows.length - 1];
-        if (lastRow) {
-            let qtyInput = lastRow.querySelector(".qty");
-            if(qtyInput){
-                qtyInput.value = customQty;
-                calculate(lastRow);
-            }
-        }
-    });
-
-    $('#demoModal').modal('hide');
-});
-
-/* QUICK ADD CUSTOMER VIA AJAX */
-document.getElementById("quickCustomerForm")?.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    let name = document.getElementById("quick_cust_name").value.trim();
-    let contact = document.getElementById("quick_cust_phone").value.trim();
-    let gst = document.getElementById("quick_cust_gst").value.trim();
-
-    if (!name) {
-        alert("Please enter customer name!");
-        return;
-    }
-
-    let btn = document.getElementById("saveQuickCustBtn");
-    btn.disabled = true;
-    btn.innerText = "Saving...";
-
-    let formData = new FormData();
-    formData.append("customer_name", name);
-    formData.append("contact_no", contact);
-    formData.append("gst_no", gst);
-
-    fetch("ajax_add_customer.php", {
-        method: "POST",
-        body: formData
-    })
+  fetch(`get_demo_items.php?customer_id=${custId}`)
     .then(res => res.json())
     .then(data => {
-        btn.disabled = false;
-        btn.innerText = "Save & Select";
+      if (data && data.length > 0) {
+        currentDemoData = data;
+        let tbody = document.getElementById("demoModalTableBody");
+        tbody.innerHTML = "";
 
-        if (data.status === "success") {
-            let select = document.getElementById("customer_select");
-            
-            // Add new option and select it
-            let newOption = new Option(data.name, data.id, true, true);
-            select.add(newOption);
-            
-            // Trigger change event for demo items check
-            select.dispatchEvent(new Event("change"));
+        data.forEach((item, index) => {
+          tbody.innerHTML += `
+            <tr>
+              <td class="text-center" style="vertical-align:middle;"><input type="checkbox" class="demoItemCheck" value="${index}" checked></td>
+              <td style="vertical-align:middle; font-weight:700;">${item.product_name}</td>
+              <td class="text-center" style="vertical-align:middle;"><span class="badge" style="background:#475569;">${item.qty} PCS</span></td>
+              <td class="text-center" style="vertical-align:middle;">
+                <input type="number" class="form-control text-center invoiceDemoQty" data-max="${item.qty}" value="${item.qty}" min="1" max="${item.qty}" style="height:24px !important; font-size:11px; font-weight:bold; color:var(--blue-accent);">
+              </td>
+              <td class="text-right" style="vertical-align:middle;">₹${item.sale_price}</td>
+            </tr>
+          `;
+        });
 
-            // Reset & Close Modal
-            document.getElementById("quickCustomerForm").reset();
-            $('#quickAddCustomerModal').modal('hide');
-        } else {
-            alert(data.message || "Something went wrong!");
+        if (typeof $ !== 'undefined' && $.fn.modal) {
+          $('#demoModal').modal('show');
         }
+      }
     })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerText = "Save & Select";
-        console.error("Error adding customer:", err);
-        alert("Server error occurred!");
-    });
+    .catch(err => console.error("Error fetching demo items:", err));
 });
 
+document.getElementById("checkAllDemo")?.addEventListener("change", function() {
+  document.querySelectorAll(".demoItemCheck").forEach(cb => cb.checked = this.checked);
+});
+
+document.addEventListener("input", function(e) {
+  if(e.target.classList.contains("invoiceDemoQty")){
+    let max = parseFloat(e.target.getAttribute("data-max")) || 0;
+    let val = parseFloat(e.target.value) || 0;
+    if(val > max){
+      alert("Invoiced quantity cannot exceed the available demo quantity (" + max + " PCS)!");
+      e.target.value = max;
+    }
+  }
+});
+
+document.getElementById("importDemoBtn")?.addEventListener("click", function () {
+  let selectedBoxes = document.querySelectorAll(".demoItemCheck:checked");
+  if(selectedBoxes.length === 0){
+    alert("Please select at least one item to import!");
+    return;
+  }
+
+  selectedBoxes.forEach(cb => {
+    let index = cb.value;
+    let item  = currentDemoData[index];
+    let row   = cb.closest("tr");
+    let customQty = parseFloat(row.querySelector(".invoiceDemoQty").value) || item.qty;
+
+    let pObj = {
+      id: item.product_id,
+      name: item.product_name,
+      sale_price: item.sale_price,
+      gst_percent: item.gst_percent || 0,
+      current_stock: 999
+    };
+
+    addProduct(pObj);
+
+    let rows = document.querySelectorAll("#billBody tr:not(#emptyRowMsg)");
+    let lastRow = rows[rows.length - 1];
+    if (lastRow) {
+      let qtyInput = lastRow.querySelector(".qty");
+      if(qtyInput){
+        qtyInput.value = customQty;
+        calculate(lastRow);
+      }
+    }
+  });
+
+  $('#demoModal').modal('hide');
+});
+
+/* QUICK ADD CUSTOMER AJAX */
+document.getElementById("quickCustomerForm")?.addEventListener("submit", function (e) {
+  e.preventDefault();
+  let name = document.getElementById("quick_cust_name").value.trim();
+  let contact = document.getElementById("quick_cust_phone").value.trim();
+  let gst = document.getElementById("quick_cust_gst").value.trim();
+
+  if (!name) {
+    alert("Please enter customer name!");
+    return;
+  }
+
+  let btn = document.getElementById("saveQuickCustBtn");
+  btn.disabled = true;
+  btn.innerText = "Saving...";
+
+  let formData = new FormData();
+  formData.append("customer_name", name);
+  formData.append("contact_no", contact);
+  formData.append("gst_no", gst);
+
+  fetch("ajax_add_customer.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.innerText = "Save & Select";
+
+    if (data.status === "success") {
+      let select = document.getElementById("customer_select");
+      let newOption = new Option(data.name, data.id, true, true);
+      select.add(newOption);
+      select.dispatchEvent(new Event("change"));
+      document.getElementById("quickCustomerForm").reset();
+      $('#quickAddCustomerModal').modal('hide');
+    } else {
+      alert(data.message || "Something went wrong!");
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerText = "Save & Select";
+    console.error("Error adding customer:", err);
+    alert("Server error occurred!");
+  });
+});
 </script>
