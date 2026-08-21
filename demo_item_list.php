@@ -284,7 +284,7 @@ $demo_records = find_by_sql("
                     </div>
 
                     <label class="font-weight-bold mb-1" style="font-size:12px;">Demo Products</label>
-                    <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px; overflow:hidden;">
+                   <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px; overflow:visible;">
                         <thead>
                             <tr class="bg-light" style="font-size:12px;">
                                 <th>Product</th>
@@ -413,8 +413,9 @@ function filterStatus(status) {
     });
 }
 
-// Open and filter dropdown on focus/typing
-$(document).on('focus keyup', '.product-search-input', function() {
+// Input pe click karte hi ya type karte hi suggestions show honge
+$(document).on('focus click keyup', '.product-search-input', function(e) {
+    e.stopPropagation();
     let val = $(this).val().toLowerCase();
     let $dropdown = $(this).siblings('.custom-search-dropdown');
     let hasMatch = false;
