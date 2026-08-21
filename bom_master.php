@@ -133,10 +133,14 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 700; color: #475569; t
     max-width: 560px;
     margin: 40px auto;
 }
+
+/* VIEW MODAL WIDTH & RESPONSIVENESS FIX */
 .modal-dialog-compact-view {
-    max-width: 760px;
-    margin: 40px auto;
+    width: 95% !important;
+    max-width: 880px !important;
+    margin: 30px auto !important;
 }
+
 .modal-header-compact { 
     background: #0f172a; 
     color: #ffffff; 
@@ -158,9 +162,25 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 700; color: #475569; t
 .modal-header-compact .close:hover { opacity: 1; }
 .modal-body-compact { 
     padding: 14px 16px; 
-    max-height: 480px; 
+    max-height: 500px; 
     overflow-y: auto; 
 }
+
+/* VIEW DETAILS TABLE CELL FIX */
+.modal-body-compact table th,
+.modal-body-compact table td {
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    white-space: nowrap;
+}
+
+/* RAW MATERIAL NAME AUTO-WRAP */
+.modal-body-compact table td:nth-child(2) {
+    white-space: normal !important;
+    max-width: 220px;
+    word-break: break-word;
+}
+
 .modal-footer-compact { 
     background: #f8fafc; 
     border-top: 1px solid #e2e8f0; 
@@ -169,6 +189,7 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 700; color: #475569; t
     justify-content: flex-end;
     gap: 6px;
 }
+
 .btn-row-action {
     height: 32px !important;
     width: 100% !important;
@@ -379,18 +400,18 @@ label { font-size: 11px; margin-bottom: 4px; font-weight: 700; color: #475569; t
                 <div class="modal-body modal-body-compact">
                     <div class="table-responsive" style="border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden;">
                         <table class="table table-bordered table-striped" id="bomDetailsTable_<?php echo $current_pid; ?>">
-                            <thead>
-                                <tr>
-                                    <th width="35" class="text-center">#</th>
-                                    <th>Raw Material</th>
-                                    <th class="text-center" width="50">Qty</th>
-                                    <th class="text-right" width="110">Unit Price</th>
-                                    <th class="text-center" width="60">GST %</th>
-                                    <th class="text-center" width="80">Current Stock</th>
-                                    <th class="text-center" width="80">Status</th>
-                                    <th class="text-right" width="105">Total Costing</th>
-                                </tr>
-                            </thead>
+                           <thead>
+    <tr>
+        <th width="35" class="text-center">#</th>
+        <th>Raw Material</th>
+        <th class="text-center">Qty</th>
+        <th class="text-right">Unit Price</th>
+        <th class="text-center">GST %</th>
+        <th class="text-center">Current Stock</th>
+        <th class="text-center">Status</th>
+        <th class="text-right">Total Costing</th>
+    </tr>
+</thead>
                             <tbody>
                             <?php
                             $grand_total = 0;
