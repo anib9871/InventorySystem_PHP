@@ -947,16 +947,32 @@ label {
 .btn-clear { background: #f1f5f9; color: #64748b !important; border: 1px solid #cbd5e1; }
 
 .table { margin-bottom: 0; font-size: 12px; width: 100%; }
-.table thead th { 
+
+/* STICKY TABLE HEADERS */
+.table-responsive {
+    border-radius: 6px; 
+    border: 1px solid #e2e8f0; 
+    overflow-y: auto;
+    overflow-x: auto;
+    max-height: 460px;
+}
+
+.table thead th,
+.modal-body-compact table thead th { 
     border: none !important; 
     padding: 8px 12px; 
     font-size: 11px; 
     text-transform: uppercase; 
     letter-spacing: 0.5px; 
-    background: #0f172a; 
+    background-color: #0f172a !important; 
     color: #ffffff !important; 
     white-space: nowrap;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.2);
 }
+
 .table tbody td { 
     padding: 8px 12px; 
     vertical-align: middle !important; 
@@ -1004,7 +1020,7 @@ label {
 .badge-lowstock { background: #ffedd5; color: #9a3412; padding: 3px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
 .badge-critical { background: #fee2e2; color: #991b1b; padding: 3px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
 
-/* ================= MODAL BASE STYLING ================= */
+/* ================= MODAL RESPONSIVE STYLING ================= */
 .modal {
     text-align: center;
     padding: 0 !important;
@@ -1027,13 +1043,13 @@ label {
 .modal-dialog-compact-form {
     width: 95% !important;
     max-width: 560px !important;
-    margin: 15px auto !important;
+    margin: 20px auto !important;
 }
 
 .modal-dialog-compact-view {
     width: 95% !important;
     max-width: 880px !important;
-    margin: 15px auto !important;
+    margin: 20px auto !important;
 }
 
 .modal-header-compact { 
@@ -1058,18 +1074,17 @@ label {
     color: #ffffff; 
     opacity: 0.8; 
     font-size: 18px; 
-    margin-top: 0;
-    margin-left: 8px;
+    margin: 0 0 0 8px;
 }
 .modal-header-compact .close:hover { opacity: 1; }
 
 .modal-body-compact { 
     padding: 14px 16px; 
-    max-height: calc(100vh - 160px); 
+    max-height: calc(100vh - 180px); 
     overflow-y: auto; 
+    position: relative;
 }
 
-/* MODAL TABLE CELL FIT */
 .modal-body-compact table th,
 .modal-body-compact table td {
     padding: 6px 8px !important;
@@ -1105,7 +1120,7 @@ label {
     border: none !important;
 }
 
-/* ================= MOBILE & TABLET RESPONSIVENESS ================= */
+/* ================= MOBILE BREAKPOINTS ================= */
 @media (max-width: 768px) {
     .panel-card-header {
         flex-direction: column;
