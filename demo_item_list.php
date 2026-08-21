@@ -2,8 +2,8 @@
 require_once('includes/load.php');
 // page_require_level(2);
 
-$customers = find_by_sql("SELECT * FROM customer_master ORDER BY customer_name ASC");
-$products  = find_by_sql("SELECT * FROM products ORDER BY name ASC");
+$customers = find_by_sql("SELECT * FROM customer_master ORDER BY customer_name DESC");
+$products  = find_by_sql("SELECT * FROM products ORDER BY name DESC");
 
 $swal_script = "";
 
@@ -174,15 +174,12 @@ $demo_records = find_by_sql("
 
 <?php include_once('layouts/header.php'); ?>
 <!-- jQuery aur Select2 ko bilkul upar load karein -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<style>
-.select2-container .select2-selection--single { height: 38px !important; border: 1px solid #ced4da; border-radius: 6px; padding: 5px; }
-.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px; }
-.select2-dropdown { z-index: 99999 !important; }
-</style>
+<!-- Product Search List -->
+<datalist id="productList">
+    <?php foreach ($products as $p): ?>
+        <option data-id="<?= $p['id']; ?>" value="<?= htmlspecialchars($p['name']); ?>"></option>
+    <?php endforeach; ?>
+</datalist>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
@@ -304,8 +301,8 @@ $demo_records = find_by_sql("
                         <tbody id="demoInputBody">
                             <tr>
                                 <td>
-                                   <select name="product_id[]" class="form-control form-control-sm select2-search" style="width:100%;" required>
-                                        <option value="">-- Select Product --</option>
+                                  <input type="text" class="form-control form-control-sm product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
+<input type="hidden" name="product_id[]" class="product-id-input" required>
                                         <?php foreach ($products as $p): ?>
                                             <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
                                         <?php endforeach; ?>
@@ -358,8 +355,8 @@ $demo_records = find_by_sql("
 
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
-                        <select name="edit_product_id" id="edit_product_id" class="form-control select2-search" style="width:100%;" required>
-                            <option value="">-- Select Product --</option>
+                        <input type="text" id="edit_product_name" class="form-control product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
+<input type="hidden" name="edit_product_id" id="edit_product_id" class="product-id-input" required>
                             <?php foreach ($products as $p): ?>
                                 <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
                             <?php endforeach; ?>
@@ -398,7 +395,6 @@ $demo_records = find_by_sql("
 document.getElementById("demoSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
     let rows  = document.querySelectorAll("#demoTable tbody tr");
-
     rows.forEach(row => {
         let text = row.innerText.toLowerCase();
         row.style.display = text.indexOf(value) > -1 ? "" : "none";
@@ -410,91 +406,65 @@ function filterStatus(status) {
     let rows = document.querySelectorAll("#demoTable tbody tr");
     rows.forEach(row => {
         let rowStatus = row.getAttribute("data-status");
-        if (status === 'ALL' || rowStatus === status) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
+        row.style.display = (status === 'ALL' || rowStatus === status) ? "" : "none";
     });
 }
 
-// Select2 initialize function
-function applySelect2(context) {
-    var $targets = context ? $(context).find('.select2-search') : $('.select2-search');
-    $targets.each(function() {
-        var modal = $(this).closest('.modal');
-        $(this).select2({
-            dropdownParent: modal.length ? modal : $(document.body),
-            width: '100%',
-            placeholder: '-- Select Option --'
-        });
-    });
-}
+// Auto map typed product name to hidden product_id
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('product-search-input')) {
+        let inputVal = e.target.value;
+        let opt = document.querySelector('#productList option[value="' + CSS.escape(inputVal) + '"]');
+        let hiddenId = e.target.closest('td, .form-group').querySelector('.product-id-input');
+        hiddenId.value = opt ? opt.getAttribute('data-id') : '';
+    }
+});
 
-$(document).ready(function() {
-    applySelect2();
+// Add Dynamic Product Row
+document.getElementById("addRowBtn").addEventListener("click", function() {
+    let tbody = document.getElementById("demoInputBody");
+    let newRow = document.createElement("tr");
+    newRow.innerHTML = `
+        <td>
+            <input type="text" class="form-control form-control-sm product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
+            <input type="hidden" name="product_id[]" class="product-id-input" required>
+        </td>
+        <td>
+            <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
+        </td>
+        <td class="text-center align-middle">
+            <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
+        </td>
+    `;
+    tbody.appendChild(newRow);
+});
 
-    // Modal fully open hone par active karna
-    $('#addDemoModal').on('shown.bs.modal', function () {
-        applySelect2('#addDemoModal');
-    });
-
-    $('#editDemoModal').on('shown.bs.modal', function () {
-        applySelect2('#editDemoModal');
-    });
-
-    // Add Dynamic Product Row
-    $('#addRowBtn').on('click', function() {
-        var newRow = `
-            <tr>
-                <td>
-                    <select name="product_id[]" class="form-control form-control-sm select2-search" style="width:100%;" required>
-                        <option value="">-- Select Product --</option>
-                        <?php foreach ($products as $p): ?>
-                            <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td>
-                    <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
-                </td>
-                <td class="text-center align-middle">
-                    <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
-                </td>
-            </tr>
-        `;
-        $('#demoInputBody').append(newRow);
-        applySelect2('#demoInputBody');
-    });
-
-    // Remove Row
-    $(document).on('click', '.removeRow', function() {
-        if ($('#demoInputBody tr').length > 1) {
-            $(this).closest('tr').remove();
+// Remove Row
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("removeRow")) {
+        let rows = document.querySelectorAll("#demoInputBody tr");
+        if (rows.length > 1) {
+            e.target.closest("tr").remove();
         } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Note',
-                text: 'At least one product is required!',
-                confirmColor: '#2563eb'
-            });
+            Swal.fire({ icon: 'warning', title: 'Note', text: 'At least one product is required!', confirmColor: '#2563eb' });
         }
-    });
+    }
+});
 
-    // Edit Button Click
-    $(document).on('click', '.btn-edit', function() {
-        var btn = $(this);
-        $('#edit_demo_id').val(btn.data('id'));
-        $('#edit_qty').val(btn.data('qty'));
-        $('#edit_status').val(btn.data('status'));
+// Edit Button Click
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("btn-edit")) {
+        let btn = e.target;
+        document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
+        document.getElementById("edit_customer_id").value = btn.getAttribute("data-customer_id");
+        document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
+        document.getElementById("edit_status").value = btn.getAttribute("data-status");
+
+        document.getElementById("edit_product_name").value = btn.getAttribute("data-product_name");
+        document.getElementById("edit_product_id").value = btn.getAttribute("data-product_id");
 
         $('#editDemoModal').modal('show');
-
-        setTimeout(function() {
-            $('#edit_customer_id').val(btn.data('customer_id')).trigger('change');
-            $('#edit_product_id').val(btn.data('product_id')).trigger('change');
-        }, 200);
-    });
+    }
 });
 </script>
 
