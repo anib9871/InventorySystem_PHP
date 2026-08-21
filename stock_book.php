@@ -342,6 +342,13 @@ body {
                 AND d.status = 1
             ), 0) AS demo_hold_qty
 
+(
+    SELECT GROUP_CONCAT(CONCAT('• ', c.customer_name, ' (', d.qty, ' PCS)') SEPARATOR '<br>')
+    FROM demo_item_detail d
+    LEFT JOIN customer_master c ON d.customer_id = c.id
+    WHERE d.product_id = p.id AND d.status = 1
+) AS demo_client_details
+            
             FROM products p
 
             LEFT JOIN transaction_master t
@@ -418,8 +425,21 @@ body {
                         </td>
 
                         <!-- Demo Stock with Clients -->
-                        <td style="color:#d9534f; font-weight:bold;" class="text-center">
-                            <?= $display_demo > 0 ? $display_demo : '0'; ?>
+                        <!-- Demo Stock with Clients (Hover Tooltip) -->
+                        <td class="text-center">
+                            <?php if ($display_demo > 0): ?>
+                                <span class="demo-hold-badge" 
+                                      data-toggle="popover" 
+                                      data-trigger="hover" 
+                                      data-placement="top" 
+                                      data-html="true" 
+                                      title="<b>Demo Dispatched To:</b>" 
+                                      data-content="<?= htmlspecialchars($row['demo_client_details'] ?? 'Details not found'); ?>">
+                                    <?= $display_demo; ?>
+                                </span>
+                            <?php else: ?>
+                                <span style="color:#64748b; font-weight:bold;">0</span>
+                            <?php endif; ?>
                         </td>
 
                         <!-- Free Available Stock -->
@@ -521,6 +541,12 @@ headers.forEach((header) => {
         }
 
         asc = !asc;
+    });
+});
+$(document).ready(function(){
+    $('[data-toggle="popover"]').popover({
+        html: true,
+        trigger: 'hover'
     });
 });
 </script>
