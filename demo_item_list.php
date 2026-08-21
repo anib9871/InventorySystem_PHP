@@ -177,13 +177,61 @@ $demo_records = find_by_sql("
 
 <!-- Select2 CSS for searchable dropdowns -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 <style>
-    .select2-container { width: 100% !important; }
+    /* Compact Modal Structure */
+    .modal-compact {
+        max-width: 520px;
+        margin: 1.75rem auto;
+    }
+    .modal-compact .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .modal-compact .modal-header {
+        padding: 12px 18px;
+        background: #0f172a;
+        color: #fff;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    .modal-compact .modal-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #fff;
+    }
+    .modal-compact .modal-header .close {
+        color: #fff;
+        opacity: 0.8;
+        padding: 10px;
+        margin: -10px -10px -10px auto;
+    }
+    .modal-compact .modal-body {
+        padding: 16px 18px;
+    }
+    .modal-compact .modal-footer {
+        padding: 10px 18px;
+        background: #f8fafc;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    /* Select2 Compact Fix */
+    .select2-container { 
+        width: 100% !important; 
+    }
     .select2-container--default .select2-selection--single {
-        height: 38px;
-        padding: 5px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
+        height: 36px !important;
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        top: 5px !important;
     }
 </style>
 
@@ -275,61 +323,66 @@ $demo_records = find_by_sql("
     </div>
 </div>
 
-<!-- ================= ADD DEMO DISPATCH MODAL ================= -->
+<!-- ================= ADD DEMO DISPATCH MODAL (COMPACT) ================= -->
 <div class="modal fade" id="addDemoModal" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-compact" role="document">
         <form method="post">
-            <div class="modal-content modal-content-compact">
-                <div class="modal-header modal-header-compact">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title">New Demo Item Dispatch</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body">
+                    <!-- Customer Select -->
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold mb-1" style="font-size:12px;">Select Customer</label>
+                        <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase; letter-spacing: 0.5px;">Select Customer</label>
                         <select name="customer_id" class="form-control select2-search" required>
-                            <option value="">-- Select Customer --</option>
+                            <option value="">-- Search Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <label class="font-weight-bold mb-1" style="font-size:12px;">Demo Products</label>
-                    <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px;">
-                        <thead>
-                            <tr class="bg-light" style="font-size:12px;">
-                                <th width="65%">Product</th>
-                                <th width="25%">Qty</th>
-                                <th width="10%"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="demoInputBody">
-                            <tr>
-                                <td>
-                                    <select name="product_id[]" class="form-control product-select" required>
-                                        <option value="">-- Search / Select Product --</option>
-                                        <?php foreach ($products as $p): ?>
-                                            <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" name="qty[]" class="form-control text-center" value="1" min="1" required>
-                                </td>
-                                <td class="text-center align-middle">
-                                    <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold" id="addRowBtn" style="border-radius:8px; font-size:12px;">
-                        ➕ Add More Product
-                    </button>
+                    <!-- Demo Products -->
+                    <div class="form-group mb-2">
+                        <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase; letter-spacing: 0.5px;">Demo Products</label>
+                        <table class="table table-sm table-borderless mb-2" id="demoInputTable">
+                            <thead>
+                                <tr style="font-size:11px; color:#64748b;">
+                                    <th width="60%" class="p-1">PRODUCT</th>
+                                    <th width="28%" class="p-1 text-center">QTY</th>
+                                    <th width="12%" class="p-1"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="demoInputBody">
+                                <tr>
+                                    <td class="p-1">
+                                        <select name="product_id[]" class="form-control form-control-sm product-select" required>
+                                            <option value="">-- Search Product --</option>
+                                            <?php foreach ($products as $p): ?>
+                                                <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td class="p-1">
+                                        <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" style="height:36px; border-radius:6px;" required>
+                                    </td>
+                                    <td class="p-1 text-center align-middle">
+                                        <button type="button" class="btn btn-outline-danger btn-sm removeRow" style="height:36px; width:36px; border-radius:6px; padding:0;">✕</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <button type="button" class="btn btn-sm btn-light border font-weight-bold text-primary" id="addRowBtn" style="border-radius:6px; font-size:12px; padding: 4px 10px;">
+                            + Add Product
+                        </button>
+                    </div>
                 </div>
-                <div class="modal-footer bg-light" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; padding: 12px 20px;">
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Cancel</button>
-                    <button type="submit" name="save_demo_item" class="btn btn-success btn-sm font-weight-bold" style="border-radius:8px; padding: 6px 18px;">
+                <div class="modal-footer d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:6px; font-size:13px; padding:5px 14px;">Cancel</button>
+                    <button type="submit" name="save_demo_item" class="btn btn-success btn-sm font-weight-bold" style="border-radius:6px; font-size:13px; padding:5px 16px;">
                         Dispatch Demo
                     </button>
                 </div>
@@ -338,21 +391,21 @@ $demo_records = find_by_sql("
     </div>
 </div>
 
-<!-- ================= EDIT DEMO MODAL ================= -->
+<!-- ================= EDIT DEMO MODAL (COMPACT) ================= -->
 <div class="modal fade" id="editDemoModal" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-compact" role="document">
         <form method="post">
             <input type="hidden" name="edit_demo_id" id="edit_demo_id">
-            <div class="modal-content modal-content-compact">
-                <div class="modal-header modal-header-compact">
+            <div class="modal-content">
+                <div class="modal-header">
                     <h5 class="modal-title">✏️ Edit Demo Item</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold mb-1" style="font-size:12px;">Customer</label>
+                        <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase;">Customer</label>
                         <select name="edit_customer_id" id="edit_customer_id" class="form-control select2-edit" required>
-                            <option value="">-- Select Customer --</option>
+                            <option value="">-- Search Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
                             <?php endforeach; ?>
@@ -360,9 +413,9 @@ $demo_records = find_by_sql("
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
+                        <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase;">Product</label>
                         <select name="edit_product_id" id="edit_product_id" class="form-control select2-edit" required>
-                            <option value="">-- Search / Select Product --</option>
+                            <option value="">-- Search Product --</option>
                             <?php foreach ($products as $p): ?>
                                 <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
                             <?php endforeach; ?>
@@ -371,21 +424,21 @@ $demo_records = find_by_sql("
 
                     <div class="row">
                         <div class="col-md-6 form-group mb-3">
-                            <label class="font-weight-bold mb-1" style="font-size:12px;">Quantity</label>
-                            <input type="number" name="edit_qty" id="edit_qty" class="form-control text-center" min="1" required>
+                            <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase;">Quantity</label>
+                            <input type="number" name="edit_qty" id="edit_qty" class="form-control text-center" min="1" style="height:36px; border-radius:6px;" required>
                         </div>
                         <div class="col-md-6 form-group mb-3">
-                            <label class="font-weight-bold mb-1" style="font-size:12px;">Status</label>
-                            <select name="edit_status" id="edit_status" class="form-control" required>
+                            <label class="font-weight-bold text-muted mb-1" style="font-size:11px; text-transform: uppercase;">Status</label>
+                            <select name="edit_status" id="edit_status" class="form-control" style="height:36px; border-radius:6px;" required>
                                 <option value="1">🟡 Active (On Demo)</option>
                                 <option value="0">🟢 Completed</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; padding: 12px 20px;">
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:8px;">Cancel</button>
-                    <button type="submit" name="update_demo_item" class="btn btn-primary btn-sm font-weight-bold" style="border-radius:8px; padding: 6px 18px;">
+                <div class="modal-footer d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" style="border-radius:6px; font-size:13px; padding:5px 14px;">Cancel</button>
+                    <button type="submit" name="update_demo_item" class="btn btn-primary btn-sm font-weight-bold" style="border-radius:6px; font-size:13px; padding:5px 16px;">
                         Update Record
                     </button>
                 </div>
@@ -409,7 +462,7 @@ $(document).ready(function() {
         });
     }
 
-    // Modal open hone par initialize karein
+    // Modal open hone par Select2 initialize
     $('#addDemoModal').on('shown.bs.modal', function () {
         initSelect2('.select2-search', '#addDemoModal');
         initSelect2('.product-select', '#addDemoModal');
@@ -419,7 +472,7 @@ $(document).ready(function() {
         initSelect2('.select2-edit', '#editDemoModal');
     });
 
-    // Dynamic Row Add with Select2 re-init
+    // Dynamic Row Add with Select2 support
     $('#addRowBtn').on('click', function() {
         let firstRow = $('#demoInputBody tr:first');
         firstRow.find('.product-select').select2('destroy');
