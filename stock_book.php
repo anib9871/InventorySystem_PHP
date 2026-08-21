@@ -118,7 +118,7 @@ body {
     text-decoration: none !important;
 }
 
-/* HOVER BADGE & POPOVER STYLES */
+/* HOVER BADGE STYLING */
 .demo-hold-badge {
     color: #dc2626;
     font-weight: bold;
@@ -133,20 +133,14 @@ body {
     background-color: #fee2e2;
 }
 
-.popover-header {
+/* Tooltip Custom Width & Multi-line Fix */
+.tooltip-inner {
+    max-width: 300px !important;
+    text-align: left !important;
+    white-space: pre-line !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
     background-color: #0f172a !important;
-    color: #ffffff !important;
-    font-size: 12px;
-    font-weight: 600;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-.popover-body {
-    font-size: 12px;
-    padding: 8px 12px;
-    color: #334155;
-    line-height: 1.5;
 }
 
 /* GREEN BUTTON MATCHED WITH ORGANIZATION MASTER */
@@ -187,7 +181,7 @@ body {
         -webkit-overflow-scrolling: touch;
     }
     #stockTable {
-        min-width: 680px; /* Mobile par clean scroll layout */
+        min-width: 680px;
     }
 }
 
@@ -225,7 +219,7 @@ body {
     #stockSearch, 
     .reorder-pencil, 
     .web-link,
-    .popover,
+    .tooltip,
     .dataTables_filter {
         display: none !important;
     }
@@ -392,9 +386,9 @@ body {
                 AND d.status = 1
             ), 0) AS demo_hold_qty,
 
-            -- Group Concatenated Client Details for Hover View
+            -- Plain Text Client Details for Tooltip Hover
             (
-                SELECT GROUP_CONCAT(CONCAT('• ', c.customer_name, ' (', d.qty, ' PCS)') SEPARATOR '<br>')
+                SELECT GROUP_CONCAT(CONCAT('• ', c.customer_name, ' (', d.qty, ' PCS)') SEPARATOR '\n')
                 FROM demo_item_detail d
                 LEFT JOIN customer_master c ON d.customer_id = c.id
                 WHERE d.product_id = p.id
@@ -476,16 +470,18 @@ body {
                             <?= htmlspecialchars($row['name']); ?>
                         </td>
 
-                        <!-- Demo Stock with Clients (Hover Tooltip) -->
+                        <!-- Demo Stock with Clients (Clean Tooltip Display) -->
                         <td class="text-center">
                             <?php if ($display_demo > 0): ?>
+                                <?php 
+                                    $tooltip_text = !empty($row['demo_client_details']) 
+                                        ? "Demo With:\n" . $row['demo_client_details'] 
+                                        : "Client details not found";
+                                ?>
                                 <span class="demo-hold-badge" 
-                                      data-toggle="popover" 
-                                      data-trigger="hover" 
+                                      data-toggle="tooltip" 
                                       data-placement="top" 
-                                      data-html="true" 
-                                      title="<b>Demo Dispatched To:</b>" 
-                                      data-content="<?= htmlspecialchars($row['demo_client_details'] ?? 'Details not found'); ?>">
+                                      title="<?= htmlspecialchars($tooltip_text, ENT_QUOTES, 'UTF-8'); ?>">
                                     <?= $display_demo; ?>
                                 </span>
                             <?php else: ?>
@@ -595,11 +591,10 @@ headers.forEach((header) => {
     });
 });
 
-// Initialize Bootstrap Popovers for Hover Details
+// Initialize Bootstrap Tooltips for Hover Details
 $(document).ready(function(){
-    $('[data-toggle="popover"]').popover({
-        html: true,
-        trigger: 'hover'
+    $('[data-toggle="tooltip"]').tooltip({
+        container: 'body'
     });
 });
 </script>
