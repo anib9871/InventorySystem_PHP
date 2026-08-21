@@ -173,13 +173,6 @@ $demo_records = find_by_sql("
 ?>
 
 <?php include_once('layouts/header.php'); ?>
-<!-- jQuery aur Select2 ko bilkul upar load karein -->
-<!-- Product Search List -->
-<datalist id="productList">
-    <?php foreach ($products as $p): ?>
-        <option data-id="<?= $p['id']; ?>" value="<?= htmlspecialchars($p['name']); ?>"></option>
-    <?php endforeach; ?>
-</datalist>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
@@ -245,14 +238,15 @@ $demo_records = find_by_sql("
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-primary btn-edit" 
-                                            style="border-radius:6px; padding:2px 8px;"
-                                            data-id="<?= $row['id']; ?>"
-                                            data-customer_id="<?= $row['customer_id']; ?>"
-                                            data-product_id="<?= $row['product_id']; ?>"
-                                            data-qty="<?= $row['qty']; ?>"
-                                            data-status="<?= $row['status']; ?>">
+                                   <button type="button" 
+        class="btn btn-sm btn-outline-primary btn-edit" 
+        style="border-radius:6px; padding:2px 8px;"
+        data-id="<?= $row['id']; ?>"
+        data-customer_id="<?= $row['customer_id']; ?>"
+        data-product_id="<?= $row['product_id']; ?>"
+        data-product_name="<?= htmlspecialchars($row['product_name'] ?? ''); ?>"
+        data-qty="<?= $row['qty']; ?>"
+        data-status="<?= $row['status']; ?>">
                                         ✏️ Edit
                                     </button>
                                 </td>
@@ -300,14 +294,19 @@ $demo_records = find_by_sql("
                         </thead>
                         <tbody id="demoInputBody">
                             <tr>
-                                <td>
-                                  <input type="text" class="form-control form-control-sm product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
-<input type="hidden" name="product_id[]" class="product-id-input" required>
-                                        <?php foreach ($products as $p): ?>
-                                            <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
+<td>
+    <div class="search-wrapper">
+        <input type="text" class="form-control form-control-sm product-search-input" placeholder="Type to select product..." autocomplete="off" required>
+        <input type="hidden" name="product_id[]" class="product-id-input" required>
+        <div class="custom-search-dropdown">
+            <?php foreach ($products as $p): ?>
+                <div class="search-item" data-id="<?= $p['id']; ?>" data-name="<?= htmlspecialchars($p['name']); ?>">
+                    <?= htmlspecialchars($p['name']); ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</td>
                                 <td>
                                     <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
                                 </td>
@@ -353,15 +352,20 @@ $demo_records = find_by_sql("
                         </select>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
-                        <input type="text" id="edit_product_name" class="form-control product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
-<input type="hidden" name="edit_product_id" id="edit_product_id" class="product-id-input" required>
-                            <?php foreach ($products as $p): ?>
-                                <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+<div class="form-group mb-3">
+    <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
+    <div class="search-wrapper">
+        <input type="text" id="edit_product_name" class="form-control product-search-input" placeholder="Type to select product..." autocomplete="off" required>
+        <input type="hidden" name="edit_product_id" id="edit_product_id" class="product-id-input" required>
+        <div class="custom-search-dropdown">
+            <?php foreach ($products as $p): ?>
+                <div class="search-item" data-id="<?= $p['id']; ?>" data-name="<?= htmlspecialchars($p['name']); ?>">
+                    <?= htmlspecialchars($p['name']); ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
 
                     <div class="row">
                         <div class="col-md-6 form-group mb-3">
@@ -391,13 +395,12 @@ $demo_records = find_by_sql("
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-// Search Filter for Table
+// Main Table Filter
 document.getElementById("demoSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
     let rows  = document.querySelectorAll("#demoTable tbody tr");
     rows.forEach(row => {
-        let text = row.innerText.toLowerCase();
-        row.style.display = text.indexOf(value) > -1 ? "" : "none";
+        row.style.display = row.innerText.toLowerCase().indexOf(value) > -1 ? "" : "none";
     });
 });
 
@@ -410,61 +413,84 @@ function filterStatus(status) {
     });
 }
 
-// Auto map typed product name to hidden product_id
-document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('product-search-input')) {
-        let inputVal = e.target.value;
-        let opt = document.querySelector('#productList option[value="' + CSS.escape(inputVal) + '"]');
-        let hiddenId = e.target.closest('td, .form-group').querySelector('.product-id-input');
-        hiddenId.value = opt ? opt.getAttribute('data-id') : '';
+// Open and filter dropdown on focus/typing
+$(document).on('focus keyup', '.product-search-input', function() {
+    let val = $(this).val().toLowerCase();
+    let $dropdown = $(this).siblings('.custom-search-dropdown');
+    let hasMatch = false;
+
+    $dropdown.find('.search-item').each(function() {
+        let text = $(this).text().toLowerCase();
+        if (text.indexOf(val) > -1) {
+            $(this).show();
+            hasMatch = true;
+        } else {
+            $(this).hide();
+        }
+    });
+
+    $('.custom-search-dropdown').not($dropdown).hide();
+    if (hasMatch) {
+        $dropdown.show();
+    } else {
+        $dropdown.hide();
     }
 });
 
-// Add Dynamic Product Row
-document.getElementById("addRowBtn").addEventListener("click", function() {
-    let tbody = document.getElementById("demoInputBody");
-    let newRow = document.createElement("tr");
-    newRow.innerHTML = `
-        <td>
-            <input type="text" class="form-control form-control-sm product-search-input" list="productList" placeholder="🔍 Type product name..." autocomplete="off" required>
-            <input type="hidden" name="product_id[]" class="product-id-input" required>
-        </td>
-        <td>
-            <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
-        </td>
-        <td class="text-center align-middle">
-            <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
-        </td>
-    `;
-    tbody.appendChild(newRow);
+// Select product from list
+$(document).on('click', '.search-item', function() {
+    let id = $(this).data('id');
+    let name = $(this).data('name');
+    let $wrapper = $(this).closest('.search-wrapper');
+
+    $wrapper.find('.product-search-input').val(name);
+    $wrapper.find('.product-id-input').val(id);
+    $wrapper.find('.custom-search-dropdown').hide();
+});
+
+// Close list on clicking outside
+$(document).on('click', function(e) {
+    if (!$(e.target).closest('.search-wrapper').length) {
+        $('.custom-search-dropdown').hide();
+    }
+});
+
+// Add Dynamic Row
+$('#addRowBtn').on('click', function() {
+    let $firstRow = $('#demoInputBody tr:first').clone();
+    $firstRow.find('.product-search-input').val('');
+    $firstRow.find('.product-id-input').val('');
+    $firstRow.find('input[type="number"]').val(1);
+    $firstRow.find('.custom-search-dropdown').hide();
+    $('#demoInputBody').append($firstRow);
 });
 
 // Remove Row
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("removeRow")) {
-        let rows = document.querySelectorAll("#demoInputBody tr");
-        if (rows.length > 1) {
-            e.target.closest("tr").remove();
-        } else {
-            Swal.fire({ icon: 'warning', title: 'Note', text: 'At least one product is required!', confirmColor: '#2563eb' });
-        }
+$(document).on('click', '.removeRow', function() {
+    if ($('#demoInputBody tr').length > 1) {
+        $(this).closest('tr').remove();
+    } else {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Note',
+            text: 'At least one product is required!',
+            confirmColor: '#2563eb'
+        });
     }
 });
 
 // Edit Button Click
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("btn-edit")) {
-        let btn = e.target;
-        document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
-        document.getElementById("edit_customer_id").value = btn.getAttribute("data-customer_id");
-        document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
-        document.getElementById("edit_status").value = btn.getAttribute("data-status");
+$(document).on('click', '.btn-edit', function() {
+    let btn = $(this);
+    $('#edit_demo_id').val(btn.data('id'));
+    $('#edit_customer_id').val(btn.data('customer_id'));
+    $('#edit_qty').val(btn.data('qty'));
+    $('#edit_status').val(btn.data('status'));
 
-        document.getElementById("edit_product_name").value = btn.getAttribute("data-product_name");
-        document.getElementById("edit_product_id").value = btn.getAttribute("data-product_id");
+    $('#edit_product_id').val(btn.data('product_id'));
+    $('#edit_product_name').val(btn.data('product_name'));
 
-        $('#editDemoModal').modal('show');
-    }
+    $('#editDemoModal').modal('show');
 });
 </script>
 
