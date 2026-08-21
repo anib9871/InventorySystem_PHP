@@ -173,6 +173,57 @@ $demo_records = find_by_sql("
 ?>
 
 <?php include_once('layouts/header.php'); ?>
+<style>
+/* Dropdown container */
+.search-wrapper {
+    position: relative !important;
+    width: 100% !important;
+}
+
+/* Custom Dropdown List */
+.custom-search-dropdown {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-width: 260px !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+    z-index: 9999999 !important;
+    display: none;
+    margin-top: 2px !important;
+}
+
+/* Dropdown list items */
+.search-item {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    color: #1e293b !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    text-align: left !important;
+    background: #ffffff !important;
+    display: block !important;
+}
+
+.search-item:hover {
+    background-color: #eff6ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+/* Dropdown clipping prevent karne ke liye */
+#addDemoModal .modal-body,
+#editDemoModal .modal-body,
+#demoInputTable,
+#demoInputTable td {
+    overflow: visible !important;
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
