@@ -217,10 +217,61 @@ if ($report_type == 'customer' && !empty($filter_id)) {
 
 $pq .= " GROUP BY t.product_id, p.name";
 
-$product_data   = find_by_sql($pq);
-$product_labels = array_column($product_data, 'name');
-$product_qty    = array_column($product_data, 'qty');
-$product_price  = array_column($product_data, 'price');
+/* ═══════════════════════════════════════
+   5. PRODUCT COMPARISON BY CENTER DATA
+═══════════════════════════════════════ */
+$comp_q = "
+SELECT 
+    p.name AS product_name,
+    IFNULL(mc.center_name, 'Main Center') AS center_name,
+    SUM(t.sale_net) AS total_amount
+FROM transaction_master t
+LEFT JOIN products p ON p.id = t.product_id
+LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
+LEFT JOIN master_center mc ON mc.center_id = t.center_id
+WHERE t.transaction_type = 2
+AND t.sale_net > 0
+AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3) {
+    $comp_q .= " AND t.center_id = '{$user_center}'";
+} elseif ($role_id == 2 && !empty($center_filter)) {
+    $comp_q .= " AND t.center_id = '{$center_filter}'";
+}
+
+if ($report_type == 'product' && !empty($filter_id)) {
+    $comp_q .= " AND t.product_id = '{$filter_id}'";
+}
+
+$comp_q .= " GROUP BY p.id, p.name, mc.center_id, mc.center_name ORDER BY total_amount DESC";
+$comp_data = find_by_sql($comp_q);
+
+$distinct_products = array_values(array_unique(array_column($comp_data, 'product_name')));
+$distinct_centers  = array_values(array_unique(array_column($comp_data, 'center_name')));
+
+$palette = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#db2777', '#ea580c'];
+
+$center_datasets = [];
+foreach ($distinct_centers as $c_idx => $c_name) {
+    $data_points = [];
+    foreach ($distinct_products as $p_name) {
+        $val = 0;
+        foreach ($comp_data as $row) {
+            if ($row['product_name'] === $p_name && $row['center_name'] === $c_name) {
+                $val = (float)$row['total_amount'];
+                break;
+            }
+        }
+        $data_points[] = $val;
+    }
+    $center_datasets[] = [
+        'label' => $c_name,
+        'data'  => $data_points,
+        'backgroundColor' => $palette[$c_idx % count($palette)],
+        'borderRadius' => 4
+    ];
+}
 
 /* ═══════════════════════════════════════
    6. CUSTOMER CHART DATA
@@ -433,43 +484,53 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     </p>
   </div>
 
-  <!-- ── FILTER (screen only) ── -->
+ <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
-  <div class="rpt-filter no-print">
-    <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control sales-datepicker" style="width:135px;" autocomplete="off" required>
-      <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control sales-datepicker" style="width:135px;" autocomplete="off" required>
+  <div class="no-print mb-2" style="margin-bottom:10px;">
+    <form method="post" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
+      <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
+      <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
 
       <?php if ($role_id == 2): ?>
-      <select name="report_type" id="report_type" class="form-control" style="width:170px;">
-        <option value="product" <?= ($report_type == 'product') ? 'selected' : '' ?>>By Product</option>
-        <option value="customer" <?= ($report_type == 'customer') ? 'selected' : '' ?>>By Customer</option>
-      </select>
+        <?php $all_centers = find_all('master_center'); ?>
+        <select name="center_id" class="form-control" style="height:32px; font-size:12px; flex:0 0 130px;">
+          <option value="">All Centers</option>
+          <?php foreach ($all_centers as $c): ?>
+            <option value="<?= $c['center_id'] ?>" <?= ($center_filter == $c['center_id']) ? 'selected' : '' ?>>
+              <?= htmlspecialchars($c['center_name']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
 
-      <?php
-      $product_list = find_by_sql("SELECT DISTINCT p.id, p.name FROM invoice_items ii INNER JOIN products p ON p.id = ii.product_id ORDER BY p.name");
-      $customer_list = find_by_sql("SELECT id, customer_name FROM customer_master ORDER BY customer_name");
-      ?>
+        <select name="report_type" id="report_type" class="form-control" style="height:32px; font-size:12px; flex:0 0 115px;">
+          <option value="product" <?= ($report_type == 'product') ? 'selected' : '' ?>>By Product</option>
+          <option value="customer" <?= ($report_type == 'customer') ? 'selected' : '' ?>>By Customer</option>
+        </select>
 
-      <select name="filter_id" class="form-control" style="width:220px;">
-        <option value="">All</option>
-        <?php if ($report_type == 'product'): ?>
-            <?php foreach ($product_list as $p): ?>
-                <option value="<?= $p['id'] ?>" <?= ($filter_id == $p['id']) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($p['name']) ?>
-                </option>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <?php foreach ($customer_list as $c): ?>
-                <option value="<?= $c['id'] ?>" <?= ($filter_id == $c['id']) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($c['customer_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        <?php endif; ?>
-      </select>
+        <?php
+        $product_list = find_by_sql("SELECT DISTINCT p.id, p.name FROM invoice_items ii INNER JOIN products p ON p.id = ii.product_id ORDER BY p.name");
+        $customer_list = find_by_sql("SELECT id, customer_name FROM customer_master ORDER BY customer_name");
+        ?>
+
+        <select name="filter_id" class="form-control" style="height:32px; font-size:12px; flex:1 1 auto; min-width:130px;">
+          <option value="">All</option>
+          <?php if ($report_type == 'product'): ?>
+              <?php foreach ($product_list as $p): ?>
+                  <option value="<?= $p['id'] ?>" <?= ($filter_id == $p['id']) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($p['name']) ?>
+                  </option>
+              <?php endforeach; ?>
+          <?php else: ?>
+              <?php foreach ($customer_list as $c): ?>
+                  <option value="<?= $c['id'] ?>" <?= ($filter_id == $c['id']) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($c['customer_name']) ?>
+                  </option>
+              <?php endforeach; ?>
+          <?php endif; ?>
+        </select>
       <?php endif; ?>
 
-      <button type="submit" name="generate_report" value="1" class="btn btn-primary">
+      <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
         <i class="fa fa-file-text-o"></i> Generate Report
       </button>
 
@@ -485,8 +546,8 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           $pdf_params['center_id'] = $center_filter;
       }
       ?>
-      <a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">
-          &#8659; Download PDF
+      <a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn" style="height:32px; font-size:12px; display:inline-flex; align-items:center; white-space:nowrap; background:#dc2626; color:#fff; border-radius:4px; padding:0 12px; text-decoration:none;">
+        &#8659; Download PDF
       </a>
 
       <input type="hidden" name="change_type" id="change_type" value="0">
@@ -737,47 +798,42 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 <?php } ?>
 
 <script>
-/* ── Product Bar ── */
+/* ── Product Comparison by Center Bar Chart ── */
 new Chart(document.getElementById('productChart'), {
   type: 'bar',
   data: {
-    labels: <?= json_encode($product_labels) ?>,
-    datasets: [{
-      label: 'Sold Qty',
-      data: <?= json_encode($product_qty) ?>,
-      borderWidth: 1,
-      borderRadius: 4,
-      backgroundColor: 'rgba(37,99,235,.72)',
-      borderColor: '#2563eb'
-    }]
+    labels: <?= json_encode($distinct_products) ?>,
+    datasets: <?= json_encode($center_datasets) ?>
   },
   options: {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display:false },
+      legend: {
+        display: <?= count($distinct_centers) > 1 ? 'true' : 'false' ?>,
+        position: 'top',
+        labels: { boxWidth: 10, font: { size: 9 } }
+      },
       tooltip: {
         callbacks: {
-          title: function(context){ return context[0].label; },
           label: function(context){
-            var price = <?= json_encode($product_price) ?>[context.dataIndex];
-            return [
-                'Qty : ' + context.raw,
-                'Price : ₹ ' + Number(price).toLocaleString('en-IN',{
-                    minimumFractionDigits:2,
-                    maximumFractionDigits:2
-                })
-            ];
+            return context.dataset.label + ': ₹ ' + Number(context.raw).toLocaleString('en-IN',{
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            });
           }
         }
       }
     },
-    scales: {
-      x: { grid: { display:false }, ticks: { display:false } },
+  scales: {
+      x: {
+        grid: { display: false },
+        ticks: { display: false }
+      },
       y: {
         beginAtZero: true,
         grace: '5%',
-        ticks: { stepSize: 1, precision: 0, font: { size: 9 } },
+        ticks: { font: { size: 9 } },
         grid: { color: 'rgba(0,0,0,.04)' }
       }
     }
