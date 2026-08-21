@@ -387,6 +387,8 @@ $demo_records = find_by_sql("
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 // Search Filter
 document.getElementById("demoSearch").addEventListener("keyup", function() {
@@ -412,13 +414,29 @@ function filterStatus(status) {
     });
 }
 
+// Select2 Initialization
+function initSelect2() {
+    $('.select2-search').each(function() {
+        var modal = $(this).closest('.modal');
+        $(this).select2({
+            dropdownParent: modal.length ? modal : $(document.body),
+            width: '100%'
+        });
+    });
+}
+
 // Add Dynamic Product Row
 document.getElementById("addRowBtn").addEventListener("click", function() {
     let tbody = document.getElementById("demoInputBody");
     let firstRow = tbody.querySelector("tr").cloneNode(true);
     firstRow.querySelector("input").value = 1;
-    firstRow.querySelector("select").value = "";
+    
+    // Reset select2 in cloned row
+    let select = firstRow.querySelector("select");
+    $(select).val('').removeClass("select2-hidden-accessible").next(".select2-container").remove();
+
     tbody.appendChild(firstRow);
+    setTimeout(initSelect2, 50);
 });
 
 // Remove Row
@@ -443,42 +461,24 @@ document.addEventListener("click", function(e) {
     if (e.target.classList.contains("btn-edit")) {
         let btn = e.target;
         document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
-        document.getElementById("edit_customer_id").value = btn.getAttribute("data-customer_id");
-        document.getElementById("edit_product_id").value = btn.getAttribute("data-product_id");
         document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
         document.getElementById("edit_status").value = btn.getAttribute("data-status");
+
+        $('#edit_customer_id').val(btn.getAttribute("data-customer_id")).trigger('change');
+        $('#edit_product_id').val(btn.getAttribute("data-product_id")).trigger('change');
 
         $('#editDemoModal').modal('show');
     }
 });
 
-<!-- Yeh JS script tag footer se theek pehle lagayein -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-function initSelect2() {
-    $('.select2-search').each(function() {
-        var modal = $(this).closest('.modal');
-        $(this).select2({
-            dropdownParent: modal.length ? modal : $(document.body),
-            width: '100%'
-        });
-    });
-}
-
 $(document).ready(function() {
     initSelect2();
 
-    // Modal khulte hi search load hoga
     $('#addDemoModal, #editDemoModal').on('shown.bs.modal', function () {
         initSelect2();
     });
-
-    // Add More Product button par search connect hoga
-    $('#addRowBtn').on('click', function() {
-        setTimeout(initSelect2, 50);
-    });
 });
-
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
+
