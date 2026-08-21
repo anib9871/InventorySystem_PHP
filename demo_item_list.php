@@ -173,7 +173,11 @@ $demo_records = find_by_sql("
 ?>
 
 <?php include_once('layouts/header.php'); ?>
+<!-- jQuery aur Select2 ko bilkul upar load karein -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <style>
 .select2-container .select2-selection--single { height: 38px !important; border: 1px solid #ced4da; border-radius: 6px; padding: 5px; }
 .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px; }
@@ -390,7 +394,7 @@ $demo_records = find_by_sql("
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-// Search Filter
+// Search Filter for Table
 document.getElementById("demoSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
     let rows  = document.querySelectorAll("#demoTable tbody tr");
@@ -414,37 +418,59 @@ function filterStatus(status) {
     });
 }
 
-// Select2 Initialization
-function initSelect2() {
-    $('.select2-search').each(function() {
+// Select2 initialize function
+function applySelect2(context) {
+    var $targets = context ? $(context).find('.select2-search') : $('.select2-search');
+    $targets.each(function() {
         var modal = $(this).closest('.modal');
         $(this).select2({
             dropdownParent: modal.length ? modal : $(document.body),
-            width: '100%'
+            width: '100%',
+            placeholder: '-- Select Option --'
         });
     });
 }
 
-// Add Dynamic Product Row
-document.getElementById("addRowBtn").addEventListener("click", function() {
-    let tbody = document.getElementById("demoInputBody");
-    let firstRow = tbody.querySelector("tr").cloneNode(true);
-    firstRow.querySelector("input").value = 1;
-    
-    // Reset select2 in cloned row
-    let select = firstRow.querySelector("select");
-    $(select).val('').removeClass("select2-hidden-accessible").next(".select2-container").remove();
+$(document).ready(function() {
+    applySelect2();
 
-    tbody.appendChild(firstRow);
-    setTimeout(initSelect2, 50);
-});
+    // Modal fully open hone par active karna
+    $('#addDemoModal').on('shown.bs.modal', function () {
+        applySelect2('#addDemoModal');
+    });
 
-// Remove Row
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("removeRow")) {
-        let rows = document.querySelectorAll("#demoInputBody tr");
-        if (rows.length > 1) {
-            e.target.closest("tr").remove();
+    $('#editDemoModal').on('shown.bs.modal', function () {
+        applySelect2('#editDemoModal');
+    });
+
+    // Add Dynamic Product Row
+    $('#addRowBtn').on('click', function() {
+        var newRow = `
+            <tr>
+                <td>
+                    <select name="product_id[]" class="form-control form-control-sm select2-search" style="width:100%;" required>
+                        <option value="">-- Select Product --</option>
+                        <?php foreach ($products as $p): ?>
+                            <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
+                </td>
+                <td class="text-center align-middle">
+                    <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
+                </td>
+            </tr>
+        `;
+        $('#demoInputBody').append(newRow);
+        applySelect2('#demoInputBody');
+    });
+
+    // Remove Row
+    $(document).on('click', '.removeRow', function() {
+        if ($('#demoInputBody tr').length > 1) {
+            $(this).closest('tr').remove();
         } else {
             Swal.fire({
                 icon: 'warning',
@@ -453,29 +479,21 @@ document.addEventListener("click", function(e) {
                 confirmColor: '#2563eb'
             });
         }
-    }
-});
+    });
 
-// Edit Button Click - Open Modal with Data
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("btn-edit")) {
-        let btn = e.target;
-        document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
-        document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
-        document.getElementById("edit_status").value = btn.getAttribute("data-status");
-
-        $('#edit_customer_id').val(btn.getAttribute("data-customer_id")).trigger('change');
-        $('#edit_product_id').val(btn.getAttribute("data-product_id")).trigger('change');
+    // Edit Button Click
+    $(document).on('click', '.btn-edit', function() {
+        var btn = $(this);
+        $('#edit_demo_id').val(btn.data('id'));
+        $('#edit_qty').val(btn.data('qty'));
+        $('#edit_status').val(btn.data('status'));
 
         $('#editDemoModal').modal('show');
-    }
-});
 
-$(document).ready(function() {
-    initSelect2();
-
-    $('#addDemoModal, #editDemoModal').on('shown.bs.modal', function () {
-        initSelect2();
+        setTimeout(function() {
+            $('#edit_customer_id').val(btn.data('customer_id')).trigger('change');
+            $('#edit_product_id').val(btn.data('product_id')).trigger('change');
+        }, 200);
     });
 });
 </script>
