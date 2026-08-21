@@ -2,8 +2,8 @@
 require_once('includes/load.php');
 // page_require_level(2);
 
-$customers = find_by_sql("SELECT * FROM customer_master ORDER BY customer_name DESC");
-$products  = find_by_sql("SELECT * FROM products ORDER BY name DESC");
+$customers = find_all('customer_master');
+$products  = find_all('products');
 
 $swal_script = "";
 
@@ -173,57 +173,6 @@ $demo_records = find_by_sql("
 ?>
 
 <?php include_once('layouts/header.php'); ?>
-<style>
-/* Dropdown container */
-.search-wrapper {
-    position: relative !important;
-    width: 100% !important;
-}
-
-/* Custom Dropdown List */
-.custom-search-dropdown {
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    width: 100% !important;
-    min-width: 260px !important;
-    max-height: 200px !important;
-    overflow-y: auto !important;
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
-    z-index: 9999999 !important;
-    display: none;
-    margin-top: 2px !important;
-}
-
-/* Dropdown list items */
-.search-item {
-    padding: 8px 12px !important;
-    font-size: 12px !important;
-    color: #1e293b !important;
-    cursor: pointer !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    text-align: left !important;
-    background: #ffffff !important;
-    display: block !important;
-}
-
-.search-item:hover {
-    background-color: #eff6ff !important;
-    color: #2563eb !important;
-    font-weight: 600 !important;
-}
-
-/* Dropdown clipping prevent karne ke liye */
-#addDemoModal .modal-body,
-#editDemoModal .modal-body,
-#demoInputTable,
-#demoInputTable td {
-    overflow: visible !important;
-}
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
@@ -289,15 +238,14 @@ $demo_records = find_by_sql("
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                   <button type="button" 
-        class="btn btn-sm btn-outline-primary btn-edit" 
-        style="border-radius:6px; padding:2px 8px;"
-        data-id="<?= $row['id']; ?>"
-        data-customer_id="<?= $row['customer_id']; ?>"
-        data-product_id="<?= $row['product_id']; ?>"
-        data-product_name="<?= htmlspecialchars($row['product_name'] ?? ''); ?>"
-        data-qty="<?= $row['qty']; ?>"
-        data-status="<?= $row['status']; ?>">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary btn-edit" 
+                                            style="border-radius:6px; padding:2px 8px;"
+                                            data-id="<?= $row['id']; ?>"
+                                            data-customer_id="<?= $row['customer_id']; ?>"
+                                            data-product_id="<?= $row['product_id']; ?>"
+                                            data-qty="<?= $row['qty']; ?>"
+                                            data-status="<?= $row['status']; ?>">
                                         ✏️ Edit
                                     </button>
                                 </td>
@@ -326,7 +274,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Select Customer</label>
-                        <select name="customer_id" class="form-control select2-search" style="width:100%;" required>
+                        <select name="customer_id" class="form-control" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -335,7 +283,7 @@ $demo_records = find_by_sql("
                     </div>
 
                     <label class="font-weight-bold mb-1" style="font-size:12px;">Demo Products</label>
-                   <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px; overflow:visible;">
+                    <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px; overflow:hidden;">
                         <thead>
                             <tr class="bg-light" style="font-size:12px;">
                                 <th>Product</th>
@@ -345,19 +293,14 @@ $demo_records = find_by_sql("
                         </thead>
                         <tbody id="demoInputBody">
                             <tr>
-<td>
-    <div class="search-wrapper">
-        <input type="text" class="form-control form-control-sm product-search-input" placeholder="Type to select product..." autocomplete="off" required>
-        <input type="hidden" name="product_id[]" class="product-id-input" required>
-        <div class="custom-search-dropdown">
-            <?php foreach ($products as $p): ?>
-                <div class="search-item" data-id="<?= $p['id']; ?>" data-name="<?= htmlspecialchars($p['name']); ?>">
-                    <?= htmlspecialchars($p['name']); ?>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</td>
+                                <td>
+                                    <select name="product_id[]" class="form-control form-control-sm" required>
+                                        <option value="">-- Select Product --</option>
+                                        <?php foreach ($products as $p): ?>
+                                            <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
                                 <td>
                                     <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
                                 </td>
@@ -395,7 +338,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Customer</label>
-                        <select name="edit_customer_id" id="edit_customer_id" class="form-control select2-search" style="width:100%;" required>
+                        <select name="edit_customer_id" id="edit_customer_id" class="form-control" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -403,20 +346,15 @@ $demo_records = find_by_sql("
                         </select>
                     </div>
 
-<div class="form-group mb-3">
-    <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
-    <div class="search-wrapper">
-        <input type="text" id="edit_product_name" class="form-control product-search-input" placeholder="Type to select product..." autocomplete="off" required>
-        <input type="hidden" name="edit_product_id" id="edit_product_id" class="product-id-input" required>
-        <div class="custom-search-dropdown">
-            <?php foreach ($products as $p): ?>
-                <div class="search-item" data-id="<?= $p['id']; ?>" data-name="<?= htmlspecialchars($p['name']); ?>">
-                    <?= htmlspecialchars($p['name']); ?>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
+                        <select name="edit_product_id" id="edit_product_id" class="form-control" required>
+                            <option value="">-- Select Product --</option>
+                            <?php foreach ($products as $p): ?>
+                                <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6 form-group mb-3">
@@ -443,15 +381,15 @@ $demo_records = find_by_sql("
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
-// Main Table Filter
+// Search Filter
 document.getElementById("demoSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
     let rows  = document.querySelectorAll("#demoTable tbody tr");
+
     rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().indexOf(value) > -1 ? "" : "none";
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.indexOf(value) > -1 ? "" : "none";
     });
 });
 
@@ -460,91 +398,53 @@ function filterStatus(status) {
     let rows = document.querySelectorAll("#demoTable tbody tr");
     rows.forEach(row => {
         let rowStatus = row.getAttribute("data-status");
-        row.style.display = (status === 'ALL' || rowStatus === status) ? "" : "none";
+        if (status === 'ALL' || rowStatus === status) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
     });
 }
 
-// Input pe click karte hi ya type karte hi suggestions show honge
-$(document).on('focus click keyup', '.product-search-input', function(e) {
-    e.stopPropagation();
-    let val = $(this).val().toLowerCase();
-    let $dropdown = $(this).siblings('.custom-search-dropdown');
-    let hasMatch = false;
-
-    $dropdown.find('.search-item').each(function() {
-        let text = $(this).text().toLowerCase();
-        if (text.indexOf(val) > -1) {
-            $(this).show();
-            hasMatch = true;
-        } else {
-            $(this).hide();
-        }
-    });
-
-    $('.custom-search-dropdown').not($dropdown).hide();
-    if (hasMatch) {
-        $dropdown.show();
-    } else {
-        $dropdown.hide();
-    }
-});
-
-// Select product from list
-$(document).on('click', '.search-item', function() {
-    let id = $(this).data('id');
-    let name = $(this).data('name');
-    let $wrapper = $(this).closest('.search-wrapper');
-
-    $wrapper.find('.product-search-input').val(name);
-    $wrapper.find('.product-id-input').val(id);
-    $wrapper.find('.custom-search-dropdown').hide();
-});
-
-// Close list on clicking outside
-$(document).on('click', function(e) {
-    if (!$(e.target).closest('.search-wrapper').length) {
-        $('.custom-search-dropdown').hide();
-    }
-});
-
-// Add Dynamic Row
-$('#addRowBtn').on('click', function() {
-    let $firstRow = $('#demoInputBody tr:first').clone();
-    $firstRow.find('.product-search-input').val('');
-    $firstRow.find('.product-id-input').val('');
-    $firstRow.find('input[type="number"]').val(1);
-    $firstRow.find('.custom-search-dropdown').hide();
-    $('#demoInputBody').append($firstRow);
+// Add Dynamic Product Row
+document.getElementById("addRowBtn").addEventListener("click", function() {
+    let tbody = document.getElementById("demoInputBody");
+    let firstRow = tbody.querySelector("tr").cloneNode(true);
+    firstRow.querySelector("input").value = 1;
+    firstRow.querySelector("select").value = "";
+    tbody.appendChild(firstRow);
 });
 
 // Remove Row
-$(document).on('click', '.removeRow', function() {
-    if ($('#demoInputBody tr').length > 1) {
-        $(this).closest('tr').remove();
-    } else {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Note',
-            text: 'At least one product is required!',
-            confirmColor: '#2563eb'
-        });
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("removeRow")) {
+        let rows = document.querySelectorAll("#demoInputBody tr");
+        if (rows.length > 1) {
+            e.target.closest("tr").remove();
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Note',
+                text: 'At least one product is required!',
+                confirmColor: '#2563eb'
+            });
+        }
     }
 });
 
-// Edit Button Click
-$(document).on('click', '.btn-edit', function() {
-    let btn = $(this);
-    $('#edit_demo_id').val(btn.data('id'));
-    $('#edit_customer_id').val(btn.data('customer_id'));
-    $('#edit_qty').val(btn.data('qty'));
-    $('#edit_status').val(btn.data('status'));
+// Edit Button Click - Open Modal with Data
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("btn-edit")) {
+        let btn = e.target;
+        document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
+        document.getElementById("edit_customer_id").value = btn.getAttribute("data-customer_id");
+        document.getElementById("edit_product_id").value = btn.getAttribute("data-product_id");
+        document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
+        document.getElementById("edit_status").value = btn.getAttribute("data-status");
 
-    $('#edit_product_id').val(btn.data('product_id'));
-    $('#edit_product_name').val(btn.data('product_name'));
-
-    $('#editDemoModal').modal('show');
+        $('#editDemoModal').modal('show');
+    }
 });
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
-
