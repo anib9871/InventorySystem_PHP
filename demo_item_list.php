@@ -2,7 +2,8 @@
 require_once('includes/load.php');
 // page_require_level(2);
 
-$customers = find_all('customer_master');
+// 1. Customer ORDER BY DESC
+$customers = find_by_sql("SELECT * FROM customer_master ORDER BY id DESC");
 $products  = find_all('products');
 
 $swal_script = "";
@@ -174,6 +175,18 @@ $demo_records = find_by_sql("
 
 <?php include_once('layouts/header.php'); ?>
 
+<!-- Select2 CSS for searchable dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container { width: 100% !important; }
+    .select2-container--default .select2-selection--single {
+        height: 38px;
+        padding: 5px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?= $swal_script; ?>
 
@@ -263,8 +276,8 @@ $demo_records = find_by_sql("
 </div>
 
 <!-- ================= ADD DEMO DISPATCH MODAL ================= -->
-<div class="modal fade" id="addDemoModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+<div class="modal fade" id="addDemoModal" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <form method="post">
             <div class="modal-content modal-content-compact">
                 <div class="modal-header modal-header-compact">
@@ -274,7 +287,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Select Customer</label>
-                        <select name="customer_id" class="form-control" required>
+                        <select name="customer_id" class="form-control select2-search" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -283,26 +296,26 @@ $demo_records = find_by_sql("
                     </div>
 
                     <label class="font-weight-bold mb-1" style="font-size:12px;">Demo Products</label>
-                    <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px; overflow:hidden;">
+                    <table class="table table-sm table-bordered mb-2" id="demoInputTable" style="border-radius:8px;">
                         <thead>
                             <tr class="bg-light" style="font-size:12px;">
-                                <th>Product</th>
-                                <th width="100">Qty</th>
-                                <th width="40"></th>
+                                <th width="65%">Product</th>
+                                <th width="25%">Qty</th>
+                                <th width="10%"></th>
                             </tr>
                         </thead>
                         <tbody id="demoInputBody">
                             <tr>
                                 <td>
-                                    <select name="product_id[]" class="form-control form-control-sm" required>
-                                        <option value="">-- Select Product --</option>
+                                    <select name="product_id[]" class="form-control product-select" required>
+                                        <option value="">-- Search / Select Product --</option>
                                         <?php foreach ($products as $p): ?>
                                             <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" name="qty[]" class="form-control form-control-sm text-center" value="1" min="1" required>
+                                    <input type="number" name="qty[]" class="form-control text-center" value="1" min="1" required>
                                 </td>
                                 <td class="text-center align-middle">
                                     <button type="button" class="btn btn-danger btn-sm removeRow" style="padding: 2px 8px; border-radius: 6px;">×</button>
@@ -326,7 +339,7 @@ $demo_records = find_by_sql("
 </div>
 
 <!-- ================= EDIT DEMO MODAL ================= -->
-<div class="modal fade" id="editDemoModal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="editDemoModal" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered" role="document">
         <form method="post">
             <input type="hidden" name="edit_demo_id" id="edit_demo_id">
@@ -338,7 +351,7 @@ $demo_records = find_by_sql("
                 <div class="modal-body p-4">
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Customer</label>
-                        <select name="edit_customer_id" id="edit_customer_id" class="form-control" required>
+                        <select name="edit_customer_id" id="edit_customer_id" class="form-control select2-edit" required>
                             <option value="">-- Select Customer --</option>
                             <?php foreach ($customers as $c): ?>
                                 <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['customer_name']); ?></option>
@@ -348,8 +361,8 @@ $demo_records = find_by_sql("
 
                     <div class="form-group mb-3">
                         <label class="font-weight-bold mb-1" style="font-size:12px;">Product</label>
-                        <select name="edit_product_id" id="edit_product_id" class="form-control" required>
-                            <option value="">-- Select Product --</option>
+                        <select name="edit_product_id" id="edit_product_id" class="form-control select2-edit" required>
+                            <option value="">-- Search / Select Product --</option>
                             <?php foreach ($products as $p): ?>
                                 <option value="<?= $p['id']; ?>"><?= htmlspecialchars($p['name']); ?></option>
                             <?php endforeach; ?>
@@ -381,8 +394,73 @@ $demo_records = find_by_sql("
     </div>
 </div>
 
+<?php include_once('layouts/footer.php'); ?>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
-// Search Filter
+$(document).ready(function() {
+    function initSelect2(element, parentModal) {
+        $(element).select2({
+            dropdownParent: $(parentModal),
+            width: '100%',
+            placeholder: '-- Search & Select --'
+        });
+    }
+
+    // Modal open hone par initialize karein
+    $('#addDemoModal').on('shown.bs.modal', function () {
+        initSelect2('.select2-search', '#addDemoModal');
+        initSelect2('.product-select', '#addDemoModal');
+    });
+
+    $('#editDemoModal').on('shown.bs.modal', function () {
+        initSelect2('.select2-edit', '#editDemoModal');
+    });
+
+    // Dynamic Row Add with Select2 re-init
+    $('#addRowBtn').on('click', function() {
+        let firstRow = $('#demoInputBody tr:first');
+        firstRow.find('.product-select').select2('destroy');
+        
+        let newRow = firstRow.clone();
+        newRow.find('input').val(1);
+        newRow.find('select').val('');
+        
+        $('#demoInputBody').append(newRow);
+        
+        initSelect2('.product-select', '#addDemoModal');
+    });
+
+    // Remove Row
+    $(document).on('click', '.removeRow', function() {
+        if ($('#demoInputBody tr').length > 1) {
+            $(this).closest('tr').remove();
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Note',
+                text: 'At least one product is required!',
+                confirmColor: '#2563eb'
+            });
+        }
+    });
+
+    // Edit Button Click
+    $(document).on('click', '.btn-edit', function() {
+        let btn = $(this);
+        $('#edit_demo_id').val(btn.data('id'));
+        $('#edit_customer_id').val(btn.data('customer_id')).trigger('change');
+        $('#edit_product_id').val(btn.data('product_id')).trigger('change');
+        $('#edit_qty').val(btn.data('qty'));
+        $('#edit_status').val(btn.data('status'));
+
+        $('#editDemoModal').modal('show');
+    });
+});
+
+// Search Filter in Table
 document.getElementById("demoSearch").addEventListener("keyup", function() {
     let value = this.value.toLowerCase();
     let rows  = document.querySelectorAll("#demoTable tbody tr");
@@ -405,46 +483,4 @@ function filterStatus(status) {
         }
     });
 }
-
-// Add Dynamic Product Row
-document.getElementById("addRowBtn").addEventListener("click", function() {
-    let tbody = document.getElementById("demoInputBody");
-    let firstRow = tbody.querySelector("tr").cloneNode(true);
-    firstRow.querySelector("input").value = 1;
-    firstRow.querySelector("select").value = "";
-    tbody.appendChild(firstRow);
-});
-
-// Remove Row
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("removeRow")) {
-        let rows = document.querySelectorAll("#demoInputBody tr");
-        if (rows.length > 1) {
-            e.target.closest("tr").remove();
-        } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Note',
-                text: 'At least one product is required!',
-                confirmColor: '#2563eb'
-            });
-        }
-    }
-});
-
-// Edit Button Click - Open Modal with Data
-document.addEventListener("click", function(e) {
-    if (e.target.classList.contains("btn-edit")) {
-        let btn = e.target;
-        document.getElementById("edit_demo_id").value = btn.getAttribute("data-id");
-        document.getElementById("edit_customer_id").value = btn.getAttribute("data-customer_id");
-        document.getElementById("edit_product_id").value = btn.getAttribute("data-product_id");
-        document.getElementById("edit_qty").value = btn.getAttribute("data-qty");
-        document.getElementById("edit_status").value = btn.getAttribute("data-status");
-
-        $('#editDemoModal').modal('show');
-    }
-});
 </script>
-
-<?php include_once('layouts/footer.php'); ?>
