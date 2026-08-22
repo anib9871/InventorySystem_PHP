@@ -35,11 +35,11 @@ $bom_products_dropdown = find_by_sql("
     ORDER BY name ASC
 ");
 
-/* RAW MATERIAL PRODUCTS */
+/* RAW MATERIAL & SUB-ASSEMBLY PRODUCTS */
 $raw_products = find_by_sql("
     SELECT id, name, buy_price, gst_id, buy_type
     FROM products
-    WHERE is_bom = 0 AND type = 1
+    WHERE type = 1 AND is_active = 1
     ORDER BY name ASC
 ");
 
@@ -61,7 +61,7 @@ if(isset($_POST['save_bom'])){
             $raw_id = (int)$raw;
             $qty = (float)$_POST['qty'][$i];
 
-            if($raw_id > 0 && $qty > 0){
+            if($raw_id > 0 && $qty > 0 && $raw_id != $product_id){
                 $db->query("
                     INSERT INTO bom(product_id, raw_product_id, quantity)
                     VALUES('{$product_id}', '{$raw_id}', '{$qty}')
@@ -105,7 +105,9 @@ include_once('layouts/header.php');
 
 <datalist id="raw_products_list">
     <?php foreach($raw_products as $p): ?>
-        <option data-id="<?php echo $p['id']; ?>" value="<?php echo htmlspecialchars($p['name']); ?>"></option>
+        <option data-id="<?php echo $p['id']; ?>" value="<?php echo htmlspecialchars($p['name']); ?>">
+            <?php echo ($p['is_bom'] == 1) ? ' [Sub-Assembly]' : ''; ?>
+        </option>
     <?php endforeach; ?>
 </datalist>
 
@@ -214,24 +216,27 @@ include_once('layouts/header.php');
                         <input type="text" list="finished_products_list" class="form-control finished-search" placeholder="Type to select product..." required autocomplete="off">
                     </div>
 
-                    <div style="margin-top: 14px; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
-                        <label style="color: #0f172a; font-size: 11px; margin:0;">Raw Materials Required</label>
-                    </div>
+<div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+    <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
+    <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+        <i class="glyphicon glyphicon-plus"></i> Add Item
+    </button>
+</div>
 
-                    <div class="bom_rows_container">
-                        <div class="row bom_row" style="margin-bottom: 6px;">
-                            <div class="col-xs-7" style="padding-right: 3px;">
-                                <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
-                                <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
-                            </div>
-                            <div class="col-xs-3" style="padding-left: 3px; padding-right: 3px;">
-                                <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
-                            </div>
-                            <div class="col-xs-2" style="padding-left: 3px;">
-                                <button type="button" class="btn btn-success-custom btn-row-action addRow">+</button>
-                            </div>
-                        </div>
-                    </div>
+<div class="bom_rows_container">
+    <div class="row bom_row" style="margin-bottom: 6px;">
+        <div class="col-xs-7" style="padding-right: 3px;">
+            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
+            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
+        </div>
+        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+            <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
+        </div>
+        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+        </div>
+    </div>
+</div>
 
                 </div>
                 <div class="modal-footer modal-footer-compact">
@@ -419,50 +424,48 @@ include_once('layouts/header.php');
                             <input type="text" class="form-control" value="<?php echo htmlspecialchars($current_pname); ?>" readonly style="background:#f1f5f9; font-weight:600;">
                         </div>
 
-                        <div style="margin-top: 14px; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
-                            <label style="color: #0f172a; font-size: 11px; margin:0;">Raw Materials Required</label>
-                        </div>
+                     <div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+    <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
+    <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+        <i class="glyphicon glyphicon-plus"></i> Add Item
+    </button>
+</div>
 
-                        <div class="bom_rows_container">
-                        <?php 
-                        if(!empty($items)){
-                            foreach($items as $idx => $er){
-                        ?>
-                            <div class="row bom_row" style="margin-bottom: 6px;">
-                                <div class="col-xs-7" style="padding-right: 3px;">
-                                    <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
-                                    <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." value="<?php echo htmlspecialchars($er['raw_name']); ?>" required autocomplete="off">
-                                </div>
-                                <div class="col-xs-3" style="padding-left: 3px; padding-right: 3px;">
-                                    <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
-                                </div>
-                                <div class="col-xs-2" style="padding-left: 3px;">
-                                    <?php if($idx === 0): ?>
-                                        <button type="button" class="btn btn-success-custom btn-row-action addRow">+</button>
-                                    <?php else: ?>
-                                        <button type="button" class="btn btn-danger btn-row-action removeRow" style="background:#ef4444;">-</button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php 
-                            }
-                        } else { 
-                        ?>
-                            <div class="row bom_row" style="margin-bottom: 6px;">
-                                <div class="col-xs-7" style="padding-right: 3px;">
-                                    <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
-                                    <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
-                                </div>
-                                <div class="col-xs-3" style="padding-left: 3px; padding-right: 3px;">
-                                    <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
-                                </div>
-                                <div class="col-xs-2" style="padding-left: 3px;">
-                                    <button type="button" class="btn btn-success-custom btn-row-action addRow">+</button>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        </div>
-
+<div class="bom_rows_container">
+<?php 
+    if(!empty($items)){
+        foreach($items as $idx => $er){
+?>
+    <div class="row bom_row" style="margin-bottom: 6px;">
+        <div class="col-xs-7" style="padding-right: 3px;">
+            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
+            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." value="<?php echo htmlspecialchars($er['raw_name']); ?>" required autocomplete="off">
+        </div>
+        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+            <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
+        </div>
+        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+        </div>
+    </div>
+<?php 
+        }
+    } else { 
+?>
+    <div class="row bom_row" style="margin-bottom: 6px;">
+        <div class="col-xs-7" style="padding-right: 3px;">
+            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
+            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
+        </div>
+        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+            <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
+        </div>
+        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+        </div>
+    </div>
+<?php } ?>
+</div>
                     </div>
                     <div class="modal-footer modal-footer-compact">
                         <button type="button" class="btn btn-clear btn-custom" data-dismiss="modal">Cancel</button>
@@ -533,9 +536,13 @@ document.getElementById("bomSearch").addEventListener("keyup", function() {
 });
 
 // Dynamic Add/Remove Rows inside any Modal
+// Dynamic Add/Remove Rows via Top Button
 document.addEventListener("click", function(e){
-    if(e.target.classList.contains("addRow")){
-        let container = e.target.closest(".bom_rows_container");
+    // Top "+ Add Item" Button Click
+    if(e.target.closest(".addRowBtn")){
+        let modalBody = e.target.closest(".modal-body");
+        let container = modalBody.querySelector(".bom_rows_container");
+        
         let newRow = document.createElement("div");
         newRow.className = "row bom_row";
         newRow.style.marginBottom = "6px";
@@ -544,18 +551,30 @@ document.addEventListener("click", function(e){
                 <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
                 <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
             </div>
-            <div class="col-xs-3" style="padding-left: 3px; padding-right: 3px;">
+            <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
                 <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
             </div>
-            <div class="col-xs-2" style="padding-left: 3px;">
-                <button type="button" class="btn btn-danger btn-row-action removeRow" style="background:#ef4444;">-</button>
+            <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+                <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
             </div>
         `;
         container.appendChild(newRow);
     }
 
+    // Row Delete Button Click
     if(e.target.classList.contains("removeRow")){
-        e.target.closest(".bom_row").remove();
+        let container = e.target.closest(".bom_rows_container");
+        let rows = container.querySelectorAll(".bom_row");
+        
+        // Minimum 1 row form mein bani rahegi
+        if(rows.length > 1){
+            e.target.closest(".bom_row").remove();
+        } else {
+            let lastRow = rows[0];
+            lastRow.querySelector(".raw_id_hidden").value = "";
+            lastRow.querySelector(".raw-search").value = "";
+            lastRow.querySelector("input[name='qty[]']").value = "";
+        }
     }
 });
 
