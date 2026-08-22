@@ -43,6 +43,49 @@ $raw_products = find_by_sql("
     ORDER BY name ASC
 ");
 
+/* FUNCTION TO CALCULATE BOM COST (SUPPORTS NESTED SUB-ASSEMBLIES) */
+function get_product_calculated_cost($prod_id, $visited = []) {
+    if (in_array($prod_id, $visited)) return 0;
+    $visited[] = $prod_id;
+
+    $prod = find_by_id('products', $prod_id);
+    if (!$prod) return 0;
+
+    if ((int)$prod['is_bom'] === 1) {
+        $sub_items = find_by_sql("
+            SELECT b.raw_product_id, b.quantity, p.buy_price, p.buy_type, p.is_bom, g.gst_percent
+            FROM bom b
+            JOIN products p ON p.id = b.raw_product_id
+            LEFT JOIN gst_master g ON g.id = p.gst_id
+            WHERE b.product_id = '{$prod_id}'
+        ");
+
+        if (!empty($sub_items)) {
+            $total_cost = 0;
+            foreach ($sub_items as $sub) {
+                $sub_base = (float)$sub['buy_price'];
+                
+                if ((int)$sub['is_bom'] === 1 && $sub_base <= 0) {
+                    $sub_base = get_product_calculated_cost((int)$sub['raw_product_id'], $visited);
+                }
+
+                $gst = (float)($sub['gst_percent'] ?? 0);
+                if ($sub['buy_type'] === "exclusive") {
+                    $unit_price = $sub_base * (1 + ($gst / 100));
+                } else {
+                    $unit_price = $sub_base;
+                }
+                $total_cost += ($unit_price * (float)$sub['quantity']);
+            }
+            if ($total_cost > 0) {
+                return $total_cost;
+            }
+        }
+    }
+
+    return (float)$prod['buy_price'];
+}
+
 /* ---------- SAVE / UPDATE BOM ---------- */
 if(isset($_POST['save_bom'])){
     $product_id = (int)$_POST['product_id'];
@@ -254,19 +297,20 @@ include_once('layouts/header.php');
         $current_pid = (int)$bp['product_id'];
         $current_pname = $bp['name'];
 
-        $items = find_by_sql("
-            SELECT 
-                b.raw_product_id,
-                p.name AS raw_name,
-                p.buy_price,
-                p.buy_type,
-                g.gst_percent,
-                b.quantity
-            FROM bom b
-            JOIN products p ON p.id = b.raw_product_id
-            LEFT JOIN gst_master g ON g.id = p.gst_id
-            WHERE b.product_id = '{$current_pid}'
-        ");
+ $items = find_by_sql("
+    SELECT 
+        b.raw_product_id,
+        p.name AS raw_name,
+        p.buy_price,
+        p.buy_type,
+        p.is_bom,
+        g.gst_percent,
+        b.quantity
+    FROM bom b
+    JOIN products p ON p.id = b.raw_product_id
+    LEFT JOIN gst_master g ON g.id = p.gst_id
+    WHERE b.product_id = '{$current_pid}'
+");
     ?>
 
     <!-- 1. VIEW MODAL -->
@@ -316,15 +360,19 @@ include_once('layouts/header.php');
 
                             if(!empty($items)){
                                 foreach($items as $x){
-                                    $qty = (float)$x['quantity'];
-                                    $gst = (float)$x['gst_percent'];
-                                    $base_price = (float)$x['buy_price'];
+                           $qty = (float)$x['quantity'];
+$gst = (float)$x['gst_percent'];
+$base_price = (float)$x['buy_price'];
 
-                                    if($x['buy_type'] == "exclusive"){
-                                        $unit_price_inclusive = $base_price * (1 + ($gst / 100));
-                                    } else {
-                                        $unit_price_inclusive = $base_price;
-                                    }
+if ((int)$x['is_bom'] === 1 && $base_price <= 0) {
+    $unit_price_inclusive = get_product_calculated_cost((int)$x['raw_product_id']);
+} else {
+    if ($x['buy_type'] == "exclusive") {
+        $unit_price_inclusive = $base_price * (1 + ($gst / 100));
+    } else {
+        $unit_price_inclusive = $base_price;
+    }
+}
 
                                     $line_total = $unit_price_inclusive * $qty;
                                     $grand_total += $line_total;
