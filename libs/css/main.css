@@ -940,6 +940,24 @@ label {
     text-decoration: none !important; 
 }
 
+
+/* Container ko scrollable banana */
+.bom_rows_container {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+    scroll-behavior: smooth;
+}
+
+/* Custom Clean Scrollbar */
+.bom_rows_container::-webkit-scrollbar {
+    width: 5px;
+}
+.bom_rows_container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
 .btn-primary-custom { background: #2563eb; color: #fff !important; border: none; }
 .btn-primary-custom:hover { background: #1d4ed8; }
 .btn-success-custom { background: #10b981; color: #fff !important; border: none; }
