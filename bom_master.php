@@ -535,7 +535,6 @@ document.getElementById("bomSearch").addEventListener("keyup", function() {
     });
 });
 
-// Dynamic Add/Remove Rows inside any Modal
 // Dynamic Add/Remove Rows via Top Button
 document.addEventListener("click", function(e){
     // Top "+ Add Item" Button Click
@@ -559,6 +558,15 @@ document.addEventListener("click", function(e){
             </div>
         `;
         container.appendChild(newRow);
+
+        // 1. Automatic Smooth Scroll to Bottom
+        container.scrollTop = container.scrollHeight;
+
+        // 2. Automatically Focus on New Input Field
+        let newSearchInput = newRow.querySelector(".raw-search");
+        if(newSearchInput) {
+            setTimeout(() => newSearchInput.focus(), 50);
+        }
     }
 
     // Row Delete Button Click
@@ -566,7 +574,6 @@ document.addEventListener("click", function(e){
         let container = e.target.closest(".bom_rows_container");
         let rows = container.querySelectorAll(".bom_row");
         
-        // Minimum 1 row form mein bani rahegi
         if(rows.length > 1){
             e.target.closest(".bom_row").remove();
         } else {
@@ -577,7 +584,6 @@ document.addEventListener("click", function(e){
         }
     }
 });
-
 // Confirm Delete
 function confirmDelete(id) {
     if(typeof Swal !== 'undefined'){
