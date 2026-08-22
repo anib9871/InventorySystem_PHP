@@ -37,7 +37,7 @@ $bom_products_dropdown = find_by_sql("
 
 /* RAW MATERIAL & SUB-ASSEMBLY PRODUCTS */
 $raw_products = find_by_sql("
-    SELECT id, name, buy_price, gst_id, buy_type
+    SELECT id, name, buy_price, gst_id, buy_type, is_bom
     FROM products
     WHERE type = 1 AND is_active = 1
     ORDER BY name ASC
