@@ -769,7 +769,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['discount_amount'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
             
-            <!-- Red/Blue & Due Logic Here -->
+            <!-- Red/Blue Logic Here -->
             <?php 
                 $paid_amt = (float)($s['paid_amount'] ?? 0);
                 $pending_amt = (float)$s['total_sale'] - $paid_amt;
@@ -780,9 +780,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             ?>
             <td style="text-align:right;">
                 <b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b>
-                <?php if($pending_amt > 0): ?>
-                    <br><span style="font-size:10px; color:#dc2626; font-weight:700;">Due: ₹ <?= number_format($pending_amt, 2) ?></span>
-                <?php endif; ?>
             </td>
           </tr>
           <?php endforeach; ?>
