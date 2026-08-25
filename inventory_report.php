@@ -548,7 +548,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
  <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="no-print mb-2" style="margin-bottom:10px;">
-<form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%;">
+<form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
       <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
       <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
 
