@@ -531,9 +531,15 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <tr>
                 <td width="50%" class="footer-card">
                     <div class="footer-title">Bank Details</div>';
-                    if ($bank) {
-                        $html .= '<b>Bank:</b> ' . htmlspecialchars($bank['bank_name']) . '<br>
-                                  <b>A/C Name:</b> ' . htmlspecialchars($bank['account_name']) . '<br>
+             if ($bank) {
+                        $html .= '<b>Bank:</b> ' . htmlspecialchars($bank['bank_name']) . '<br>';
+                        
+                        // Branch print karne ka logic
+                        if (!empty($bank['branch'])) {
+                            $html .= '<b>Branch:</b> ' . htmlspecialchars($bank['branch']) . '<br>';
+                        }
+
+                        $html .= '<b>A/C Name:</b> ' . htmlspecialchars($bank['account_name']) . '<br>
                                   <b>A/C No:</b> ' . htmlspecialchars($bank['account_number']) . '<br>
                                   <b>IFSC Code:</b> ' . htmlspecialchars($bank['ifsc_code']);
                     } else {
