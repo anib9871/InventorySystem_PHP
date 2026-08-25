@@ -242,17 +242,25 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
     $invoice = $invoice_data[0];
 
-    // Check header type from remarks (REVISED INVOICE REMOVED)
-    $is_proforma = (strtoupper($invoice['remarks'] ?? '') === 'PROFORMA');
+/* PROFORMA VS TAX INVOICE TITLE LOGIC FOR EMAIL */
+$doc_type = strtoupper($invoice['remarks'] ?? '');
+$payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
 
-    if ($is_proforma) {
-        $title_text = 'PROFORMA INVOICE';
-        $title_color = '#d97706'; // Amber / Orange
-    } else {
-        $title_text = 'TAX INVOICE';
-        $title_color = '#2563eb'; // Blue
-    }
+// Agar payment Paid ya Partial ho chuki hai (amount > 0), toh Tax Invoice bhejo
+if ($payment_status === 'paid' || $invoice['paid_amount'] > 0) {
+    $is_proforma = false;
+} else {
+    // Agar payment nahi hui hai, tabhi Proforma check karo
+    $is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $payment_status === 'unpaid'));
+}
 
+if ($is_proforma) {
+    $title_text = 'PROFORMA INVOICE';
+    $title_color = '#d97706'; // Amber / Orange
+} else {
+    $title_text = 'TAX INVOICE';
+    $title_color = '#2563eb'; // Blue
+}
     $org_master = find_by_sql("
         SELECT org_name 
         FROM master_inventory.master_organization 
