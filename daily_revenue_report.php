@@ -159,6 +159,39 @@ if (!$is_pdf) include_once('layouts/header.php');
 .summary-card.net { border-left-color: #16a34a; }
 .summary-card .title { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; }
 .summary-card .value { font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+
+/* ================= MOBILE RESPONSIVE FIXES ================= */
+@media screen and (max-width: 768px) {
+    /* Summary boxes ko ek ke neeche ek laane ke liye */
+    .summary-container {
+        flex-direction: column !important;
+    }
+    .summary-card {
+        width: 100% !important;
+    }
+    
+    /* Filter form ko set karne ke liye */
+    .mobile-wrap-form {
+        flex-wrap: wrap !important;
+    }
+    .mobile-wrap-form > input {
+        flex: 1 1 calc(50% - 6px) !important; 
+        min-width: 130px;
+        width: auto !important;
+    }
+    .mobile-wrap-form > button, .mobile-wrap-form > a {
+        flex: 1 1 100% !important; 
+        justify-content: center;
+        text-align: center;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Table ko squish hone se rokne aur scroll dene ke liye */
+    .rpt-tbl {
+        min-width: 600px !important; 
+    }
+}
 </style>
 
 <div class="rpt">
