@@ -154,7 +154,7 @@ SELECT
     t.discount_amount,
     t.gst_amount,
     t.sale_net AS total_sale,
-    (SELECT IFNULL(SUM(pay.amount), 0) FROM payments pay WHERE pay.invoice_no = t.bill_indent_no) AS paid_amount
+    (SELECT IFNULL(SUM(amount), 0) FROM payments WHERE bill_indent_no = t.bill_indent_no) AS paid_amount
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
