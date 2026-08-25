@@ -688,21 +688,24 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     </div>
     <?php endif; ?>
 
-    <!-- FOOTER INFO -->
-    <div class="footer-grid">
-        <div class="footer-card">
-            <div class="footer-card-title">Bank Details</div>
-            <?php if($bank){ ?>
-                <div style="font-size: 11px; line-height: 1.4;">
-                    <b>Bank:</b> <?= $bank['bank_name'] ?><br>
-                    <b>A/C Name:</b> <?= $bank['account_name'] ?><br>
-                    <b>A/C No:</b> <?= $bank['account_number'] ?><br>
-                    <b>IFSC Code:</b> <?= $bank['ifsc_code'] ?>
-                </div>
-            <?php } else { ?>
-                <div style="color: var(--text-muted); font-size: 11px;">No bank details available.</div>
-            <?php } ?>
-        </div>
+   <!-- FOOTER INFO -->
+<div class="footer-grid">
+    <div class="footer-card">
+        <div class="footer-card-title">Bank Details</div>
+        <?php if($bank){ ?>
+            <div style="font-size: 11px; line-height: 1.4;">
+                <b>Bank:</b> <?= htmlspecialchars($bank['bank_name'] ?? '') ?><br>
+                <?php if(!empty($bank['branch'])): ?>
+                    <b>Branch:</b> <?= htmlspecialchars($bank['branch']) ?><br>
+                <?php endif; ?>
+                <b>A/C Name:</b> <?= htmlspecialchars($bank['account_name'] ?? '') ?><br>
+                <b>A/C No:</b> <?= htmlspecialchars($bank['account_number'] ?? '') ?><br>
+                <b>IFSC Code:</b> <?= htmlspecialchars($bank['ifsc_code'] ?? '') ?>
+            </div>
+        <?php } else { ?>
+            <div style="color: var(--text-muted); font-size: 11px;">No bank details available.</div>
+        <?php } ?>
+    </div>
 
         <div class="footer-card center" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div class="footer-card-title">Authorized Signatory</div>
