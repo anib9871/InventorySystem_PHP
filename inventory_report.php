@@ -429,11 +429,16 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 /* ════ RESPONSIVE (MOBILE VIEW) ════ */
 @media screen and (max-width: 768px) {
   .rpt-top {
-    flex-direction: column; /* Charts aur summary ko ek ke neeche ek laane ke liye */
+    flex-direction: column !important;
+    height: auto !important; /* Ye overlap theek karega */
+    gap: 15px !important;    /* Cards ke beech mein gap */
   }
   .rpt-summary, .rpt-product {
-    flex: 1 1 100%;
-    width: 100%;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+  .rpt-chart-box {
+    height: 200px !important; /* Mobile par chart proper dikhega */
   }
   
   /* Filter Form ko mobile mein wrap karne ke liye */
@@ -441,14 +446,14 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     flex-wrap: wrap !important;
   }
   .mobile-wrap-form > input, .mobile-wrap-form > select {
-    flex: 1 1 calc(50% - 6px) !important; /* Aadha-aadha space lega */
+    flex: 1 1 calc(50% - 6px) !important; 
     min-width: 130px;
   }
   .mobile-wrap-form > button, .mobile-wrap-form > a {
-    flex: 1 1 100% !important; /* Button poori line lega */
+    flex: 1 1 100% !important; 
     justify-content: center;
   }
-  
+}
   /* Summary table mobile friendly */
   .payment-scroll {
     max-height: 150px; /* Mobile par thodi zyada space dena theek rehta hai */
