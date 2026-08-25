@@ -453,10 +453,19 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     flex: 1 1 100% !important; 
     justify-content: center;
   }
-}
+  
   /* Summary table mobile friendly */
   .payment-scroll {
     max-height: 150px; /* Mobile par thodi zyada space dena theek rehta hai */
+  }
+
+  /* Table ko dabne (squish) se rokne ke liye */
+  .rpt-tbl {
+    min-width: 750px !important; /* Table ko chota nahi hone dega, scroll aayega */
+  }
+  .rpt-tbl th, .rpt-tbl td {
+    padding: 6px 4px !important; 
+    word-break: break-word;      
   }
 }
 
