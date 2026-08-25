@@ -426,6 +426,35 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 .rpt-tbl tbody tr:hover { background: #f8fafc; }
 .rpt-tbl tfoot td { background: #f1f5f9; font-weight: 700; }
 
+/* ════ RESPONSIVE (MOBILE VIEW) ════ */
+@media screen and (max-width: 768px) {
+  .rpt-top {
+    flex-direction: column; /* Charts aur summary ko ek ke neeche ek laane ke liye */
+  }
+  .rpt-summary, .rpt-product {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  
+  /* Filter Form ko mobile mein wrap karne ke liye */
+  .mobile-wrap-form {
+    flex-wrap: wrap !important;
+  }
+  .mobile-wrap-form > input, .mobile-wrap-form > select {
+    flex: 1 1 calc(50% - 6px) !important; /* Aadha-aadha space lega */
+    min-width: 130px;
+  }
+  .mobile-wrap-form > button, .mobile-wrap-form > a {
+    flex: 1 1 100% !important; /* Button poori line lega */
+    justify-content: center;
+  }
+  
+  /* Summary table mobile friendly */
+  .payment-scroll {
+    max-height: 150px; /* Mobile par thodi zyada space dena theek rehta hai */
+  }
+}
+
 /* ════════════════ PRINT ════════════════ */
 @media print {
   @page { size: A4 portrait; margin: 8mm 6mm; }
@@ -500,7 +529,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
  <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="no-print mb-2" style="margin-bottom:10px;">
-    <form method="post" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
+<form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%;">
       <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
       <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control sales-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
 
