@@ -108,8 +108,17 @@ ORDER BY cm.customer_name ASC
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
+$mode_summary = []; // Modes ko group karne ke liye naya array
+
 foreach ($payments as $pay) {
     $total_collection += $pay['payment_amount'];
+    
+    // Mode ko uppercase karke group karna
+    $mode_name = strtoupper(trim($pay['payment_mode']));
+    if (!isset($mode_summary[$mode_name])) {
+        $mode_summary[$mode_name] = 0;
+    }
+    $mode_summary[$mode_name] += (float)$pay['payment_amount'];
 }
 
 /* ═══════════════════════════════════════
@@ -144,7 +153,8 @@ SELECT
     t.unit_price AS sell_price,
     t.discount_amount,
     t.gst_amount,
-    t.sale_net AS total_sale
+    t.sale_net AS total_sale,
+    (SELECT IFNULL(SUM(amount), 0) FROM payments WHERE invoice_no = t.bill_indent_no) AS paid_amount
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
@@ -613,30 +623,27 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     </table>
   </div>
 
-  <div class="pdf-collection-box" style="display:none;">
+<div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Customer Collection Summary (Mode-wise)
     </h4>
     <table style="width:100%; border-collapse:collapse; color:#fff; font-size:11px;">
       <tr style="font-weight:700; opacity:.7;">
-        <?php if (empty($filter_id)) { ?>
-          <td style="padding:2px 4px;">CUSTOMER</td>
-        <?php } ?>
         <td style="padding:2px 4px;">MODE</td>
         <td style="padding:2px 4px; text-align:right;">AMOUNT</td>
       </tr>
-      <?php foreach ($payments as $pay): ?>
+      
+      <!-- Grouped Modes Loop -->
+      <?php foreach ($mode_summary as $mode => $amt): ?>
       <tr>
-        <?php if (empty($filter_id)) { ?>
-          <td style="padding:3px 4px;"><?= htmlspecialchars($pay['customer_name'] ?? '-') ?></td>
-        <?php } ?>
-        <td style="padding:3px 4px;"><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
-        <td style="padding:3px 4px;text-align:right;">₹ <?= number_format($pay['payment_amount'], 2) ?></td>
+        <td style="padding:3px 4px;"><?= htmlspecialchars($mode) ?></td>
+        <td style="padding:3px 4px;text-align:right;">₹ <?= number_format($amt, 2) ?></td>
       </tr>
       <?php endforeach; ?>
+      
       <tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
-        <td colspan="<?= empty($filter_id) ? '2' : '1' ?>">GRAND TOTAL</td>
-        <td style="text-align:right;">₹ <?= number_format($total_collection, 2) ?></td>
+        <td style="padding-top:4px;">GRAND TOTAL</td>
+        <td style="text-align:right; padding-top:4px;">₹ <?= number_format($total_collection, 2) ?></td>
       </tr>
     </table>
   </div>
@@ -758,7 +765,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['sell_price'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['discount_amount'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
-            <td style="text-align:right;"><b style="color:#2563eb;">₹ <?= number_format($s['total_sale'], 2) ?></b></td>
+            <!-- Red/Blue Logic Here -->
+            <?php 
+                $paid_amt = (float)($s['paid_amount'] ?? 0);
+                // Agar payment zero hai toh Red, warna Blue
+                $status_color = ($paid_amt > 0) ? '#2563eb' : '#dc2626'; 
+            ?>
+            <td style="text-align:right;"><b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b></td>
           </tr>
           <?php endforeach; ?>
         </tbody>
@@ -788,8 +801,16 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           </tr>
         </tfoot>
         <?php } ?>
-      </table>
+     </table>
     </div>
+    
+    <!-- Legend (Note) add karein -->
+    <div style="text-align:right; margin-top:8px; font-size:11px;">
+        <b>Note:</b>
+        <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Received</span> | 
+        <span style="color:#dc2626; font-weight:700;">&#9632; Red = Pending</span>
+    </div>
+    
     <?php endif; ?>
   </div>
 
