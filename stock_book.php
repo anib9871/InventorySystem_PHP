@@ -161,8 +161,28 @@ body {
     color: #ffffff !important;
 }
 
+/* SEARCH BAR FLEX LAYOUT (DESKTOP) */
+.search-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+.search-box {
+    max-width: 350px; /* Search bar ko lamba hone se rokega */
+    border-radius: 8px;
+}
+
 /* ================= MOBILE RESPONSIVE FIXES ================= */
 @media (max-width: 768px) {
+    .search-action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .search-box {
+        max-width: 100%; /* Mobile par full width lega */
+    }
     .container-fluid {
         padding-left: 10px !important;
         padding-right: 10px !important;
@@ -173,7 +193,7 @@ body {
     }
     .btn-generate-report {
         width: 100%;
-        margin-top: 10px;
+        margin-top: 0px;
         text-align: center;
     }
     .table-responsive {
@@ -342,16 +362,12 @@ body {
             <p class="text-muted m-0" style="font-size: 13px;"><?= htmlspecialchars($company_name); ?> - Inventory & Reorder Level Tracking</p>
         </div>
 
-        <!-- SEARCH BAR & GENERATE REPORT BUTTON -->
-        <div class="row align-items-center mb-3 no-print">
-            <div class="col-md-5">
-                <input type="text" id="stockSearch" class="form-control" placeholder="🔍 Search Product Name..." style="border-radius: 8px;">
-            </div>
-            <div class="col-md-7 text-right">
-                <button type="button" onclick="window.print();" class="btn btn-generate-report">
-                    <i class="fa fa-file-pdf-o mr-1"></i> Generate Report
-                </button>
-            </div>
+     <!-- SEARCH BAR & GENERATE REPORT BUTTON -->
+        <div class="search-action-bar mb-3 no-print">
+            <input type="text" id="stockSearch" class="form-control search-box" placeholder="🔍 Search Product Name...">
+            <button type="button" onclick="window.print();" class="btn btn-generate-report m-0">
+                <i class="fa fa-file-pdf-o mr-1"></i> Generate Report
+            </button>
         </div>
 
         <?php
