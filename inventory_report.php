@@ -94,6 +94,11 @@ if ($report_type == 'customer' && !empty($filter_id)) {
     $pay_q .= " AND p.customer_id = '{$filter_id}'";
 }
 
+// Ye naya code hai: Jo sirf selected product ke bills ka payment laayega
+if ($report_type == 'product' && !empty($filter_id)) {
+    $pay_q .= " AND p.invoice_id IN (SELECT invoice_id FROM invoice_items WHERE product_id = '{$filter_id}')";
+}
+
 if ($role_id == 3) {
     $pay_q .= " AND p.center_id = '{$user_center}'";
 } elseif ($role_id == 2 && !empty($center_filter)) {
