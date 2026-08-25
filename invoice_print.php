@@ -22,7 +22,15 @@ $invoice = $invoice_data[0];
 
 /* PROFORMA VS TAX INVOICE TITLE LOGIC */
 $doc_type = strtoupper($invoice['remarks'] ?? '');
-$is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $invoice['payment_status'] == 'Unpaid'));
+$payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
+
+// Agar payment Paid ya Partial ho chuki hai (amount > 0), toh Tax Invoice dikhao
+if ($payment_status === 'paid' || $invoice['paid_amount'] > 0) {
+    $is_proforma = false;
+} else {
+    // Agar payment nahi hui hai, tabhi Proforma check karo
+    $is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $payment_status === 'unpaid'));
+}
 
 if ($is_proforma) {
     $title_text = 'PROFORMA INVOICE';
