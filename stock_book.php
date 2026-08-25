@@ -163,25 +163,28 @@ body {
 
 /* SEARCH BAR FLEX LAYOUT (DESKTOP) */
 .search-action-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 15px !important;
+    width: 100% !important;
 }
 .search-box {
-    max-width: 350px; /* Search bar ko lamba hone se rokega */
-    border-radius: 8px;
+    max-width: 350px !important; 
+    width: 100% !important;
+    border-radius: 8px !important;
 }
 
 /* ================= MOBILE RESPONSIVE FIXES ================= */
 @media (max-width: 768px) {
     .search-action-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
     }
     .search-box {
-        max-width: 100%; /* Mobile par full width lega */
+        max-width: 100% !important; /* Mobile par full width lega */
     }
     .container-fluid {
         padding-left: 10px !important;
@@ -192,9 +195,9 @@ body {
         border-radius: 8px;
     }
     .btn-generate-report {
-        width: 100%;
-        margin-top: 0px;
-        text-align: center;
+        width: 100% !important;
+        margin-top: 0px !important;
+        text-align: center !important;
     }
     .table-responsive {
         border: 1px solid #e2e8f0;
