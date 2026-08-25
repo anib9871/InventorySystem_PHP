@@ -154,7 +154,7 @@ SELECT
     t.discount_amount,
     t.gst_amount,
     t.sale_net AS total_sale,
-    (SELECT IFNULL(SUM(amount), 0) FROM payments WHERE invoice_no = t.bill_indent_no) AS paid_amount
+    (SELECT IFNULL(SUM(pay.amount), 0) FROM payments pay WHERE pay.invoice_no = t.bill_indent_no) AS paid_amount
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
@@ -765,13 +765,22 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['sell_price'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['discount_amount'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
-            <!-- Red/Blue Logic Here -->
+            
+            <!-- Red/Blue & Due Logic Here -->
             <?php 
                 $paid_amt = (float)($s['paid_amount'] ?? 0);
-                // Agar payment zero hai toh Red, warna Blue
-                $status_color = ($paid_amt > 0) ? '#2563eb' : '#dc2626'; 
+                $pending_amt = (float)$s['total_sale'] - $paid_amt;
+                
+                // Agar pending amount 0 ya usse kam hai, matlab paisa mil gaya (Blue)
+                // Agar pending amount > 0 hai, matlab paisa baaki hai (Red)
+                $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
             ?>
-            <td style="text-align:right;"><b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b></td>
+            <td style="text-align:right;">
+                <b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b>
+                <?php if($pending_amt > 0): ?>
+                    <br><span style="font-size:10px; color:#dc2626; font-weight:700;">Due: ₹ <?= number_format($pending_amt, 2) ?></span>
+                <?php endif; ?>
+            </td>
           </tr>
           <?php endforeach; ?>
         </tbody>
