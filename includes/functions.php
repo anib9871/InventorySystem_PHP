@@ -242,25 +242,40 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
     $invoice = $invoice_data[0];
 
-/* PROFORMA VS TAX INVOICE TITLE LOGIC FOR EMAIL */
-$doc_type = strtoupper($invoice['remarks'] ?? '');
-$payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
+/* 1. PEHLE PAYMENTS FETCH KARO */
+    $payment_records = find_by_sql("
+        SELECT payment_mode, amount, reference_no, payment_date 
+        FROM payments 
+        WHERE invoice_id = '{$invoice_id}' AND amount > 0
+    ");
 
-// Agar payment Paid ya Partial ho chuki hai (amount > 0), toh Tax Invoice bhejo
-if ($payment_status === 'paid' || $invoice['paid_amount'] > 0) {
-    $is_proforma = false;
-} else {
-    // Agar payment nahi hui hai, tabhi Proforma check karo
-    $is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $payment_status === 'unpaid'));
-}
+    $total_paid_dynamically = 0;
+    if(!empty($payment_records)){
+        foreach($payment_records as $pr){
+            $total_paid_dynamically += (float)$pr['amount'];
+        }
+    }
 
-if ($is_proforma) {
-    $title_text = 'PROFORMA INVOICE';
-    $title_color = '#d97706'; // Amber / Orange
-} else {
-    $title_text = 'TAX INVOICE';
-    $title_color = '#2563eb'; // Blue
-}
+    /* 2. PROFORMA VS TAX INVOICE TITLE LOGIC FOR EMAIL */
+    $doc_type = strtoupper($invoice['remarks'] ?? '');
+    $payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
+    $db_paid_amount = (float)($invoice['paid_amount'] ?? 0);
+
+    // Agar payment DB me update ho gayi hai YA actual payment table me entry hai
+    if ($payment_status === 'paid' || $payment_status === 'partial' || $db_paid_amount > 0 || $total_paid_dynamically > 0) {
+        $is_proforma = false; // Payment aa gayi, toh TAX INVOICE banega
+    } else {
+        // Payment bilkul zero hai, toh check karo remarks me PROFORMA likha hai kya
+        $is_proforma = ($doc_type === 'PROFORMA' || ($db_paid_amount == 0 && $total_paid_dynamically == 0));
+    }
+
+    if ($is_proforma) {
+        $title_text = 'PROFORMA INVOICE';
+        $title_color = '#d97706'; // Amber / Orange
+    } else {
+        $title_text = 'TAX INVOICE';
+        $title_color = '#2563eb'; // Blue
+    }
     $org_master = find_by_sql("
         SELECT org_name 
         FROM master_inventory.master_organization 
@@ -285,12 +300,12 @@ if ($is_proforma) {
         WHERE ii.invoice_id = '{$invoice_id}'
     ");
 
-    /* FETCH PAYMENTS */
-    $payment_records = find_by_sql("
-        SELECT payment_mode, amount, reference_no, payment_date 
-        FROM payments 
-        WHERE invoice_id = '{$invoice_id}' AND amount > 0
-    ");
+    // /* FETCH PAYMENTS */
+    // $payment_records = find_by_sql("
+    //     SELECT payment_mode, amount, reference_no, payment_date 
+    //     FROM payments 
+    //     WHERE invoice_id = '{$invoice_id}' AND amount > 0
+    // ");
 
     $org_name_upper = strtoupper($org_master['org_name']);
     $cust_name_upper = strtoupper($invoice['customer_name']);
