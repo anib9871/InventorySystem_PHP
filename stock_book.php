@@ -48,11 +48,14 @@ body {
 }
 
 /* TABLE STYLING & SORT ARROWS FIX */
+/* TABLE STYLING & SORT ARROWS FIX */
 #stockTable th {
     background: #0f172a !important;
     color: #fff !important;
     cursor: pointer;
-    position: relative;
+    position: sticky; /* Nayi line: Header ko rokne ke liye */
+    top: 0;           /* Nayi line: Top par set karne ke liye */
+    z-index: 10;      /* Nayi line: Data ke upar dikhne ke liye */
     padding-right: 25px !important;
     font-size: 12px;
     white-space: nowrap;
@@ -433,7 +436,7 @@ body {
         ?>
 <br>
         <!-- STOCK REPORT TABLE WITH SORTABLE HEADERS -->
-        <div class="table-responsive" style="border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div class="table-responsive" style="border-radius: 10px; overflow-y: auto; overflow-x: auto; max-height: 500px; border: 1px solid #e2e8f0;">
             <table class="table table-bordered align-middle mb-0" id="stockTable">
                 <thead>
                     <tr>
