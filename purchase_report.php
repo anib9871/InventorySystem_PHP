@@ -39,7 +39,6 @@ $role_id     = $_SESSION['role_id'];
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
-/* ── CENTER FILTER (admin only) ── */
 $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
@@ -79,10 +78,6 @@ BETWEEN '{$from}' AND '{$to}'
 if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
 
-// if($report_type=='product' && !empty($filter_id)){
-//     $sale_query .= " AND t.product_id='{$filter_id}'";
-// }
-
 if($report_type=='supplier' && !empty($filter_id)){
     $sale_query .= " AND t.supplier_id='{$filter_id}'";
 }
@@ -91,20 +86,15 @@ $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
 /* ═══════════════════════════════════════
-   2. PAYMENT MODE SUMMARY
+   2. PAYMENT MODE SUMMARY (Grouped by Mode Only)
 ═══════════════════════════════════════ */
 $pay_q = "
 SELECT
-    sp.supplier_id,
-    sm.supplier_name,
     sp.payment_mode,
     MAX(sp.payment_date) AS payment_date,
     SUM(sp.payment_amount) AS payment_amount
 FROM supplier_payment sp
-LEFT JOIN supplier_master sm
-    ON sm.id = sp.supplier_id
-WHERE DATE(sp.payment_date)
-BETWEEN '{$from}' AND '{$to}'
+WHERE DATE(sp.payment_date) BETWEEN '{$from}' AND '{$to}'
 AND (sp.reference_no IS NULL OR sp.reference_no <> 'Advance Adjusted')
 ";
 
@@ -114,14 +104,14 @@ if($report_type=='supplier' && !empty($filter_id)){
 
 if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
+
 $pay_q .= "
-GROUP BY sp.supplier_id, sp.payment_mode
-ORDER BY sm.supplier_name ASC
+GROUP BY sp.payment_mode
+ORDER BY sp.payment_mode ASC
 ";
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-
 foreach ($payments as $pay){
     $total_collection += $pay['payment_amount'];
 }
@@ -148,23 +138,15 @@ if ($role_id == 2) {
 ═══════════════════════════════════════ */
 $txn_q = "
 SELECT
-
     t.bill_indent_no AS grn_no,
-
     DATE(t.entry_date) AS sale_date,
-
     mc.center_name,
-
     p.name,
-
-    sm.supplier_name ,
-
+    sm.supplier_name,
     t.quantity AS sold_qty,
-
     t.unit_price AS purchase_price,
-
-t.gst_amount,
-
+    t.gst_amount,
+    t.status, /* Make sure 'status' column exists in transaction_master, e.g., Pending, Completed */
 (
     t.net_price +
     CASE
@@ -189,23 +171,14 @@ t.gst_amount,
     ) AS profit
 
 FROM transaction_master t
-
-LEFT JOIN products p
-    ON p.id = t.product_id
-
-LEFT JOIN supplier_master sm
-    ON sm.id = t.supplier_id
-
-LEFT JOIN master_center mc
-    ON mc.center_id = t.center_id
-
-
+LEFT JOIN products p ON p.id = t.product_id
+LEFT JOIN supplier_master sm ON sm.id = t.supplier_id
+LEFT JOIN master_center mc ON mc.center_id = t.center_id
 
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
-AND DATE(t.entry_date)
-BETWEEN '{$from}' AND '{$to}'
+AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
 if ($role_id == 3)
@@ -221,8 +194,6 @@ if($report_type=='supplier' && !empty($filter_id)){
     $txn_q .= " AND t.supplier_id='{$filter_id}'";
 }
 
-
-
 $txn_q .= "
 GROUP BY t.transaction_id
 ORDER BY t.entry_date DESC
@@ -230,10 +201,7 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
-
-
 $grand = 0;
-
 foreach ($sales as $s) {
     $grand += $s['total_sale'];
 }
@@ -241,48 +209,13 @@ foreach ($sales as $s) {
 $grand_round = round($grand);
 $round_off   = $grand_round - $grand;
 
-$shipping_query = "
-SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
-FROM shipping s
-WHERE 1=1
-WHERE t.transaction_type = 1
-";
-
-$shipping_query .= "
-AND s.bill_no IN
-(
-    SELECT DISTINCT bill_indent_no
-    FROM transaction_master
-    WHERE transaction_type = 1
-    AND DATE(entry_date)
-    BETWEEN '{$from}' AND '{$to}'
-";
-
-if ($role_id == 3){
-    $shipping_query .= " AND t.center_id='{$user_center}'";
-}
-elseif ($role_id == 2 && !empty($center_filter)){
-    $shipping_query .= " AND t.center_id='{$center_filter}'";
-}
-
-if($report_type=='supplier' && !empty($filter_id)){
-    $shipping_query .= " AND supplier_id='{$filter_id}'";
-}
-
-if($report_type=='product' && !empty($filter_id)){
-
-}
-
-
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
-
 $pq = "
 SELECT
 p.name,
 SUM(t.quantity) AS qty,
-
 SUM(
     t.net_price +
     CASE
@@ -302,51 +235,32 @@ SUM(
     END
 ) AS price
 FROM transaction_master t
-
-LEFT JOIN products p
-ON p.id = t.product_id
-
+LEFT JOIN products p ON p.id = t.product_id
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
 AND p.type = 1
-AND DATE(t.entry_date)
-BETWEEN '{$from}' AND '{$to}'
+AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if ($role_id == 3)
-    $pq .= " AND t.center_id = '{$user_center}'";
+if ($role_id == 3) $pq .= " AND t.center_id = '{$user_center}'";
+elseif ($role_id == 2 && !empty($center_filter)) $pq .= " AND t.center_id = '{$center_filter}'";
 
-elseif ($role_id == 2 && !empty($center_filter))
-    $pq .= " AND t.center_id = '{$center_filter}'";
-
-if($report_type=='product' && !empty($filter_id)){
-    $pq .= " AND t.product_id='{$filter_id}'";
-}
-
-if($report_type=='supplier' && !empty($filter_id)){
-    $pq .= " AND t.supplier_id='{$filter_id}'";
-}
+if($report_type=='product' && !empty($filter_id)){ $pq .= " AND t.product_id='{$filter_id}'"; }
+if($report_type=='supplier' && !empty($filter_id)){ $pq .= " AND t.supplier_id='{$filter_id}'"; }
 
 $pq .= " GROUP BY t.product_id";
-
 $product_data   = find_by_sql($pq);
-
 $product_labels = array_column($product_data, 'name');
-
 $product_qty    = array_column($product_data, 'qty');
-
 $product_price = array_column($product_data,'price');
 
 /* ═══════════════════════════════════════
    6. SUPPLIER CHART DATA
 ═══════════════════════════════════════ */
-
 $sq = "
 SELECT
-
 sm.supplier_name,
-
 SUM(
     t.net_price +
     CASE
@@ -365,34 +279,20 @@ SUM(
         ELSE 0
     END
 ) AS price
-
 FROM transaction_master t
-
-LEFT JOIN supplier_master sm
-ON sm.id = t.supplier_id
-
+LEFT JOIN supplier_master sm ON sm.id = t.supplier_id
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
 AND t.supplier_id != 0
-AND DATE(t.entry_date)
-BETWEEN '{$from}' AND '{$to}'
+AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if($report_type=='supplier' && !empty($filter_id)){
-    $sq .= " AND t.supplier_id='{$filter_id}'";
-}
-
-if($report_type=='product' && !empty($filter_id)){
-    $sq .= " AND t.product_id='{$filter_id}'";
-}
+if($report_type=='supplier' && !empty($filter_id)){ $sq .= " AND t.supplier_id='{$filter_id}'"; }
+if($report_type=='product' && !empty($filter_id)){ $sq .= " AND t.product_id='{$filter_id}'"; }
 
 $sq .= " GROUP BY t.supplier_id";
-
-
 $supplier_data   = find_by_sql($sq);
-
 $supplier_labels = array_column($supplier_data,'supplier_name');
-
 $supplier_price = array_column($supplier_data,'price');
 
 /* ── COLORS shared PHP + JS ── */
@@ -427,12 +327,13 @@ if (!$is_pdf) include_once('layouts/header.php');
   border-radius: 4px; font-size: 11px; text-decoration: none;
 }
 
-/* ════ TOP ROW (3 columns) ════ */
+/* ════ TOP ROW ════ */
 .rpt-top {
   display: flex;
   gap: 10px;
   align-items: stretch;
   margin-bottom: 10px;
+  flex-wrap: wrap; /* Added for responsiveness */
 }
 
 /* ── Summary Card ── */
@@ -457,7 +358,6 @@ if (!$is_pdf) include_once('layouts/header.php');
 .s-mode-tbl td:last-child { text-align: right; }
 .s-mode-tbl .grand td { border-top: 1px solid rgba(255,255,255,.22); padding-top: 4px; font-weight: 700; font-size: 10px; }
 
-
 .payment-scroll{
     max-height:95px;
     overflow-y:auto;
@@ -466,30 +366,18 @@ if (!$is_pdf) include_once('layouts/header.php');
     scrollbar-width:thin;
     scrollbar-color:rgba(255,255,255,.35) transparent;
 }
-
-/* Chrome / Edge */
-.payment-scroll::-webkit-scrollbar{
-    width:4px;
-}
-
-.payment-scroll::-webkit-scrollbar-track{
-    background:transparent;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb{
-    background:rgba(255,255,255,.30);
-    border-radius:20px;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb:hover{
-    background:rgba(255,255,255,.55);
-}
+.payment-scroll::-webkit-scrollbar{ width:4px; }
+.payment-scroll::-webkit-scrollbar-track{ background:transparent; }
+.payment-scroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.30); border-radius:20px; }
+.payment-scroll::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.55); }
 
 /* ── Chart Cards ── */
 .rpt-card {
   background: #fff; border-radius: 8px; padding: 10px 12px;
   box-shadow: 0 1px 6px rgba(0,0,0,.07);
   display: flex; flex-direction: column;
+  flex: 1; /* Make it flexible */
+  min-width: 250px;
 }
 .rpt-card-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -497,130 +385,67 @@ if (!$is_pdf) include_once('layouts/header.php');
 }
 .rpt-chart-box { position: relative; flex: 1; min-height: 0; }
 
-/* product chart */
-.rpt-product { flex: 1; }
-
-/* center pie + panel */
-.rpt-center { flex: 1; }
-.rpt-pie-row { display: flex; gap: 8px; flex: 1; min-height: 0; }
-.rpt-pie-box { flex: 1; position: relative; min-width: 0; }
-.rpt-pie-panel {
-  width: 140px; flex-shrink: 0;
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
-  padding: 6px 8px; overflow-y: auto; font-size: 10px;
-}
-.rpt-ci { border-left: 3px solid #ccc; padding-left: 6px; margin-bottom: 8px; }
-.rpt-ci-name  { font-weight: 700; font-size: 10px; color: #1e293b; line-height: 1.2; }
-.rpt-ci-total { font-weight: 800; font-size: 11px; margin: 1px 0 3px; }
-.rpt-ci-mode  {
-  display: flex; justify-content: space-between;
-  font-size: 9px; color: #64748b;
-  border-bottom: 1px dashed #e2e8f0; padding: 1px 0;
-}
-.rpt-ci-mode span:last-child { font-weight: 700; color: #1e293b; }
-
 /* ════ TRANSACTION TABLE ════ */
 .rpt-tbl-wrap { background: #fff; border-radius: 8px; padding: 10px 12px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
 .rpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
 .rpt-tbl th, .rpt-tbl td { border: 1px solid #e2e8f0; padding: 4px 7px; }
 .rpt-tbl th { background: #f1f5f9; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 
-.center-group-heading{
-  background:#0f172a !important;
-  color:#fff !important;
-  font-weight:700;
-  font-size:16px !important;
-  padding:8px 10px !important;
-  text-transform:uppercase;
-}
+/* Status Colors */
+.status-pending { color: #dc2626 !important; font-weight: 700; }
+.status-completed { color: #2563eb !important; font-weight: 700; }
 
 .rpt-tbl tbody tr:hover { background: #f8fafc; }
 .rpt-tbl tfoot td { background: #f1f5f9; font-weight: 700; }
 
+.report-note {
+    margin-top: 15px;
+    font-size: 11px;
+    color: #64748b;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 8px;
+    text-align: center;
+}
+
+/* ════ RESPONSIVE MEDIA QUERIES ════ */
+@media (max-width: 768px) {
+    .rpt-top { flex-direction: column; height: auto !important; }
+    .rpt-summary { flex: 1 1 auto; width: 100%; margin-bottom: 10px; }
+    .rpt-card { width: 100%; margin-bottom: 10px; }
+    .rpt-filter { flex-direction: column; align-items: stretch; }
+    .rpt-filter .form-control, .rpt-filter select, .rpt-filter button, .rpt-filter a { width: 100% !important; margin-bottom: 5px; }
+}
+
 /* ════════════════ PRINT ════════════════ */
 @media print {
-
   @page { size: A4 portrait; margin: 10mm; }
-
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-size: 14px !important;
-  line-height: 1.6 !important;
-  background: #fff;
-}
+  body { margin: 0; padding: 0; font-size: 14px !important; line-height: 1.6 !important; background: #fff; }
 
+  .pdf-period-box, .pdf-total-box, .pdf-collection-box {
+    display:block !important;
+    color:#fff !important;
+    padding:5px 9px !important;
+    border-radius:3px !important;
+    margin-bottom:6px !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+    line-height:1.2 !important;
+  }
+  .pdf-period-box { background:#b30000 !important; }
+  .pdf-total-box { background:#0f172a !important; }
+  .pdf-collection-box { background:linear-gradient(90deg,#a10805,#111827) !important; padding:6px 10px !important; margin-bottom:8px !important; width:100% !important; font-size:12px !important; }
 
-.pdf-period-box{
-  display:block !important;
-  background:#b30000 !important;
-  color:#fff !important;
-  padding:5px 9px !important;
-  border-radius:3px !important;
-  margin-bottom:6px !important;
-  font-size:13px !important;
-  font-weight:700 !important;
-  line-height:1.2 !important;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-.pdf-total-box{
-  display:block !important;
-  background:#0f172a !important;
-  color:#fff !important;
-  padding:5px 9px !important;
-  border-radius:3px !important;
-  margin-bottom:6px !important;
-  font-size:13px !important;
-  font-weight:700 !important;
-  line-height:1.2 !important;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-  /* hide everything except report */
-  .no-print        { display: none !important; }
-  .rpt-top         { display: none !important; }  /* hide charts in PDF */
-
-  /* ── org header ── */
+  .no-print, .rpt-top { display: none !important; }
   .rpt-header { margin-bottom: 8px; padding-bottom: 6px; }
   .rpt-header h2 { font-size: 15px !important; }
   .rpt-header p  { font-size: 10px !important; }
 
-  /* ── collection summary box ── */
-.pdf-collection-box{
-  display:block !important;
-  background:linear-gradient(90deg,#a10805,#111827) !important;
-  color:#fff !important;
-  padding:6px 10px !important;
-  border-radius:4px !important;
-  margin-bottom:8px !important;
-  width:100% !important;
-  font-size:12px !important;
-  line-height:1.2 !important;
-}
-
-  /* ── table ── */
-  .rpt-tbl-wrap {
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  .rpt {
-  width: 96% !important;
-  margin: 0 auto !important;
-}
-
+  .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
+  .rpt { width: 96% !important; margin: 0 auto !important; }
   .rpt-card-title  { font-size: 10px !important; margin-bottom: 6px !important; }
-.rpt-tbl th,
-.rpt-tbl td {
-  font-size: 13px !important;
-  padding: 8px 10px !important;
-}
+  .rpt-tbl th, .rpt-tbl td { font-size: 13px !important; padding: 8px 10px !important; }
   .rpt-tbl thead   { display: table-header-group; }
   .rpt-tbl tfoot   { display: table-row-group; }
   tr               { page-break-inside: avoid; }
@@ -630,134 +455,68 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="rpt">
-
   <!-- ── ORG HEADER ── -->
 <div class="rpt-header">
   <h2><?= htmlspecialchars($org_name) ?></h2>
-
-  <h3 style="
-    margin:4px 0 6px;
-    font-size:15px;
-    font-weight:700;
-    color:#334155;
-    letter-spacing:.04em;
-    text-transform:uppercase;
-  ">
+  <h3 style="margin:4px 0 6px; font-size:15px; font-weight:700; color:#334155; letter-spacing:.04em; text-transform:uppercase;">
     Purchase Report
   </h3>
-
-  <p>
-    <?= date('d M Y', strtotime($from)) ?> &mdash; <?= date('d M Y', strtotime($to)) ?>
-  </p>
+  <p><?= date('d M Y', strtotime($from)) ?> &mdash; <?= date('d M Y', strtotime($to)) ?></p>
 </div>
 
   <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="rpt-filter no-print">
     <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input
-type="text"
-name="from"
-value="<?= date('d/M/Y', strtotime($from)) ?>"
-class="form-control purchase-datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
-
-<input
-type="text"
-name="to"
-value="<?= date('d/M/Y', strtotime($to)) ?>"
-class="form-control purchase-datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
+      <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
+      <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
 
       <?php if ($role_id == 2): ?>
-     <select name="report_type" id="report_type" class="form-control" style="width:170px;">
+      <select name="report_type" id="report_type" class="form-control" style="width:170px;">
+          <option value="product" <?= ($report_type=='product')?'selected':'' ?>>By Product</option>
+          <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>By Supplier</option>
+      </select>
 
-  <option value="product" <?= ($report_type=='product')?'selected':'' ?>>
-    By Product
-  </option>
+      <?php
+      $product_list = find_by_sql("SELECT id, name FROM products WHERE type = 1 ORDER BY name");
+      $supplier_list = find_by_sql("SELECT id, supplier_name FROM supplier_master ORDER BY supplier_name");
+      ?>
 
-  <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>
-    By Supplier
-  </option>
-
-</select>
-
-<?php
-
-$product_list = find_by_sql("
-SELECT id, name
-FROM products
-WHERE type = 1
-ORDER BY name
-");
-
-$supplier_list = find_by_sql("
-SELECT id, supplier_name
-FROM supplier_master
-ORDER BY supplier_name
-");
-
-?>
-
-<select name="filter_id" class="form-control" style="width:220px;">
-
-    <option value="">All</option>
-
-    <?php if($report_type=='product'): ?>
-
-        <?php foreach($product_list as $p): ?>
-
-            <option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>>
-                <?= $p['name'] ?>
-            </option>
-
-        <?php endforeach; ?>
-
-    <?php else: ?>
-
-        <?php foreach($supplier_list as $s): ?>
-
-            <option value="<?= $s['id'] ?>" <?= ($filter_id==$s['id'])?'selected':'' ?>>
-                <?= $s['supplier_name'] ?>
-            </option>
-
-        <?php endforeach; ?>
-
-    <?php endif; ?>
-
-</select>
-
-<?php endif; ?>
-
+      <select name="filter_id" class="form-control" style="width:220px;">
+          <option value="">All</option>
+          <?php if($report_type=='product'): ?>
+              <?php foreach($product_list as $p): ?>
+                  <option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>><?= $p['name'] ?></option>
+              <?php endforeach; ?>
+          <?php else: ?>
+              <?php foreach($supplier_list as $s): ?>
+                  <option value="<?= $s['id'] ?>" <?= ($filter_id==$s['id'])?'selected':'' ?>><?= $s['supplier_name'] ?></option>
+              <?php endforeach; ?>
+          <?php endif; ?>
+      </select>
+      <?php endif; ?>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary">
-    <i class="fa fa-file-text-o"></i> Generate Report
-</button>
-<?php
-$pdf_params = [
-    'pdf'         => 1,
-    'from'        => $from,
-    'to'          => $to,
-    'report_type' => $report_type,
-    'filter_id'   => $filter_id,
-];
-if ($role_id == 2 && !empty($center_filter)) {
-    $pdf_params['center_id'] = $center_filter;
-}
-?>
-<a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">
-    &#8659; Download PDF
-</a>
+        <i class="fa fa-file-text-o"></i> Generate Report
+      </button>
 
-<input type="hidden" name="change_type" id="change_type" value="0">
-
-</form>
+      <?php
+      $pdf_params = [
+          'pdf'         => 1,
+          'from'        => $from,
+          'to'          => $to,
+          'report_type' => $report_type,
+          'filter_id'   => $filter_id,
+      ];
+      if ($role_id == 2 && !empty($center_filter)) { $pdf_params['center_id'] = $center_filter; }
+      ?>
+      <a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">
+          &#8659; Download PDF
+      </a>
+      <input type="hidden" name="change_type" id="change_type" value="0">
+    </form>
   </div>
-<?php endif; ?>
+  <?php endif; ?>
 
 <script>
 document.getElementById('report_type').addEventListener('change', function () {
@@ -769,56 +528,35 @@ document.getElementById('report_type').addEventListener('change', function () {
 <?php if($show_report){ ?>
 
 <!-- ── PDF COLLECTION BOX (print only) ── -->
-
 <?php
 $selected_supplier = '';
-
 if($report_type=='supplier' && !empty($filter_id)){
-    $sup = find_by_sql("
-        SELECT supplier_name
-        FROM supplier_master
-        WHERE id='{$filter_id}'
-        LIMIT 1
-    ");
-
+    $sup = find_by_sql("SELECT supplier_name FROM supplier_master WHERE id='{$filter_id}' LIMIT 1");
     $selected_supplier = $sup[0]['supplier_name'] ?? '';
 }
 ?>
 
 <div class="pdf-period-box" style="display:none;">
-
     <table style="width:100%; border-collapse:collapse; color:#fff;">
         <tr>
-
             <td style="text-align:left;">
                 <?php if(!empty($selected_supplier)){ ?>
                     <b>Supplier :</b> <?= htmlspecialchars($selected_supplier) ?>
                 <?php } ?>
             </td>
-
             <td style="text-align:right;">
-                <b>Period :</b>
-                <?= date('d/M/Y', strtotime($from)) ?>
-                To
-                <?= date('d/M/Y', strtotime($to)) ?>
+                <b>Period :</b> <?= date('d/M/Y', strtotime($from)) ?> To <?= date('d/M/Y', strtotime($to)) ?>
             </td>
-
         </tr>
     </table>
-
 </div>
 
 <div class="pdf-total-box" style="display:none;">
   <b>Total Purchase Amount :</b><br>
-
   ₹ <?= number_format($grand,2) ?><br>
-
   <?php if(abs($round_off) > 0.001){ ?>
-      Round Off :
-      <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
-
-      <b>Net Total :
-      ₹ <?= number_format($grand_round,2) ?></b>
+      Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+      <b>Net Total : ₹ <?= number_format($grand_round,2) ?></b>
   <?php } ?>
 </div>
 
@@ -827,58 +565,27 @@ if($report_type=='supplier' && !empty($filter_id)){
       Supplier Payment Summary (Mode-wise)
     </h4>
     <table style="width:100%; border-collapse:collapse; color:#fff; font-size:11px;">
-<tr style="font-weight:700; opacity:.7;">
-
-<?php if(empty($filter_id)){ ?>
-<td style="padding:2px 4px;">SUPPLIER</td>
-<?php } ?>
-
-<td style="padding:2px 4px;">MODE</td>
-<td style="padding:2px 4px; text-align:right;">AMOUNT</td>
-
-</tr>
-
-<?php foreach ($payments as $pay): ?>
-<tr>
-
-<?php if(empty($filter_id)){ ?>
-<td style="padding:3px 4px;">
-<?= htmlspecialchars($pay['supplier_name']) ?>
-</td>
-<?php } ?>
-
-<td style="padding:3px 4px;">
-<?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?>
-</td>
-
-<td style="padding:3px 4px;text-align:right;">
-₹ <?= number_format($pay['payment_amount'],2) ?>
-</td>
-
-</tr>
-<?php endforeach; ?>
-
-
-<tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
-
-<?php if(empty($filter_id)){ ?>
-<td colspan="2">GRAND TOTAL</td>
-<?php } else { ?>
-<td>GRAND TOTAL</td>
-<?php } ?>
-
-<td style="text-align:right;">
-₹ <?= number_format($total_collection,2) ?>
-</td>
-
-</tr>
+        <tr style="font-weight:700; opacity:.7;">
+            <td style="padding:2px 4px;">MODE</td>
+            <td style="padding:2px 4px; text-align:right;">AMOUNT</td>
+        </tr>
+        <?php foreach ($payments as $pay): ?>
+        <tr>
+            <td style="padding:3px 4px;"><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
+            <td style="padding:3px 4px;text-align:right;">₹ <?= number_format($pay['payment_amount'],2) ?></td>
+        </tr>
+        <?php endforeach; ?>
+        <tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
+            <td>GRAND TOTAL</td>
+            <td style="text-align:right;">₹ <?= number_format($total_collection,2) ?></td>
+        </tr>
     </table>
   </div>
 
   <!-- ══════════════════════════════════════
        TOP ROW
   ══════════════════════════════════════ -->
-  <div class="rpt-top" style="height:185px;">
+  <div class="rpt-top" style="min-height:185px;">
 
     <!-- 1. Summary Card -->
     <div class="rpt-summary">
@@ -886,94 +593,56 @@ if($report_type=='supplier' && !empty($filter_id)){
       <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
       <div class="s-div"></div>
 
-<?php if(abs($round_off) > 0.001){ ?>
-<div style="font-size:9px;line-height:14px;margin-bottom:6px;">
-    Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
-    <span style="font-size:10px;font-weight:700;">
-        Net Total : ₹ <?= number_format($grand_round,2) ?>
-    </span>
-</div>
-<?php } ?>
+      <?php if(abs($round_off) > 0.001){ ?>
+      <div style="font-size:9px;line-height:14px;margin-bottom:6px;">
+          Round Off : <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+          <span style="font-size:10px;font-weight:700;">Net Total : ₹ <?= number_format($grand_round,2) ?></span>
+      </div>
+      <?php } ?>
 
-<?php if($report_type=='supplier'){ ?>
-
-<div class="s-lbl">Payment &mdash; Mode Wise</div>
-
-<div class="payment-scroll">
-
-<table class="s-mode-tbl">
-<tr style="opacity:.5;">
-    <td style="font-size:8px;text-transform:uppercase;">Mode</td>
-    <td style="font-size:8px;text-transform:uppercase;">Date</td>
-    <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amount</td>
-</tr>
-
-<?php foreach ($payments as $pay): ?>
-<tr>
-
-    <td>
-        <?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?>
-    </td>
-
-    <td>
-        <?= date('d/M/Y', strtotime($pay['payment_date'])) ?>
-    </td>
-
-    <td style="text-align:right;">
-        &#8377; <?= number_format($pay['payment_amount'],2) ?>
-    </td>
-
-</tr>
-<?php endforeach; ?>
-
-<tr class="grand">
-    <td colspan="2">Grand Total</td>
-
-    <td style="text-align:right;">
-        &#8377; <?= number_format($total_collection,2) ?>
-    </td>
-</tr>
-</table>
-
-</div>
-
-<?php } else { ?>
-
-<?php if(!empty($filter_id)){ ?>
-    <div class="s-lbl">Product Wise Purchase</div>
-    <div class="s-big">
-        &#8377; <?= number_format($grand,2) ?>
-    </div>
-<?php } ?>
-
-<?php } ?>
+      <?php if($report_type=='supplier'){ ?>
+      <div class="s-lbl">Payment &mdash; Mode Wise</div>
+      <div class="payment-scroll">
+          <table class="s-mode-tbl">
+              <tr style="opacity:.5;">
+                  <td style="font-size:8px;text-transform:uppercase;">Mode</td>
+                  <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amount</td>
+              </tr>
+              <?php foreach ($payments as $pay): ?>
+              <tr>
+                  <td><?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?></td>
+                  <td style="text-align:right;">&#8377; <?= number_format($pay['payment_amount'],2) ?></td>
+              </tr>
+              <?php endforeach; ?>
+              <tr class="grand">
+                  <td>Grand Total</td>
+                  <td style="text-align:right;">&#8377; <?= number_format($total_collection,2) ?></td>
+              </tr>
+          </table>
+      </div>
+      <?php } else { ?>
+          <?php if(!empty($filter_id)){ ?>
+              <div class="s-lbl">Product Wise Purchase</div>
+              <div class="s-big">&#8377; <?= number_format($grand,2) ?></div>
+          <?php } ?>
+      <?php } ?>
     </div>
 
-<!-- Product Chart -->
-<div class="rpt-card rpt-product">
+    <!-- Product Chart -->
+    <div class="rpt-card rpt-product">
+      <div class="rpt-card-title">Product Wise Purchase (Qty)</div>
+      <div class="rpt-chart-box" style="height:145px;">
+        <canvas id="productChart"></canvas>
+      </div>
+    </div>
 
-  <div class="rpt-card-title">
-    Product Wise Purchase (Qty)
-  </div>
-
-  <div class="rpt-chart-box" style="height:145px;">
-    <canvas id="productChart"></canvas>
-  </div>
-
-</div>
-
-<!-- Supplier Chart -->
-<div class="rpt-card rpt-product">
-
-  <div class="rpt-card-title">
-    Supplier Wise Purchase (Qty)
-  </div>
-
-  <div class="rpt-chart-box" style="height:145px;">
-    <canvas id="supplierChart"></canvas>
-  </div>
-
-</div>
+    <!-- Supplier Chart -->
+    <div class="rpt-card rpt-product">
+      <div class="rpt-card-title">Supplier Wise Purchase (Qty)</div>
+      <div class="rpt-chart-box" style="height:145px;">
+        <canvas id="supplierChart"></canvas>
+      </div>
+    </div>
 
   </div><!-- /.rpt-top -->
 
@@ -982,329 +651,175 @@ if($report_type=='supplier' && !empty($filter_id)){
   ══════════════════════════════════════ -->
   <div class="rpt-tbl-wrap">
    <div class="rpt-card-title">
-
-<?php
-if(!empty($center_filter)){
-
-  $center_data = find_by_sql("
-    SELECT center_name 
-    FROM master_center 
-    WHERE center_id='{$center_filter}' 
-    LIMIT 1
-  ");
-
-  $pdf_center_name = $center_data[0]['center_name'] ?? 'Center Sales Detail';
-
-  echo strtoupper(htmlspecialchars($pdf_center_name)) . ' SALES DETAIL';
-
-}else{
-
-    if($report_type == 'supplier'){
-        echo 'SUPPLIER WISE PURCHASE REPORT';
+    <?php
+    if(!empty($center_filter)){
+      $center_data = find_by_sql("SELECT center_name FROM master_center WHERE center_id='{$center_filter}' LIMIT 1");
+      $pdf_center_name = $center_data[0]['center_name'] ?? 'Center Sales Detail';
+      echo strtoupper(htmlspecialchars($pdf_center_name)) . ' SALES DETAIL';
     }else{
-        echo 'PRODUCT WISE PURCHASE REPORT';
+        if($report_type == 'supplier'){
+            echo 'SUPPLIER WISE PURCHASE REPORT';
+        }else{
+            echo 'PRODUCT WISE PURCHASE REPORT';
+        }
     }
-
-}
-?>
-
-</div>
+    ?>
+    </div>
 
     <?php if (empty($sales)): ?>
       <p style="color:#94a3b8;">No records found for selected period.</p>
     <?php else: ?>
     <div style="overflow-x:auto;">
-<table class="rpt-tbl">
+      <table class="rpt-tbl">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th>Date</th>
+            <th>GRN No</th>
+            <th>Product</th>
+            <th>Supplier</th>
+            <th>Qty</th>
+            <th>Purchase Price</th>
+            <th>GST</th>
+            <th>Status</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($sales as $index => $s): ?>
+          <tr>
+            <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
+            <td><?= htmlspecialchars($s['grn_no']) ?></td>
+            <td><?= htmlspecialchars($s['name']) ?></td>
+            <td><?= htmlspecialchars($s['supplier_name']) ?></td>
+            <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
+            <td><?= number_format($s['purchase_price'],2) ?></td>
+            <td>₹ <?= number_format($s['gst_amount'],2) ?></td>
+            
+            <?php 
+            // Setting red/blue color based on status
+            $st_class = '';
+            $st_text = strtolower($s['status'] ?? 'completed');
+            if($st_text == 'pending') $st_class = 'status-pending'; // red
+            else if(in_array($st_text, ['completed', 'paid', 'done'])) $st_class = 'status-completed'; // blue
+            ?>
+            <td class="<?= $st_class ?>"><?= ucfirst(htmlspecialchars($s['status'] ?? 'Completed')) ?></td>
 
-<thead>
-<tr style="background:#f1f5f9;">
-
-<th>Date</th>
-
-<th>GRN No</th>
-
-<th>Product</th>
-
-<th>Supplier</th>
-
-<th>Qty</th>
-
-<th>Purchase Price</th>
-
-<th>GST</th>
-
-<th>Total</th>
-
-</tr>
-</thead>
-
-<tbody>
-
-<?php foreach ($sales as $index => $s): ?>
-
-<tr>
-<td>
-    <?= date('d/M/Y', strtotime($s['sale_date'])) ?>
-</td>
-
-<td>
-    <?= htmlspecialchars($s['grn_no']) ?>
-</td>
-
-<td>
-    <?= htmlspecialchars($s['name']) ?>
-</td>
-
-<td>
-    <?= htmlspecialchars($s['supplier_name']) ?>
-</td>
-
-<td style="text-align:center;">
-    <?= $s['sold_qty'] ?>
-</td>
-
-<td>
-    <?= number_format($s['purchase_price'],2) ?>
-</td>
-
-<td>
-    ₹ <?= number_format($s['gst_amount'],2) ?>
-</td>
-
-<td>
-    <b style="color:#2563eb;">
-        ₹ <?= number_format($s['total_sale'],2) ?>
-    </b>
-</td>
-</tr>
-
-<?php endforeach; ?>
-
-
-
-
-</tbody>
-
-<?php if(abs($round_off) > 0.001){ ?>
-
-<tfoot>
-<tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="7" style="text-align:right;">
-        Grand Total<br>
-        Round Off<br>
-        Net Total
-    </td>
-
-    <td style="text-align:right;">
-        ₹ <?= number_format($grand,2) ?><br>
-        <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
-        <b>₹ <?= number_format($grand_round,2) ?></b>
-    </td>
-</tr>
-
-
-<?php } else { ?>
-
-<tfoot>
-<tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="7" style="text-align:right;">Grand Total</td>
-    <td style="text-align:right;">
-        <b>₹ <?= number_format($grand,2) ?></b>
-    </td>
-</tr>
-</tfoot>
-
-<?php } ?>
-</tr>
-</tfoot>
+            <td>
+                <b style="color:#2563eb;">₹ <?= number_format($s['total_sale'],2) ?></b>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+        
+        <!-- Totals fixed -->
+        <tfoot>
+        <?php if(abs($round_off) > 0.001){ ?>
+          <tr style="background:#e2e8f0;font-weight:700;">
+              <td colspan="8" style="text-align:right;">
+                  Grand Total<br>Round Off<br>Net Total
+              </td>
+              <td style="text-align:right;">
+                  ₹ <?= number_format($grand,2) ?><br>
+                  <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
+                  <b>₹ <?= number_format($grand_round,2) ?></b>
+              </td>
+          </tr>
+        <?php } else { ?>
+          <tr style="background:#e2e8f0;font-weight:700;">
+              <td colspan="8" style="text-align:right;">Grand Total</td>
+              <td style="text-align:right;">
+                  <b>₹ <?= number_format($grand,2) ?></b>
+              </td>
+          </tr>
+        <?php } ?>
+        </tfoot>
       </table>
     </div>
+    
+    <!-- NOTE SECTION -->
+    <div class="report-note">
+        <strong>Note:</strong> This is a computer-generated Purchase Report. Discrepancies, if any, should be reported immediately.
+    </div>
+
     <?php endif; ?>
   </div>
-
 </div><!-- /.rpt -->
-
 <?php } ?>
 
 <script>
 /* ── Product Bar ── */
-
 new Chart(document.getElementById('productChart'), {
-
   type: 'bar',
-
   data: {
-
     labels: <?= json_encode($product_labels) ?>,
-
     datasets: [{
-
       label: 'Purchase Qty',
-
       data: <?= json_encode($product_qty) ?>,
-
       borderWidth: 1,
-
       borderRadius: 4,
-
       backgroundColor: 'rgba(37,99,235,.72)',
-
       borderColor: '#2563eb'
-
     }]
   },
-
   options: {
-
     responsive: true,
-
     maintainAspectRatio: false,
-
     plugins: {
-
       legend: { display:false },
-
       tooltip: {
-
         callbacks: {
-
-          title: function(context){
-
-            return context[0].label;
-
-          },
-
-        label: function(context){
-
+          title: function(context){ return context[0].label; },
+          label: function(context){
             var price = <?= json_encode($product_price) ?>[context.dataIndex];
-
             return [
                 'Qty : ' + context.raw,
-                'Price : ₹ ' + Number(price).toLocaleString('en-IN',{
-                    minimumFractionDigits:2,
-                    maximumFractionDigits:2
-                })
+                'Price : ₹ ' + Number(price).toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2})
             ];
-
-        }
+          }
         }
       }
     },
-
     scales: {
-
-      x: {
-
-        grid: { display:false },
-
-        ticks: {
-
-          display:false
-        }
-      },
-
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        stepSize: 1,
-        precision: 0,
-        font: {
-            size: 9
-        }
-    },
-    grid: {
-        color: 'rgba(0,0,0,.04)'
-    }
-}
+      x: { grid: { display:false }, ticks: { display:false } },
+      y: { beginAtZero: true, grace: '5%', ticks: { stepSize: 1, precision: 0, font: { size: 9 } }, grid: { color: 'rgba(0,0,0,.04)' } }
     }
   }
 });
 
 /* ── Supplier Bar ── */
 new Chart(document.getElementById('supplierChart'), {
-
   type: 'bar',
-
   data: {
-
     labels: <?= json_encode($supplier_labels) ?>,
-
     datasets: [{
-
       label: 'Purchase Qty',
-
       data: <?= json_encode($supplier_price) ?>,
-
       borderWidth: 1,
-
       borderRadius: 4,
-
       backgroundColor: 'rgba(22,163,74,.72)',
-
       borderColor: '#16a34a'
-
     }]
   },
-
   options: {
-
     responsive: true,
-
     maintainAspectRatio: false,
-
     plugins: {
-
       legend: { display:false },
-
       tooltip: {
-
         callbacks: {
-
-          title: function(context){
-
-            return context[0].label;
-
-          },
-
-        label: function(context){
-
-            return 'Price : ₹ ' +
-            Number(context.raw).toLocaleString('en-IN',{
-                minimumFractionDigits:2,
-                maximumFractionDigits:2
-            });
-
-        }
+          title: function(context){ return context[0].label; },
+          label: function(context){
+            return 'Price : ₹ ' + Number(context.raw).toLocaleString('en-IN',{minimumFractionDigits:2, maximumFractionDigits:2});
+          }
         }
       }
     },
-
     scales: {
-
-      x: {
-
-        grid: { display:false },
-
-        ticks: {
-
-          font:{ size:9 },
-
-          maxRotation:0
-        }
-      },
-
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        precision: 0
-    }
-}
+      x: { grid: { display:false }, ticks: { font:{ size:9 }, maxRotation:0 } },
+      y: { beginAtZero: true, grace: '5%', ticks: { precision: 0 } }
     }
   }
 });
-
 </script>
 
 <script>
