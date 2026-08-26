@@ -384,10 +384,10 @@ body {
                 p.reorder_level,
                 p.website_link,
 
-            SUM(
+      SUM(
                 CASE
                     WHEN t.transaction_type IN (1,4)
-                    THEN t.quantity
+                    THEN (t.quantity + COALESCE(t.free_qty, 0))
                     ELSE 0
                 END
             ) AS total_in,
@@ -395,7 +395,7 @@ body {
             SUM(
                 CASE
                     WHEN t.transaction_type IN (2,3,5,6)
-                    THEN t.quantity
+                    THEN (t.quantity + COALESCE(t.free_qty, 0))
                     ELSE 0
                 END
             ) AS total_out,
