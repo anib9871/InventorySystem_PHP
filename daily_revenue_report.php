@@ -43,12 +43,8 @@ $user_center   = $_SESSION['center_id'] ?? 0;
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 /* ══════════════════════════════════════════════════════════
-   REVENUE QUERY (INCOME VS EXPENDITURE WITH SHIPPING)
-   * Sales (type 2) + Shipping Charges = Income
-   * Purchase/GRN (type 1) + Shipping Charges = Expenditure
+   COMBINED REVENUE & DETAILED TRANSACTION QUERY
 ══════════════════════════════════════════════════════════ */
-
-// Role & Center Filters for Transaction
 $txn_center_cond = "";
 if ($role_id == 3) {
     $txn_center_cond = " AND t.center_id = '{$user_center}'";
@@ -57,89 +53,6 @@ if ($role_id == 3) {
 }
 
 $sql = "
-SELECT 
-    dt.report_date,
-    IFNULL(inc.total_income, 0) AS total_income,
-    IFNULL(exp.total_expenditure, 0) AS total_expenditure
-FROM (
-    SELECT DISTINCT DATE(entry_date) AS report_date 
-    FROM transaction_master 
-    WHERE DATE(entry_date) BETWEEN '{$from}' AND '{$to}'
-) dt
-
-/* ── INCOME (Sales net_price + Sales Shipping) ── */
-LEFT JOIN (
-    SELECT 
-        DATE(t.entry_date) AS sale_date,
-        SUM(
-            t.net_price +
-            CASE
-                WHEN t.transaction_id = (
-                    SELECT MIN(tm.transaction_id)
-                    FROM transaction_master tm
-                    WHERE tm.bill_indent_no = t.bill_indent_no
-                )
-                THEN IFNULL((
-                    SELECT SUM(s.total_amount)
-                    FROM shipping s
-                    WHERE s.bill_no = t.bill_indent_no
-                ), 0)
-                ELSE 0
-            END
-        ) AS total_income
-    FROM transaction_master t
-    WHERE t.transaction_type = 2 
-      AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
-      {$txn_center_cond}
-    GROUP BY DATE(t.entry_date)
-) inc ON dt.report_date = inc.sale_date
-
-/* ── EXPENDITURE (Purchases net_price + Purchase/Courier Shipping) ── */
-LEFT JOIN (
-    SELECT 
-        DATE(t.entry_date) AS purchase_date,
-        SUM(
-            t.net_price +
-            CASE
-                WHEN t.transaction_id = (
-                    SELECT MIN(tm.transaction_id)
-                    FROM transaction_master tm
-                    WHERE tm.bill_indent_no = t.bill_indent_no
-                )
-                THEN IFNULL((
-                    SELECT SUM(s.total_amount)
-                    FROM shipping s
-                    WHERE s.bill_no = t.bill_indent_no
-                ), 0)
-                ELSE 0
-            END
-        ) AS total_expenditure
-    FROM transaction_master t
-    WHERE t.transaction_type = 1 
-      AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
-      {$txn_center_cond}
-    GROUP BY DATE(t.entry_date)
-) exp ON dt.report_date = exp.purchase_date
-
-ORDER BY dt.report_date DESC;
-";
-
-$report_data = find_by_sql($sql);
-
-$grand_income = 0;
-$grand_expenditure = 0;
-
-if (!empty($report_data)) {
-    foreach ($report_data as $row) {
-        $grand_income += $row['total_income'];
-        $grand_expenditure += $row['total_expenditure'];
-    }
-}
-
-/* ══════════════════════════════════════════════════════════
-   DETAILED TRANSACTION QUERY (KISKA HAI)
-══════════════════════════════════════════════════════════ */
-$detailed_sql = "
 SELECT 
     DATE(t.entry_date) AS txn_date,
     'Sale' AS txn_type,
@@ -169,8 +82,19 @@ GROUP BY t.bill_indent_no, DATE(t.entry_date), sm.supplier_name
 
 ORDER BY txn_date DESC, ref_no ASC
 ";
-$detailed_data = find_by_sql($detailed_sql);
 
+$detailed_data = find_by_sql($sql);
+
+// Calculate Grand Totals Dynamically
+$grand_income = 0;
+$grand_expenditure = 0;
+
+if (!empty($detailed_data)) {
+    foreach ($detailed_data as $row) {
+        $grand_income += $row['income_amount'];
+        $grand_expenditure += $row['expense_amount'];
+    }
+}
 $net_revenue = $grand_income - $grand_expenditure;
 
 if (!$is_pdf) include_once('layouts/header.php');
@@ -198,49 +122,34 @@ if (!$is_pdf) include_once('layouts/header.php');
 
 /* ================= MOBILE RESPONSIVE FIXES ================= */
 @media screen and (max-width: 768px) {
-    /* Summary boxes ko ek ke neeche ek laane ke liye */
-    .summary-container {
-        flex-direction: column !important;
-    }
-    .summary-card {
-        width: 100% !important;
-    }
-    
-    /* Filter form ko set karne ke liye */
-    .mobile-wrap-form {
-        flex-wrap: wrap !important;
-    }
-    .mobile-wrap-form > input {
-        flex: 1 1 calc(50% - 6px) !important; 
-        min-width: 130px;
-        width: auto !important;
-    }
-    .mobile-wrap-form > button, .mobile-wrap-form > a {
-        flex: 1 1 100% !important; 
-        justify-content: center;
-        text-align: center;
-        display: flex;
-        align-items: center;
-    }
+    .summary-container { flex-direction: column !important; }
+    .summary-card { width: 100% !important; }
+    .mobile-wrap-form { flex-wrap: wrap !important; }
+    .mobile-wrap-form > input { flex: 1 1 calc(50% - 6px) !important; min-width: 130px; width: auto !important; }
+    .mobile-wrap-form > button, .mobile-wrap-form > a { flex: 1 1 100% !important; justify-content: center; text-align: center; display: flex; align-items: center; }
+    .rpt-tbl { min-width: 800px !important; }
+}
 
-    /* Table ko squish hone se rokne aur scroll dene ke liye */
-    .rpt-tbl {
-        min-width: 600px !important; 
-    }
+@media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .rpt-tbl-wrap { box-shadow: none !important; padding: 0 !important; }
+    a { text-decoration: none !important; color: #1e293b !important; }
 }
 </style>
 
 <div class="rpt">
     <div class="rpt-header">
         <h2><?= htmlspecialchars($org_name) ?></h2>
-        <h3 style="margin:4px 0 6px; font-size:15px; font-weight:700; color:#334155; text-transform:uppercase;">Daily Revenue Report (Income & Expenditure)</h3>
+        <h3 style="margin:4px 0 6px; font-size:15px; font-weight:700; color:#334155; text-transform:uppercase;">Daily Revenue & Transaction Report</h3>
         <p><?= date('d M Y', strtotime($from)) ?> &mdash; <?= date('d M Y', strtotime($to)) ?></p>
     </div>
 
     <!-- Filter Form -->
     <?php if (!$is_pdf): ?>
     <div class="rpt-filter no-print">
-        <form method="post" class="rpt-filter" style="margin:0; width:100%;">
+        <form method="post" class="mobile-wrap-form" style="margin:0; width:100%; display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
             <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
             <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
             <button type="submit" name="generate_report" value="1" class="btn btn-primary"><i class="fa fa-file-text-o"></i> Generate Report</button>
@@ -267,38 +176,66 @@ if (!$is_pdf) include_once('layouts/header.php');
         </div>
     </div>
 
-    <!-- Data Table -->
+    <!-- 1. Combined Unified Table -->
+    <h4 style="font-size:13px; font-weight:700; color:#334155; text-transform:uppercase; margin-bottom:8px;">Transaction Breakdown</h4>
     <div class="rpt-tbl-wrap" style="background:#fff; border-radius:8px; padding:10px; box-shadow:0 1px 6px rgba(0,0,0,.07);">
-        <?php if (empty($report_data)): ?>
-            <p style="color:#94a3b8; text-align:center; padding: 20px;">No transaction records found for the selected period.</p>
+        <?php if (empty($detailed_data)): ?>
+            <p style="color:#94a3b8; text-align:center; padding: 20px;">No transactions found for the selected period.</p>
         <?php else: ?>
             <div style="overflow-x:auto;">
                 <table class="rpt-tbl">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th style="text-align:right;">Income / Sales (₹)</th>
-                            <th style="text-align:right;">Expenditure / Purchase (₹)</th>
-                            <th style="text-align:right;">Net Flow (₹)</th>
+                            <th width="10%">Date</th>
+                            <th width="8%" style="text-align:center;">Type</th>
+                            <th width="15%">Ref No. (Inv/GRN)</th>
+                            <th width="25%">Party Name</th>
+                            <th width="14%" style="text-align:right;">Income / Sales (₹)</th>
+                            <th width="14%" style="text-align:right;">Expenditure / Purchase (₹)</th>
+                            <th width="14%" style="text-align:right;">Net Flow (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($report_data as $row): 
-                            $daily_net = $row['total_income'] - $row['total_expenditure'];
+                        <?php foreach ($detailed_data as $dt): 
+                            $row_net = $dt['income_amount'] - $dt['expense_amount'];
                         ?>
                         <tr>
-                            <td><?= date('d/M/Y', strtotime($row['report_date'])) ?></td>
-                            <td style="text-align:right; color:#2563eb; font-weight:600;">₹ <?= number_format($row['total_income'], 2) ?></td>
-                            <td style="text-align:right; color:#dc2626; font-weight:600;">₹ <?= number_format($row['total_expenditure'], 2) ?></td>
-                            <td style="text-align:right; font-weight:700; color:<?= $daily_net >= 0 ? '#16a34a' : '#dc2626' ?>;">
-                                ₹ <?= number_format($daily_net, 2) ?>
+                            <td><?= date('d/M/Y', strtotime($dt['txn_date'])) ?></td>
+                            <td style="text-align:center;">
+                                <?php if($dt['txn_type'] == 'Sale'): ?>
+                                    <span style="background:#dbeafe; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">SALE</span>
+                                <?php else: ?>
+                                    <span style="background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">PURCHASE</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <!-- Yahan apne file ka sahi URL naam daal lena agar zarurat ho -->
+                                <?php if($dt['txn_type'] == 'Sale'): ?>
+                                    <a href="view_invoice.php?invoice_no=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
+                                        <?= htmlspecialchars($dt['ref_no']) ?>
+                                    </a>
+                                <?php else: ?>
+                                    <a href="purchase_view.php?grn_no=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
+                                        <?= htmlspecialchars($dt['ref_no']) ?>
+                                    </a>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= htmlspecialchars($dt['party_name']) ?></td>
+                            <td style="text-align:right; color:#2563eb; font-weight:600;">
+                                <?= $dt['income_amount'] > 0 ? '₹ ' . number_format($dt['income_amount'], 2) : '-' ?>
+                            </td>
+                            <td style="text-align:right; color:#dc2626; font-weight:600;">
+                                <?= $dt['expense_amount'] > 0 ? '₹ ' . number_format($dt['expense_amount'], 2) : '-' ?>
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:<?= $row_net >= 0 ? '#16a34a' : '#dc2626' ?>;">
+                                <?= $row_net >= 0 ? '₹ ' . number_format($row_net, 2) : '₹ ' . number_format($row_net, 2) ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
                         <tr style="background:#e2e8f0; font-weight:700;">
-                            <td>GRAND TOTAL</td>
+                            <td colspan="4" style="text-align:right;">GRAND TOTAL</td>
                             <td style="text-align:right; color:#2563eb;">₹ <?= number_format($grand_income, 2) ?></td>
                             <td style="text-align:right; color:#dc2626;">₹ <?= number_format($grand_expenditure, 2) ?></td>
                             <td style="text-align:right; color:<?= $net_revenue >= 0 ? '#16a34a' : '#dc2626' ?>;">
@@ -310,50 +247,7 @@ if (!$is_pdf) include_once('layouts/header.php');
             </div>
         <?php endif; ?>
     </div>
-    <!-- 2. Detailed Breakdown Table -->
-    <h4 style="font-size:13px; font-weight:700; color:#334155; text-transform:uppercase; margin-bottom:8px; margin-top:20px;">2. Detailed Transaction Breakdown</h4>
-    <div class="rpt-tbl-wrap" style="background:#fff; border-radius:8px; padding:10px; box-shadow:0 1px 6px rgba(0,0,0,.07);">
-        <?php if (empty($detailed_data)): ?>
-            <p style="color:#94a3b8; text-align:center; padding: 20px;">No detailed transactions found.</p>
-        <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="rpt-tbl">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Ref No. (Inv/GRN)</th>
-                            <th>Party Name (Customer/Supplier)</th>
-                            <th style="text-align:right;">Income (₹)</th>
-                            <th style="text-align:right;">Expenditure (₹)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($detailed_data as $dt): ?>
-                        <tr>
-                            <td><?= date('d/M/Y', strtotime($dt['txn_date'])) ?></td>
-                            <td>
-                                <?php if($dt['txn_type'] == 'Sale'): ?>
-                                    <span style="background:#dbeafe; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">SALE</span>
-                                <?php else: ?>
-                                    <span style="background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">PURCHASE</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><b><?= htmlspecialchars($dt['ref_no']) ?></b></td>
-                            <td><?= htmlspecialchars($dt['party_name']) ?></td>
-                            <td style="text-align:right; color:#2563eb; font-weight:600;">
-                                <?= $dt['income_amount'] > 0 ? '₹ ' . number_format($dt['income_amount'], 2) : '-' ?>
-                            </td>
-                            <td style="text-align:right; color:#dc2626; font-weight:600;">
-                                <?= $dt['expense_amount'] > 0 ? '₹ ' . number_format($dt['expense_amount'], 2) : '-' ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </div>
+
 </div>
 
 <script>
