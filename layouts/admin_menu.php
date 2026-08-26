@@ -76,6 +76,7 @@ if(!empty($config)){
         <li><a href="bank_master.php">Bank Master</a></li>
         <li><a href="print_type_master.php">Print Type Master</a></li>
         <li><a href="terms_conditions_master.php">Terms Conditions Master</a></li>
+        <li><a href="expense_master.php">Expense Master</a></li>
       </ul>
     </li>
 
@@ -111,6 +112,7 @@ if(!empty($config)){
         <li><a href="supplier_advance.php">Supplier Advance</a></li>
          <li><a href="payments.php">Payment Pendency Report</a></li>
         <!-- <li><a href="payment_report.php">Payment Reports</a></li> -->
+         <li><a href="add_expence.php">Expence</a></li>
         
       </ul>
     </li>
@@ -128,6 +130,7 @@ if(!empty($config)){
         <li><a href="purchase_report.php">Purchase Report</a></li>
         <li><a href="ledger_report.php">Ledger Report</a></li>
         <li><a href="daily_revenue_report.php">Revenue Report</a></li>
+         <li><a href="expense_report.php">Expense Report</a></li>
         
       </ul>
     </li>
