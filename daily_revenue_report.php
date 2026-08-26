@@ -215,7 +215,7 @@ if (!$is_pdf) include_once('layouts/header.php');
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
                                 <?php else: ?>
-                                    <a href="purchase_view.php?grn_no=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
+                                    <a href="print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
                                 <?php endif; ?>
