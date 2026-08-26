@@ -112,7 +112,7 @@ if(!empty($config)){
         <li><a href="supplier_advance.php">Supplier Advance</a></li>
          <li><a href="payments.php">Payment Pendency Report</a></li>
         <!-- <li><a href="payment_report.php">Payment Reports</a></li> -->
-         <li><a href="add_expence.php">Expence</a></li>
+         <li><a href="add_expense.php">Expense</a></li>
         
       </ul>
     </li>
