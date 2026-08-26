@@ -135,6 +135,42 @@ if (!empty($report_data)) {
         $grand_expenditure += $row['total_expenditure'];
     }
 }
+
+/* ══════════════════════════════════════════════════════════
+   DETAILED TRANSACTION QUERY (KISKA HAI)
+══════════════════════════════════════════════════════════ */
+$detailed_sql = "
+SELECT 
+    DATE(t.entry_date) AS txn_date,
+    'Sale' AS txn_type,
+    t.bill_indent_no AS ref_no,
+    IFNULL(cm.customer_name, 'Unknown Customer') AS party_name,
+    SUM(t.net_price + CASE WHEN t.transaction_id = (SELECT MIN(tm.transaction_id) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) THEN IFNULL((SELECT SUM(s.total_amount) FROM shipping s WHERE s.bill_no = t.bill_indent_no), 0) ELSE 0 END) AS income_amount,
+    0 AS expense_amount
+FROM transaction_master t
+LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
+LEFT JOIN customer_master cm ON cm.id = i.customer_id
+WHERE t.transaction_type = 2 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
+GROUP BY t.bill_indent_no, DATE(t.entry_date), cm.customer_name
+
+UNION ALL
+
+SELECT 
+    DATE(t.entry_date) AS txn_date,
+    'Purchase' AS txn_type,
+    t.bill_indent_no AS ref_no,
+    IFNULL(sm.supplier_name, 'Unknown Supplier') AS party_name,
+    0 AS income_amount,
+    SUM(t.net_price + CASE WHEN t.transaction_id = (SELECT MIN(tm.transaction_id) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) THEN IFNULL((SELECT SUM(s.total_amount) FROM shipping s WHERE s.bill_no = t.bill_indent_no), 0) ELSE 0 END) AS expense_amount
+FROM transaction_master t
+LEFT JOIN supplier_master sm ON sm.id = t.supplier_id
+WHERE t.transaction_type = 1 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
+GROUP BY t.bill_indent_no, DATE(t.entry_date), sm.supplier_name
+
+ORDER BY txn_date DESC, ref_no ASC
+";
+$detailed_data = find_by_sql($detailed_sql);
+
 $net_revenue = $grand_income - $grand_expenditure;
 
 if (!$is_pdf) include_once('layouts/header.php');
@@ -270,6 +306,50 @@ if (!$is_pdf) include_once('layouts/header.php');
                             </td>
                         </tr>
                     </tfoot>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+    <!-- 2. Detailed Breakdown Table -->
+    <h4 style="font-size:13px; font-weight:700; color:#334155; text-transform:uppercase; margin-bottom:8px; margin-top:20px;">2. Detailed Transaction Breakdown</h4>
+    <div class="rpt-tbl-wrap" style="background:#fff; border-radius:8px; padding:10px; box-shadow:0 1px 6px rgba(0,0,0,.07);">
+        <?php if (empty($detailed_data)): ?>
+            <p style="color:#94a3b8; text-align:center; padding: 20px;">No detailed transactions found.</p>
+        <?php else: ?>
+            <div style="overflow-x:auto;">
+                <table class="rpt-tbl">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Ref No. (Inv/GRN)</th>
+                            <th>Party Name (Customer/Supplier)</th>
+                            <th style="text-align:right;">Income (₹)</th>
+                            <th style="text-align:right;">Expenditure (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($detailed_data as $dt): ?>
+                        <tr>
+                            <td><?= date('d/M/Y', strtotime($dt['txn_date'])) ?></td>
+                            <td>
+                                <?php if($dt['txn_type'] == 'Sale'): ?>
+                                    <span style="background:#dbeafe; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">SALE</span>
+                                <?php else: ?>
+                                    <span style="background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">PURCHASE</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><b><?= htmlspecialchars($dt['ref_no']) ?></b></td>
+                            <td><?= htmlspecialchars($dt['party_name']) ?></td>
+                            <td style="text-align:right; color:#2563eb; font-weight:600;">
+                                <?= $dt['income_amount'] > 0 ? '₹ ' . number_format($dt['income_amount'], 2) : '-' ?>
+                            </td>
+                            <td style="text-align:right; color:#dc2626; font-weight:600;">
+                                <?= $dt['expense_amount'] > 0 ? '₹ ' . number_format($dt['expense_amount'], 2) : '-' ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
         <?php endif; ?>
