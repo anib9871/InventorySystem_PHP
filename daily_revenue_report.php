@@ -79,7 +79,9 @@ SELECT
     SUM(t.net_price + CASE WHEN t.transaction_id = (SELECT MIN(tm.transaction_id) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) THEN IFNULL((SELECT SUM(s.total_amount) FROM shipping s WHERE s.bill_no = t.bill_indent_no), 0) ELSE 0 END) AS expense_amount
 FROM transaction_master t
 LEFT JOIN supplier_master sm ON sm.id = t.supplier_id
-WHERE t.transaction_type = 1 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
+WHERE t.transaction_type = 1 
+  AND t.from_dept = 'SUPPLIER'  /* <-- Exact Filter: Sirf Asli Purchase Aayegi */
+  AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
 GROUP BY t.bill_indent_no, DATE(t.entry_date), sm.supplier_name
 
 ORDER BY txn_date DESC, ref_no ASC
@@ -98,7 +100,6 @@ if (!empty($detailed_data)) {
     }
 }
 $net_revenue = $grand_income - $grand_expenditure;
-
 if (!$is_pdf) include_once('layouts/header.php');
 ?>
 <style>
