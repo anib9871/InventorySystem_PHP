@@ -57,6 +57,7 @@ SELECT
     DATE(t.entry_date) AS txn_date,
     'Sale' AS txn_type,
     t.bill_indent_no AS ref_no,
+    i.id AS doc_id,
     IFNULL(cm.customer_name, 'Unknown Customer') AS party_name,
     SUM(t.net_price + CASE WHEN t.transaction_id = (SELECT MIN(tm.transaction_id) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) THEN IFNULL((SELECT SUM(s.total_amount) FROM shipping s WHERE s.bill_no = t.bill_indent_no), 0) ELSE 0 END) AS income_amount,
     0 AS expense_amount
@@ -64,7 +65,7 @@ FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
 WHERE t.transaction_type = 2 AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
-GROUP BY t.bill_indent_no, DATE(t.entry_date), cm.customer_name
+GROUP BY t.bill_indent_no, DATE(t.entry_date), cm.customer_name, i.id
 
 UNION ALL
 
@@ -72,6 +73,7 @@ SELECT
     DATE(t.entry_date) AS txn_date,
     'Purchase' AS txn_type,
     t.bill_indent_no AS ref_no,
+    NULL AS doc_id,
     IFNULL(sm.supplier_name, 'Unknown Supplier') AS party_name,
     0 AS income_amount,
     SUM(t.net_price + CASE WHEN t.transaction_id = (SELECT MIN(tm.transaction_id) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) THEN IFNULL((SELECT SUM(s.total_amount) FROM shipping s WHERE s.bill_no = t.bill_indent_no), 0) ELSE 0 END) AS expense_amount
@@ -188,7 +190,7 @@ if (!$is_pdf) include_once('layouts/header.php');
                         <tr>
                             <th width="10%">Date</th>
                             <th width="8%" style="text-align:center;">Type</th>
-                            <th width="15%">Ref No. (Inv/GRN)</th>
+                            <th width="15%">Invoice / GRN No</th>
                             <th width="25%">Party Name</th>
                             <th width="14%" style="text-align:right;">Income / Sales (₹)</th>
                             <th width="14%" style="text-align:right;">Expenditure / Purchase (₹)</th>
@@ -208,14 +210,13 @@ if (!$is_pdf) include_once('layouts/header.php');
                                     <span style="background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">PURCHASE</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <!-- Yahan apne file ka sahi URL naam daal lena agar zarurat ho -->
+                           <td>
                                 <?php if($dt['txn_type'] == 'Sale'): ?>
-                                    <a href="view_invoice.php?invoice_no=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
+                                   <a href="javascript:void(0);" onclick="openDocModal('invoice_print.php?id=<?= $dt['doc_id'] ?>', 'Sale Invoice: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
                                 <?php else: ?>
-                                    <a href="print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>" target="_blank" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
+                                    <a href="javascript:void(0);" onclick="openDocModal('print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>', 'Purchase GRN: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
                                 <?php endif; ?>
@@ -261,5 +262,36 @@ flatpickr(".purchase-datepicker", {
 <?php if ($is_pdf): ?>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 1000); };</script>
 <?php endif; ?>
+<!-- Document Viewer Popup (Modal) -->
+<div class="modal fade" id="docModal" tabindex="-1" role="dialog" aria-labelledby="docModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document" style="width: 90%; max-width: 1000px;">
+    <div class="modal-content">
+      <div class="modal-header" style="background: #0f172a; color: #fff; padding: 10px 15px;">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.8; margin-top: 2px;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="docModalLabel" style="font-weight: 700; font-size: 16px;">Document Viewer</h4>
+      </div>
+      <div class="modal-body" style="padding: 0;">
+        <div class="text-center" id="modalLoader" style="padding: 20px;">Loading document...</div>
+        <iframe id="docIframe" src="" frameborder="0" style="width: 100%; height: 75vh; display: none;" onload="document.getElementById('modalLoader').style.display='none'; this.style.display='block';"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openDocModal(url, title) {
+    document.getElementById('docModalLabel').innerText = title;
+    document.getElementById('modalLoader').style.display = 'block';
+    document.getElementById('docIframe').style.display = 'none';
+    document.getElementById('docIframe').src = url;
+    $('#docModal').modal('show');
+}
+
+$('#docModal').on('hidden.bs.modal', function () {
+    document.getElementById('docIframe').src = '';
+});
+</script>
 
 <?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
