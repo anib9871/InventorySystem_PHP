@@ -179,6 +179,8 @@ No GRN Found
 
 </div>
 
+<?php include_once('layouts/footer.php'); ?>
+
 <script>
 
 $('#grnSearch').on('keyup', function () {
@@ -203,4 +205,4 @@ $(function () {
 
 </script>
 
-<?php include_once('layouts/footer.php'); ?>
+
