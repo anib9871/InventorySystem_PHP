@@ -539,6 +539,48 @@ if (!$is_pdf) include_once('layouts/header.php');
 .rpt-tbl tbody tr:hover { background: #f8fafc; }
 .rpt-tbl tfoot td { background: #f1f5f9; font-weight: 700; }
 
+/* ════ RESPONSIVE (MOBILE VIEW) ════ */
+@media screen and (max-width: 768px) {
+  .rpt-top {
+    flex-direction: column !important;
+    height: auto !important; 
+    gap: 15px !important;
+  }
+  .rpt-summary, .rpt-product {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+  .rpt-chart-box {
+    height: 200px !important; /* Mobile par chart bada dikhega */
+  }
+  
+  /* Filter Form ko mobile mein wrap karne ke liye */
+  .mobile-wrap-form {
+    flex-wrap: wrap !important;
+  }
+  .mobile-wrap-form > input, .mobile-wrap-form > select {
+    flex: 1 1 calc(50% - 6px) !important; 
+    min-width: 130px !important;
+  }
+  .mobile-wrap-form > button, .mobile-wrap-form > a {
+    flex: 1 1 100% !important; 
+    justify-content: center;
+  }
+  
+  .payment-scroll {
+    max-height: 150px; 
+  }
+
+  /* Table ko dabne (squish) se rokne ke liye */
+  .rpt-tbl {
+    min-width: 750px !important; 
+  }
+  .rpt-tbl th, .rpt-tbl td {
+    padding: 6px 4px !important; 
+    word-break: break-word;      
+  }
+}
+
 /* ════════════════ PRINT ════════════════ */
 @media print {
 
@@ -653,114 +695,62 @@ body {
   </p>
 </div>
 
-  <!-- ── FILTER (screen only) ── -->
+ <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
-  <div class="rpt-filter no-print">
-    <form method="post" class="rpt-filter" style="margin:0; width:100%;">
-      <input
-type="text"
-name="from"
-value="<?= date('d/M/Y', strtotime($from)) ?>"
-class="form-control purchase-datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
-
-<input
-type="text"
-name="to"
-value="<?= date('d/M/Y', strtotime($to)) ?>"
-class="form-control purchase-datepicker"
-style="width:135px;"
-autocomplete="off"
-required>
+  <div class="no-print mb-2" style="margin-bottom:10px;">
+    <form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
+      <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control purchase-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
+      <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control purchase-datepicker" style="height:32px; font-size:12px; flex:0 0 110px;" autocomplete="off" required>
 
       <?php if ($role_id == 2): ?>
-     <select name="report_type" id="report_type" class="form-control" style="width:170px;">
+      <select name="report_type" id="report_type" class="form-control" style="height:32px; font-size:12px; flex:0 0 115px;">
+        <option value="product" <?= ($report_type=='product')?'selected':'' ?>>By Product</option>
+        <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>By Supplier</option>
+      </select>
 
-  <option value="product" <?= ($report_type=='product')?'selected':'' ?>>
-    By Product
-  </option>
+      <?php
+      $product_list = find_by_sql("SELECT id, name FROM products WHERE type = 1 ORDER BY name");
+      $supplier_list = find_by_sql("SELECT id, supplier_name FROM supplier_master ORDER BY supplier_name");
+      ?>
 
-  <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>
-    By Supplier
-  </option>
+      <select name="filter_id" class="form-control" style="height:32px; font-size:12px; flex:1 1 auto; min-width:130px;">
+        <option value="">All</option>
+        <?php if($report_type=='product'): ?>
+            <?php foreach($product_list as $p): ?>
+                <option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>><?= htmlspecialchars($p['name']) ?></option>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <?php foreach($supplier_list as $s): ?>
+                <option value="<?= $s['id'] ?>" <?= ($filter_id==$s['id'])?'selected':'' ?>><?= htmlspecialchars($s['supplier_name']) ?></option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <?php endif; ?>
 
-</select>
+      <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
+        <i class="fa fa-file-text-o"></i> Generate Report
+      </button>
 
-<?php
+      <?php
+      $pdf_params = [
+          'pdf'         => 1,
+          'from'        => $from,
+          'to'          => $to,
+          'report_type' => $report_type,
+          'filter_id'   => $filter_id,
+      ];
+      if ($role_id == 2 && !empty($center_filter)) {
+          $pdf_params['center_id'] = $center_filter;
+      }
+      ?>
+      <a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn" style="height:32px; font-size:12px; display:inline-flex; align-items:center; white-space:nowrap; background:#dc2626; color:#fff; border-radius:4px; padding:0 12px; text-decoration:none;">
+        &#8659; Download PDF
+      </a>
 
-$product_list = find_by_sql("
-SELECT id, name
-FROM products
-WHERE type = 1
-ORDER BY name
-");
-
-$supplier_list = find_by_sql("
-SELECT id, supplier_name
-FROM supplier_master
-ORDER BY supplier_name
-");
-
-?>
-
-<select name="filter_id" class="form-control" style="width:220px;">
-
-    <option value="">All</option>
-
-    <?php if($report_type=='product'): ?>
-
-        <?php foreach($product_list as $p): ?>
-
-            <option value="<?= $p['id'] ?>" <?= ($filter_id==$p['id'])?'selected':'' ?>>
-                <?= $p['name'] ?>
-            </option>
-
-        <?php endforeach; ?>
-
-    <?php else: ?>
-
-        <?php foreach($supplier_list as $s): ?>
-
-            <option value="<?= $s['id'] ?>" <?= ($filter_id==$s['id'])?'selected':'' ?>>
-                <?= $s['supplier_name'] ?>
-            </option>
-
-        <?php endforeach; ?>
-
-    <?php endif; ?>
-
-</select>
-
-<?php endif; ?>
-
-
-      <button type="submit" name="generate_report" value="1" class="btn btn-primary">
-    <i class="fa fa-file-text-o"></i> Generate Report
-</button>
-<?php
-$pdf_params = [
-    'pdf'         => 1,
-    'from'        => $from,
-    'to'          => $to,
-    'report_type' => $report_type,
-    'filter_id'   => $filter_id,
-];
-if ($role_id == 2 && !empty($center_filter)) {
-    $pdf_params['center_id'] = $center_filter;
-}
-?>
-<a href="?<?= http_build_query($pdf_params) ?>" target="_blank" class="rpt-pdf-btn">
-    &#8659; Download PDF
-</a>
-
-<input type="hidden" name="change_type" id="change_type" value="0">
-
-</form>
+      <input type="hidden" name="change_type" id="change_type" value="0">
+    </form>
   </div>
-<?php endif; ?>
-
+  <?php endif; ?>
 <script>
 document.getElementById('report_type').addEventListener('change', function () {
     document.getElementById('change_type').value = "1";
