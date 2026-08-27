@@ -437,14 +437,18 @@ SALES :
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
-/* SALES OVERVIEW */
-
+/* ================================
+   1. SALES OVERVIEW (LINE CHART)
+   ================================ */
 var salesCanvas = document.getElementById('salesChart');
 
 if(salesCanvas){
-
     var ctx1 = salesCanvas.getContext('2d');
+    
+    /* Gradient Color Effect (Upar dark, neeche fade) */
+    var gradientBg = ctx1.createLinearGradient(0, 0, 0, 300);
+    gradientBg.addColorStop(0, 'rgba(37, 99, 235, 0.4)');
+    gradientBg.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
 
     new Chart(ctx1, {
         type:'line',
@@ -456,55 +460,45 @@ if(salesCanvas){
                 centerNames: <?= json_encode($centers); ?>,
                 borderWidth:3,
                 fill:true,
-                tension:0.4,
-                backgroundColor:'rgba(37,99,235,0.12)',
+                tension: 0.5, /* Line ko smooth curve deta hai */
+                backgroundColor: gradientBg, /* Gradient apply kiya */
                 borderColor:'#2563eb',
                 pointBackgroundColor:'#fff',
                 pointBorderColor:'#2563eb',
-                pointRadius: 6,         /* Yahan pointRadius 5 se 6 kiya hai */
-                pointHoverRadius: 9     /* Hover effect ke liye add kiya hai */
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 9
             }]
         },
-        
-        /* 👇 YAHAN SE OPTIONS CHANGE HUE HAIN 👇 */
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            
             interaction: {
                 mode: 'index',
                 intersect: false,
             },
-            
             scales:{
                 x:{
-                    grid: {
-                        display: false /* Ye peeche ki khadi lines hata dega */
-                    },
+                    grid: { display: false },
                     ticks:{
                         autoSkip:true,
                         maxTicksLimit:6,
                         maxRotation:0,
                         minRotation:0,
-                        font: {
-                            weight: 'bold'
-                        }
+                        font: { weight: 'bold' }
                     }
                 },
                 y:{
                     beginAtZero:true,
                     border: { dash: [4, 4] },
-                    grid: {
-                        color: '#e5e7eb',
-                    },
+                    grid: { color: '#e5e7eb' },
                     ticks: {
                         callback: function(value) {
-                            return '₹ ' + value.toLocaleString('en-IN'); /* Ye Y-Axis par ₹ lagayega */
+                            return '₹ ' + value.toLocaleString('en-IN');
                         }
                     }
                 }
             },
-
             plugins:{
                 tooltip:{
                     backgroundColor: 'rgba(15, 23, 42, 0.9)', 
@@ -520,51 +514,62 @@ if(salesCanvas){
                         }
                     }
                 },
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             }
         }
-        /* 👆 OPTIONS YAHAN KHATAM 👆 */
     });
 }
-/* TOP PRODUCTS */
 
+/* ================================
+   2. TOP PRODUCTS (BAR CHART)
+   ================================ */
 var topCanvas = document.getElementById('topProductsChart');
 
 if(topCanvas){
+    var ctx2 = topCanvas.getContext('2d');
 
-var ctx2 = topCanvas.getContext('2d');
-
-new Chart(ctx2, {
-
-    type:'bar',
-
-    data:{
-
-        labels: <?= json_encode($product_names); ?>,
-
-        datasets:[{
-
-            label:'Sales ₹',
-
-            data: <?= json_encode($product_sales); ?>,
-
-            borderWidth:1,
-
-            backgroundColor:'#22c55e',
-
-            borderColor:'#16a34a'
-
-        }]
-    },
-
-    options:{
-        responsive:true,
-        maintainAspectRatio:false
-    }
-
-});
+    new Chart(ctx2, {
+        type:'bar',
+        data:{
+            labels: <?= json_encode($product_names); ?>,
+            datasets:[{
+                label:'Sales ₹',
+                data: <?= json_encode($product_sales); ?>,
+                borderWidth: 1,
+                backgroundColor: '#22c55e',
+                borderColor: '#16a34a',
+                maxBarThickness: 50, /* Bar ko zyada mota hone se rokega */
+                borderRadius: 6      /* Bar ke upari hisse ko thoda gol (rounded) karega */
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            scales: {
+                x: {
+                    grid: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹ ' + value.toLocaleString('en-IN'); /* Bar chart me bhi ₹ lagayega */
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ' Sales: ₹ ' + context.parsed.y.toLocaleString('en-IN');
+                        }
+                    }
+                },
+                legend: { display: false } /* Upar ka extra text hata dega */
+            }
+        }
+    });
 }
 </script>
 
