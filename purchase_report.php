@@ -233,9 +233,11 @@ $sales = find_by_sql($txn_q);
 
 
 $grand = 0;
+$grand_qty = 0; // Qty ke liye naya variable
 
 foreach ($sales as $s) {
     $grand += $s['total_sale'];
+    $grand_qty += $s['sold_qty']; // Qty add ki
 }
 
 $grand_round = round($grand);
@@ -951,28 +953,28 @@ if($report_type=='supplier' && !empty($filter_id)){
 
 <!-- Product Chart -->
 <div class="rpt-card rpt-product">
-
-  <div class="rpt-card-title">
-    Product Wise Purchase (Qty)
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+    <div class="rpt-card-title" style="margin-bottom: 0;">Product Wise Purchase (Qty)</div>
+    <div style="font-size: 10px; font-weight: 600; color: #0369a1; background: #f0f9ff; padding: 3px 7px; border-radius: 4px; border: 1px solid #bae6fd;">
+      &#9432; Hover on bars for names
+    </div>
   </div>
-
-  <div class="rpt-chart-box" style="height:145px;">
+  <div class="rpt-chart-box" style="height:135px;">
     <canvas id="productChart"></canvas>
   </div>
-
 </div>
 
 <!-- Supplier Chart -->
 <div class="rpt-card rpt-product">
-
-  <div class="rpt-card-title">
-    Supplier Wise Purchase (Qty)
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+    <div class="rpt-card-title" style="margin-bottom: 0;">Supplier Wise Purchase (Qty)</div>
+    <div style="font-size: 10px; font-weight: 600; color: #0369a1; background: #f0f9ff; padding: 3px 7px; border-radius: 4px; border: 1px solid #bae6fd;">
+      &#9432; Hover on bars for names
+    </div>
   </div>
-
-  <div class="rpt-chart-box" style="height:145px;">
+  <div class="rpt-chart-box" style="height:135px;">
     <canvas id="supplierChart"></canvas>
   </div>
-
 </div>
 
   </div><!-- /.rpt-top -->
@@ -1086,34 +1088,33 @@ if(!empty($center_filter)){
 </tbody>
 
 <?php if(abs($round_off) > 0.001){ ?>
-
 <tfoot>
 <tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="7" style="text-align:right;">
-        Grand Total<br>
-        Round Off<br>
-        Net Total
-    </td>
-
-    <td style="text-align:right;">
-        ₹ <?= number_format($grand,2) ?><br>
-        <?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?><br>
-        <b>₹ <?= number_format($grand_round,2) ?></b>
-    </td>
+    <td colspan="4" style="text-align:right;">Grand Total</td>
+    <td style="text-align:center;"><?= $grand_qty ?></td>
+    <td colspan="2" style="text-align:right;"></td>
+    <td style="text-align:right;">₹ <?= number_format($grand,2) ?></td>
 </tr>
-
-
+<tr style="background:#e2e8f0;font-weight:700;">
+    <td colspan="7" style="text-align:right;">Round Off</td>
+    <td style="text-align:right;"><?= ($round_off >= 0 ? '+' : '') . number_format($round_off,2) ?></td>
+</tr>
+<tr style="background:#e2e8f0;font-weight:700;">
+    <td colspan="7" style="text-align:right;">Net Total</td>
+    <td style="text-align:right;"><b>₹ <?= number_format($grand_round,2) ?></b></td>
+</tr>
+</tfoot>
 <?php } else { ?>
-
 <tfoot>
 <tr style="background:#e2e8f0;font-weight:700;">
-    <td colspan="7" style="text-align:right;">Grand Total</td>
+    <td colspan="4" style="text-align:right;">Grand Total</td>
+    <td style="text-align:center;"><?= $grand_qty ?></td>
+    <td colspan="2" style="text-align:right;"></td>
     <td style="text-align:right;">
         <b>₹ <?= number_format($grand,2) ?></b>
     </td>
 </tr>
 </tfoot>
-
 <?php } ?>
 </tr>
 </tfoot>
@@ -1280,18 +1281,10 @@ new Chart(document.getElementById('supplierChart'), {
       }
     },
 
-    scales: {
-
+scales: {
       x: {
-
         grid: { display:false },
-
-        ticks: {
-
-          font:{ size:9 },
-
-          maxRotation:0
-        }
+        ticks: { display: false } // Naam ko hide kar diya
       },
 
 y: {
