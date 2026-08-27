@@ -1067,11 +1067,14 @@ if(!empty($center_filter)){
 </td>
 
 <?php 
-    $paid_amt = (float)($s['paid_amount'] ?? 0);
-    $pending_amt = (float)$s['total_sale'] - $paid_amt;
+    // Dono amounts ko round kar rahe hain taaki paise (.06 etc) ka difference issue na kare
+    $paid_amt = round((float)($s['paid_amount'] ?? 0));
+    $total_amt = round((float)$s['total_sale']);
     
-    // Agar pending amount 0 (ya 0.01 se kam) hai to Blue (Paid), warna Red (Pending)
-    $status_color = ($pending_amt <= 0.01) ? '#2563eb' : '#dc2626'; 
+    $pending_amt = $total_amt - $paid_amt;
+    
+    // Round off ke baad agar pending 0 (ya negative) hai to Blue (Paid), warna Red (Pending)
+    $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
 ?>
 <td style="text-align:right;">
     <b style="color:<?= $status_color ?>;">
