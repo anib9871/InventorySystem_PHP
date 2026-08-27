@@ -751,18 +751,24 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       <?php } ?>
     </div>
 
-    <!-- Product Chart -->
+<!-- Product Chart -->
     <div class="rpt-card rpt-product">
-      <div class="rpt-card-title">Product Wise Sales (Qty)</div>
-      <div class="rpt-chart-box" style="height:145px;">
+      <div class="rpt-card-title" style="margin-bottom: 2px;">Product Wise Sales (Qty)</div>
+      <div style="font-size: 9px; color: #64748b; font-style: italic; margin-bottom: 6px;">
+        * Hover over the bars to see names
+      </div>
+      <div class="rpt-chart-box" style="height:135px;"> <!-- Height thodi adjust ki hai taaki scroll na aaye -->
         <canvas id="productChart"></canvas>
       </div>
     </div>
 
     <!-- Customer Chart -->
     <div class="rpt-card rpt-product">
-      <div class="rpt-card-title">Customer Wise Sales (Total)</div>
-      <div class="rpt-chart-box" style="height:145px;">
+      <div class="rpt-card-title" style="margin-bottom: 2px;">Customer Wise Sales (Total)</div>
+      <div style="font-size: 9px; color: #64748b; font-style: italic; margin-bottom: 6px;">
+        * Hover over the bars to see names
+      </div>
+      <div class="rpt-chart-box" style="height:135px;">
         <canvas id="customerChart"></canvas>
       </div>
     </div>
