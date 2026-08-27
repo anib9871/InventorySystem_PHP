@@ -444,74 +444,89 @@ var salesCanvas = document.getElementById('salesChart');
 
 if(salesCanvas){
 
-var ctx1 = salesCanvas.getContext('2d');
+    var ctx1 = salesCanvas.getContext('2d');
 
-new Chart(ctx1, {
-
-    type:'line',
-
-    data:{
-        labels: <?= json_encode($dates); ?>,
-
-datasets:[{
-
-    label:'Sales ₹',
-
-    data: <?= json_encode($totals); ?>,
-
-    centerNames: <?= json_encode($centers); ?>,
-
-            borderWidth:3,
-
-            fill:true,
-
-            tension:0.4,
-
-            backgroundColor:'rgba(37,99,235,0.12)',
-
-            borderColor:'#2563eb',
-
-            pointBackgroundColor:'#fff',
-
-            pointBorderColor:'#2563eb',
-
-            pointRadius:5
-
-        }]
-    },
-options:{
-    responsive:true,
-    maintainAspectRatio:false,
-
-    scales:{
-        x:{
-            ticks:{
-                autoSkip:true,
-                maxTicksLimit:6,
-                maxRotation:0,
-                minRotation:0
-            }
+    new Chart(ctx1, {
+        type:'line',
+        data:{
+            labels: <?= json_encode($dates); ?>,
+            datasets:[{
+                label:'Sales ₹',
+                data: <?= json_encode($totals); ?>,
+                centerNames: <?= json_encode($centers); ?>,
+                borderWidth:3,
+                fill:true,
+                tension:0.4,
+                backgroundColor:'rgba(37,99,235,0.12)',
+                borderColor:'#2563eb',
+                pointBackgroundColor:'#fff',
+                pointBorderColor:'#2563eb',
+                pointRadius: 6,         /* Yahan pointRadius 5 se 6 kiya hai */
+                pointHoverRadius: 9     /* Hover effect ke liye add kiya hai */
+            }]
         },
-        y:{
-            beginAtZero:true
-        }
-    },
+        
+        /* 👇 YAHAN SE OPTIONS CHANGE HUE HAIN 👇 */
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            
+            scales:{
+                x:{
+                    grid: {
+                        display: false /* Ye peeche ki khadi lines hata dega */
+                    },
+                    ticks:{
+                        autoSkip:true,
+                        maxTicksLimit:6,
+                        maxRotation:0,
+                        minRotation:0,
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                y:{
+                    beginAtZero:true,
+                    border: { dash: [4, 4] },
+                    grid: {
+                        color: '#e5e7eb',
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '₹ ' + value.toLocaleString('en-IN'); /* Ye Y-Axis par ₹ lagayega */
+                        }
+                    }
+                }
+            },
 
-    plugins:{
-        tooltip:{
-            callbacks:{
-                afterLabel:function(context){
-
-                    return 'Centers: ' +
-                    context.dataset.centerNames[context.dataIndex];
-
+            plugins:{
+                tooltip:{
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    callbacks:{
+                        label: function(context) {
+                            return ' Sales: ₹ ' + context.parsed.y.toLocaleString('en-IN');
+                        },
+                        afterLabel:function(context){
+                            return ' Centers: ' + context.dataset.centerNames[context.dataIndex];
+                        }
+                    }
+                },
+                legend: {
+                    display: false
                 }
             }
         }
-    }
-}
-
-});
+        /* 👆 OPTIONS YAHAN KHATAM 👆 */
+    });
 }
 /* TOP PRODUCTS */
 
