@@ -753,26 +753,29 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 
 <!-- Product Chart -->
     <div class="rpt-card rpt-product">
-      <div class="rpt-card-title" style="margin-bottom: 2px;">Product Wise Sales (Qty)</div>
-      <div style="font-size: 9px; color: #64748b; font-style: italic; margin-bottom: 6px;">
-        * Hover over the bars to see names
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div class="rpt-card-title" style="margin-bottom: 0;">Product Wise Sales (Qty)</div>
+        <div style="font-size: 10px; font-weight: 600; color: #0369a1; background: #f0f9ff; padding: 3px 7px; border-radius: 4px; border: 1px solid #bae6fd;">
+          &#9432; Hover on bars for names
+        </div>
       </div>
-      <div class="rpt-chart-box" style="height:135px;"> <!-- Height thodi adjust ki hai taaki scroll na aaye -->
+      <div class="rpt-chart-box" style="height:135px;">
         <canvas id="productChart"></canvas>
       </div>
     </div>
 
     <!-- Customer Chart -->
     <div class="rpt-card rpt-product">
-      <div class="rpt-card-title" style="margin-bottom: 2px;">Customer Wise Sales (Total)</div>
-      <div style="font-size: 9px; color: #64748b; font-style: italic; margin-bottom: 6px;">
-        * Hover over the bars to see names
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div class="rpt-card-title" style="margin-bottom: 0;">Customer Wise Sales (Total)</div>
+        <div style="font-size: 10px; font-weight: 600; color: #0369a1; background: #f0f9ff; padding: 3px 7px; border-radius: 4px; border: 1px solid #bae6fd;">
+          &#9432; Hover on bars for names
+        </div>
       </div>
       <div class="rpt-chart-box" style="height:135px;">
         <canvas id="customerChart"></canvas>
       </div>
     </div>
-
   </div><!-- /.rpt-top -->
 
   <!-- ══════════════════════════════════════
