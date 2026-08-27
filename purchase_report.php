@@ -189,7 +189,7 @@ t.gst_amount,
     ) AS profit,
 
 -- Naya code: supplier_ledger se seedha paid_amount laane ke liye
-(SELECT IFNULL(paid_amount, 0) FROM supplier_ledger sl WHERE sl.bill_no = t.bill_indent_no LIMIT 1) AS paid_amountS profit
+(SELECT IFNULL(paid_amount, 0) FROM supplier_ledger sl WHERE sl.bill_no = t.bill_indent_no LIMIT 1) AS paid_amount
 
 FROM transaction_master t
 
