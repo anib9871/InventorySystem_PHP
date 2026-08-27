@@ -186,7 +186,10 @@ t.gst_amount,
 
 (
         (t.unit_price - p.buy_price) * t.quantity
-    ) AS profit
+    ) AS profit,
+
+-- Naya code: supplier_ledger se seedha paid_amount laane ke liye
+(SELECT IFNULL(paid_amount, 0) FROM supplier_ledger sl WHERE sl.bill_no = t.bill_indent_no LIMIT 1) AS paid_amountS profit
 
 FROM transaction_master t
 
@@ -1063,8 +1066,15 @@ if(!empty($center_filter)){
     ₹ <?= number_format($s['gst_amount'],2) ?>
 </td>
 
-<td>
-    <b style="color:#2563eb;">
+<?php 
+    $paid_amt = (float)($s['paid_amount'] ?? 0);
+    $pending_amt = (float)$s['total_sale'] - $paid_amt;
+    
+    // Agar pending amount 0 (ya 0.01 se kam) hai to Blue (Paid), warna Red (Pending)
+    $status_color = ($pending_amt <= 0.01) ? '#2563eb' : '#dc2626'; 
+?>
+<td style="text-align:right;">
+    <b style="color:<?= $status_color ?>;">
         ₹ <?= number_format($s['total_sale'],2) ?>
     </b>
 </td>
@@ -1108,8 +1118,16 @@ if(!empty($center_filter)){
 <?php } ?>
 </tr>
 </tfoot>
-      </table>
+  </table>
     </div>
+    
+    <!-- Legend (Note) for Colors -->
+    <div style="text-align:right; margin-top:8px; font-size:11px;">
+        <b>Note:</b>
+        <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Paid</span> | 
+        <span style="color:#dc2626; font-weight:700;">&#9632; Red = Pending</span>
+    </div>
+
     <?php endif; ?>
   </div>
 
