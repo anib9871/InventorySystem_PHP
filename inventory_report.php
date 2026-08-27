@@ -195,8 +195,10 @@ ORDER BY t.entry_date DESC
 $sales = find_by_sql($txn_q);
 
 $grand = 0;
+$grand_qty = 0; // Qty calculation variable
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
+    $grand_qty += (float)$s['sold_qty']; // Add this line
 }
 
 /* Round off Calculation */
@@ -833,25 +835,29 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endforeach; ?>
         </tbody>
 
-        <?php if (abs($round_off) > 0.001) { ?>
+       <?php if (abs($round_off) > 0.001) { ?>
         <tfoot>
           <tr style="background:#e2e8f0;font-weight:700;">
-              <td colspan="8" style="text-align:right;">
-                  Grand Total<br>
-                  Round Off<br>
-                  Net Total
-              </td>
-              <td style="text-align:right;">
-                  ₹ <?= number_format($grand, 2) ?><br>
-                  <?= ($round_off >= 0 ? '+' : '') . number_format($round_off, 2) ?><br>
-                  <b>₹ <?= number_format($grand_round, 2) ?></b>
-              </td>
+              <td colspan="4" style="text-align:right;">Grand Total</td>
+              <td style="text-align:center;"><?= $grand_qty ?></td>
+              <td colspan="3" style="text-align:right;"></td>
+              <td style="text-align:right;">₹ <?= number_format($grand, 2) ?></td>
+          </tr>
+          <tr style="background:#e2e8f0;font-weight:700;">
+              <td colspan="8" style="text-align:right;">Round Off</td>
+              <td style="text-align:right;"><?= ($round_off >= 0 ? '+' : '') . number_format($round_off, 2) ?></td>
+          </tr>
+          <tr style="background:#e2e8f0;font-weight:700;">
+              <td colspan="8" style="text-align:right;">Net Total</td>
+              <td style="text-align:right;"><b>₹ <?= number_format($grand_round, 2) ?></b></td>
           </tr>
         </tfoot>
         <?php } else { ?>
         <tfoot>
           <tr style="background:#e2e8f0;font-weight:700;">
-              <td colspan="8" style="text-align:right;">Grand Total</td>
+              <td colspan="4" style="text-align:right;">Grand Total</td>
+              <td style="text-align:center;"><?= $grand_qty ?></td>
+              <td colspan="3" style="text-align:right;"></td>
               <td style="text-align:right;">
                   <b>₹ <?= number_format($grand, 2) ?></b>
               </td>
@@ -950,7 +956,7 @@ new Chart(document.getElementById('customerChart'), {
       }
     },
     scales: {
-      x: { grid: { display:false }, ticks: { font:{ size:9 }, maxRotation:0 } },
+      x: { grid: { display:false }, ticks: { display: false } }, // display: false kar diya
       y: { beginAtZero: true, grace: '5%', ticks: { precision: 0 } }
     }
   }
