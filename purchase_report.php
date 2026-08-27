@@ -121,9 +121,17 @@ ORDER BY sm.supplier_name ASC
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
+$mode_summary = []; // Naya array modes ko group karne ke liye
 
 foreach ($payments as $pay){
     $total_collection += $pay['payment_amount'];
+    
+    // Mode ko uppercase karke group karna
+    $mode_name = strtoupper(trim($pay['payment_mode']));
+    if (!isset($mode_summary[$mode_name])) {
+        $mode_summary[$mode_name] = 0;
+    }
+    $mode_summary[$mode_name] += (float)$pay['payment_amount'];
 }
 
 /* ═══════════════════════════════════════
@@ -663,11 +671,13 @@ body {
 }
 
   .rpt-card-title  { font-size: 10px !important; margin-bottom: 6px !important; }
-.rpt-tbl th,
-.rpt-tbl td {
-  font-size: 13px !important;
-  padding: 8px 10px !important;
-}
+.rpt-tbl { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+  .rpt-tbl th, .rpt-tbl td {
+    font-size: 10px !important; /* Font chota kiya taaki A4 me fit ho */
+    padding: 4px 4px !important; /* Padding kam ki */
+    white-space: normal !important;
+    word-break: break-word !important; /* Lamba naam automatically neeche wali line me aayega */
+  }
   .rpt-tbl thead   { display: table-header-group; }
   .rpt-tbl tfoot   { display: table-row-group; }
   tr               { page-break-inside: avoid; }
@@ -817,56 +827,28 @@ if($report_type=='supplier' && !empty($filter_id)){
   <?php } ?>
 </div>
 
-  <div class="pdf-collection-box" style="display:none;">
+<div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Supplier Payment Summary (Mode-wise)
     </h4>
     <table style="width:100%; border-collapse:collapse; color:#fff; font-size:11px;">
-<tr style="font-weight:700; opacity:.7;">
-
-<?php if(empty($filter_id)){ ?>
-<td style="padding:2px 4px;">SUPPLIER</td>
-<?php } ?>
-
-<td style="padding:2px 4px;">MODE</td>
-<td style="padding:2px 4px; text-align:right;">AMOUNT</td>
-
-</tr>
-
-<?php foreach ($payments as $pay): ?>
-<tr>
-
-<?php if(empty($filter_id)){ ?>
-<td style="padding:3px 4px;">
-<?= htmlspecialchars($pay['supplier_name']) ?>
-</td>
-<?php } ?>
-
-<td style="padding:3px 4px;">
-<?= strtoupper(htmlspecialchars($pay['payment_mode'])) ?>
-</td>
-
-<td style="padding:3px 4px;text-align:right;">
-₹ <?= number_format($pay['payment_amount'],2) ?>
-</td>
-
-</tr>
-<?php endforeach; ?>
-
-
-<tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
-
-<?php if(empty($filter_id)){ ?>
-<td colspan="2">GRAND TOTAL</td>
-<?php } else { ?>
-<td>GRAND TOTAL</td>
-<?php } ?>
-
-<td style="text-align:right;">
-₹ <?= number_format($total_collection,2) ?>
-</td>
-
-</tr>
+      <tr style="font-weight:700; opacity:.7;">
+        <td style="padding:2px 4px;">MODE</td>
+        <td style="padding:2px 4px; text-align:right;">AMOUNT</td>
+      </tr>
+      
+      <!-- Grouped Modes Loop -->
+      <?php foreach ($mode_summary as $mode => $amt): ?>
+      <tr>
+        <td style="padding:3px 4px;"><?= htmlspecialchars($mode) ?></td>
+        <td style="padding:3px 4px;text-align:right;">₹ <?= number_format($amt, 2) ?></td>
+      </tr>
+      <?php endforeach; ?>
+      
+      <tr style="border-top:1px solid rgba(255,255,255,.3); font-weight:700;">
+        <td style="padding-top:4px;">GRAND TOTAL</td>
+        <td style="text-align:right; padding-top:4px;">₹ <?= number_format($total_collection, 2) ?></td>
+      </tr>
     </table>
   </div>
 
@@ -1013,23 +995,14 @@ if(!empty($center_filter)){
 
 <thead>
 <tr style="background:#f1f5f9;">
-
-<th>Date</th>
-
-<th>GRN No</th>
-
-<th>Product</th>
-
-<th>Supplier</th>
-
-<th>Qty</th>
-
-<th>Purchase Price</th>
-
-<th>GST</th>
-
-<th>Total</th>
-
+    <th style="width: 10%;">Date</th>
+    <th style="width: 12%;">GRN No</th>
+    <th style="width: 25%;">Product</th>
+    <th style="width: 20%;">Supplier</th>
+    <th style="width: 5%; text-align:center;">Qty</th>
+    <th style="width: 10%;">Purchase Price</th>
+    <th style="width: 8%;">GST</th>
+    <th style="width: 10%; text-align:right;">Total</th>
 </tr>
 </thead>
 
