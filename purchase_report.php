@@ -91,42 +91,53 @@ $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
 /* ═══════════════════════════════════════
-   2. PAYMENT MODE SUMMARY
+   2. PAYMENT MODE SUMMARY (Linked directly to Purchases)
 ═══════════════════════════════════════ */
 $pay_q = "
-SELECT
-    sp.supplier_id,
-    sm.supplier_name,
+SELECT 
     sp.payment_mode,
     MAX(sp.payment_date) AS payment_date,
     SUM(sp.payment_amount) AS payment_amount
 FROM supplier_payment sp
-LEFT JOIN supplier_master sm
-    ON sm.id = sp.supplier_id
-WHERE DATE(sp.payment_date)
-BETWEEN '{$from}' AND '{$to}'
-AND (sp.reference_no IS NULL OR sp.reference_no <> 'Advance Adjusted')
+WHERE sp.ledger_id IN (
+    SELECT sl.ledger_id 
+    FROM supplier_ledger sl
+    WHERE sl.bill_no IN (
+        SELECT DISTINCT t.bill_indent_no
+        FROM transaction_master t
+        WHERE t.transaction_type = 1
+        AND t.supplier_id IS NOT NULL 
+        AND t.supplier_id != 0
+        AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if($report_type=='supplier' && !empty($filter_id)){
-    $pay_q .= " AND sp.supplier_id='{$filter_id}'";
+if ($role_id == 3) {
+    $pay_q .= " AND t.center_id = '{$user_center}'";
+} elseif ($role_id == 2 && !empty($center_filter)) {
+    $pay_q .= " AND t.center_id = '{$center_filter}'";
 }
 
-if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
+if ($report_type == 'supplier' && !empty($filter_id)) {
+    $pay_q .= " AND t.supplier_id = '{$filter_id}'";
+}
+if ($report_type == 'product' && !empty($filter_id)) {
+    $pay_q .= " AND t.product_id = '{$filter_id}'";
+}
+
 $pay_q .= "
-GROUP BY sp.supplier_id, sp.payment_mode
-ORDER BY sm.supplier_name ASC
+    )
+)
+GROUP BY sp.payment_mode
 ";
+
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-$mode_summary = []; // Naya array modes ko group karne ke liye
+$mode_summary = [];
 
 foreach ($payments as $pay){
     $total_collection += $pay['payment_amount'];
     
-    // Mode ko uppercase karke group karna
     $mode_name = strtoupper(trim($pay['payment_mode']));
     if (!isset($mode_summary[$mode_name])) {
         $mode_summary[$mode_name] = 0;
