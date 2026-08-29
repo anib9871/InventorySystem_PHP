@@ -347,13 +347,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 /* ════ ORG HEADER ════ */
 .rpt-header {
   text-align: center;
-  border-bottom: 2px solid #0f172a;
+  border-bottom: 2px solid #2563eb;
   padding: 4px 0 7px;
   margin-bottom: 10px;
 }
 .rpt-header h2 {
   font-size: 16px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: .07em; color: #0f172a; margin: 0 0 2px;
+  letter-spacing: .07em; color: #111827; margin: 0 0 2px;
 }
 .rpt-header p { font-size: 10px; color: #64748b; letter-spacing: .06em; text-transform: uppercase; margin: 0; }
 
@@ -437,18 +437,16 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 @media screen and (max-width: 768px) {
   .rpt-top {
     flex-direction: column !important;
-    height: auto !important; /* Ye overlap theek karega */
-    gap: 15px !important;    /* Cards ke beech mein gap */
+    height: auto !important;
+    gap: 15px !important;
   }
   .rpt-summary, .rpt-product {
     flex: 1 1 100% !important;
     width: 100% !important;
   }
   .rpt-chart-box {
-    height: 200px !important; /* Mobile par chart proper dikhega */
+    height: 200px !important;
   }
-  
-  /* Filter Form ko mobile mein wrap karne ke liye */
   .mobile-wrap-form {
     flex-wrap: wrap !important;
   }
@@ -460,15 +458,11 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     flex: 1 1 100% !important; 
     justify-content: center;
   }
-  
-  /* Summary table mobile friendly */
   .payment-scroll {
-    max-height: 150px; /* Mobile par thodi zyada space dena theek rehta hai */
+    max-height: 150px;
   }
-
-  /* Table ko dabne (squish) se rokne ke liye */
   .rpt-tbl {
-    min-width: 750px !important; /* Table ko chota nahi hone dega, scroll aayega */
+    min-width: 750px !important;
   }
   .rpt-tbl th, .rpt-tbl td {
     padding: 6px 4px !important; 
@@ -476,59 +470,83 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   }
 }
 
-/* ════════════════ PRINT ════════════════ */
+/* ════════════════ PRINT (CLEAN BLUE & WHITE THEME) ════════════════ */
 @media print {
-  @page { size: A4 portrait; margin: 8mm 6mm; }
+  @page { size: A4 portrait; margin: 10mm; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  body {
-    margin: 0; padding: 0;
-    font-size: 10px !important; line-height: 1.2 !important;
-    background: #fff;
+  body { margin: 0; padding: 0; font-size: 13px !important; line-height: 1.5 !important; background: #fff; color: #1e293b !important; }
+  .no-print, .rpt-top { display: none !important; }
+
+  .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
+  .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
+
+  /* Period Box - Light Blue Background with Dark Blue Text */
+  .pdf-period-box {
+    display: block !important;
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
   }
+  .pdf-period-box table, .pdf-period-box b { color: #1e40af !important; }
 
-  .pdf-period-box{
-    display:block !important; background:#b30000 !important; color:#fff !important;
-    padding:4px 8px !important; border-radius:3px !important; margin-bottom:5px !important;
-    font-size:11px !important; font-weight:700 !important;
+  /* Total Sales Box - Clean White with Blue Border */
+  .pdf-total-box {
+    display: block !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
   }
+  .pdf-total-box table td { color: #0f172a !important; border-color: #cbd5e1 !important; }
 
-  .pdf-total-box{
-    display:block !important; background:#0f172a !important; color:#fff !important;
-    padding:5px 8px !important; border-radius:3px !important; margin-bottom:5px !important;
-    font-size:11px !important; font-weight:700 !important;
+  /* Collection Summary Box - Light Blue Theme */
+  .pdf-collection-box {
+    display: block !important;
+    background: #f0fdf4 !important;
+    color: #1e3a8a !important;
+    border: 1px solid #93c5fd !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 8px !important;
+    width: 100% !important;
+    font-size: 12px !important;
   }
+  .pdf-collection-box h4, .pdf-collection-box table td { color: #1e3a8a !important; }
 
-  .no-print        { display: none !important; }
-  .rpt-top         { display: none !important; }
-
-  .rpt-header { margin-bottom: 6px; padding-bottom: 4px; }
-  .rpt-header h2 { font-size: 14px !important; }
-  .rpt-header p  { font-size: 9px !important; }
-
-  .pdf-collection-box{
-    display:block !important; background:linear-gradient(90deg,#a10805,#111827) !important;
-    color:#fff !important; padding:5px 8px !important; border-radius:4px !important;
-    margin-bottom:6px !important; width:100% !important; font-size:10px !important; line-height:1.2 !important;
-  }
-
+  /* Table Header Blue Theme */
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
   .rpt { width: 100% !important; margin: 0 auto !important; }
-  .rpt-card-title  { font-size: 10px !important; margin-bottom: 4px !important; }
   
   .rpt-tbl { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-  .rpt-tbl th, .rpt-tbl td { 
-    font-size: 10px !important; 
-    padding: 4px 4px !important; 
-    white-space: nowrap !important;
+  .rpt-tbl th {
+    background: #2563eb !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    padding: 5px !important;
+  }
+  .rpt-tbl td {
+    font-size: 10px !important;
+    padding: 5px !important;
+    word-break: break-word !important;
+    color: #1e293b !important;
   }
   .rpt-tbl td.customer-cell, .rpt-tbl td.product-cell {
     white-space: normal !important;
     word-break: break-word !important;
   }
-  .rpt-tbl thead   { display: table-header-group; }
-  .rpt-tbl tfoot   { display: table-row-group; }
-  tr               { page-break-inside: avoid; }
+  .rpt-tbl thead { display: table-header-group; }
+  .rpt-tbl tfoot { display: table-row-group; }
+  tr { page-break-inside: avoid; }
 }
 </style>
 
