@@ -1191,9 +1191,7 @@ flatpickr(".purchase-datepicker", {
 <?php if ($is_pdf): ?>
 <script>
 window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
-document.title = "<?= $pdf_save_title ?>";
 </script>
-<?php else: ?>
-<script>document.title = "<?= $pdf_save_title ?>";</script>
-<?php include_once('layouts/footer.php'); ?>
 <?php endif; ?>
+
+<?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
