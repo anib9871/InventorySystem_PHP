@@ -37,6 +37,8 @@ foreach ($formats as $format) {
     }
 }
 
+/* ── PDF FILE SAVE AS NAME ── */
+$pdf_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 /* ── SESSION & ROLES ── */
 $role_id       = $_SESSION['role_id'] ?? 0;
 $user_center   = $_SESSION['center_id'] ?? 0;
@@ -100,8 +102,16 @@ if (!empty($detailed_data)) {
     }
 }
 $net_revenue = $grand_income - $grand_expenditure;
-if (!$is_pdf) include_once('layouts/header.php');
-?>
+<?php if ($is_pdf): ?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title><?= $pdf_save_title ?></title>
+<?php else: ?>
+<?php include_once('layouts/header.php'); ?>
+<script>document.title = "<?= $pdf_save_title ?>";</script>
+<?php endif; ?>
 <style>
 .rpt * { box-sizing: border-box; }
 .rpt { font-size: 12px; color: #1e293b; }
