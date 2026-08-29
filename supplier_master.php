@@ -13,7 +13,7 @@ $suppliers = find_by_sql("SELECT sm.*, gsm.state_name
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
 /* FETCH ALL ORGANIZATIONS FOR PRINT MODAL */
-$all_orgs = find_by_sql("SELECT id, org_name, mnemonic FROM organization_master ORDER BY org_name ASC");
+$all_orgs = find_by_sql("SELECT id, org_name, mnemonic, address FROM organization_master ORDER BY org_name ASC");
 /* ---------- ADD SUPPLIER ---------- */
 if(isset($_POST['add_supplier'])){
 
@@ -535,15 +535,36 @@ textarea.form-control {
                   <input type="text" id="modal_supp_name" class="form-control" readonly style="font-weight: bold;">
               </div>
 
-              <div class="form-group">
-                  <label>Select Organization (FROM) *</label>
-                  <select name="org_id" class="form-control" required>
-                      <option value="">-- Choose Organization --</option>
-                      <?php foreach($all_orgs as $o): ?>
-                          <option value="<?php echo $o['id']; ?>" <?php if(isset($_SESSION['org_id']) && $_SESSION['org_id'] == $o['id']) echo 'selected'; ?>>
-                              <?php echo $o['org_name']; ?> (<?php echo $o['mnemonic']; ?>)
+              
+      <div class="form-group">
+                  <label>Select Organization & Address (FROM) *</label>
+                  <select name="org_and_address" class="form-control" required style="height: auto; padding: 6px;">
+                      <option value="">-- Choose From Address --</option>
+                      <?php 
+                      foreach($all_orgs as $o): 
+                          $addr_raw = $o['address'];
+                          $decoded = json_decode($addr_raw, true);
+                          $addresses = is_array($decoded) ? $decoded : [$addr_raw];
+                          
+                          foreach($addresses as $index => $addr):
+                              $addr_text = '';
+                              if (is_array($addr) && isset($addr['text'])) {
+                                  $addr_text = $addr['text'];
+                              } else if (is_string($addr)) {
+                                  $addr_text = $addr;
+                              }
+
+                              if(trim($addr_text) != ''):
+                                  $display = strlen($addr_text) > 55 ? substr($addr_text, 0, 55).'...' : $addr_text;
+                      ?>
+                          <option value="<?php echo $o['id']; ?>|<?php echo $index; ?>" <?php if(isset($_SESSION['org_id']) && $_SESSION['org_id'] == $o['id'] && $index == 0) echo 'selected'; ?>>
+                              <?php echo $o['mnemonic']; ?> - <?php echo $display; ?>
                           </option>
-                      <?php endforeach; ?>
+                      <?php 
+                              endif;
+                          endforeach;
+                      endforeach; 
+                      ?>
                   </select>
               </div>
           </div>
