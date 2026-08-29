@@ -70,7 +70,8 @@ if (!empty($expense_data)) {
         $grand_total += $row['amount'];
     }
 }
->?
+?> <!-- Yahan sahi se ?> lagana hai -->
+
 <?php if ($is_pdf): ?>
 <!DOCTYPE html>
 <html>
