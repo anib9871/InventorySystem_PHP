@@ -414,11 +414,9 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
 if (!$is_pdf) include_once('layouts/header.php');
 ?>
 <style>
-/* ════ BASE ════ */
 .rpt * { box-sizing: border-box; }
 .rpt   { font-size: 12px; color: #1e293b; }
 
-/* ════ ORG HEADER ════ */
 .rpt-header {
   text-align: center;
   border-bottom: 2px solid #0f172a;
@@ -431,7 +429,6 @@ if (!$is_pdf) include_once('layouts/header.php');
 }
 .rpt-header p { font-size: 10px; color: #64748b; letter-spacing: .06em; text-transform: uppercase; margin: 0; }
 
-/* ════ FILTER ════ */
 .rpt-filter { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 .rpt-filter .form-control { height: 27px; font-size: 11px; padding: 3px 7px; }
 .rpt-filter .btn          { font-size: 11px; padding: 3px 10px; height: 27px; }
@@ -440,27 +437,13 @@ if (!$is_pdf) include_once('layouts/header.php');
   border-radius: 4px; font-size: 11px; text-decoration: none;
 }
 
-/* ════ TOP ROW (3 columns) ════ */
-.rpt-top {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-  margin-bottom: 10px;
-}
+.rpt-top { display: flex; gap: 10px; align-items: stretch; margin-bottom: 10px; }
 
-/* ── Summary Card ── */
 .rpt-summary {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-  color: #fff;
-  border-radius: 8px;
-  padding: 10px 13px;
-  flex: 0 0 210px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 0;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+  color: #fff; border-radius: 8px; padding: 10px 13px; flex: 0 0 210px;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 0;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
 .rpt-summary .s-lbl { font-size: 9px; opacity: .6; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 2px; }
 .rpt-summary .s-big { font-size: 16px; font-weight: 800; margin: 0 0 7px; line-height: 1.1; }
@@ -470,126 +453,43 @@ if (!$is_pdf) include_once('layouts/header.php');
 .s-mode-tbl td:last-child { text-align: right; }
 .s-mode-tbl .grand td { border-top: 1px solid rgba(255,255,255,.22); padding-top: 4px; font-weight: 700; font-size: 10px; }
 
-
 .payment-scroll{
-    max-height:95px;
-    overflow-y:auto;
-    margin-top:3px;
-    padding-right:4px;
-    scrollbar-width:thin;
-    scrollbar-color:rgba(255,255,255,.35) transparent;
+    max-height:95px; overflow-y:auto; margin-top:3px; padding-right:4px;
+    scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.35) transparent;
 }
+.payment-scroll::-webkit-scrollbar{ width:4px; }
+.payment-scroll::-webkit-scrollbar-track{ background:transparent; }
+.payment-scroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.30); border-radius:20px; }
+.payment-scroll::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.55); }
 
-/* Chrome / Edge */
-.payment-scroll::-webkit-scrollbar{
-    width:4px;
-}
-
-.payment-scroll::-webkit-scrollbar-track{
-    background:transparent;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb{
-    background:rgba(255,255,255,.30);
-    border-radius:20px;
-}
-
-.payment-scroll::-webkit-scrollbar-thumb:hover{
-    background:rgba(255,255,255,.55);
-}
-
-/* ── Chart Cards ── */
 .rpt-card {
   background: #fff; border-radius: 8px; padding: 10px 12px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.07);
-  display: flex; flex-direction: column;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07); display: flex; flex-direction: column;
 }
 .rpt-card-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .04em; color: #475569; margin-bottom: 6px;
 }
 .rpt-chart-box { position: relative; flex: 1; min-height: 0; }
-
-/* product chart */
 .rpt-product { flex: 1; }
 
-/* center pie + panel */
-.rpt-center { flex: 1; }
-.rpt-pie-row { display: flex; gap: 8px; flex: 1; min-height: 0; }
-.rpt-pie-box { flex: 1; position: relative; min-width: 0; }
-.rpt-pie-panel {
-  width: 140px; flex-shrink: 0;
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
-  padding: 6px 8px; overflow-y: auto; font-size: 10px;
-}
-.rpt-ci { border-left: 3px solid #ccc; padding-left: 6px; margin-bottom: 8px; }
-.rpt-ci-name  { font-weight: 700; font-size: 10px; color: #1e293b; line-height: 1.2; }
-.rpt-ci-total { font-weight: 800; font-size: 11px; margin: 1px 0 3px; }
-.rpt-ci-mode  {
-  display: flex; justify-content: space-between;
-  font-size: 9px; color: #64748b;
-  border-bottom: 1px dashed #e2e8f0; padding: 1px 0;
-}
-.rpt-ci-mode span:last-child { font-weight: 700; color: #1e293b; }
-
-/* ════ TRANSACTION TABLE ════ */
 .rpt-tbl-wrap { background: #fff; border-radius: 8px; padding: 10px 12px; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
 .rpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
 .rpt-tbl th, .rpt-tbl td { border: 1px solid #e2e8f0; padding: 4px 7px; }
 .rpt-tbl th { background: #f1f5f9; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-
-.center-group-heading{
-  background:#0f172a !important;
-  color:#fff !important;
-  font-weight:700;
-  font-size:16px !important;
-  padding:8px 10px !important;
-  text-transform:uppercase;
-}
-
 .rpt-tbl tbody tr:hover { background: #f8fafc; }
 .rpt-tbl tfoot td { background: #f1f5f9; font-weight: 700; }
 
-/* ════ RESPONSIVE (MOBILE VIEW) ════ */
 @media screen and (max-width: 768px) {
-  .rpt-top {
-    flex-direction: column !important;
-    height: auto !important; 
-    gap: 15px !important;
-  }
-  .rpt-summary, .rpt-product {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-  }
-  .rpt-chart-box {
-    height: 200px !important; /* Mobile par chart bada dikhega */
-  }
-  
-  /* Filter Form ko mobile mein wrap karne ke liye */
-  .mobile-wrap-form {
-    flex-wrap: wrap !important;
-  }
-  .mobile-wrap-form > input, .mobile-wrap-form > select {
-    flex: 1 1 calc(50% - 6px) !important; 
-    min-width: 130px !important;
-  }
-  .mobile-wrap-form > button, .mobile-wrap-form > a {
-    flex: 1 1 100% !important; 
-    justify-content: center;
-  }
-  
-  .payment-scroll {
-    max-height: 150px; 
-  }
-
-  /* Table ko dabne (squish) se rokne ke liye */
-  .rpt-tbl {
-    min-width: 750px !important; 
-  }
-  .rpt-tbl th, .rpt-tbl td {
-    padding: 6px 4px !important; 
-    word-break: break-word;      
-  }
+  .rpt-top { flex-direction: column !important; height: auto !important; gap: 15px !important; }
+  .rpt-summary, .rpt-product { flex: 1 1 100% !important; width: 100% !important; }
+  .rpt-chart-box { height: 200px !important; }
+  .mobile-wrap-form { flex-wrap: wrap !important; }
+  .mobile-wrap-form > input, .mobile-wrap-form > select { flex: 1 1 calc(50% - 6px) !important; min-width: 130px !important; }
+  .mobile-wrap-form > button, .mobile-wrap-form > a { flex: 1 1 100% !important; justify-content: center; }
+  .payment-scroll { max-height: 150px; }
+  .rpt-tbl { min-width: 750px !important; }
+  .rpt-tbl th, .rpt-tbl td { padding: 6px 4px !important; word-break: break-word; }
 }
 
 /* ════════════════ PRINT (TAX INVOICE THEME MATCHING) ════════════════ */
