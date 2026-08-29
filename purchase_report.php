@@ -411,6 +411,7 @@ $supplier_price = array_column($supplier_data,'price');
 
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
+?> <!-- Yahan PHP tag close karna zaroori hai -->
 
 <?php if ($is_pdf): ?>
 <!DOCTYPE html>
