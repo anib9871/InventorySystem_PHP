@@ -275,36 +275,5 @@ flatpickr(".purchase-datepicker", {
 <?php if ($is_pdf): ?>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 1000); };</script>
 <?php endif; ?>
-<!-- Document Viewer Popup (Modal) -->
-<div class="modal fade" id="docModal" tabindex="-1" role="dialog" aria-labelledby="docModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document" style="width: 90%; max-width: 1000px;">
-    <div class="modal-content">
-      <div class="modal-header" style="background: #0f172a; color: #fff; padding: 10px 15px;">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff; opacity: 0.8; margin-top: 2px;">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <h4 class="modal-title" id="docModalLabel" style="font-weight: 700; font-size: 16px;">Document Viewer</h4>
-      </div>
-      <div class="modal-body" style="padding: 0;">
-        <div class="text-center" id="modalLoader" style="padding: 20px;">Loading document...</div>
-        <iframe id="docIframe" src="" frameborder="0" style="width: 100%; height: 75vh; display: none;" onload="document.getElementById('modalLoader').style.display='none'; this.style.display='block';"></iframe>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-function openDocModal(url, title) {
-    document.getElementById('docModalLabel').innerText = title;
-    document.getElementById('modalLoader').style.display = 'block';
-    document.getElementById('docIframe').style.display = 'none';
-    document.getElementById('docIframe').src = url;
-    $('#docModal').modal('show');
-}
-
-$('#docModal').on('hidden.bs.modal', function () {
-    document.getElementById('docIframe').src = '';
-});
-</script>
 
 <?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
