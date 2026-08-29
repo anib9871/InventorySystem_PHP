@@ -1193,8 +1193,7 @@ flatpickr(".purchase-datepicker", {
 window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
 document.title = "<?= $pdf_save_title ?>";
 </script>
-<?php endif; ?>
-
-<?php if (!$is_pdf) { ?>
+<?php else: ?>
 <script>document.title = "<?= $pdf_save_title ?>";</script>
-<?php include_once('layouts/footer.php'); } ?>
+<?php include_once('layouts/footer.php'); ?>
+<?php endif; ?>
