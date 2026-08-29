@@ -415,7 +415,8 @@ $supplier_price = array_column($supplier_data,'price');
 
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
-
+if (!$is_pdf) include_once('layouts/header.php');
+?>
 <style>
 .rpt * { box-sizing: border-box; }
 .rpt   { font-size: 12px; color: #1e293b; }
