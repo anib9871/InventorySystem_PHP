@@ -102,6 +102,8 @@ if (!empty($detailed_data)) {
     }
 }
 $net_revenue = $grand_income - $grand_expenditure;
+?> <!-- Yahan PHP tag close karein -->
+
 <?php if ($is_pdf): ?>
 <!DOCTYPE html>
 <html>
