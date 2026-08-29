@@ -492,54 +492,56 @@ if (!$is_pdf) include_once('layouts/header.php');
   .rpt-tbl th, .rpt-tbl td { padding: 6px 4px !important; word-break: break-word; }
 }
 
-/* ════════════════ PRINT (TAX INVOICE THEME MATCHING) ════════════════ */
+/* ════════════════ PRINT (FIXED COLORS & VISIBILITY) ════════════════ */
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-  body { margin: 0; padding: 0; font-size: 13px !important; line-height: 1.5 !important; background: #fff; }
+  body { margin: 0; padding: 0; font-size: 13px !important; line-height: 1.5 !important; background: #fff; color: #1e293b !important; }
   .no-print, .rpt-top { display: none !important; }
 
   .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
   .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
 
+  /* Period Box - Dark Blue Theme for clear visibility */
   .pdf-period-box {
     display: block !important;
-    background: #eff6ff !important;
-    color: #1e40af !important;
-    border: 1px solid #bfdbfe !important;
+    background: #1e3a8a !important;
+    color: #ffffff !important;
     padding: 6px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 6px !important;
     font-size: 12px !important;
     font-weight: 700 !important;
   }
+  .pdf-period-box table, .pdf-period-box b { color: #ffffff !important; }
 
+  /* Total Purchase Box */
   .pdf-total-box {
     display: block !important;
-    background: #f8fafc !important;
-    color: #1e293b !important;
-    border: 1px solid #cbd5e1 !important;
-    padding: 6px 10px !important;
+    background: #0f172a !important;
+    color: #ffffff !important;
+    padding: 8px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 6px !important;
     font-size: 12px !important;
     font-weight: 700 !important;
   }
 
+  /* Payment Summary Box - Dark Green Theme so text is clearly visible */
   .pdf-collection-box {
     display: block !important;
-    background: #f0fdf4 !important;
-    color: #166534 !important;
-    border: 1px solid #bbf7d0 !important;
+    background: #14532d !important;
+    color: #ffffff !important;
     padding: 8px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 8px !important;
     width: 100% !important;
     font-size: 12px !important;
   }
-  .pdf-collection-box h4 { color: #166534 !important; }
+  .pdf-collection-box h4, .pdf-collection-box table td { color: #ffffff !important; }
 
+  /* Table Header Blue Theme */
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
   .rpt { width: 100% !important; margin: 0 auto !important; }
   
@@ -554,6 +556,7 @@ if (!$is_pdf) include_once('layouts/header.php');
     font-size: 10px !important;
     padding: 5px !important;
     word-break: break-word !important;
+    color: #1e293b !important;
   }
   .rpt-tbl thead { display: table-header-group; }
   .rpt-tbl tfoot { display: table-row-group; }
