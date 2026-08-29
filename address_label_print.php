@@ -4,7 +4,12 @@ require_once('includes/load.php');
 $type    = isset($_GET['type']) ? trim($_GET['type']) : 'customer';
 $cust_id = isset($_GET['cust_id']) ? (int)$_GET['cust_id'] : 0;
 $supp_id = isset($_GET['supp_id']) ? (int)$_GET['supp_id'] : 0;
-$org_id  = isset($_GET['org_id']) ? (int)$_GET['org_id'] : 0;
+
+// Naya Logic: Combined Dropdown se Org ID aur Address Index nikalna
+$org_and_address = isset($_GET['org_and_address']) ? $_GET['org_and_address'] : '';
+$parts = explode('|', $org_and_address);
+$org_id = isset($parts[0]) ? (int)$parts[0] : (isset($_GET['org_id']) ? (int)$_GET['org_id'] : 0);
+$addr_index = isset($parts[1]) ? (int)$parts[1] : 0;
 
 if((!$cust_id && !$supp_id) || !$org_id){
     die("Invalid request! Please select both Party and Organization.");
@@ -47,6 +52,29 @@ if(!$party_query || !$organization){
 
 $to_party = $party_query[0];
 $org      = $organization[0];
+
+// Naya Logic: JSON array se selected address aur uska state/code bahar nikalna
+$raw_address = $org['address'];
+$decoded_addresses = json_decode($raw_address, true);
+
+$sender_address_text = '';
+$sender_state_name = $org['state_name']; // Default/Fallback
+$sender_state_code = $org['state_code']; // Default/Fallback
+
+if (is_array($decoded_addresses) && isset($decoded_addresses[$addr_index])) {
+    $selected_addr = $decoded_addresses[$addr_index];
+    if (is_array($selected_addr)) {
+        $sender_address_text = isset($selected_addr['text']) ? $selected_addr['text'] : '';
+        // Agar specific address me state/code hai toh wo use karo, nahi toh main organization ka use karo
+        $sender_state_name = !empty($selected_addr['state_name']) ? $selected_addr['state_name'] : $org['state_name'];
+        $sender_state_code = !empty($selected_addr['state_code']) ? $selected_addr['state_code'] : $org['state_code'];
+    } else {
+        $sender_address_text = $selected_addr; // Purane text format ke liye
+    }
+} else {
+    $sender_address_text = $raw_address; // Fallback
+}
+?>
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -232,10 +260,9 @@ $org      = $organization[0];
                             <div><strong>Attn:</strong> <?php echo htmlspecialchars($org['contact_person']); ?></div>
                         <?php endif; ?>
                         
-                        <div class="address-text"><?php echo htmlspecialchars($org['address']); ?></div>
+                        <div class="address-text"><?php echo htmlspecialchars($sender_address_text); ?></div>
                         
-                        <div><strong>State:</strong> <?php echo htmlspecialchars($org['state_name']); ?> (Code: <?php echo htmlspecialchars($org['state_code']); ?>)</div>
-                        
+                        <div><strong>State:</strong> <?php echo htmlspecialchars($sender_state_name); ?> (Code: <?php echo htmlspecialchars($sender_state_code); ?>)</div>
                         <?php if(!empty($org['phone'])): ?>
                             <div><strong>Ph:</strong> <?php echo htmlspecialchars($org['phone']); ?></div>
                         <?php endif; ?>
