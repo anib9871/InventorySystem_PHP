@@ -416,16 +416,6 @@ $supplier_price = array_column($supplier_data,'price');
 /* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
 
-<?php if ($is_pdf): ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title><?= $pdf_save_title ?></title>
-<?php else: ?>
-<?php include_once('layouts/header.php'); ?>
-<script>document.title = "<?= $pdf_save_title ?>";</script>
-<?php endif; ?>
 <style>
 .rpt * { box-sizing: border-box; }
 .rpt   { font-size: 12px; color: #1e293b; }
