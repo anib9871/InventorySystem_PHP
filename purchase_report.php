@@ -492,7 +492,7 @@ if (!$is_pdf) include_once('layouts/header.php');
   .rpt-tbl th, .rpt-tbl td { padding: 6px 4px !important; word-break: break-word; }
 }
 
-/* ════════════════ PRINT (FIXED COLORS & VISIBILITY) ════════════════ */
+/* ════════════════ PRINT (CLEAN BLUE & WHITE THEME) ════════════════ */
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -503,24 +503,26 @@ if (!$is_pdf) include_once('layouts/header.php');
   .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
   .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
 
-  /* Period Box - Dark Blue Theme for clear visibility */
+  /* Period Box - Light Blue Background with Dark Blue Text */
   .pdf-period-box {
     display: block !important;
-    background: #1e3a8a !important;
-    color: #ffffff !important;
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
     padding: 6px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 6px !important;
     font-size: 12px !important;
     font-weight: 700 !important;
   }
-  .pdf-period-box table, .pdf-period-box b { color: #ffffff !important; }
+  .pdf-period-box table, .pdf-period-box b { color: #1e40af !important; }
 
-  /* Total Purchase Box */
+  /* Total Purchase Box - Clean White with Blue Border */
   .pdf-total-box {
     display: block !important;
-    background: #0f172a !important;
-    color: #ffffff !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
     padding: 8px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 6px !important;
@@ -528,18 +530,19 @@ if (!$is_pdf) include_once('layouts/header.php');
     font-weight: 700 !important;
   }
 
-  /* Payment Summary Box - Dark Green Theme so text is clearly visible */
+  /* Payment Summary Box - Light Blue Theme (Replacing Green/Dark) */
   .pdf-collection-box {
     display: block !important;
-    background: #14532d !important;
-    color: #ffffff !important;
+    background: #f0fdf4 !important; /* Agar bilkul white/blue chahiye toh #f8fafc kar sakte ho */
+    color: #1e3a8a !important;
+    border: 1px solid #93c5fd !important;
     padding: 8px 10px !important;
     border-radius: 6px !important;
     margin-bottom: 8px !important;
     width: 100% !important;
     font-size: 12px !important;
   }
-  .pdf-collection-box h4, .pdf-collection-box table td { color: #ffffff !important; }
+  .pdf-collection-box h4, .pdf-collection-box table td { color: #1e3a8a !important; }
 
   /* Table Header Blue Theme */
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
