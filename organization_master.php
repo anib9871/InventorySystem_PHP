@@ -17,9 +17,22 @@ $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
 /* ADD ORGANIZATION */
 if(isset($_POST['add_org'])){
-
   $mnemonic = strtoupper(substr(remove_junk($db->escape($_POST['mnemonic'])),0,5));
-  $address  = remove_junk($db->escape($_POST['address']));
+  
+  $address_array = [];
+  if (isset($_POST['addr_text']) && is_array($_POST['addr_text'])) {
+      for ($i = 0; $i < count($_POST['addr_text']); $i++) {
+          $txt = remove_junk($db->escape($_POST['addr_text'][$i]));
+          $s_name = isset($_POST['addr_state_name'][$i]) ? remove_junk($db->escape($_POST['addr_state_name'][$i])) : '';
+          $s_code = isset($_POST['addr_state_code'][$i]) ? remove_junk($db->escape($_POST['addr_state_code'][$i])) : '';
+          
+          if (!empty($txt)) {
+              $address_array[] = ['text' => $txt, 'state_name' => $s_name, 'state_code' => $s_code];
+          }
+      }
+  }
+  $address = json_encode($address_array);
+
   $phone    = remove_junk($db->escape($_POST['phone']));
   $email    = remove_junk($db->escape($_POST['email']));
   $contact  = remove_junk($db->escape($_POST['contact']));
@@ -27,20 +40,13 @@ if(isset($_POST['add_org'])){
   $state_id = (int)$_POST['state_id'];
   $state_code = remove_junk($db->escape($_POST['state_code']));
 
-  // ❌ Backend Validation Alerts
   if(empty($mnemonic)){
       $session->msg("d", "Mnemonic field khali nahi ho sakta!");
       redirect('organization_master.php', false);
   }
 
   $master_org_id = $_SESSION['org_id'];
-
-  $master_org = find_by_sql("
-  SELECT org_id, org_name 
-  FROM master_inventory.master_organization 
-  WHERE org_id = '{$master_org_id}'
-  LIMIT 1
-  ");
+  $master_org = find_by_sql("SELECT org_id, org_name FROM master_inventory.master_organization WHERE org_id = '{$master_org_id}' LIMIT 1");
 
   if(!$master_org){
       $session->msg("d", "Invalid Master Organization found!");
@@ -66,9 +72,7 @@ if(isset($_POST['add_org'])){
 
 /* UPDATE ORGANIZATION */
 if(isset($_POST['update_org'])){
-
   $id = (int)$_POST['id'];
-
   $mnemonic = strtoupper(substr(remove_junk($db->escape($_POST['mnemonic'])),0,5));
   $master_org_id = $_SESSION['org_id'];
 
@@ -77,20 +81,27 @@ if(isset($_POST['update_org'])){
       redirect('organization_master.php', false);
   }
 
-  $master_org = find_by_sql("
-  SELECT org_name 
-  FROM master_inventory.master_organization 
-  WHERE org_id = '{$master_org_id}'
-  LIMIT 1
-  ");
-
+  $master_org = find_by_sql("SELECT org_name FROM master_inventory.master_organization WHERE org_id = '{$master_org_id}' LIMIT 1");
   if(!$master_org){
       $session->msg("d", "Master Organization record missing!");
       redirect('organization_master.php', false);
   }
-
   $org_name = $master_org[0]['org_name'];
-  $address  = remove_junk($db->escape($_POST['address']));
+
+  $address_array = [];
+  if (isset($_POST['addr_text']) && is_array($_POST['addr_text'])) {
+      for ($i = 0; $i < count($_POST['addr_text']); $i++) {
+          $txt = remove_junk($db->escape($_POST['addr_text'][$i]));
+          $s_name = isset($_POST['addr_state_name'][$i]) ? remove_junk($db->escape($_POST['addr_state_name'][$i])) : '';
+          $s_code = isset($_POST['addr_state_code'][$i]) ? remove_junk($db->escape($_POST['addr_state_code'][$i])) : '';
+          
+          if (!empty($txt)) {
+              $address_array[] = ['text' => $txt, 'state_name' => $s_name, 'state_code' => $s_code];
+          }
+      }
+  }
+  $address = json_encode($address_array);
+
   $phone    = remove_junk($db->escape($_POST['phone']));
   $email    = remove_junk($db->escape($_POST['email']));
   $contact  = remove_junk($db->escape($_POST['contact']));
@@ -115,7 +126,6 @@ if(isset($_POST['update_org'])){
   } else {
       $session->msg("d","Update query failed!");
   }
-
   redirect('organization_master.php',false);
 }
 
@@ -143,8 +153,6 @@ if(isset($_GET['del'])){
 
 include_once('layouts/header.php');
 ?>
-
-
 
 <div class="row">
     <!-- ADD/EDIT FORM -->
@@ -224,11 +232,52 @@ include_once('layouts/header.php');
 
                     <!-- Row 3 -->
                     <div class="row">
-                        <div class="col-md-8 form-group-compact">
-                            <label>Address</label>
-                            <textarea name="address" rows="1" class="form-control" placeholder="Complete address..."><?php echo $edit ? $edit['address'] : ''; ?></textarea>
-                        </div>
+                        <div class="col-md-8 form-group-compact" id="address-container">
+                            <label>Address (With Specific State & Code) <button type="button" class="btn btn-xs btn-info" onclick="addAddressField()" style="margin-left: 10px; padding: 2px 6px; background-color: #00bcd4; border: none; color: white;">+ Add More</button></label>
+                            
+                            <?php 
+                            $saved_addresses = [];
+                            if($edit && !empty($edit['address'])){
+                                $decoded = json_decode($edit['address'], true);
+                                if(is_array($decoded) && count($decoded) > 0){
+                                    foreach($decoded as $d){
+                                        if(is_array($d)){
+                                            $saved_addresses[] = $d;
+                                        } else if (is_string($d)) {
+                                            $saved_addresses[] = ['text' => $d, 'state_name' => '', 'state_code' => ''];
+                                        }
+                                    }
+                                }
+                            }
+                            if(empty($saved_addresses)){
+                                $saved_addresses[] = ['text' => '', 'state_name' => '', 'state_code' => ''];
+                            }
+                            ?>
 
+                            <?php foreach($saved_addresses as $index => $addr): ?>
+                            <div class="input-group" style="margin-bottom: 5px; width: 100%; display: flex; gap: 5px;">
+                                <textarea name="addr_text[]" rows="1" class="form-control" style="width: 45%;" placeholder="Complete address..."><?php echo isset($addr['text']) ? $addr['text'] : ''; ?></textarea>
+                                
+                                <select name="addr_state_name[]" class="form-control" style="width: 35%;" onchange="this.nextElementSibling.value = this.options[this.selectedIndex].getAttribute('data-code') || ''">
+                                    <option value="">Select State</option>
+                                    <?php foreach($states as $s): ?>
+                                        <option value="<?php echo $s['state_name']; ?>" data-code="<?php echo $s['state_code']; ?>" <?php if(isset($addr['state_name']) && $addr['state_name'] == $s['state_name']) echo 'selected'; ?>>
+                                            <?php echo $s['state_name']; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                
+                                <input type="text" name="addr_state_code[]" class="form-control" style="width: 15%;" value="<?php echo isset($addr['state_code']) ? $addr['state_code'] : ''; ?>" placeholder="Code" readonly>
+                                
+                                <?php if($index > 0): ?>
+                                <span class="input-group-btn" style="vertical-align: top;">
+                                    <button class="btn btn-danger" type="button" onclick="this.parentElement.parentElement.remove()" style="height: 34px; padding: 6px 12px;">X</button>
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
                         <div class="col-md-4 form-group-compact text-right" style="padding-top: 18px;">
                             <?php if(!$edit){ ?>
                                 <button type="button" class="btn btn-clear btn-custom" onclick="document.getElementById('orgForm').reset()">
@@ -291,10 +340,63 @@ include_once('layouts/header.php');
                                 <td><?php echo $o['phone']; ?></td>
                                 <td><?php echo $o['email']; ?></td>
                                 <td><?php echo $o['contact_person']; ?></td>
-                                <td class="address-cell"><?php echo $o['address']; ?></td>
+                                <td class="address-cell">
+                                    <?php 
+                                        $decoded_addrs = json_decode($o['address'], true);
+                                        if(is_array($decoded_addrs)){
+                                            $display_arr = [];
+                                            foreach($decoded_addrs as $da) {
+                                                if(is_array($da) && isset($da['text'])) {
+                                                    $display_arr[] = $da['text']; 
+                                                } elseif (is_string($da)) {
+                                                    $display_arr[] = $da; 
+                                                }
+                                            }
+                                            echo implode('<hr style="margin:4px 0; border-color:#ddd;">', $display_arr);
+                                        } else {
+                                            echo $o['address']; 
+                                        }
+                                    ?>
+                                </td>
                                 <?php if(isset($gst_enabled) && $gst_enabled == "Yes"): ?>
-                                    <td><span class="badge-state"><?php echo $o['state_name']; ?></span></td>
-                                    <td><?php echo $o['state_code']; ?></td>
+                                    <td style="vertical-align: top;">
+                                        <?php 
+                                        if(is_array($decoded_addrs)){
+                                            $state_arr = [];
+                                            foreach($decoded_addrs as $idx => $da) {
+                                                if(is_array($da) && !empty($da['state_name'])) {
+                                                    $state_arr[] = "<span class='badge-state' style='display:inline-block; font-size:10px;'>{$da['state_name']}</span>";
+                                                } elseif ($idx === 0 && !empty($o['state_name'])) {
+                                                    $state_arr[] = "<span class='badge-state' style='display:inline-block; font-size:10px;'>{$o['state_name']}</span>";
+                                                } else {
+                                                    $state_arr[] = "<span style='visibility:hidden;'>-</span>"; 
+                                                }
+                                            }
+                                            echo implode('<hr style="margin:4px 0; border-color:#ddd;">', $state_arr);
+                                        } else {
+                                            echo "<span class='badge-state'>{$o['state_name']}</span>";
+                                        }
+                                        ?>
+                                    </td>
+                                    <td style="vertical-align: top;">
+                                        <?php 
+                                        if(is_array($decoded_addrs)){
+                                            $code_arr = [];
+                                            foreach($decoded_addrs as $idx => $da) {
+                                                if(is_array($da) && !empty($da['state_code'])) {
+                                                    $code_arr[] = "<span style='font-weight:600;'>{$da['state_code']}</span>";
+                                                } elseif ($idx === 0 && !empty($o['state_code'])) {
+                                                    $code_arr[] = "<span style='font-weight:600;'>{$o['state_code']}</span>";
+                                                } else {
+                                                    $code_arr[] = "<span style='visibility:hidden;'>-</span>";
+                                                }
+                                            }
+                                            echo implode('<hr style="margin:4px 0; border-color:#ddd;">', $code_arr);
+                                        } else {
+                                            echo $o['state_code'];
+                                        }
+                                        ?>
+                                    </td>
                                     <td><?php echo $o['gst_no']; ?></td>
                                 <?php endif; ?>
                                 <td class="action-td">
@@ -345,6 +447,30 @@ function confirmDelete(id) {
             window.location.href = "organization_master.php?del=" + id;
         }
     });
+}
+
+function addAddressField() {
+    const container = document.getElementById('address-container');
+    const div = document.createElement('div');
+    div.className = 'input-group';
+    div.style.cssText = 'margin-bottom: 5px; width: 100%; display: flex; gap: 5px;';
+
+    let stateOptions = '<option value="">Select State</option>';
+    <?php foreach($states as $s): ?>
+    stateOptions += `<option value="<?php echo $s['state_name']; ?>" data-code="<?php echo $s['state_code']; ?>"><?php echo $s['state_name']; ?></option>`;
+    <?php endforeach; ?>
+
+    div.innerHTML = `
+        <textarea name="addr_text[]" rows="1" class="form-control" style="width: 45%;" placeholder="Complete address..."></textarea>
+        <select name="addr_state_name[]" class="form-control" style="width: 35%;" onchange="this.nextElementSibling.value = this.options[this.selectedIndex].getAttribute('data-code') || ''">
+            ${stateOptions}
+        </select>
+        <input type="text" name="addr_state_code[]" class="form-control" style="width: 15%;" placeholder="Code" readonly>
+        <span class="input-group-btn" style="vertical-align: top;">
+            <button class="btn btn-danger" type="button" onclick="this.parentElement.parentElement.remove()" style="height: 34px; padding: 6px 12px;">X</button>
+        </span>
+    `;
+    container.appendChild(div);
 }
 </script>
 
