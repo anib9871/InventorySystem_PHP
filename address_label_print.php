@@ -75,169 +75,170 @@ if (is_array($decoded_addresses) && isset($decoded_addresses[$addr_index])) {
     $sender_address_text = $raw_address; // Fallback
 }
 ?>
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Dispatch Address Label - <?php echo htmlspecialchars($to_party['party_name']); ?></title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    body {
+        background-color: #f3f4f6;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    /* A4 Page Layout */
+    .a4-page {
+        width: 210mm;
+        min-height: 297mm;
+        background: #ffffff;
+        padding: 15mm;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        position: relative;
+    }
+    
+    /* Action Bar (Screen Only) */
+    .no-print-bar {
+        position: fixed;
+        top: 15px;
+        right: 20px;
+        z-index: 999;
+        display: flex;
+        gap: 10px;
+    }
+    .btn-print {
+        background: #10b981;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(16,185,129,0.3);
+    }
+    .btn-print:hover { 
+        background: #059669; 
+    }
+
+    /* Label Box Container */
+    .label-card {
+        border: 2px dashed #1e293b;
+        border-radius: 8px;
+        padding: 25px;
+        background: #fff;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .header-title {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #000;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+        color: #1e293b;
+    }
+
+    /* Two Column Layout: FROM & TO */
+    .address-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 20px;
+    }
+
+    .address-box {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 15px;
+        position: relative;
+    }
+
+    .address-box.from-box {
+        background-color: #f8fafc;
+    }
+
+    .address-box.to-box {
+        background-color: #ffffff;
+        border: 2px solid #1e293b;
+    }
+
+    .box-badge {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+
+    .badge-from {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .badge-to {
+        background: #1e293b;
+        color: #ffffff;
+        font-size: 14px;
+    }
+
+    .party-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 6px;
+    }
+
+    .party-detail {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .party-detail strong {
+        color: #0f172a;
+    }
+
+    .address-text {
+        margin: 8px 0;
+        white-space: pre-line;
+        word-break: break-word;
+    }
+
+    /* PRINT STYLES */
+    @media print {
         body {
-            background-color: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        /* A4 Page Layout */
-        .a4-page {
-            width: 210mm;
-            height: 297mm;
             background: #ffffff;
-            padding: 15mm;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            position: relative;
+            padding: 0;
         }
-        
-        /* Action Bar (Screen Only) */
         .no-print-bar {
-            position: fixed;
-            top: 15px;
-            right: 20px;
-            z-index: 999;
-            display: flex;
-            gap: 10px;
+            display: none !important;
         }
-        .btn-print {
-            background: #10b981;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(16,185,129,0.3);
-        }
-        .btn-print:hover { background: #059669; }
-
-        /* Label Box Container */
-        .label-card {
-            border: 2px dashed #1e293b;
-            border-radius: 8px;
-            padding: 25px;
-            background: #fff;
+        .a4-page {
+            box-shadow: none;
+            padding: 10mm;
             width: 100%;
-            margin-bottom: 20px;
+            height: auto;
         }
-
-        .header-title {
-            text-align: center;
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border-bottom: 2px solid #000;
-            padding-bottom: 8px;
-            margin-bottom: 20px;
-            color: #1e293b;
+        .label-card {
+            border: 2px solid #000;
         }
-
-        /* Two Column Layout: FROM & TO */
-        .address-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 20px;
-        }
-
-        .address-box {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 15px;
-            position: relative;
-        }
-
-        .address-box.from-box {
-            background-color: #f8fafc;
-        }
-
-        .address-box.to-box {
-            background-color: #ffffff;
-            border: 2px solid #1e293b;
-        }
-
-        .box-badge {
-            display: inline-block;
-            font-size: 12px;
-            font-weight: 800;
-            padding: 3px 10px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .badge-from {
-            background: #e2e8f0;
-            color: #334155;
-        }
-
-        .badge-to {
-            background: #1e293b;
-            color: #ffffff;
-            font-size: 14px;
-        }
-
-        .party-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 6px;
-        }
-
-        .party-detail {
-            font-size: 13px;
-            color: #334155;
-            line-height: 1.5;
-        }
-
-        .party-detail strong {
-            color: #0f172a;
-        }
-
-        .address-text {
-            margin: 8px 0;
-            white-space: pre-line;
-            word-break: break-word;
-        }
-
-        /* PRINT STYLES */
-        @media print {
-            body {
-                background: #ffffff;
-                padding: 0;
-            }
-            .no-print-bar {
-                display: none !important;
-            }
-            .a4-page {
-                box-shadow: none;
-                padding: 10mm;
-                width: 100%;
-                height: auto;
-            }
-            .label-card {
-                border: 2px solid #000;
-            }
-        }
-    </style>
+    }
+</style>
 </head>
 <body>
 
