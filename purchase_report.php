@@ -11,8 +11,7 @@ $org_name = !empty($org_data) ? $org_data[0]['org_name'] : 'Company Name';
 $is_pdf = isset($_GET['pdf']);
 
 /* ── PDF FILE SAVE AS NAME ── */
-$pdf_save_title = htmlspecialchars($org_name) . " - Purchase Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";;
-
+$pdf_save_title = htmlspecialchars($org_name) . " - Purchase Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 /* ── DATE FILTER ── */
 $today = date('Y-m-d');
 
@@ -1179,18 +1178,12 @@ flatpickr(".purchase-datepicker", {
 </script>
 
 <?php if ($is_pdf): ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title><?= $pdf_save_title ?></title>
-<?php else: ?>
-<?php include_once('layouts/header.php'); ?>
-<script>document.title = "<?= $pdf_save_title ?>";</script>
-<?php endif; ?>
 <script>
 window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
+document.title = "<?= $pdf_save_title ?>";
 </script>
 <?php endif; ?>
 
-<?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
+<?php if (!$is_pdf) { ?>
+<script>document.title = "<?= $pdf_save_title ?>";</script>
+<?php include_once('layouts/footer.php'); } ?>
