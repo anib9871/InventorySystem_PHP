@@ -592,95 +592,72 @@ if (!$is_pdf) include_once('layouts/header.php');
   }
 }
 
-/* ════════════════ PRINT ════════════════ */
+/* ════════════════ PRINT (TAX INVOICE THEME MATCHING) ════════════════ */
 @media print {
-
   @page { size: A4 portrait; margin: 10mm; }
-
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-size: 14px !important;
-  line-height: 1.6 !important;
-  background: #fff;
-}
+  body { margin: 0; padding: 0; font-size: 13px !important; line-height: 1.5 !important; background: #fff; }
+  .no-print, .rpt-top { display: none !important; }
 
+  .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
+  .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
 
-.pdf-period-box{
-  display:block !important;
-  background:#b30000 !important;
-  color:#fff !important;
-  padding:5px 9px !important;
-  border-radius:3px !important;
-  margin-bottom:6px !important;
-  font-size:13px !important;
-  font-weight:700 !important;
-  line-height:1.2 !important;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-.pdf-total-box{
-  display:block !important;
-  background:#0f172a !important;
-  color:#fff !important;
-  padding:5px 9px !important;
-  border-radius:3px !important;
-  margin-bottom:6px !important;
-  font-size:13px !important;
-  font-weight:700 !important;
-  line-height:1.2 !important;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-  /* hide everything except report */
-  .no-print        { display: none !important; }
-  .rpt-top         { display: none !important; }  /* hide charts in PDF */
-
-  /* ── org header ── */
-  .rpt-header { margin-bottom: 8px; padding-bottom: 6px; }
-  .rpt-header h2 { font-size: 15px !important; }
-  .rpt-header p  { font-size: 10px !important; }
-
-  /* ── collection summary box ── */
-.pdf-collection-box{
-  display:block !important;
-  background:linear-gradient(90deg,#a10805,#111827) !important;
-  color:#fff !important;
-  padding:6px 10px !important;
-  border-radius:4px !important;
-  margin-bottom:8px !important;
-  width:100% !important;
-  font-size:12px !important;
-  line-height:1.2 !important;
-}
-
-  /* ── table ── */
-  .rpt-tbl-wrap {
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
+  .pdf-period-box {
+    display: block !important;
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
   }
 
-  .rpt {
-  width: 96% !important;
-  margin: 0 auto !important;
-}
-
-  .rpt-card-title  { font-size: 10px !important; margin-bottom: 6px !important; }
-.rpt-tbl { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-  .rpt-tbl th, .rpt-tbl td {
-    font-size: 10px !important; /* Font chota kiya taaki A4 me fit ho */
-    padding: 4px 4px !important; /* Padding kam ki */
-    white-space: normal !important;
-    word-break: break-word !important; /* Lamba naam automatically neeche wali line me aayega */
+  .pdf-total-box {
+    display: block !important;
+    background: #f8fafc !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
   }
-  .rpt-tbl thead   { display: table-header-group; }
-  .rpt-tbl tfoot   { display: table-row-group; }
-  tr               { page-break-inside: avoid; }
+
+  .pdf-collection-box {
+    display: block !important;
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 8px !important;
+    width: 100% !important;
+    font-size: 12px !important;
+  }
+  .pdf-collection-box h4 { color: #166534 !important; }
+
+  .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
+  .rpt { width: 100% !important; margin: 0 auto !important; }
+  
+  .rpt-tbl { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+  .rpt-tbl th {
+    background: #2563eb !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    padding: 5px !important;
+  }
+  .rpt-tbl td {
+    font-size: 10px !important;
+    padding: 5px !important;
+    word-break: break-word !important;
+  }
+  .rpt-tbl thead { display: table-header-group; }
+  .rpt-tbl tfoot { display: table-row-group; }
+  tr { page-break-inside: avoid; }
 }
 </style>
 
