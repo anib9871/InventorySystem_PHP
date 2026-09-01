@@ -478,10 +478,10 @@ table.data-table tr:nth-child(even):not(.summary-row) {
     <div style="display: flex; gap: 8px; align-items: center;">
         <!-- EMAIL FORM -->
         <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
-            <input type="email" name="target_email" 
-                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
-                   value="<?= htmlspecialchars($quotation['customer_email'] ?? '') ?>" 
-                   placeholder="Enter Customer Email" required>
+            <input type="text" name="target_email" 
+       style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
+       value="<?= htmlspecialchars($quotation['customer_email'] ?? '') ?>" 
+       placeholder="Emails (comma separated)" title="Use comma to separate multiple emails" required>
             <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
         </form>
 
