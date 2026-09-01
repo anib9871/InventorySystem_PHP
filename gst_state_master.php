@@ -8,6 +8,50 @@ if(isset($gst_enabled) && $gst_enabled == "No"){
    redirect('home.php');
 }
 
+/* =========================================================
+   SMART AUTO-FILL: SIRF MISSING STATES KO ADD KAREGA
+========================================================= */
+$default_states = [
+    '01' => 'Jammu & Kashmir', '02' => 'Himachal Pradesh', '03' => 'Punjab', 
+    '04' => 'Chandigarh', '05' => 'Uttarakhand', '06' => 'Haryana', 
+    '07' => 'Delhi', '08' => 'Rajasthan', '09' => 'Uttar Pradesh', 
+    '10' => 'Bihar', '11' => 'Sikkim', '12' => 'Arunachal Pradesh', 
+    '13' => 'Nagaland', '14' => 'Manipur', '15' => 'Mizoram', 
+    '16' => 'Tripura', '17' => 'Meghalaya', '18' => 'Assam', 
+    '19' => 'West Bengal', '20' => 'Jharkhand', '21' => 'Odisha', 
+    '22' => 'Chhattisgarh', '23' => 'Madhya Pradesh', '24' => 'Gujarat', 
+    '26' => 'Dadra & Nagar Haveli & Daman & Diu', '27' => 'Maharashtra', 
+    '29' => 'Karnataka', '30' => 'Goa', '31' => 'Lakshadweep', 
+    '32' => 'Kerala', '33' => 'Tamil Nadu', '34' => 'Puducherry', 
+    '35' => 'Andaman & Nicobar Islands', '36' => 'Telangana', 
+    '37' => 'Andhra Pradesh', '38' => 'Ladakh'
+];
+
+// 1. Check karo ki database me abhi kaun-kaun se state code hain
+$existing_states = find_by_sql("SELECT state_code FROM gst_state_master");
+$existing_codes = [];
+if ($existing_states) {
+    foreach ($existing_states as $es) {
+        $existing_codes[] = $es['state_code'];
+    }
+}
+
+// 2. Jo state code database me NAHI hain, unhe ek list me daalo
+$missing_inserts = [];
+foreach ($default_states as $code => $name) {
+    if (!in_array($code, $existing_codes)) {
+        $name_esc = $db->escape($name);
+        $missing_inserts[] = "('$name_esc', '$code')";
+    }
+}
+
+// 3. Agar koi missing hai ya naya database hai, toh unhe insert kar do
+if (!empty($missing_inserts)) {
+    $insert_query = "INSERT INTO gst_state_master (state_name, state_code) VALUES " . implode(", ", $missing_inserts);
+    $db->query($insert_query);
+}
+/* ========================================================= */
+
 /* FETCH */
 $states = find_by_sql("SELECT * FROM gst_state_master ORDER BY state_name ASC");
 
