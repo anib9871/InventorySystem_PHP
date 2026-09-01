@@ -105,6 +105,19 @@ $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 /* Organization */
 $org = find_by_sql("SELECT * FROM organization_master WHERE id=".$invoice['organization_id'])[0];
 
+// JSON Address ko plain text me badalne ka naya logic
+$raw_org_address = $org['address'] ?? '';
+$decoded_org_addr = json_decode($raw_org_address, true);
+$final_org_address = $raw_org_address; // Default fallback
+
+if (is_array($decoded_org_addr)) {
+    if (isset($decoded_org_addr[0]['text'])) {
+        $final_org_address = $decoded_org_addr[0]['text'];
+    } elseif (isset($decoded_org_addr[0]) && is_string($decoded_org_addr[0])) {
+        $final_org_address = $decoded_org_addr[0];
+    }
+}
+
 /* TAX MODE DETECT */
 $org_state  = substr($org['gst_no'] ?? '', 0, 2);
 $cust_state = substr($invoice['gst_no'] ?? '', 0, 2);
@@ -411,12 +424,12 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
 
 <div class="wrapper">
 
-    <!-- HEADER SECTION -->
+<!-- HEADER SECTION -->
     <div class="header-grid">
         <div class="org-brand">
             <h1 class="org-title"><?= strtoupper($org_master['org_name']) ?></h1>
             <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
-                <?= $org['address'] ?><br>
+                <?= nl2br(htmlspecialchars($final_org_address)) ?><br>
                 <?php if($gst_enabled == "Yes"): ?>
                     <b>GSTIN:</b> <?= $org['gst_no'] ?> | 
                 <?php endif; ?>
