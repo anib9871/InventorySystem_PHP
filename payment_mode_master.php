@@ -3,6 +3,39 @@ $page_title = 'Payment Mode Master';
 require_once('includes/load.php');
 //page_require_level(1);
 
+/* =========================================================
+   SMART AUTO-FILL: DEFAULT PAYMENT MODES (IF MISSING)
+========================================================= */
+$default_modes = ['NET BANKING', 'CARD', 'CASH', 'UPI'];
+
+// 1. Check existing payment modes
+$existing_modes_query = find_by_sql("SELECT mode_name FROM payment_mode_master");
+$existing_mode_names = [];
+if ($existing_modes_query) {
+    foreach ($existing_modes_query as $em) {
+        $existing_mode_names[] = strtoupper(trim($em['mode_name']));
+    }
+}
+
+// 2. Find missing modes
+$missing_inserts = [];
+$current_user = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 1;
+
+foreach ($default_modes as $dm) {
+    $check_name = strtoupper(trim($dm));
+    if (!in_array($check_name, $existing_mode_names)) {
+        $name_esc = $db->escape($dm);
+        $missing_inserts[] = "('$name_esc', 1, '$current_user', NOW())";
+    }
+}
+
+// 3. Insert missing modes
+if (!empty($missing_inserts)) {
+    $insert_query = "INSERT INTO payment_mode_master (mode_name, is_active, created_by, created_at) VALUES " . implode(", ", $missing_inserts);
+    $db->query($insert_query);
+}
+/* ========================================================= */
+
 /* ================= ADD ================= */
 
 if(isset($_POST['add_mode'])){
