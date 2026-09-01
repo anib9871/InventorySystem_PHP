@@ -3,6 +3,37 @@ $page_title = 'All Categories';
 require_once('includes/load.php');
 // page_require_level(1);
 
+/* =========================================================
+   SMART AUTO-FILL: DEFAULT CATEGORIES (IF MISSING)
+========================================================= */
+$default_categories = ['Product', 'Software'];
+
+// 1. Check existing categories
+$existing_cats_query = find_by_sql("SELECT name FROM categories");
+$existing_cat_names = [];
+if ($existing_cats_query) {
+    foreach ($existing_cats_query as $ec) {
+        $existing_cat_names[] = strtolower(trim($ec['name']));
+    }
+}
+
+// 2. Find missing categories
+$missing_inserts = [];
+foreach ($default_categories as $dc) {
+    $check_name = strtolower(trim($dc));
+    if (!in_array($check_name, $existing_cat_names)) {
+        $name_esc = $db->escape($dc);
+        $missing_inserts[] = "('$name_esc')";
+    }
+}
+
+// 3. Insert missing categories
+if (!empty($missing_inserts)) {
+    $insert_query = "INSERT INTO categories (name) VALUES " . implode(", ", $missing_inserts);
+    $db->query($insert_query);
+}
+/* ========================================================= */
+
 /* ================= FETCH ALL CATEGORIES ================= */
 $all_categories = find_all('categories');
 
