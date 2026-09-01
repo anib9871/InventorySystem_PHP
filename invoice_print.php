@@ -61,31 +61,32 @@ if (isset($_POST['send_email_btn'])) {
         
         $sent_emails = [];
         $failed_emails = [];
+        $invalid_emails = [];
 
         foreach ($emails as $client_email) {
-            if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
-                $sent = send_invoice_email($id, $client_email, $client_name);
-                if ($sent === true || $sent == 1) {
-                    $sent_emails[] = htmlspecialchars($client_email);
+            if (!empty($client_email)) {
+                // Check if email format is valid
+                if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+                    $sent = send_invoice_email($id, $client_email, $client_name);
+                    if ($sent === true || $sent == 1) {
+                        $sent_emails[] = htmlspecialchars($client_email);
+                    } else {
+                        $failed_emails[] = htmlspecialchars($client_email);
+                    }
                 } else {
-                    $failed_emails[] = htmlspecialchars($client_email);
+                    $invalid_emails[] = htmlspecialchars($client_email); // Galat email ko alag track karega
                 }
-            } else {
-                $failed_emails[] = htmlspecialchars($client_email);
             }
         }
 
         // Status Message Create Karo
-        if (!empty($sent_emails) && empty($failed_emails)) {
-            $email_msg = "Document email successfully sent to: " . implode(', ', $sent_emails);
-            $email_status = "success";
-        } elseif (!empty($sent_emails) && !empty($failed_emails)) {
-            $email_msg = "Sent to: " . implode(', ', $sent_emails) . " | Failed for: " . implode(', ', $failed_emails);
-            $email_status = "error";
-        } else {
-            $email_msg = "Failed to send email to provided address(es).";
-            $email_status = "error";
-        }
+        $msg_parts = [];
+        if (!empty($sent_emails)) $msg_parts[] = "✔ Sent: " . implode(', ', $sent_emails);
+        if (!empty($invalid_emails)) $msg_parts[] = "✖ Invalid (Ignored): " . implode(', ', $invalid_emails);
+        if (!empty($failed_emails)) $msg_parts[] = "⚠ Failed: " . implode(', ', $failed_emails);
+
+        $email_msg = implode(" | ", $msg_parts);
+        $email_status = (!empty($sent_emails) && empty($failed_emails) && empty($invalid_emails)) ? "success" : "error";
     } else {
         $email_msg = "Please enter at least one valid email address!";
         $email_status = "error";
