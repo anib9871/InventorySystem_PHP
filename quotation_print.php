@@ -24,22 +24,41 @@ $email_msg = "";
 $email_status = "";
 
 if (isset($_POST['send_email_btn'])) {
-    $client_email = trim($_POST['target_email']);
+    $raw_emails = trim($_POST['target_email']);
     $client_name  = $quotation['customer_name'];
 
-    if (!empty($client_email) && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
-        // Brevo email function call for quotation
-        $sent = send_quotation_email($id, $client_email, $client_name);
-        
-        if ($sent) {
-            $email_msg = "Quotation email successfully sent to " . htmlspecialchars($client_email) . "!";
-            $email_status = "success";
-        } else {
-            $email_msg = "Failed to send email. Please check Brevo settings/logs.";
-            $email_status = "error";
+    if (!empty($raw_emails)) {
+        $emails = array_map('trim', explode(',', $raw_emails));
+        $sent_emails = [];
+        $failed_emails = [];
+        $invalid_emails = [];
+
+        foreach ($emails as $client_email) {
+            if (!empty($client_email)) {
+                // Email format check
+                if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+                    $sent = send_quotation_email($id, $client_email, $client_name);
+                    if ($sent === true || $sent == 1) {
+                        $sent_emails[] = htmlspecialchars($client_email);
+                    } else {
+                        $failed_emails[] = htmlspecialchars($client_email);
+                    }
+                } else {
+                    $invalid_emails[] = htmlspecialchars($client_email); // Galat email pakad liya
+                }
+            }
         }
+
+        // Alert Message Generate
+        $msg_parts = [];
+        if (!empty($sent_emails)) $msg_parts[] = "✔ Sent: " . implode(', ', $sent_emails);
+        if (!empty($invalid_emails)) $msg_parts[] = "✖ Invalid (Ignored): " . implode(', ', $invalid_emails);
+        if (!empty($failed_emails)) $msg_parts[] = "⚠ Failed: " . implode(', ', $failed_emails);
+
+        $email_msg = implode(" | ", $msg_parts);
+        $email_status = (!empty($sent_emails) && empty($failed_emails)) ? "success" : "error";
     } else {
-        $email_msg = "Invalid or empty customer email address!";
+        $email_msg = "Please enter at least one email address!";
         $email_status = "error";
     }
 }
