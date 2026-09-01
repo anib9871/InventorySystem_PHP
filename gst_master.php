@@ -8,6 +8,42 @@ if(isset($gst_enabled) && $gst_enabled == "No"){
    redirect('home.php');
 }
 
+/* =========================================================
+   SMART AUTO-FILL: DEFAULT GST SLABS (IF MISSING)
+========================================================= */
+$default_gsts = [
+    ['name' => 'No gst', 'percent' => '0.00'],
+    ['name' => 'Gst 5',  'percent' => '5.00'],
+    ['name' => 'Gst 12', 'percent' => '12.00'],
+    ['name' => 'Gst 18', 'percent' => '18.00'],
+    ['name' => 'IGst 18', 'percent' => '18.00']
+];
+
+// Check existing GST names
+$existing_gsts = find_by_sql("SELECT gst_name FROM gst_master");
+$existing_names = [];
+if ($existing_gsts) {
+    foreach ($existing_gsts as $eg) {
+        $existing_names[] = strtolower(trim($eg['gst_name']));
+    }
+}
+
+$missing_inserts = [];
+foreach ($default_gsts as $dg) {
+    $check_name = strtolower(trim($dg['name']));
+    if (!in_array($check_name, $existing_names)) {
+        $name_esc = $db->escape($dg['name']);
+        $percent_esc = $db->escape($dg['percent']);
+        $missing_inserts[] = "('$name_esc', '$percent_esc')";
+    }
+}
+
+if (!empty($missing_inserts)) {
+    $insert_query = "INSERT INTO gst_master (gst_name, gst_percent) VALUES " . implode(", ", $missing_inserts);
+    $db->query($insert_query);
+}
+/* ========================================================= */
+
 /* ---------- FETCH ALL ---------- */
 $all_gst = find_by_sql("SELECT * FROM gst_master ORDER BY gst_percent ASC");
 
