@@ -51,12 +51,17 @@ $show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 ═══════════════════════════════════════ */
 $sale_query = "
 SELECT SUM(t.sale_net) AS total_sale
-FROM transaction_master t
-LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
-WHERE t.transaction_type = 2
-AND i.customer_id IS NOT NULL
-AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
+FROM (
+    SELECT t.sale_net, t.center_id, t.product_id, i.customer_id, t.entry_date,
+    (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) AS pending_amt
+    FROM transaction_master t
+    LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
+    WHERE t.transaction_type = 2
+    AND i.customer_id IS NOT NULL
+    AND t.sale_net > 0
+    AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
+) t
+WHERE 1=1
 ";
 
 if ($role_id == 3) {
@@ -70,7 +75,14 @@ if ($report_type == 'product' && !empty($filter_id)) {
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
-    $sale_query .= " AND i.customer_id = '{$filter_id}'";
+    $sale_query .= " AND t.customer_id = '{$filter_id}'";
+}
+
+// Yahan status ka filter lagega
+if ($payment_status == 'paid') {
+    $sale_query .= " AND t.pending_amt <= 0";
+} elseif ($payment_status == 'pending') {
+    $sale_query .= " AND t.pending_amt > 0";
 }
 
 $total_sale_row = find_by_sql($sale_query);
