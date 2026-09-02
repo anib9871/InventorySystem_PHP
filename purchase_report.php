@@ -36,7 +36,7 @@ foreach ($formats as $format) {
 /* ── PDF FILE SAVE AS NAME ── */
 $pdf_save_title = htmlspecialchars($org_name) . " - Purchase Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 /* ── SESSION ── */
-$role_id     = $_SESSION['role_id'];
+$role_id     = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : (isset($_SESSION['user_level']) ? $_SESSION['user_level'] : 0);
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
