@@ -78,7 +78,6 @@ if ($report_type == 'customer' && !empty($filter_id)) {
     $sale_query .= " AND t.customer_id = '{$filter_id}'";
 }
 
-// Yahan status ka filter lagega
 if ($payment_status == 'paid') {
     $sale_query .= " AND t.pending_amt <= 0";
 } elseif ($payment_status == 'pending') {
@@ -578,7 +577,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     </p>
   </div>
 
- <!-- ── FILTER (screen only) ── -->
+  <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="no-print mb-2" style="margin-bottom:10px;">
 <form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
@@ -694,7 +693,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   <div class="pdf-total-box" style="display:<?= $is_pdf ? 'block' : 'none' ?>;">
     <table style="width:100%; border-collapse:collapse; color:#fff;">
       <tr>
-        <td style="width:50%; vertical-align:top; border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;">
+        <td style="width: <?= empty($payment_status) ? '50%' : '100%' ?>; vertical-align:top; <?php if(empty($payment_status)) echo 'border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;'; ?>">
           <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Sales Amount</span><br>
           <span style="font-size:14px; font-weight:800;">₹ <?= number_format($grand, 2) ?></span>
           <?php if (abs($round_off) > 0.001) { ?>
@@ -704,6 +703,8 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             </div>
           <?php } ?>
         </td>
+
+        <?php if (empty($payment_status)): ?>
         <td style="width:50%; vertical-align:top; padding-left:12px;">
           <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Payment Received</span><br>
           <span style="font-size:14px; font-weight:800; color:#4ade80;">₹ <?= number_format($total_collection, 2) ?></span>
@@ -711,11 +712,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             Mode-wise Grand Total
           </div>
         </td>
+        <?php endif; ?>
       </tr>
     </table>
   </div>
 
-<div class="pdf-collection-box" style="display:none;">
+  <?php if (empty($payment_status)): ?>
+  <div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Customer Collection Summary (Mode-wise)
     </h4>
@@ -738,6 +741,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </tr>
     </table>
   </div>
+  <?php endif; ?>
 
   <!-- ══════════════════════════════════════
         TOP ROW
