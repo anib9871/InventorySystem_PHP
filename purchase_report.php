@@ -40,52 +40,65 @@ $role_id     = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : (isset($_SES
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER FILTER (admin only) ── */
-/* ── CENTER FILTER (admin only) ── */
 $filter_id = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
-$report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-$show_report = isset($_POST['generate_report']) || isset($_GET['pdf']);
+$report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
+$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? '';
+$show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
-   1. TOTAL SALE
+   1. TOTAL PURCHASE (Filtered by Status Support)
 ═══════════════════════════════════════ */
 $sale_query = "
-SELECT
-SUM(
-    t.net_price +
-    CASE
-        WHEN t.transaction_id = (
-            SELECT MIN(tm.transaction_id)
-            FROM transaction_master tm
-            WHERE tm.bill_indent_no = t.bill_indent_no
-        )
-        THEN IFNULL(
-            (
-                SELECT SUM(s.total_amount)
-                FROM shipping s
-                WHERE s.bill_no = t.bill_indent_no
-            ),0
-        )
-        ELSE 0
-    END
-) AS total_sale
-
-FROM transaction_master t
-
-WHERE t.transaction_type = 1
-AND DATE(t.entry_date)
-BETWEEN '{$from}' AND '{$to}'
+SELECT SUM(t.total_sale) AS total_sale
+FROM (
+    SELECT 
+        tm.bill_indent_no,
+        tm.center_id,
+        tm.supplier_id,
+        tm.product_id,
+        tm.entry_date,
+        (
+            tm.net_price +
+            CASE
+                WHEN tm.transaction_id = (
+                    SELECT MIN(sub_tm.transaction_id)
+                    FROM transaction_master sub_tm
+                    WHERE sub_tm.bill_indent_no = tm.bill_indent_no
+                )
+                THEN IFNULL(
+                    (
+                        SELECT SUM(s.total_amount)
+                        FROM shipping s
+                        WHERE s.bill_no = tm.bill_indent_no
+                    ),0
+                )
+                ELSE 0
+            END
+        ) AS total_sale,
+        (SELECT IFNULL(paid_amount, 0) FROM supplier_ledger sl WHERE sl.bill_no = tm.bill_indent_no LIMIT 1) AS paid_amount
+    FROM transaction_master tm
+    WHERE tm.transaction_type = 1
+    AND DATE(tm.entry_date) BETWEEN '{$from}' AND '{$to}'
+) t
+WHERE 1=1
 ";
-if ($role_id == 3)                               $sale_query .= " AND center_id = '{$user_center}'";
-elseif ($role_id == 2 && !empty($center_filter)) $sale_query .= " AND center_id = '{$center_filter}'";
 
-// if($report_type=='product' && !empty($filter_id)){
-//     $sale_query .= " AND t.product_id='{$filter_id}'";
-// }
+if ($role_id == 3) {
+    $sale_query .= " AND t.center_id = '{$user_center}'";
+} elseif ($role_id == 2 && !empty($center_filter)) {
+    $sale_query .= " AND t.center_id = '{$center_filter}'";
+}
 
 if($report_type=='supplier' && !empty($filter_id)){
     $sale_query .= " AND t.supplier_id='{$filter_id}'";
+}
+
+if ($payment_status == 'paid') {
+    $sale_query .= " AND (t.total_sale - t.paid_amount) <= 0";
+} elseif ($payment_status == 'pending') {
+    $sale_query .= " AND (t.total_sale - t.paid_amount) > 0";
 }
 
 $total_sale_row = find_by_sql($sale_query);
@@ -113,7 +126,7 @@ if($report_type=='supplier' && !empty($filter_id)){
     $pay_q .= " AND sp.supplier_id='{$filter_id}'";
 }
 
-if ($role_id == 3)                               $pay_q .= " AND center_id = '{$user_center}'";
+if ($role_id == 3)                                    $pay_q .= " AND center_id = '{$user_center}'";
 elseif ($role_id == 2 && !empty($center_filter)) $pay_q .= " AND center_id = '{$center_filter}'";
 $pay_q .= "
 GROUP BY sp.supplier_id, sp.payment_mode
@@ -122,12 +135,11 @@ ORDER BY sm.supplier_name ASC
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-$mode_summary = []; // Naya array modes ko group karne ke liye
+$mode_summary = [];
 
 foreach ($payments as $pay){
     $total_collection += $pay['payment_amount'];
     
-    // Mode ko uppercase karke group karna
     $mode_name = strtoupper(trim($pay['payment_mode']));
     if (!isset($mode_summary[$mode_name])) {
         $mode_summary[$mode_name] = 0;
@@ -197,7 +209,6 @@ t.gst_amount,
         (t.unit_price - p.buy_price) * t.quantity
     ) AS profit,
 
--- Naya code: supplier_ledger se seedha paid_amount laane ke liye
 (SELECT IFNULL(paid_amount, 0) FROM supplier_ledger sl WHERE sl.bill_no = t.bill_indent_no LIMIT 1) AS paid_amount
 
 FROM transaction_master t
@@ -210,8 +221,6 @@ LEFT JOIN supplier_master sm
 
 LEFT JOIN master_center mc
     ON mc.center_id = t.center_id
-
-
 
 WHERE t.transaction_type = 1
 AND t.supplier_id IS NOT NULL
@@ -233,8 +242,6 @@ if($report_type=='supplier' && !empty($filter_id)){
     $txn_q .= " AND t.supplier_id='{$filter_id}'";
 }
 
-
-
 $txn_q .= "
 GROUP BY t.transaction_id
 ORDER BY t.entry_date DESC
@@ -242,51 +249,32 @@ ORDER BY t.entry_date DESC
 
 $sales = find_by_sql($txn_q);
 
+if ($payment_status == 'paid') {
+    $sales = array_filter($sales, function($s) {
+        $paid = round((float)($s['paid_amount'] ?? 0));
+        $total = round((float)$s['total_sale']);
+        return ($total - $paid) <= 0;
+    });
+} elseif ($payment_status == 'pending') {
+    $sales = array_filter($sales, function($s) {
+        $paid = round((float)($s['paid_amount'] ?? 0));
+        $total = round((float)$s['total_sale']);
+        return ($total - $paid) > 0;
+    });
+}
 
+$sales = array_values($sales);
 
 $grand = 0;
-$grand_qty = 0; // Qty ke liye naya variable
+$grand_qty = 0;
 
 foreach ($sales as $s) {
     $grand += $s['total_sale'];
-    $grand_qty += $s['sold_qty']; // Qty add ki
+    $grand_qty += $s['sold_qty'];
 }
 
 $grand_round = round($grand);
 $round_off   = $grand_round - $grand;
-
-$shipping_query = "
-SELECT IFNULL(SUM(s.total_amount),0) AS shipping_total
-FROM shipping s
-WHERE 1=1
-WHERE t.transaction_type = 1
-";
-
-$shipping_query .= "
-AND s.bill_no IN
-(
-    SELECT DISTINCT bill_indent_no
-    FROM transaction_master
-    WHERE transaction_type = 1
-    AND DATE(entry_date)
-    BETWEEN '{$from}' AND '{$to}'
-";
-
-if ($role_id == 3){
-    $shipping_query .= " AND t.center_id='{$user_center}'";
-}
-elseif ($role_id == 2 && !empty($center_filter)){
-    $shipping_query .= " AND t.center_id='{$center_filter}'";
-}
-
-if($report_type=='supplier' && !empty($filter_id)){
-    $shipping_query .= " AND supplier_id='{$filter_id}'";
-}
-
-if($report_type=='product' && !empty($filter_id)){
-
-}
-
 
 /* ═══════════════════════════════════════
    5. PRODUCT CHART DATA
@@ -330,7 +318,6 @@ BETWEEN '{$from}' AND '{$to}'
 
 if ($role_id == 3)
     $pq .= " AND t.center_id = '{$user_center}'";
-
 elseif ($role_id == 2 && !empty($center_filter))
     $pq .= " AND t.center_id = '{$center_filter}'";
 
@@ -345,11 +332,8 @@ if($report_type=='supplier' && !empty($filter_id)){
 $pq .= " GROUP BY t.product_id";
 
 $product_data   = find_by_sql($pq);
-
 $product_labels = array_column($product_data, 'name');
-
 $product_qty    = array_column($product_data, 'qty');
-
 $product_price = array_column($product_data,'price');
 
 /* ═══════════════════════════════════════
@@ -402,16 +386,12 @@ if($report_type=='product' && !empty($filter_id)){
 
 $sq .= " GROUP BY t.supplier_id";
 
-
 $supplier_data   = find_by_sql($sq);
-
 $supplier_labels = array_column($supplier_data,'supplier_name');
-
 $supplier_price = array_column($supplier_data,'price');
 
-/* ── COLORS shared PHP + JS ── */
 $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#475569'];
-?> <!-- Yahan PHP tag close karna zaroori hai -->
+?>
 
 <?php if ($is_pdf): ?>
 <!DOCTYPE html>
@@ -502,7 +482,6 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
   .rpt-tbl th, .rpt-tbl td { padding: 6px 4px !important; word-break: break-word; }
 }
 
-/* ════════════════ PRINT (CLEAN BLUE & WHITE THEME) ════════════════ */
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -513,7 +492,6 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
   .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
   .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
 
-  /* Period Box - Light Blue Background with Dark Blue Text */
   .pdf-period-box {
     display: block !important;
     background: #eff6ff !important;
@@ -527,7 +505,6 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
   }
   .pdf-period-box table, .pdf-period-box b { color: #1e40af !important; }
 
-  /* Total Purchase Box - Clean White with Blue Border */
   .pdf-total-box {
     display: block !important;
     background: #f8fafc !important;
@@ -540,10 +517,9 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
     font-weight: 700 !important;
   }
 
-  /* Payment Summary Box - Light Blue Theme (Replacing Green/Dark) */
   .pdf-collection-box {
     display: block !important;
-    background: #f0fdf4 !important; /* Agar bilkul white/blue chahiye toh #f8fafc kar sakte ho */
+    background: #f0fdf4 !important;
     color: #1e3a8a !important;
     border: 1px solid #93c5fd !important;
     padding: 8px 10px !important;
@@ -554,7 +530,6 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
   }
   .pdf-collection-box h4, .pdf-collection-box table td { color: #1e3a8a !important; }
 
-  /* Table Header Blue Theme */
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
   .rpt { width: 100% !important; margin: 0 auto !important; }
   
@@ -601,7 +576,7 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
   </p>
 </div>
 
- <!-- ── FILTER (screen only) ── -->
+  <!-- ── FILTER (screen only) ── -->
   <?php if (!$is_pdf): ?>
   <div class="no-print mb-2" style="margin-bottom:10px;">
     <form method="post" class="mobile-wrap-form" style="display:flex; align-items:center; gap:6px; flex-wrap:nowrap; width:100%;">
@@ -612,6 +587,13 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
       <select name="report_type" id="report_type" class="form-control" style="height:32px; font-size:12px; flex:0 0 115px;">
         <option value="product" <?= ($report_type=='product')?'selected':'' ?>>By Product</option>
         <option value="supplier" <?= ($report_type=='supplier')?'selected':'' ?>>By Supplier</option>
+      </select>
+
+      <!-- PAID / PENDING STATUS DROPDOWN -->
+      <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 110px;">
+          <option value="">All Status</option>
+          <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Paid</option>
+          <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Pending</option>
       </select>
 
       <?php
@@ -639,11 +621,12 @@ $pie_colors = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2
 
       <?php
       $pdf_params = [
-          'pdf'         => 1,
-          'from'        => $from,
-          'to'          => $to,
-          'report_type' => $report_type,
-          'filter_id'   => $filter_id,
+          'pdf'            => 1,
+          'from'           => $from,
+          'to'             => $to,
+          'report_type'    => $report_type,
+          'payment_status' => $payment_status,
+          'filter_id'      => $filter_id,
       ];
       if ($role_id == 2 && !empty($center_filter)) {
           $pdf_params['center_id'] = $center_filter;
@@ -720,6 +703,7 @@ if($report_type=='supplier' && !empty($filter_id)){
   <?php } ?>
 </div>
 
+<?php if ($payment_status != 'pending'): ?>
 <div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Supplier Payment Summary (Mode-wise)
@@ -730,7 +714,6 @@ if($report_type=='supplier' && !empty($filter_id)){
         <td style="padding:2px 4px; text-align:right;">AMOUNT</td>
       </tr>
       
-      <!-- Grouped Modes Loop -->
       <?php foreach ($mode_summary as $mode => $amt): ?>
       <tr>
         <td style="padding:3px 4px;"><?= htmlspecialchars($mode) ?></td>
@@ -744,9 +727,10 @@ if($report_type=='supplier' && !empty($filter_id)){
       </tr>
     </table>
   </div>
+<?php endif; ?>
 
   <!-- ══════════════════════════════════════
-       TOP ROW
+        TOP ROW
   ══════════════════════════════════════ -->
   <div class="rpt-top" style="height:185px;">
 
@@ -848,7 +832,7 @@ if($report_type=='supplier' && !empty($filter_id)){
   </div><!-- /.rpt-top -->
 
   <!-- ══════════════════════════════════════
-       TRANSACTION TABLE
+        TRANSACTION TABLE
   ══════════════════════════════════════ -->
   <div class="rpt-tbl-wrap">
    <div class="rpt-card-title">
@@ -932,14 +916,12 @@ if(!empty($center_filter)){
     ₹ <?= number_format($s['gst_amount'],2) ?>
 </td>
 
-<?php 
-    // Dono amounts ko round kar rahe hain taaki paise (.06 etc) ka difference issue na kare
+<?php  
     $paid_amt = round((float)($s['paid_amount'] ?? 0));
     $total_amt = round((float)$s['total_sale']);
     
     $pending_amt = $total_amt - $paid_amt;
     
-    // Round off ke baad agar pending 0 (ya negative) hai to Blue (Paid), warna Red (Pending)
     $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
 ?>
 <td style="text-align:right;">
@@ -950,9 +932,6 @@ if(!empty($center_filter)){
 </tr>
 
 <?php endforeach; ?>
-
-
-
 
 </tbody>
 
@@ -985,16 +964,13 @@ if(!empty($center_filter)){
 </tr>
 </tfoot>
 <?php } ?>
-</tr>
-</tfoot>
   </table>
     </div>
     
-    <!-- Legend (Note) for Colors -->
     <div style="text-align:right; margin-top:8px; font-size:11px;">
         <b>Note:</b>
-        <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Paid</span> | 
-        <span style="color:#dc2626; font-weight:700;">&#9632; Red = Pending</span>
+        <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Paid = Blue</span> | 
+        <span style="color:#dc2626; font-weight:700;">&#9632; Pending = Red</span>
     </div>
 
     <?php endif; ?>
@@ -1005,57 +981,31 @@ if(!empty($center_filter)){
 <?php } ?>
 
 <script>
-/* ── Product Bar ── */
-
 new Chart(document.getElementById('productChart'), {
-
   type: 'bar',
-
   data: {
-
     labels: <?= json_encode($product_labels) ?>,
-
     datasets: [{
-
       label: 'Purchase Qty',
-
       data: <?= json_encode($product_qty) ?>,
-
       borderWidth: 1,
-
       borderRadius: 4,
-
       backgroundColor: 'rgba(37,99,235,.72)',
-
       borderColor: '#2563eb'
-
     }]
   },
-
   options: {
-
     responsive: true,
-
     maintainAspectRatio: false,
-
     plugins: {
-
       legend: { display:false },
-
       tooltip: {
-
         callbacks: {
-
           title: function(context){
-
             return context[0].label;
-
           },
-
         label: function(context){
-
             var price = <?= json_encode($product_price) ?>[context.dataIndex];
-
             return [
                 'Qty : ' + context.raw,
                 'Price : ₹ ' + Number(price).toLocaleString('en-IN',{
@@ -1063,118 +1013,75 @@ new Chart(document.getElementById('productChart'), {
                     maximumFractionDigits:2
                 })
             ];
-
         }
         }
       }
     },
-
     scales: {
-
       x: {
-
         grid: { display:false },
-
-        ticks: {
-
-          display:false
-        }
+        ticks: { display:false }
       },
-
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        stepSize: 1,
-        precision: 0,
-        font: {
-            size: 9
-        }
-    },
-    grid: {
-        color: 'rgba(0,0,0,.04)'
-    }
-}
+      y: {
+        beginAtZero: true,
+        grace: '5%',
+        ticks: {
+            stepSize: 1,
+            precision: 0,
+            font: { size: 9 }
+        },
+        grid: { color: 'rgba(0,0,0,.04)' }
+      }
     }
   }
 });
 
-/* ── Supplier Bar ── */
 new Chart(document.getElementById('supplierChart'), {
-
   type: 'bar',
-
   data: {
-
     labels: <?= json_encode($supplier_labels) ?>,
-
     datasets: [{
-
       label: 'Purchase Qty',
-
       data: <?= json_encode($supplier_price) ?>,
-
       borderWidth: 1,
-
       borderRadius: 4,
-
       backgroundColor: 'rgba(22,163,74,.72)',
-
       borderColor: '#16a34a'
-
     }]
   },
-
   options: {
-
     responsive: true,
-
     maintainAspectRatio: false,
-
     plugins: {
-
       legend: { display:false },
-
       tooltip: {
-
         callbacks: {
-
           title: function(context){
-
             return context[0].label;
-
           },
-
         label: function(context){
-
             return 'Price : ₹ ' +
             Number(context.raw).toLocaleString('en-IN',{
                 minimumFractionDigits:2,
                 maximumFractionDigits:2
             });
-
         }
         }
       }
     },
-
-scales: {
+    scales: {
       x: {
         grid: { display:false },
-        ticks: { display: false } // Naam ko hide kar diya
+        ticks: { display: false }
       },
-
-y: {
-    beginAtZero: true,
-    grace: '5%',
-    ticks: {
-        precision: 0
-    }
-}
+      y: {
+        beginAtZero: true,
+        grace: '5%',
+        ticks: { precision: 0 }
+      }
     }
   }
 });
-
 </script>
 
 <script>
