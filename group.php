@@ -2,10 +2,6 @@
 $page_title = 'Group Management';
 require_once('includes/load.php');
 
-<?php
-$page_title = 'Group Management';
-require_once('includes/load.php');
-
 /* =========================================================
    SAFE AUTO-FILL: DEFAULT ROLES (ADMIN & USER)
 ========================================================= */
