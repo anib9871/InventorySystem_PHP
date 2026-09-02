@@ -18,7 +18,6 @@ if(isset($_SESSION['role_id'])){
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!-- Mobile responsiveness viewport -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
@@ -40,15 +39,12 @@ else{
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- Central Main CSS Location -->
 <link rel="stylesheet" href="libs/css/main.css"/>
 
 <!-- JS Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
-<!-- REDEPLOYMENT & TAB GUARD -->
 <script>
 (function() {
     var CURRENT_VERSION = "<?php echo defined('APP_VERSION') ? APP_VERSION : '1.0.1'; ?>"; 
@@ -67,14 +63,28 @@ else{
 })();
 </script>
 
+<style>
+.swal2-toast.pastel-success-toast {
+    background-color: #d1fae5 !important;
+    border: 1px solid #10b981 !important;
+    color: #065f46 !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+.swal2-toast.pastel-success-toast .swal2-title {
+    color: #065f46 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+</style>
+
 </head>
 <body>
 
 <?php if(isset($_SESSION['username'])): ?>
 
-  <?php
-  $system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
-  ?>
+<?php
+$system = isset($_GET['system']) ? $_GET['system'] : 'inventory';
+?>
 
 <header id="header">
 
@@ -93,12 +103,10 @@ else{
 
 <div class="header-content">
 
-<!-- Header Date -->
 <div class="header-date pull-left hidden-xs">
   <strong><?php echo date("F j, Y, g:i a");?></strong>
 </div>
 
-<!-- Logout Menu Section -->
 <div class="pull-right">
 <ul class="info-menu list-inline list-unstyled">
   <li class="profile dropdown">
@@ -137,13 +145,9 @@ else{
 if(isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1){
     include_once('superadmin_menu.php');
 }
-/* ORGANIZATION USERS */
+/* ORGANIZATION USERS & STAFF (UNIFIED DYNAMIC ADMIN MENU) */
 else{
-    if(isset($_SESSION['user_level']) && $_SESSION['user_level'] == 1){
-        include_once('admin_menu.php');
-    }else{
-        include_once('user_menu.php');
-    }
+    include_once('admin_menu.php');
 }
 ?>
 </div>
@@ -152,3 +156,38 @@ else{
 
 <div class="page">
 <div class="container-fluid" style="padding-top: 15px;">
+
+<?php 
+$global_msg = $session->msg();
+if(!empty($global_msg) && is_array($global_msg)):
+    $msg_type = key($global_msg);
+    $msg_text = current($global_msg);
+    $is_error = in_array($msg_type, ['danger', 'd', 'error', 'warning', 'w']);
+?>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    <?php if($is_error): ?>
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: '<?php echo strip_tags($msg_text); ?>',
+            confirmColor: '#ef4444',
+            confirmButtonText: 'OK'
+        });
+    <?php else: ?>
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: '<?php echo strip_tags($msg_text); ?>',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'pastel-success-toast'
+            }
+        });
+    <?php endif; ?>
+});
+</script>
+<?php endif; ?>
