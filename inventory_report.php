@@ -35,15 +35,16 @@ foreach ($formats as $format) {
 }
 
 /* ── SESSION ── */
-$role_id     = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : (isset($_SESSION['user_level']) ? $_SESSION['user_level'] : 0);
+$role_id      = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : (isset($_SESSION['user_level']) ? $_SESSION['user_level'] : 0);
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER / REPORT FILTER (admin & general) ── */
 $filter_id     = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
-$report_type = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-$show_report = isset($_POST['generate_report']) || isset($_GET['pdf']);
+$report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
+$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? '';
+$show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
    1. TOTAL SALE (transaction_type = 2)
@@ -94,7 +95,6 @@ if ($report_type == 'customer' && !empty($filter_id)) {
     $pay_q .= " AND p.customer_id = '{$filter_id}'";
 }
 
-// Ye naya code hai: Jo sirf selected product ke bills ka payment laayega
 if ($report_type == 'product' && !empty($filter_id)) {
     $pay_q .= " AND p.invoice_id IN (SELECT invoice_id FROM invoice_items WHERE product_id = '{$filter_id}')";
 }
@@ -113,12 +113,11 @@ ORDER BY cm.customer_name ASC
 $payments = find_by_sql($pay_q);
 
 $total_collection = 0;
-$mode_summary = []; // Modes ko group karne ke liye naya array
+$mode_summary = [];
 
 foreach ($payments as $pay) {
     $total_collection += $pay['payment_amount'];
     
-    // Mode ko uppercase karke group karna
     $mode_name = strtoupper(trim($pay['payment_mode']));
     if (!isset($mode_summary[$mode_name])) {
         $mode_summary[$mode_name] = 0;
@@ -133,11 +132,11 @@ $center_sales = [];
 if ($role_id == 2) {
     $cq = "SELECT x.center_name, x.center_id, SUM(x.mode_total) as total_sale,
              GROUP_CONCAT(CONCAT(x.payment_mode,' : Rs.',FORMAT(x.mode_total,2)) SEPARATOR ' | ') as payment_modes
-           FROM (
-             SELECT mc.center_name, p.center_id, p.payment_mode, SUM(p.amount) as mode_total
-             FROM payments p
-             LEFT JOIN master_center mc ON mc.center_id = p.center_id
-             WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
+            FROM (
+              SELECT mc.center_name, p.center_id, p.payment_mode, SUM(p.amount) as mode_total
+              FROM payments p
+              LEFT JOIN master_center mc ON mc.center_id = p.center_id
+              WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
     if (!empty($center_filter)) $cq .= " AND p.center_id = '{$center_filter}'";
     $cq .= " GROUP BY p.center_id, mc.center_name, p.payment_mode) x GROUP BY x.center_id, x.center_name";
     $center_sales = find_by_sql($cq);
@@ -160,7 +159,6 @@ SELECT
     t.gst_amount,
     t.sale_net AS total_sale,
     
-    -- Ye raha main FIX: payments ki invoice_id ko invoice table ki id se match kiya hai
     (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount
     
 FROM transaction_master t
@@ -188,6 +186,12 @@ if ($report_type == 'customer' && !empty($filter_id)) {
     $txn_q .= " AND i.customer_id = '{$filter_id}'";
 }
 
+if ($payment_status == 'paid') {
+    $txn_q .= " HAVING pending_amt <= 0";
+} elseif ($payment_status == 'pending') {
+    $txn_q .= " HAVING pending_amt > 0";
+}
+
 $txn_q .= "
 ORDER BY t.entry_date DESC
 ";
@@ -195,10 +199,10 @@ ORDER BY t.entry_date DESC
 $sales = find_by_sql($txn_q);
 
 $grand = 0;
-$grand_qty = 0; // Qty calculation variable
+$grand_qty = 0;
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
-    $grand_qty += (float)$s['sold_qty']; // Add this line
+    $grand_qty += (float)$s['sold_qty'];
 }
 
 /* Round off Calculation */
@@ -481,7 +485,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   .rpt-header { border-bottom: 2px solid #2563eb !important; margin-bottom: 8px; padding-bottom: 6px; }
   .rpt-header h2 { color: #111827 !important; font-size: 16px !important; }
 
-  /* Period Box - Light Blue Background with Dark Blue Text */
   .pdf-period-box {
     display: block !important;
     background: #eff6ff !important;
@@ -495,7 +498,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   }
   .pdf-period-box table, .pdf-period-box b { color: #1e40af !important; }
 
-  /* Total Sales Box - Clean White with Blue Border */
   .pdf-total-box {
     display: block !important;
     background: #f8fafc !important;
@@ -509,7 +511,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   }
   .pdf-total-box table td { color: #0f172a !important; border-color: #cbd5e1 !important; }
 
-  /* Collection Summary Box - Light Blue Theme */
   .pdf-collection-box {
     display: block !important;
     background: #f0fdf4 !important;
@@ -523,7 +524,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   }
   .pdf-collection-box h4, .pdf-collection-box table td { color: #1e3a8a !important; }
 
-  /* Table Header Blue Theme */
   .rpt-tbl-wrap { padding: 0 !important; box-shadow: none !important; border: none !important; }
   .rpt { width: 100% !important; margin: 0 auto !important; }
   
@@ -583,9 +583,16 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endforeach; ?>
         </select>
 
-        <select name="report_type" id="report_type" class="form-control" style="height:32px; font-size:12px; flex:0 0 115px;">
+        <select name="report_type" id="report_type" class="form-control" style="height:32px; font-size:12px; flex:0 0 110px;">
           <option value="product" <?= ($report_type == 'product') ? 'selected' : '' ?>>By Product</option>
           <option value="customer" <?= ($report_type == 'customer') ? 'selected' : '' ?>>By Customer</option>
+        </select>
+
+        <!-- PAID / PENDING STATUS DROPDOWN -->
+        <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 110px;">
+            <option value="">All Status</option>
+            <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Paid</option>
+            <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Pending</option>
         </select>
 
         <?php
@@ -617,11 +624,12 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 
       <?php
       $pdf_params = [
-          'pdf'         => 1,
-          'from'        => $from,
-          'to'          => $to,
-          'report_type' => $report_type,
-          'filter_id'   => $filter_id,
+          'pdf'            => 1,
+          'from'           => $from,
+          'to'             => $to,
+          'report_type'    => $report_type,
+          'payment_status' => $payment_status,
+          'filter_id'      => $filter_id,
       ];
       if ($role_id == 2 && !empty($center_filter)) {
           $pdf_params['center_id'] = $center_filter;
@@ -704,7 +712,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
         <td style="padding:2px 4px; text-align:right;">AMOUNT</td>
       </tr>
       
-      <!-- Grouped Modes Loop -->
       <?php foreach ($mode_summary as $mode => $amt): ?>
       <tr>
         <td style="padding:3px 4px;"><?= htmlspecialchars($mode) ?></td>
@@ -720,7 +727,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   </div>
 
   <!-- ══════════════════════════════════════
-       TOP ROW
+        TOP ROW
   ══════════════════════════════════════ -->
   <div class="rpt-top" style="height:185px;">
 
@@ -797,7 +804,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   </div><!-- /.rpt-top -->
 
   <!-- ══════════════════════════════════════
-       TRANSACTION TABLE
+        TRANSACTION TABLE
   ══════════════════════════════════════ -->
   <div class="rpt-tbl-wrap">
     <div class="rpt-card-title">
@@ -846,13 +853,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['discount_amount'], 2) ?></td>
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
             
-            <!-- Red/Blue Logic Here -->
             <?php 
                 $paid_amt = (float)($s['paid_amount'] ?? 0);
                 $pending_amt = (float)$s['total_sale'] - $paid_amt;
                 
-                // Agar pending amount 0 ya usse kam hai, matlab paisa mil gaya (Blue)
-                // Agar pending amount > 0 hai, matlab paisa baaki hai (Red)
                 $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
             ?>
             <td style="text-align:right;">
@@ -891,10 +895,9 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           </tr>
         </tfoot>
         <?php } ?>
-     </table>
+      </table>
     </div>
     
-    <!-- Legend (Note) add karein -->
     <div style="text-align:right; margin-top:8px; font-size:11px;">
         <b>Note:</b>
         <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Received</span> | 
@@ -909,7 +912,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 <?php } ?>
 
 <script>
-/* ── Product Comparison by Center Bar Chart ── */
 new Chart(document.getElementById('productChart'), {
   type: 'bar',
   data: {
@@ -951,7 +953,6 @@ new Chart(document.getElementById('productChart'), {
   }
 });
 
-/* ── Customer Bar ── */
 new Chart(document.getElementById('customerChart'), {
   type: 'bar',
   data: {
@@ -983,7 +984,7 @@ new Chart(document.getElementById('customerChart'), {
       }
     },
     scales: {
-      x: { grid: { display:false }, ticks: { display: false } }, // display: false kar diya
+      x: { grid: { display:false }, ticks: { display: false } },
       y: { beginAtZero: true, grace: '5%', ticks: { precision: 0 } }
     }
   }
