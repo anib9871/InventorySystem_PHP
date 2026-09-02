@@ -693,7 +693,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   <div class="pdf-total-box" style="display:<?= $is_pdf ? 'block' : 'none' ?>;">
     <table style="width:100%; border-collapse:collapse; color:#fff;">
       <tr>
-        <td style="width: <?= empty($payment_status) ? '50%' : '100%' ?>; vertical-align:top; <?php if(empty($payment_status)) echo 'border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;'; ?>">
+        <td style="width: <?= ($payment_status != 'pending') ? '50%' : '100%' ?>; vertical-align:top; <?php if($payment_status != 'pending') echo 'border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;'; ?>">
           <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Sales Amount</span><br>
           <span style="font-size:14px; font-weight:800;">₹ <?= number_format($grand, 2) ?></span>
           <?php if (abs($round_off) > 0.001) { ?>
@@ -704,7 +704,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php } ?>
         </td>
 
-        <?php if (empty($payment_status)): ?>
+        <?php if ($payment_status != 'pending'): ?>
         <td style="width:50%; vertical-align:top; padding-left:12px;">
           <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Payment Received</span><br>
           <span style="font-size:14px; font-weight:800; color:#4ade80;">₹ <?= number_format($total_collection, 2) ?></span>
@@ -717,7 +717,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     </table>
   </div>
 
-  <?php if (empty($payment_status)): ?>
+  <?php if ($payment_status != 'pending'): ?>
   <div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Customer Collection Summary (Mode-wise)
