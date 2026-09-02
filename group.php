@@ -2,43 +2,31 @@
 $page_title = 'Group Management';
 require_once('includes/load.php');
 
+<?php
+$page_title = 'Group Management';
+require_once('includes/load.php');
+
 /* =========================================================
-   SMART AUTO-FILL: DEFAULT ROLES (ADMIN & USER)
+   SAFE AUTO-FILL: DEFAULT ROLES (ADMIN & USER)
 ========================================================= */
 $default_groups = [
     ['name' => 'Admin', 'level' => 1],
     ['name' => 'User',  'level' => 2]
 ];
 
-// 1. Check existing groups
-$existing_groups_query = find_by_sql("SELECT group_name FROM user_groups");
-$existing_group_names = [];
-if ($existing_groups_query) {
-    foreach ($existing_groups_query as $eg) {
-        $existing_group_names[] = strtolower(trim($eg['group_name']));
-    }
-}
-
-// 2. Find missing groups
-$missing_inserts = [];
 foreach ($default_groups as $dg) {
-    $check_name = strtolower(trim($dg['name']));
-    if (!in_array($check_name, $existing_group_names)) {
-        $name_esc = $db->escape($dg['name']);
-        $level = (int)$dg['level'];
-        $missing_inserts[] = "('$name_esc', '$level', '1')"; // '1' is for Active status
+    $check_name = $db->escape($dg['name']);
+    $level = (int)$dg['level'];
+    
+    // Check if group level or name exists safely before inserting
+    $exists = find_by_sql("SELECT id FROM user_groups WHERE group_name='{$check_name}' OR group_level={$level} LIMIT 1");
+    if(!$exists){
+        $db->query("INSERT INTO user_groups (group_name, group_level, group_status) VALUES ('{$check_name}', {$level}, '1')");
     }
-}
-
-// 3. Insert missing groups
-if (!empty($missing_inserts)) {
-    $insert_query = "INSERT INTO user_groups (group_name, group_level, group_status) VALUES " . implode(", ", $missing_inserts);
-    $db->query($insert_query);
 }
 /* ========================================================= */
 
 $all_groups = find_all('user_groups');
-
 $edit_group = null;
 
 /* =========================
