@@ -159,7 +159,8 @@ SELECT
     t.gst_amount,
     t.sale_net AS total_sale,
     
-    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount
+    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount,
+    (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) AS pending_amt
     
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
