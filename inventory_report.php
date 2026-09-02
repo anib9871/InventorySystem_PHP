@@ -35,7 +35,7 @@ foreach ($formats as $format) {
 }
 
 /* ── SESSION ── */
-$role_id     = $_SESSION['role_id'];
+$role_id     = isset($_SESSION['role_id']) ? $_SESSION['role_id'] : (isset($_SESSION['user_level']) ? $_SESSION['user_level'] : 0);
 $user_center = $_SESSION['center_id'] ?? 0;
 
 /* ── CENTER / REPORT FILTER (admin & general) ── */
