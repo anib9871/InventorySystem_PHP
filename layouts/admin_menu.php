@@ -1,6 +1,6 @@
 <ul id="sidebarMenu">
 
-<?> 
+<?php 
 $combined      = (isset($_SESSION['combined_mode'])    && $_SESSION['combined_mode']    == 1);
 $inventoryOnly = (isset($_SESSION['inventory_access']) && $_SESSION['inventory_access'] == 1 && !$combined);
 $billingOnly   = (isset($_SESSION['billing_access'])   && $_SESSION['billing_access']   == 1 && !$combined);
@@ -23,7 +23,6 @@ if(!empty($config)){
 $raw_perms = isset($_SESSION['sub_permissions']) ? $_SESSION['sub_permissions'] : [];
 $sub_perms = array_map('trim', $raw_perms);
 
-// Helper arrays to check if any sub-permission exists for a section
 $master_perms = ['org_master', 'centers', 'paymode', 'supplier_master', 'customer_master', 'products', 'bom_master', 'user_role', 'users', 'categorie', 'gst_master', 'gst_state', 'shipping_type', 'config_master', 'financial_year', 'sequence_master', 'bank_master', 'print_type', 'terms_cond', 'expense_master', 'categories'];
 $inv_trans_perms = ['manage_grn', 'quotation_list', 'demo_item_list', 'invoice_list', 'manufacture', 'return_master', 'grn', 'quotation', 'invoice', 'demo_item', 'return', 'direct_billing', 'duplicate_print'];
 $payment_perms = ['supplier_advance', 'payments', 'add_expense', 'supp_advance', 'pay_pendency', 'expense', 'manage_payments', 'payment_report'];
