@@ -43,7 +43,7 @@ $filter_id     = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'pending';
+$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'paid';
 $show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
@@ -594,13 +594,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <option value="customer" <?= ($report_type == 'customer') ? 'selected' : '' ?>>By Customer</option>
         </select>
 
-<!-- Form Dropdown Update -->
-<select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
-    <option value="" <?= ($payment_status == '') ? 'selected' : '' ?>>Total Billing</option>
-    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
-    <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Performa Invoice</option>
-</select>
-
         <?php
         $product_list = find_by_sql("SELECT DISTINCT p.id, p.name FROM invoice_items ii INNER JOIN products p ON p.id = ii.product_id ORDER BY p.name");
         $customer_list = find_by_sql("SELECT id, customer_name FROM customer_master ORDER BY customer_name");
@@ -623,6 +616,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endif; ?>
         </select>
       <?php endif; ?>
+    <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
+    <option value="" <?= ($payment_status == '') ? 'selected' : '' ?>>Total Billing</option>
+</select>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
         <i class="fa fa-file-text-o"></i> Generate Report
