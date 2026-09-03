@@ -1191,7 +1191,15 @@ flatpickr(".purchase-datepicker", {
 
 <?php if ($is_pdf): ?>
 <script>
-window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
+window.onload = function() {
+    setTimeout(function() {
+        window.print();
+    }, 1200);
+};
+</script>
+<?php endif; ?>
+
+
 <!-- GRN POPUP -->
 <div id="grnPopup"
      style="
@@ -1199,7 +1207,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 1200); }
         position:fixed;
         inset:0;
         z-index:99999;
-        background:rgba(15,23,42,.65);
+        background:rgba(15,23,42,.70);
         align-items:center;
         justify-content:center;
         padding:20px;
@@ -1212,7 +1220,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 1200); }
         background:#fff;
         border-radius:10px;
         overflow:hidden;
-        box-shadow:0 20px 60px rgba(0,0,0,.3);
+        box-shadow:0 20px 60px rgba(0,0,0,.35);
         position:relative;
     ">
 
@@ -1232,9 +1240,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 1200); }
                     font-size:20px;
                     line-height:32px;
                     cursor:pointer;
-                ">
-            ×
-        </button>
+                ">×</button>
 
         <iframe id="grnFrame"
                 src=""
@@ -1243,8 +1249,7 @@ window.onload = function() { setTimeout(function() { window.print(); }, 1200); }
                     height:100%;
                     border:0;
                     display:block;
-                ">
-        </iframe>
+                "></iframe>
 
     </div>
 </div>
@@ -1254,7 +1259,8 @@ function openGrnPopup(grnNo) {
     const modal = document.getElementById('grnPopup');
     const frame = document.getElementById('grnFrame');
 
-    frame.src = 'YOUR_GRN_PAGE.php?grn_no=' + encodeURIComponent(grnNo);
+    frame.src = 'purchase_print.php?grn_no=' + encodeURIComponent(grnNo);
+
     modal.style.display = 'flex';
 }
 
@@ -1272,6 +1278,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
-<?php endif; ?>
+
 
 <?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
