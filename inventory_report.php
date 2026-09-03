@@ -43,7 +43,7 @@ $filter_id     = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? '';
+$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'pending';
 $show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
@@ -601,11 +601,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
         </select>
 
         <!-- PAID / PENDING STATUS DROPDOWN -->
-        <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 110px;">
-            <option value="">All Status</option>
-            <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Paid</option>
-            <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Pending</option>
-        </select>
+       <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+    <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Performa Invoice</option>
+    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
+</select>
 
         <?php
         $product_list = find_by_sql("SELECT DISTINCT p.id, p.name FROM invoice_items ii INNER JOIN products p ON p.id = ii.product_id ORDER BY p.name");
@@ -915,11 +914,11 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </table>
     </div>
     
-    <div style="text-align:right; margin-top:8px; font-size:11px;">
-        <b>Note:</b>
-        <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Received</span> | 
-        <span style="color:#dc2626; font-weight:700;">&#9632; Red = Pending</span>
-    </div>
+   <div style="text-align:right; margin-top:8px; font-size:11px;">
+    <b>Note:</b>
+    <span style="color:#2563eb; font-weight:700; margin-left:8px;">&#9632; Blue = Received Payment</span> | 
+    <span style="color:#dc2626; font-weight:700;">&#9632; Red = Pending Payment</span>
+</div>
     
     <?php endif; ?>
   </div>
