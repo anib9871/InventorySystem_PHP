@@ -1024,13 +1024,15 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
             <td>
-                <?php if (!empty($s['invoice_id'])): ?>
-                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" style="color:#2563eb; font-weight:700; text-decoration:none;">
+<?php if (!empty($s['invoice_id'])): ?>
+    <a href="javascript:void(0);"
+       onclick="openInvoicePopup(<?= (int)$s['invoice_id'] ?>)"
+       style="color:#2563eb; font-weight:700; text-decoration:none; cursor:pointer;">
+        <?= htmlspecialchars($s['invoice_no']) ?>
+    </a>
+<?php else: ?>
     <?= htmlspecialchars($s['invoice_no']) ?>
-</a>
-                <?php else: ?>
-                    <?= htmlspecialchars($s['invoice_no']) ?>
-                <?php endif; ?>
+<?php endif; ?>
             </td>
             <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
             <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
@@ -1189,6 +1191,90 @@ flatpickr(".sales-datepicker", {
 <script>
 window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
 </script>
+<?php endif; ?>
+
+<?php if (!$is_pdf): ?>
+
+<div id="invoicePopup"
+     style="
+        display:none;
+        position:fixed;
+        inset:0;
+        z-index:99999;
+        background:rgba(15,23,42,.70);
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+     ">
+
+    <div style="
+        width:100%;
+        max-width:1000px;
+        height:92vh;
+        background:#fff;
+        border-radius:10px;
+        overflow:hidden;
+        box-shadow:0 20px 60px rgba(0,0,0,.35);
+        position:relative;
+    ">
+
+        <button type="button"
+                onclick="closeInvoicePopup()"
+                style="
+                    position:absolute;
+                    right:10px;
+                    top:8px;
+                    z-index:10;
+                    width:32px;
+                    height:32px;
+                    border:0;
+                    border-radius:50%;
+                    background:#dc2626;
+                    color:#fff;
+                    font-size:20px;
+                    line-height:32px;
+                    cursor:pointer;
+                ">
+            ×
+        </button>
+
+        <iframe id="invoiceFrame"
+                src=""
+                style="
+                    width:100%;
+                    height:100%;
+                    border:0;
+                    display:block;
+                ">
+        </iframe>
+
+    </div>
+</div>
+
+<script>
+function openInvoicePopup(invoiceId) {
+    const modal = document.getElementById('invoicePopup');
+    const frame = document.getElementById('invoiceFrame');
+
+    frame.src = 'invoice_print.php?id=' + invoiceId;
+    modal.style.display = 'flex';
+}
+
+function closeInvoicePopup() {
+    const modal = document.getElementById('invoicePopup');
+    const frame = document.getElementById('invoiceFrame');
+
+    modal.style.display = 'none';
+    frame.src = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeInvoicePopup();
+    }
+});
+</script>
+
 <?php endif; ?>
 
 <?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
