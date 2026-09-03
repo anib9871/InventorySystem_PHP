@@ -58,9 +58,35 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
-} else {
+
+    // Tax Invoice: KEEP EXISTING PAYMENT-DATE LOGIC
+    $sale_query .= " AND i.id IN (
+        SELECT invoice_id
+        FROM payments
+        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+    ) ";
+
+} elseif ($payment_status == 'pending') {
+
+    // Total Billing: SALE DATE + ONLY PENDING INVOICES
     $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+
+    $sale_query .= " AND (
+        (
+            SELECT IFNULL(SUM(t2.sale_net), 0)
+            FROM transaction_master t2
+            WHERE t2.bill_indent_no = t.bill_indent_no
+              AND t2.transaction_type = 2
+              AND t2.sale_net > 0
+        )
+        -
+        (
+            SELECT IFNULL(SUM(pay.amount), 0)
+            FROM payments pay
+            WHERE pay.invoice_id = i.id
+        )
+    ) > 0 ";
+
 }
 
 if ($role_id == 3) {
@@ -188,11 +214,36 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    $txn_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
-} else {
-    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-}
 
+    // Tax Invoice: KEEP EXISTING LOGIC
+    $txn_q .= " AND i.id IN (
+        SELECT invoice_id
+        FROM payments
+        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+    ) ";
+
+} elseif ($payment_status == 'pending') {
+
+    // Total Billing: SALE DATE + ONLY PENDING INVOICES
+    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+
+    $txn_q .= " AND (
+        (
+            SELECT IFNULL(SUM(t2.sale_net), 0)
+            FROM transaction_master t2
+            WHERE t2.bill_indent_no = t.bill_indent_no
+              AND t2.transaction_type = 2
+              AND t2.sale_net > 0
+        )
+        -
+        (
+            SELECT IFNULL(SUM(pay.amount), 0)
+            FROM payments pay
+            WHERE pay.invoice_id = i.id
+        )
+    ) > 0 ";
+
+}
 if ($role_id == 3) {
     $txn_q .= " AND t.center_id = '{$user_center}'";
 } elseif ($role_id == 2 && !empty($center_filter)) {
@@ -247,9 +298,35 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    $pq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
-} else {
+
+    // Tax Invoice: existing payment-date logic
+    $pq .= " AND i.id IN (
+        SELECT invoice_id
+        FROM payments
+        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+    ) ";
+
+} elseif ($payment_status == 'pending') {
+
+    // Total Billing: only pending bills within sale date range
     $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+
+    $pq .= " AND (
+        (
+            SELECT IFNULL(SUM(t2.sale_net), 0)
+            FROM transaction_master t2
+            WHERE t2.bill_indent_no = t.bill_indent_no
+              AND t2.transaction_type = 2
+              AND t2.sale_net > 0
+        )
+        -
+        (
+            SELECT IFNULL(SUM(pay.amount), 0)
+            FROM payments pay
+            WHERE pay.invoice_id = i.id
+        )
+    ) > 0 ";
+
 }
 
 if ($role_id == 3) {
@@ -285,9 +362,35 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    $comp_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
-} else {
+
+    // Tax Invoice: existing payment-date logic
+    $comp_q .= " AND i.id IN (
+        SELECT invoice_id
+        FROM payments
+        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+    ) ";
+
+} elseif ($payment_status == 'pending') {
+
+    // Total Billing: only pending bills within sale date range
     $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+
+    $comp_q .= " AND (
+        (
+            SELECT IFNULL(SUM(t2.sale_net), 0)
+            FROM transaction_master t2
+            WHERE t2.bill_indent_no = t.bill_indent_no
+              AND t2.transaction_type = 2
+              AND t2.sale_net > 0
+        )
+        -
+        (
+            SELECT IFNULL(SUM(pay.amount), 0)
+            FROM payments pay
+            WHERE pay.invoice_id = i.id
+        )
+    ) > 0 ";
+
 }
 
 if ($role_id == 3) {
@@ -344,9 +447,35 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    $sq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
-} else {
+
+    // Tax Invoice: existing payment-date logic
+    $sq .= " AND i.id IN (
+        SELECT invoice_id
+        FROM payments
+        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
+    ) ";
+
+} elseif ($payment_status == 'pending') {
+
+    // Total Billing: only pending bills within sale date range
     $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+
+    $sq .= " AND (
+        (
+            SELECT IFNULL(SUM(t2.sale_net), 0)
+            FROM transaction_master t2
+            WHERE t2.bill_indent_no = t.bill_indent_no
+              AND t2.transaction_type = 2
+              AND t2.sale_net > 0
+        )
+        -
+        (
+            SELECT IFNULL(SUM(pay.amount), 0)
+            FROM payments pay
+            WHERE pay.invoice_id = i.id
+        )
+    ) > 0 ";
+
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
@@ -647,9 +776,9 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endif; ?>
         </select>
       <?php endif; ?>
-    <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+<select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
     <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
-    <option value="" <?= ($payment_status == '') ? 'selected' : '' ?>>Total Billing</option>
+    <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Total Billing</option>
 </select>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
