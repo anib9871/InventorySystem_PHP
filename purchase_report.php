@@ -909,7 +909,11 @@ if(!empty($center_filter)){
 </td>
 
 <td>
-    <?= htmlspecialchars($s['grn_no']) ?>
+    <a href="javascript:void(0);"
+       onclick="openGrnPopup('<?= htmlspecialchars($s['grn_no'], ENT_QUOTES) ?>')"
+       style="color:#2563eb; font-weight:700; text-decoration:none; cursor:pointer;">
+        <?= htmlspecialchars($s['grn_no']) ?>
+    </a>
 </td>
 
 <td>
@@ -1188,6 +1192,85 @@ flatpickr(".purchase-datepicker", {
 <?php if ($is_pdf): ?>
 <script>
 window.onload = function() { setTimeout(function() { window.print(); }, 1200); };
+<!-- GRN POPUP -->
+<div id="grnPopup"
+     style="
+        display:none;
+        position:fixed;
+        inset:0;
+        z-index:99999;
+        background:rgba(15,23,42,.65);
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+     ">
+
+    <div style="
+        width:100%;
+        max-width:1000px;
+        height:92vh;
+        background:#fff;
+        border-radius:10px;
+        overflow:hidden;
+        box-shadow:0 20px 60px rgba(0,0,0,.3);
+        position:relative;
+    ">
+
+        <button type="button"
+                onclick="closeGrnPopup()"
+                style="
+                    position:absolute;
+                    right:10px;
+                    top:8px;
+                    z-index:10;
+                    width:32px;
+                    height:32px;
+                    border:0;
+                    border-radius:50%;
+                    background:#dc2626;
+                    color:#fff;
+                    font-size:20px;
+                    line-height:32px;
+                    cursor:pointer;
+                ">
+            ×
+        </button>
+
+        <iframe id="grnFrame"
+                src=""
+                style="
+                    width:100%;
+                    height:100%;
+                    border:0;
+                    display:block;
+                ">
+        </iframe>
+
+    </div>
+</div>
+
+<script>
+function openGrnPopup(grnNo) {
+    const modal = document.getElementById('grnPopup');
+    const frame = document.getElementById('grnFrame');
+
+    frame.src = 'YOUR_GRN_PAGE.php?grn_no=' + encodeURIComponent(grnNo);
+    modal.style.display = 'flex';
+}
+
+function closeGrnPopup() {
+    const modal = document.getElementById('grnPopup');
+    const frame = document.getElementById('grnFrame');
+
+    modal.style.display = 'none';
+    frame.src = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeGrnPopup();
+    }
+});
 </script>
 <?php endif; ?>
 
