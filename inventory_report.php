@@ -1025,9 +1025,9 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
             <td>
                 <?php if (!empty($s['invoice_id'])): ?>
-                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:none;">
-                        <?= htmlspecialchars($s['invoice_no']) ?>
-                    </a>
+                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" style="color:#2563eb; font-weight:700; text-decoration:none;">
+    <?= htmlspecialchars($s['invoice_no']) ?>
+</a>
                 <?php else: ?>
                     <?= htmlspecialchars($s['invoice_no']) ?>
                 <?php endif; ?>
