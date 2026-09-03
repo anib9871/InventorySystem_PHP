@@ -55,8 +55,14 @@ FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
+
+if ($payment_status == 'paid') {
+    // Exact logic from Payment Report - Check if payment exists in selected date range
+    $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
 
 if ($role_id == 3) {
     $sale_query .= " AND t.center_id = '{$user_center}'";
@@ -72,11 +78,6 @@ if ($report_type == 'customer' && !empty($filter_id)) {
     $sale_query .= " AND i.customer_id = '{$filter_id}'";
 }
 
-if ($payment_status == 'paid') {
-    $sale_query .= " AND (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) > 0";
-} elseif ($payment_status == 'pending') {
-    $sale_query .= " AND (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) <= 0";
-}
 $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
@@ -92,8 +93,18 @@ SELECT
     SUM(p.amount) AS payment_amount
 FROM payments p
 LEFT JOIN customer_master cm ON cm.id = p.customer_id
-WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'
+WHERE 1=1 
 ";
+
+if ($payment_status == 'paid') {
+    $pay_q .= " AND DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}' ";
+} else {
+    $pay_q .= " AND p.invoice_id IN (
+        SELECT i2.id FROM invoice i2 
+        INNER JOIN transaction_master t2 ON t2.bill_indent_no = i2.invoice_no 
+        WHERE DATE(t2.entry_date) BETWEEN '{$from}' AND '{$to}'
+    )";
+}
 
 if ($report_type == 'customer' && !empty($filter_id)) {
     $pay_q .= " AND p.customer_id = '{$filter_id}'";
@@ -174,8 +185,13 @@ LEFT JOIN master_center mc ON mc.center_id = t.center_id
 WHERE t.transaction_type = 2
 AND i.customer_id IS NOT NULL
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
+
+if ($payment_status == 'paid') {
+    $txn_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
 
 if ($role_id == 3) {
     $txn_q .= " AND t.center_id = '{$user_center}'";
@@ -189,12 +205,6 @@ if ($report_type == 'product' && !empty($filter_id)) {
 
 if ($report_type == 'customer' && !empty($filter_id)) {
     $txn_q .= " AND i.customer_id = '{$filter_id}'";
-}
-
-if ($payment_status == 'paid') {
-    $txn_q .= " HAVING paid_amount > 0";
-} elseif ($payment_status == 'pending') {
-    $txn_q .= " HAVING paid_amount <= 0";
 }
 
 $txn_q .= "
@@ -227,8 +237,13 @@ LEFT JOIN products p ON p.id = t.product_id
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
+
+if ($payment_status == 'paid') {
+    $pq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
 
 if ($role_id == 3) {
     $pq .= " AND t.center_id = '{$user_center}'";
@@ -260,8 +275,13 @@ LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN master_center mc ON mc.center_id = t.center_id
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
+
+if ($payment_status == 'paid') {
+    $comp_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
 
 if ($role_id == 3) {
     $comp_q .= " AND t.center_id = '{$user_center}'";
@@ -314,8 +334,13 @@ LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
+
+if ($payment_status == 'paid') {
+    $sq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
 
 if ($report_type == 'customer' && !empty($filter_id)) {
     $sq .= " AND i.customer_id = '{$filter_id}'";
@@ -400,7 +425,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 .rpt-summary .s-lbl { font-size: 9px; opacity: .6; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 2px; }
 .rpt-summary .s-big { font-size: 16px; font-weight: 800; margin: 0 0 7px; line-height: 1.1; }
 .rpt-summary .s-div { border-top: 1px solid rgba(255,255,255,.18); margin: 5px 0 6px; }
-.s-mode-tbl         { width: 100%; border-collapse: collapse; }
+.s-mode-tbl        { width: 100%; border-collapse: collapse; }
 .s-mode-tbl td      { font-size: 10px; color: #fff; padding: 2px 2px; }
 .s-mode-tbl td:last-child { text-align: right; }
 .s-mode-tbl .grand td { border-top: 1px solid rgba(255,255,255,.22); padding-top: 4px; font-weight: 700; font-size: 10px; }
@@ -475,7 +500,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   }
   .rpt-tbl th, .rpt-tbl td {
     padding: 6px 4px !important; 
-    word-break: break-word;      
+    word-break: break-word;       
   }
 }
 
