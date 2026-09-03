@@ -43,6 +43,7 @@ $filter_id     = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
+// Default to 'paid' (Tax Invoice)
 $payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'paid';
 $show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
@@ -59,6 +60,9 @@ AND t.sale_net > 0
 
 if ($payment_status == 'paid') {
     $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} elseif ($payment_status == 'pending') {
+    $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $sale_query .= " AND (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master WHERE bill_indent_no = t.bill_indent_no) > (SELECT IFNULL(SUM(amount),0) FROM payments WHERE invoice_id = i.id) ";
 } else {
     $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
@@ -174,8 +178,8 @@ SELECT
     t.gst_amount,
     t.sale_net AS total_sale,
     
-    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount,
-    (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) AS pending_amt
+    (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master tm WHERE tm.bill_indent_no = t.bill_indent_no) AS invoice_total,
+    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount
     
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
@@ -189,6 +193,9 @@ AND t.sale_net > 0
 
 if ($payment_status == 'paid') {
     $txn_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} elseif ($payment_status == 'pending') {
+    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $txn_q .= " AND (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master WHERE bill_indent_no = t.bill_indent_no) > (SELECT IFNULL(SUM(amount),0) FROM payments WHERE invoice_id = i.id) ";
 } else {
     $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
@@ -216,15 +223,23 @@ $sales = find_by_sql($txn_q);
 $grand = 0;
 $grand_qty = 0;
 $grand_received = 0;
-$grand_pending = 0;
+$processed_invoices = [];
 
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
     $grand_qty += (float)$s['sold_qty'];
     
-    $p_amt = (float)($s['paid_amount'] ?? 0);
-    $grand_received += $p_amt;
-    $grand_pending += ((float)$s['total_sale'] - $p_amt);
+    // Sirf unique invoices ka paid amount jodenge taaki double count na ho
+    $inv_id = $s['invoice_id'];
+    if (!empty($inv_id) && !in_array($inv_id, $processed_invoices)) {
+        $grand_received += (float)($s['paid_amount'] ?? 0);
+        $processed_invoices[] = $inv_id;
+    }
+}
+
+$grand_pending = $grand - $grand_received;
+if ($grand_pending < 0) { 
+    $grand_pending = 0; 
 }
 
 /* Round off Calculation */
@@ -248,6 +263,9 @@ AND t.sale_net > 0
 
 if ($payment_status == 'paid') {
     $pq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} elseif ($payment_status == 'pending') {
+    $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $pq .= " AND (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master WHERE bill_indent_no = t.bill_indent_no) > (SELECT IFNULL(SUM(amount),0) FROM payments WHERE invoice_id = i.id) ";
 } else {
     $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
@@ -286,6 +304,9 @@ AND t.sale_net > 0
 
 if ($payment_status == 'paid') {
     $comp_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} elseif ($payment_status == 'pending') {
+    $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $comp_q .= " AND (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master WHERE bill_indent_no = t.bill_indent_no) > (SELECT IFNULL(SUM(amount),0) FROM payments WHERE invoice_id = i.id) ";
 } else {
     $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
@@ -345,6 +366,9 @@ AND t.sale_net > 0
 
 if ($payment_status == 'paid') {
     $sq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} elseif ($payment_status == 'pending') {
+    $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $sq .= " AND (SELECT IFNULL(SUM(sale_net),0) FROM transaction_master WHERE bill_indent_no = t.bill_indent_no) > (SELECT IFNULL(SUM(amount),0) FROM payments WHERE invoice_id = i.id) ";
 } else {
     $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
@@ -647,10 +671,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endif; ?>
         </select>
       <?php endif; ?>
-    <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
-    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
-    <option value="" <?= ($payment_status == '') ? 'selected' : '' ?>>Total Billing</option>
-</select>
+      
+      <!-- DROPDOWN FIXED FOR 3 OPTIONS -->
+      <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+          <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
+          <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Total Billing</option>
+          <option value="all" <?= ($payment_status == 'all') ? 'selected' : '' ?>>All Invoices</option>
+      </select>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
         <i class="fa fa-file-text-o"></i> Generate Report
@@ -775,6 +802,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       <div class="s-lbl">Total Sales</div>
       <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
       
+      <!-- Naya Block: Kitna Aaya / Kitna Baaki (Hamesha dikhega) -->
       <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.1);">
           <div style="font-size:10px; font-weight:700; color:#4ade80; margin-bottom:3px;">
               &#9632; Received : &#8377; <?= number_format($grand_received, 2) ?>
@@ -794,6 +822,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </div>
       <?php } ?>
 
+      <!-- Sirf Customer filter hone pe Payment Mode dikhega -->
       <?php if ($report_type == 'customer') { ?>
       <div class="s-lbl">Payment &mdash; Mode Wise</div>
       <div class="payment-scroll">
@@ -801,7 +830,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <tr style="opacity:.5;">
               <td style="font-size:8px;text-transform:uppercase;">Mode</td>
               <td style="font-size:8px;text-transform:uppercase;">Date</td>
-              <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amt</td>
+              <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amount</td>
           </tr>
           <?php foreach ($payments as $pay): ?>
           <tr>
@@ -894,15 +923,18 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php foreach ($sales as $s): ?>
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
+            
+            <!-- Popup for Invoice Print -->
             <td>
                 <?php if (!empty($s['invoice_id'])): ?>
-                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:none;">
+                    <a href="javascript:void(0);" onclick="window.open('invoice_print.php?id=<?= $s['invoice_id'] ?>', 'InvoicePopup', 'width=800,height=600');" style="color:#2563eb; font-weight:700; text-decoration:none;">
                         <?= htmlspecialchars($s['invoice_no']) ?>
                     </a>
                 <?php else: ?>
                     <?= htmlspecialchars($s['invoice_no']) ?>
                 <?php endif; ?>
             </td>
+
             <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
             <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
             <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
@@ -911,10 +943,11 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
             
             <?php 
+                $inv_total = (float)($s['invoice_total'] ?? $s['total_sale']);
                 $paid_amt = (float)($s['paid_amount'] ?? 0);
-                $pending_amt = (float)$s['total_sale'] - $paid_amt;
+                $invoice_pending = $inv_total - $paid_amt;
                 
-                $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
+                $status_color = ($invoice_pending <= 0) ? '#2563eb' : '#dc2626'; 
             ?>
             <td style="text-align:right;">
                 <b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b>
