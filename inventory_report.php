@@ -58,7 +58,6 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Exact logic from Payment Report - Check if payment exists in selected date range
     $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
     $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
@@ -164,6 +163,7 @@ $txn_q = "
 SELECT
     t.transaction_id,
     t.bill_indent_no AS invoice_no,
+    i.id AS invoice_id,
     DATE(t.entry_date) AS sale_date,
     mc.center_name,
     p.name,
@@ -215,9 +215,16 @@ $sales = find_by_sql($txn_q);
 
 $grand = 0;
 $grand_qty = 0;
+$grand_received = 0;
+$grand_pending = 0;
+
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
     $grand_qty += (float)$s['sold_qty'];
+    
+    $p_amt = (float)($s['paid_amount'] ?? 0);
+    $grand_received += $p_amt;
+    $grand_pending += ((float)$s['total_sale'] - $p_amt);
 }
 
 /* Round off Calculation */
@@ -766,7 +773,16 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
     <!-- 1. Summary Card -->
     <div class="rpt-summary">
       <div class="s-lbl">Total Sales</div>
-      <div class="s-big">&#8377; <?= number_format($total_sale, 2) ?></div>
+      <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
+      
+      <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.1);">
+          <div style="font-size:10px; font-weight:700; color:#4ade80; margin-bottom:3px;">
+              &#9632; Received : &#8377; <?= number_format($grand_received, 2) ?>
+          </div>
+          <div style="font-size:10px; font-weight:700; color:#f87171;">
+              &#9632; Pending &nbsp;: &#8377; <?= number_format($grand_pending, 2) ?>
+          </div>
+      </div>
       <div class="s-div"></div>
 
       <?php if (abs($round_off) > 0.001) { ?>
@@ -778,14 +794,14 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </div>
       <?php } ?>
 
-<!-- Payment Box ab hamesha dikhega -->
+      <?php if ($report_type == 'customer') { ?>
       <div class="s-lbl">Payment &mdash; Mode Wise</div>
       <div class="payment-scroll">
         <table class="s-mode-tbl">
           <tr style="opacity:.5;">
               <td style="font-size:8px;text-transform:uppercase;">Mode</td>
               <td style="font-size:8px;text-transform:uppercase;">Date</td>
-              <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amount</td>
+              <td style="font-size:8px;text-transform:uppercase;text-align:right;">Amt</td>
           </tr>
           <?php foreach ($payments as $pay): ?>
           <tr>
@@ -795,13 +811,13 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           </tr>
           <?php endforeach; ?>
           <tr class="grand">
-              <td colspan="2">Grand Total</td>
+              <td colspan="2">Total</td>
               <td style="text-align:right;">&#8377; <?= number_format($total_collection, 2) ?></td>
           </tr>
         </table>
       </div>
+      <?php } ?>
       
-      <!-- Product Wise Sales sirf tab dikhega jab product aur filter selected ho -->
       <?php if ($report_type == 'product' && !empty($filter_id)) { ?>
           <div class="s-div"></div>
           <div class="s-lbl" style="margin-top:6px;">Product Wise Sales</div>
@@ -878,7 +894,15 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php foreach ($sales as $s): ?>
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
-            <td><?= htmlspecialchars($s['invoice_no']) ?></td>
+            <td>
+                <?php if (!empty($s['invoice_id'])): ?>
+                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:none;">
+                        <?= htmlspecialchars($s['invoice_no']) ?>
+                    </a>
+                <?php else: ?>
+                    <?= htmlspecialchars($s['invoice_no']) ?>
+                <?php endif; ?>
+            </td>
             <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
             <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
             <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
