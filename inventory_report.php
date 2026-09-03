@@ -269,6 +269,33 @@ $grand_qty = 0;
 $grand_received = 0;
 $grand_pending = 0;
 
+/* ── OVERALL SALES AMOUNT (ALL BILLING) ── */
+$overall_sale_query = "
+    SELECT SUM(t.sale_net) AS overall_sale
+    FROM transaction_master t
+    LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
+    WHERE t.transaction_type = 2
+    AND t.sale_net > 0
+    AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
+";
+
+if ($role_id == 3) {
+    $overall_sale_query .= " AND t.center_id = '{$user_center}'";
+} elseif ($role_id == 2 && !empty($center_filter)) {
+    $overall_sale_query .= " AND t.center_id = '{$center_filter}'";
+}
+
+if ($report_type == 'product' && !empty($filter_id)) {
+    $overall_sale_query .= " AND t.product_id = '{$filter_id}'";
+}
+
+if ($report_type == 'customer' && !empty($filter_id)) {
+    $overall_sale_query .= " AND i.customer_id = '{$filter_id}'";
+}
+
+$overall_sale_row = find_by_sql($overall_sale_query);
+$overall_sale = (float)($overall_sale_row[0]['overall_sale'] ?? 0);
+
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
     $grand_qty += (float)$s['sold_qty'];
@@ -901,8 +928,23 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
 
     <!-- 1. Summary Card -->
     <div class="rpt-summary">
-      <div class="s-lbl">Total Sales</div>
-      <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
+    <div class="s-lbl">Total Sales</div>
+<div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
+
+<div style="
+    background:rgba(255,255,255,0.10);
+    padding:7px 8px;
+    border-radius:6px;
+    margin-bottom:8px;
+    border:1px solid rgba(255,255,255,0.12);
+">
+    <div style="font-size:9px; font-weight:700; color:#93c5fd; margin-bottom:2px;">
+        OVERALL SALES AMOUNT
+    </div>
+    <div style="font-size:14px; font-weight:800; color:#fff;">
+        &#8377; <?= number_format($overall_sale, 2) ?>
+    </div>
+</div>
       
       <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.1);">
           <div style="font-size:10px; font-weight:700; color:#4ade80; margin-bottom:3px;">
