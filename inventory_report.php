@@ -73,11 +73,10 @@ if ($report_type == 'customer' && !empty($filter_id)) {
 }
 
 if ($payment_status == 'paid') {
-    $sale_query .= " AND (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) <= 0";
+    $sale_query .= " AND (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) > 0";
 } elseif ($payment_status == 'pending') {
-    $sale_query .= " AND (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) > 0";
+    $sale_query .= " AND (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) <= 0";
 }
-
 $total_sale_row = find_by_sql($sale_query);
 $total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
@@ -193,9 +192,9 @@ if ($report_type == 'customer' && !empty($filter_id)) {
 }
 
 if ($payment_status == 'paid') {
-    $txn_q .= " HAVING pending_amt <= 0";
+    $txn_q .= " HAVING paid_amount > 0";
 } elseif ($payment_status == 'pending') {
-    $txn_q .= " HAVING pending_amt > 0";
+    $txn_q .= " HAVING paid_amount <= 0";
 }
 
 $txn_q .= "
@@ -754,7 +753,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </div>
       <?php } ?>
 
-      <?php if ($report_type == 'customer') { ?>
+<!-- Payment Box ab hamesha dikhega -->
       <div class="s-lbl">Payment &mdash; Mode Wise</div>
       <div class="payment-scroll">
         <table class="s-mode-tbl">
@@ -776,11 +775,12 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           </tr>
         </table>
       </div>
-      <?php } else { ?>
-        <?php if (!empty($filter_id)) { ?>
-            <div class="s-lbl">Product Wise Sales</div>
-            <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
-        <?php } ?>
+      
+      <!-- Product Wise Sales sirf tab dikhega jab product aur filter selected ho -->
+      <?php if ($report_type == 'product' && !empty($filter_id)) { ?>
+          <div class="s-div"></div>
+          <div class="s-lbl" style="margin-top:6px;">Product Wise Sales</div>
+          <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
       <?php } ?>
     </div>
 
