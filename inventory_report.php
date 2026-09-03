@@ -43,84 +43,42 @@ $filter_id     = $_POST['filter_id'] ?? $_GET['filter_id'] ?? '';
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 $report_type    = $_POST['report_type'] ?? $_GET['report_type'] ?? 'product';
-$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'all';
+$payment_status = $_POST['payment_status'] ?? $_GET['payment_status'] ?? 'paid';
 $show_report    = isset($_POST['generate_report']) || isset($_GET['pdf']);
 
 /* ═══════════════════════════════════════
-   1. TRANSACTION LIST (Main Data)
+   1. TOTAL SALE (transaction_type = 2)
 ═══════════════════════════════════════ */
-$txn_q = "
-SELECT
-    t.transaction_id,
-    t.bill_indent_no AS invoice_no,
-    i.id AS invoice_id,
-    DATE(t.entry_date) AS sale_date,
-    mc.center_name,
-    p.name,
-    cm.customer_name,
-    t.quantity AS sold_qty,
-    t.unit_price AS sell_price,
-    t.discount_amount,
-    t.gst_amount,
-    t.sale_net AS total_sale,
-    
-    i.paid_amount AS inv_paid,
-    i.due_amount AS inv_due
-    
+$sale_query = "
+SELECT SUM(t.sale_net) AS total_sale
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
-LEFT JOIN customer_master cm ON cm.id = i.customer_id
-LEFT JOIN products p ON p.id = t.product_id
-LEFT JOIN master_center mc ON mc.center_id = t.center_id
 WHERE t.transaction_type = 2
-AND i.customer_id IS NOT NULL
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if ($payment_status == 'pending') {
-    $txn_q .= " AND i.due_amount > 0 ";
+if ($payment_status == 'paid') {
+    $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
 
 if ($role_id == 3) {
-    $txn_q .= " AND t.center_id = '{$user_center}'";
+    $sale_query .= " AND t.center_id = '{$user_center}'";
 } elseif ($role_id == 2 && !empty($center_filter)) {
-    $txn_q .= " AND t.center_id = '{$center_filter}'";
+    $sale_query .= " AND t.center_id = '{$center_filter}'";
 }
 
 if ($report_type == 'product' && !empty($filter_id)) {
-    $txn_q .= " AND t.product_id = '{$filter_id}'";
+    $sale_query .= " AND t.product_id = '{$filter_id}'";
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
-    $txn_q .= " AND i.customer_id = '{$filter_id}'";
+    $sale_query .= " AND i.customer_id = '{$filter_id}'";
 }
 
-$txn_q .= " ORDER BY t.entry_date DESC ";
-$sales = find_by_sql($txn_q);
-
-$grand = 0;
-$grand_qty = 0;
-$grand_received = 0;
-$grand_pending = 0;
-$processed_invoices = [];
-
-foreach ($sales as $s) {
-    $grand += (float)$s['total_sale'];
-    $grand_qty += (float)$s['sold_qty'];
-    
-    // To prevent duplicating received/pending amounts for multi-item invoices
-    $inv_id = $s['invoice_id'];
-    if (!empty($inv_id) && !in_array($inv_id, $processed_invoices)) {
-        $grand_received += (float)$s['inv_paid'];
-        $grand_pending += (float)$s['inv_due'];
-        $processed_invoices[] = $inv_id;
-    }
-}
-
-/* Round off Calculation */
-$grand_round = round($grand);
-$round_off   = $grand_round - $grand;
+$total_sale_row = find_by_sql($sale_query);
+$total_sale     = $total_sale_row[0]['total_sale'] ?? 0;
 
 /* ═══════════════════════════════════════
    2. PAYMENT MODE SUMMARY
@@ -133,17 +91,18 @@ SELECT
     MAX(p.payment_date) AS payment_date,
     SUM(p.amount) AS payment_amount
 FROM payments p
-LEFT JOIN invoice i ON i.id = p.invoice_id
 LEFT JOIN customer_master cm ON cm.id = p.customer_id
-WHERE p.invoice_id IN (
-    SELECT i2.id FROM invoice i2 
-    INNER JOIN transaction_master t2 ON t2.bill_indent_no = i2.invoice_no 
-    WHERE DATE(t2.entry_date) BETWEEN '{$from}' AND '{$to}'
-)
+WHERE 1=1 
 ";
 
-if ($payment_status == 'pending') {
-    $pay_q .= " AND i.due_amount > 0 ";
+if ($payment_status == 'paid') {
+    $pay_q .= " AND DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}' ";
+} else {
+    $pay_q .= " AND p.invoice_id IN (
+        SELECT i2.id FROM invoice i2 
+        INNER JOIN transaction_master t2 ON t2.bill_indent_no = i2.invoice_no 
+        WHERE DATE(t2.entry_date) BETWEEN '{$from}' AND '{$to}'
+    )";
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
@@ -181,7 +140,99 @@ foreach ($payments as $pay) {
 }
 
 /* ═══════════════════════════════════════
-   3. PRODUCT CHART DATA
+   3. CENTER WISE SALES (admin only)
+═══════════════════════════════════════ */
+$center_sales = [];
+if ($role_id == 2) {
+    $cq = "SELECT x.center_name, x.center_id, SUM(x.mode_total) as total_sale,
+             GROUP_CONCAT(CONCAT(x.payment_mode,' : Rs.',FORMAT(x.mode_total,2)) SEPARATOR ' | ') as payment_modes
+            FROM (
+              SELECT mc.center_name, p.center_id, p.payment_mode, SUM(p.amount) as mode_total
+              FROM payments p
+              LEFT JOIN master_center mc ON mc.center_id = p.center_id
+              WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'";
+    if (!empty($center_filter)) $cq .= " AND p.center_id = '{$center_filter}'";
+    $cq .= " GROUP BY p.center_id, mc.center_name, p.payment_mode) x GROUP BY x.center_id, x.center_name";
+    $center_sales = find_by_sql($cq);
+}
+
+/* ═══════════════════════════════════════
+   4. TRANSACTION LIST (transaction_type = 2)
+═══════════════════════════════════════ */
+$txn_q = "
+SELECT
+    t.transaction_id,
+    t.bill_indent_no AS invoice_no,
+    i.id AS invoice_id,
+    DATE(t.entry_date) AS sale_date,
+    mc.center_name,
+    p.name,
+    cm.customer_name,
+    t.quantity AS sold_qty,
+    t.unit_price AS sell_price,
+    t.discount_amount,
+    t.gst_amount,
+    t.sale_net AS total_sale,
+    
+    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount,
+    (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) AS pending_amt
+    
+FROM transaction_master t
+LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
+LEFT JOIN customer_master cm ON cm.id = i.customer_id
+LEFT JOIN products p ON p.id = t.product_id
+LEFT JOIN master_center mc ON mc.center_id = t.center_id
+WHERE t.transaction_type = 2
+AND i.customer_id IS NOT NULL
+AND t.sale_net > 0
+";
+
+if ($payment_status == 'paid') {
+    $txn_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+}
+
+if ($role_id == 3) {
+    $txn_q .= " AND t.center_id = '{$user_center}'";
+} elseif ($role_id == 2 && !empty($center_filter)) {
+    $txn_q .= " AND t.center_id = '{$center_filter}'";
+}
+
+if ($report_type == 'product' && !empty($filter_id)) {
+    $txn_q .= " AND t.product_id = '{$filter_id}'";
+}
+
+if ($report_type == 'customer' && !empty($filter_id)) {
+    $txn_q .= " AND i.customer_id = '{$filter_id}'";
+}
+
+$txn_q .= "
+ORDER BY t.entry_date DESC
+";
+
+$sales = find_by_sql($txn_q);
+
+$grand = 0;
+$grand_qty = 0;
+$grand_received = 0;
+$grand_pending = 0;
+
+foreach ($sales as $s) {
+    $grand += (float)$s['total_sale'];
+    $grand_qty += (float)$s['sold_qty'];
+    
+    $p_amt = (float)($s['paid_amount'] ?? 0);
+    $grand_received += $p_amt;
+    $grand_pending += ((float)$s['total_sale'] - $p_amt);
+}
+
+/* Round off Calculation */
+$grand_round = round($grand);
+$round_off   = $grand_round - $grand;
+
+/* ═══════════════════════════════════════
+   5. PRODUCT CHART DATA
 ═══════════════════════════════════════ */
 $pq = "
 SELECT
@@ -193,11 +244,12 @@ LEFT JOIN products p ON p.id = t.product_id
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if ($payment_status == 'pending') {
-    $pq .= " AND i.due_amount > 0 ";
+if ($payment_status == 'paid') {
+    $pq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
 
 if ($role_id == 3) {
@@ -217,7 +269,7 @@ if ($report_type == 'customer' && !empty($filter_id)) {
 $pq .= " GROUP BY t.product_id, p.name";
 
 /* ═══════════════════════════════════════
-   4. PRODUCT COMPARISON BY CENTER DATA
+   5. PRODUCT COMPARISON BY CENTER DATA
 ═══════════════════════════════════════ */
 $comp_q = "
 SELECT 
@@ -230,11 +282,12 @@ LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN master_center mc ON mc.center_id = t.center_id
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if ($payment_status == 'pending') {
-    $comp_q .= " AND i.due_amount > 0 ";
+if ($payment_status == 'paid') {
+    $comp_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
 
 if ($role_id == 3) {
@@ -277,7 +330,7 @@ foreach ($distinct_centers as $c_idx => $c_name) {
 }
 
 /* ═══════════════════════════════════════
-   5. CUSTOMER CHART DATA
+   6. CUSTOMER CHART DATA
 ═══════════════════════════════════════ */
 $sq = "
 SELECT
@@ -288,11 +341,12 @@ LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
 LEFT JOIN customer_master cm ON cm.id = i.customer_id
 WHERE t.transaction_type = 2
 AND t.sale_net > 0
-AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}'
 ";
 
-if ($payment_status == 'pending') {
-    $sq .= " AND i.due_amount > 0 ";
+if ($payment_status == 'paid') {
+    $sq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
+} else {
+    $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
@@ -593,12 +647,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endif; ?>
         </select>
       <?php endif; ?>
-      
-      <!-- UPDATED DROPDOWN: 'All' for Tax Invoice, 'Pending' for Total Billing -->
-      <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
-          <option value="all" <?= ($payment_status == 'all') ? 'selected' : '' ?>>Tax Invoice (All)</option>
-          <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Total Billing (Pending)</option>
-      </select>
+    <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
+    <option value="" <?= ($payment_status == '') ? 'selected' : '' ?>>Total Billing</option>
+</select>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
         <i class="fa fa-file-text-o"></i> Generate Report
@@ -663,7 +715,7 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
   <div class="pdf-total-box" style="display:<?= $is_pdf ? 'block' : 'none' ?>;">
     <table style="width:100%; border-collapse:collapse; color:#fff;">
       <tr>
-        <td style="width: 100%; vertical-align:top;">
+        <td style="width: <?= ($payment_status != 'pending') ? '50%' : '100%' ?>; vertical-align:top; <?php if($payment_status != 'pending') echo 'border-right:1px solid rgba(255,255,255,0.2); padding-right:10px;'; ?>">
           <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Sales Amount</span><br>
           <span style="font-size:14px; font-weight:800;">₹ <?= number_format($grand, 2) ?></span>
           <?php if (abs($round_off) > 0.001) { ?>
@@ -673,11 +725,21 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             </div>
           <?php } ?>
         </td>
+
+        <?php if ($payment_status != 'pending'): ?>
+        <td style="width:50%; vertical-align:top; padding-left:12px;">
+          <span style="font-size:10px; opacity:0.8; text-transform:uppercase;">Total Payment Received</span><br>
+          <span style="font-size:14px; font-weight:800; color:#4ade80;">₹ <?= number_format($total_collection, 2) ?></span>
+          <div style="font-size:9px; opacity:0.8; margin-top:2px;">
+            Mode-wise Grand Total
+          </div>
+        </td>
+        <?php endif; ?>
       </tr>
     </table>
   </div>
 
-  <?php if ($report_type == 'customer'): ?>
+  <?php if ($payment_status != 'pending'): ?>
   <div class="pdf-collection-box" style="display:none;">
     <h4 style="margin:0 0 8px; font-size:16px; font-weight:700; color:#fff;">
       Customer Collection Summary (Mode-wise)
@@ -713,7 +775,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       <div class="s-lbl">Total Sales</div>
       <div class="s-big">&#8377; <?= number_format($grand, 2) ?></div>
       
-      <!-- Hamesha dikhne wala Received & Pending Amount -->
       <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.1);">
           <div style="font-size:10px; font-weight:700; color:#4ade80; margin-bottom:3px;">
               &#9632; Received : &#8377; <?= number_format($grand_received, 2) ?>
@@ -733,7 +794,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </div>
       <?php } ?>
 
-      <!-- Payment Mode sirf "Customer" Report me aayega -->
       <?php if ($report_type == 'customer') { ?>
       <div class="s-lbl">Payment &mdash; Mode Wise</div>
       <div class="payment-scroll">
@@ -758,7 +818,6 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
       </div>
       <?php } ?>
       
-      <!-- Product Selected hone par Box Data -->
       <?php if ($report_type == 'product' && !empty($filter_id)) { ?>
           <div class="s-div"></div>
           <div class="s-lbl" style="margin-top:6px;">Product Wise Sales</div>
@@ -835,18 +894,15 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php foreach ($sales as $s): ?>
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
-            
-            <!-- Popup for Invoice -->
             <td>
                 <?php if (!empty($s['invoice_id'])): ?>
-                    <a href="javascript:void(0);" onclick="window.open('invoice_print.php?id=<?= $s['invoice_id'] ?>', 'InvoicePopup', 'width=800,height=600');" style="color:#2563eb; font-weight:700; text-decoration:none;">
+                    <a href="invoice_print.php?id=<?= $s['invoice_id'] ?>" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:none;">
                         <?= htmlspecialchars($s['invoice_no']) ?>
                     </a>
                 <?php else: ?>
                     <?= htmlspecialchars($s['invoice_no']) ?>
                 <?php endif; ?>
             </td>
-
             <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
             <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
             <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
@@ -855,8 +911,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
             
             <?php 
-                $inv_due = (float)($s['inv_due'] ?? 0);
-                $status_color = ($inv_due <= 0) ? '#2563eb' : '#dc2626'; 
+                $paid_amt = (float)($s['paid_amount'] ?? 0);
+                $pending_amt = (float)$s['total_sale'] - $paid_amt;
+                
+                $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
             ?>
             <td style="text-align:right;">
                 <b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b>
