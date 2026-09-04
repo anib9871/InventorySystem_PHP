@@ -1259,7 +1259,8 @@ function openGrnPopup(grnNo) {
     const modal = document.getElementById('grnPopup');
     const frame = document.getElementById('grnFrame');
 
-    frame.src = 'purchase_print.php?grn_no=' + encodeURIComponent(grnNo);
+    // Yahan link update kar diya gaya hai
+    frame.src = 'print_grn.php?bill=' + encodeURIComponent(grnNo);
 
     modal.style.display = 'flex';
 }
