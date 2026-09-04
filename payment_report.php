@@ -325,6 +325,8 @@ foreach($reports as $i => $r):
     <th>Mode</th>
     <th>Status</th>
     <th>Ref No</th>
+    <!-- 🔥 ACTION COLUMN FOR PRINT GRN 🔥 -->
+    <th class="text-center" style="width:130px;">Action</th>
 </tr>
 </thead>
 <tbody id="supplierPaymentTable">
@@ -448,17 +450,30 @@ foreach($supplier_reports as $s):
             <br><small style="color:#2563eb; font-weight:bold;">(ADVANCE ADJUSTED)</small>
         <?php endif; ?>
     </td>
+    <!-- 🔥 PRINT GRN BUTTON (UPDATED URL) 🔥 -->
+    <td class="text-center">
+        <?php if(!$is_advance_entry && !empty($s['bill_no'])): ?>
+            <a href="print_grn.php?bill=<?= urlencode($s['bill_no']); ?>" 
+               target="_blank" 
+               class="btn-print-invoice">
+                🖨️ View GRN
+            </a>
+        <?php else: ?>
+            -
+        <?php endif; ?>
+    </td>
 </tr>
 
 <?php endforeach; ?>
 <?php if(empty($supplier_reports)): ?>
-<tr><td colspan="10" class="text-center">No supplier payment records found for this date range.</td></tr>
+<tr><td colspan="11" class="text-center">No supplier payment records found for this date range.</td></tr>
 <?php endif; ?>
 
 </tbody>
 <tfoot>
 <tr>
-    <th colspan="7" class="text-right">Total Supplier Payments</th>
+    <!-- Colspan adjusted for the new Action column -->
+    <th colspan="8" class="text-right">Total Supplier Payments</th>
     <th colspan="3" style="color:green;">₹ <?= number_format($supplier_total,2); ?></th>
 </tr>
 </tfoot>
