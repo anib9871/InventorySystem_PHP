@@ -58,35 +58,15 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-
     // Tax Invoice: KEEP EXISTING PAYMENT-DATE LOGIC
     $sale_query .= " AND i.id IN (
         SELECT invoice_id
         FROM payments
         WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
     ) ";
-
-} elseif ($payment_status == 'pending') {
-
-    // Total Billing: SALE DATE + ONLY PENDING INVOICES
+} else {
+    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
     $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-
-    $sale_query .= " AND (
-        (
-            SELECT IFNULL(SUM(t2.sale_net), 0)
-            FROM transaction_master t2
-            WHERE t2.bill_indent_no = t.bill_indent_no
-              AND t2.transaction_type = 2
-              AND t2.sale_net > 0
-        )
-        -
-        (
-            SELECT IFNULL(SUM(pay.amount), 0)
-            FROM payments pay
-            WHERE pay.invoice_id = i.id
-        )
-    ) > 0 ";
-
 }
 
 if ($role_id == 3) {
@@ -200,8 +180,8 @@ SELECT
     t.gst_amount,
     t.sale_net AS total_sale,
     
-    (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id) AS paid_amount,
-    (t.sale_net - (SELECT IFNULL(SUM(amount), 0) FROM payments pay WHERE pay.invoice_id = i.id)) AS pending_amt
+    i.paid_amount AS inv_paid,
+    i.due_amount AS inv_due
     
 FROM transaction_master t
 LEFT JOIN invoice i ON i.invoice_no = t.bill_indent_no
@@ -214,36 +194,17 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-
     // Tax Invoice: KEEP EXISTING LOGIC
     $txn_q .= " AND i.id IN (
         SELECT invoice_id
         FROM payments
         WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
     ) ";
-
-} elseif ($payment_status == 'pending') {
-
-    // Total Billing: SALE DATE + ONLY PENDING INVOICES
+} else {
+    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
     $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-
-    $txn_q .= " AND (
-        (
-            SELECT IFNULL(SUM(t2.sale_net), 0)
-            FROM transaction_master t2
-            WHERE t2.bill_indent_no = t.bill_indent_no
-              AND t2.transaction_type = 2
-              AND t2.sale_net > 0
-        )
-        -
-        (
-            SELECT IFNULL(SUM(pay.amount), 0)
-            FROM payments pay
-            WHERE pay.invoice_id = i.id
-        )
-    ) > 0 ";
-
 }
+
 if ($role_id == 3) {
     $txn_q .= " AND t.center_id = '{$user_center}'";
 } elseif ($role_id == 2 && !empty($center_filter)) {
@@ -268,14 +229,19 @@ $grand = 0;
 $grand_qty = 0;
 $grand_received = 0;
 $grand_pending = 0;
+$processed_invoices = [];
 
 foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
     $grand_qty += (float)$s['sold_qty'];
     
-    $p_amt = (float)($s['paid_amount'] ?? 0);
-    $grand_received += $p_amt;
-    $grand_pending += ((float)$s['total_sale'] - $p_amt);
+    // Exact logic using invoice table to avoid double counting
+    $inv_id = $s['invoice_id'];
+    if (!empty($inv_id) && !in_array($inv_id, $processed_invoices)) {
+        $grand_received += (float)($s['inv_paid'] ?? 0);
+        $grand_pending += (float)($s['inv_due'] ?? 0);
+        $processed_invoices[] = $inv_id;
+    }
 }
 
 /* Round off Calculation */
@@ -298,35 +264,15 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-
     // Tax Invoice: existing payment-date logic
     $pq .= " AND i.id IN (
         SELECT invoice_id
         FROM payments
         WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
     ) ";
-
-} elseif ($payment_status == 'pending') {
-
-    // Total Billing: only pending bills within sale date range
+} else {
+    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
     $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-
-    $pq .= " AND (
-        (
-            SELECT IFNULL(SUM(t2.sale_net), 0)
-            FROM transaction_master t2
-            WHERE t2.bill_indent_no = t.bill_indent_no
-              AND t2.transaction_type = 2
-              AND t2.sale_net > 0
-        )
-        -
-        (
-            SELECT IFNULL(SUM(pay.amount), 0)
-            FROM payments pay
-            WHERE pay.invoice_id = i.id
-        )
-    ) > 0 ";
-
 }
 
 if ($role_id == 3) {
@@ -362,35 +308,15 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-
     // Tax Invoice: existing payment-date logic
     $comp_q .= " AND i.id IN (
         SELECT invoice_id
         FROM payments
         WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
     ) ";
-
-} elseif ($payment_status == 'pending') {
-
-    // Total Billing: only pending bills within sale date range
+} else {
+    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
     $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-
-    $comp_q .= " AND (
-        (
-            SELECT IFNULL(SUM(t2.sale_net), 0)
-            FROM transaction_master t2
-            WHERE t2.bill_indent_no = t.bill_indent_no
-              AND t2.transaction_type = 2
-              AND t2.sale_net > 0
-        )
-        -
-        (
-            SELECT IFNULL(SUM(pay.amount), 0)
-            FROM payments pay
-            WHERE pay.invoice_id = i.id
-        )
-    ) > 0 ";
-
 }
 
 if ($role_id == 3) {
@@ -447,35 +373,15 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-
     // Tax Invoice: existing payment-date logic
     $sq .= " AND i.id IN (
         SELECT invoice_id
         FROM payments
         WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
     ) ";
-
-} elseif ($payment_status == 'pending') {
-
-    // Total Billing: only pending bills within sale date range
+} else {
+    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
     $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
-
-    $sq .= " AND (
-        (
-            SELECT IFNULL(SUM(t2.sale_net), 0)
-            FROM transaction_master t2
-            WHERE t2.bill_indent_no = t.bill_indent_no
-              AND t2.transaction_type = 2
-              AND t2.sale_net > 0
-        )
-        -
-        (
-            SELECT IFNULL(SUM(pay.amount), 0)
-            FROM payments pay
-            WHERE pay.invoice_id = i.id
-        )
-    ) > 0 ";
-
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
@@ -1023,17 +929,17 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php foreach ($sales as $s): ?>
           <tr>
             <td><?= date('d/M/Y', strtotime($s['sale_date'])) ?></td>
+            
             <td>
-<?php if (!empty($s['invoice_id'])): ?>
-    <a href="javascript:void(0);"
-       onclick="openInvoicePopup(<?= (int)$s['invoice_id'] ?>)"
-       style="color:#2563eb; font-weight:700; text-decoration:none; cursor:pointer;">
-        <?= htmlspecialchars($s['invoice_no']) ?>
-    </a>
-<?php else: ?>
-    <?= htmlspecialchars($s['invoice_no']) ?>
-<?php endif; ?>
+                <?php if (!empty($s['invoice_id'])): ?>
+                    <a href="javascript:void(0);" onclick="window.open('invoice_print.php?id=<?= $s['invoice_id'] ?>', 'InvoicePopup', 'width=800,height=600');" style="color:#2563eb; font-weight:700; text-decoration:none;">
+                        <?= htmlspecialchars($s['invoice_no']) ?>
+                    </a>
+                <?php else: ?>
+                    <?= htmlspecialchars($s['invoice_no']) ?>
+                <?php endif; ?>
             </td>
+
             <td class="customer-cell"><b><?= htmlspecialchars($s['customer_name'] ?? '-') ?></b></td>
             <td class="product-cell"><?= htmlspecialchars($s['name']) ?></td>
             <td style="text-align:center;"><?= $s['sold_qty'] ?></td>
@@ -1042,10 +948,9 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
             <td style="text-align:right;"><?= number_format($s['gst_amount'], 2) ?></td>
             
             <?php 
-                $paid_amt = (float)($s['paid_amount'] ?? 0);
-                $pending_amt = (float)$s['total_sale'] - $paid_amt;
-                
-                $status_color = ($pending_amt <= 0) ? '#2563eb' : '#dc2626'; 
+                // Color based on actual Invoice Due
+                $inv_due = (float)($s['inv_due'] ?? 0);
+                $status_color = ($inv_due <= 0) ? '#2563eb' : '#dc2626'; 
             ?>
             <td style="text-align:right;">
                 <b style="color:<?= $status_color ?>;">₹ <?= number_format($s['total_sale'], 2) ?></b>
