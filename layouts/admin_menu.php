@@ -124,6 +124,7 @@ $has_report_access = !empty(array_intersect($report_perms, $sub_perms));
       <ul class="submenu">
         <?php if(in_array('supp_advance', $sub_perms)): ?><li><a href="supplier_advance.php">Supplier Advance</a></li><?php endif; ?>
          <?php if(in_array('pay_pendency', $sub_perms)): ?><li><a href="payments.php">Payment Pendency Report</a></li><?php endif; ?>
+         <?php if(in_array('payment_report', $sub_perms)): ?><li><a href="paymnet_report.php">Expense</a></li><?php endif; ?>
          <?php if(in_array('expense', $sub_perms)): ?><li><a href="add_expense.php">Expense</a></li><?php endif; ?>
       </ul>
     </li>
