@@ -58,15 +58,11 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Tax Invoice: KEEP EXISTING PAYMENT-DATE LOGIC
-    $sale_query .= " AND i.id IN (
-        SELECT invoice_id
-        FROM payments
-        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
-    ) ";
+    // Tax Invoice: Check if payment exists in selected date range
+    $sale_query .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
-    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
-    $sale_query .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    // Total Billing: Show bills generated in this date range OR paid in this date range
+    $sale_query .= " AND (DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' OR i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}')) ";
 }
 
 if ($role_id == 3) {
@@ -97,19 +93,10 @@ SELECT
     MAX(p.payment_date) AS payment_date,
     SUM(p.amount) AS payment_amount
 FROM payments p
+LEFT JOIN invoice i ON i.id = p.invoice_id
 LEFT JOIN customer_master cm ON cm.id = p.customer_id
-WHERE 1=1 
+WHERE DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}'
 ";
-
-if ($payment_status == 'paid') {
-    $pay_q .= " AND DATE(p.payment_date) BETWEEN '{$from}' AND '{$to}' ";
-} else {
-    $pay_q .= " AND p.invoice_id IN (
-        SELECT i2.id FROM invoice i2 
-        INNER JOIN transaction_master t2 ON t2.bill_indent_no = i2.invoice_no 
-        WHERE DATE(t2.entry_date) BETWEEN '{$from}' AND '{$to}'
-    )";
-}
 
 if ($report_type == 'customer' && !empty($filter_id)) {
     $pay_q .= " AND p.customer_id = '{$filter_id}'";
@@ -194,15 +181,9 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Tax Invoice: KEEP EXISTING LOGIC
-    $txn_q .= " AND i.id IN (
-        SELECT invoice_id
-        FROM payments
-        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
-    ) ";
+    $txn_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
-    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
-    $txn_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $txn_q .= " AND (DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' OR i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}')) ";
 }
 
 if ($role_id == 3) {
@@ -235,7 +216,6 @@ foreach ($sales as $s) {
     $grand += (float)$s['total_sale'];
     $grand_qty += (float)$s['sold_qty'];
     
-    // Exact logic using invoice table to avoid double counting
     $inv_id = $s['invoice_id'];
     if (!empty($inv_id) && !in_array($inv_id, $processed_invoices)) {
         $grand_received += (float)($s['inv_paid'] ?? 0);
@@ -264,15 +244,9 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Tax Invoice: existing payment-date logic
-    $pq .= " AND i.id IN (
-        SELECT invoice_id
-        FROM payments
-        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
-    ) ";
+    $pq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
-    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
-    $pq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $pq .= " AND (DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' OR i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}')) ";
 }
 
 if ($role_id == 3) {
@@ -308,15 +282,9 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Tax Invoice: existing payment-date logic
-    $comp_q .= " AND i.id IN (
-        SELECT invoice_id
-        FROM payments
-        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
-    ) ";
+    $comp_q .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
-    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
-    $comp_q .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $comp_q .= " AND (DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' OR i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}')) ";
 }
 
 if ($role_id == 3) {
@@ -373,15 +341,9 @@ AND t.sale_net > 0
 ";
 
 if ($payment_status == 'paid') {
-    // Tax Invoice: existing payment-date logic
-    $sq .= " AND i.id IN (
-        SELECT invoice_id
-        FROM payments
-        WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}'
-    ) ";
+    $sq .= " AND i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}') ";
 } else {
-    // Total Billing: SALE DATE + ALL INVOICES (Paid & Unpaid)
-    $sq .= " AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' ";
+    $sq .= " AND (DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' OR i.id IN (SELECT invoice_id FROM payments WHERE DATE(payment_date) BETWEEN '{$from}' AND '{$to}')) ";
 }
 
 if ($report_type == 'customer' && !empty($filter_id)) {
@@ -682,10 +644,10 @@ $pdf_save_title = htmlspecialchars($org_name) . " - Sales Report (" . date('d-M-
           <?php endif; ?>
         </select>
       <?php endif; ?>
-<select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
-    <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
-    <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Total Billing</option>
-</select>
+      <select name="payment_status" class="form-control" style="height:32px; font-size:12px; flex:0 0 140px;">
+          <option value="paid" <?= ($payment_status == 'paid') ? 'selected' : '' ?>>Tax Invoice</option>
+          <option value="pending" <?= ($payment_status == 'pending') ? 'selected' : '' ?>>Total Billing</option>
+      </select>
 
       <button type="submit" name="generate_report" value="1" class="btn btn-primary" style="height:32px; font-size:12px; white-space:nowrap; padding:0 12px;">
         <i class="fa fa-file-text-o"></i> Generate Report
