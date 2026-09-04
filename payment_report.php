@@ -311,8 +311,8 @@ foreach($reports as $i => $r):
 <div class="panel-body">
 <input type="text" id="searchSupplier" class="form-control search-box" placeholder="Search Supplier / Bill / Payment Mode">
 <br>
-<div class="table-responsive" style="border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
-<table class="table table-bordered table-striped">
+<div class="table-responsive" style="border-radius:12px; overflow-x:auto; border:1px solid #e5e7eb;">
+<table class="table table-bordered table-striped" style="min-width: 1150px;">
 <thead>
 <tr>
     <th>#</th>
