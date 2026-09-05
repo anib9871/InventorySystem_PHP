@@ -145,9 +145,29 @@ $has_report_access = !empty(array_intersect($report_perms, $sub_perms));
         <?php if(in_array('ledger_report', $sub_perms)): ?><li><a href="ledger_report.php">Ledger Report</a></li><?php endif; ?>
         <?php if(in_array('revenue_report', $sub_perms)): ?><li><a href="daily_revenue_report.php">Revenue Report</a></li><?php endif; ?>
          <?php if(in_array('expense_report', $sub_perms)): ?><li><a href="expense_report.php">Expense Report</a></li><?php endif; ?>
+         
       </ul>
     </li>
     <?php endif; ?>
+
+    <!-- DATABASE BACKUP -->
+<?php if(
+    isset($_SESSION['user_level']) &&
+    (int)$_SESSION['user_level'] === 1
+): ?>
+
+<li>
+    <a href="#"
+       onclick="openDatabaseBackup(); return false;">
+
+        <i class="glyphicon glyphicon-download-alt"></i>
+
+        Database Backup
+
+    </a>
+</li>
+
+<?php endif; ?>
 
   </ul>
 </li>
