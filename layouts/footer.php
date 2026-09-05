@@ -105,6 +105,454 @@
         }
     });
     </script>
+<script>
+
+/*
+|--------------------------------------------------------------------------
+| DATABASE BACKUP
+|--------------------------------------------------------------------------
+*/
+
+async function openDatabaseBackup() {
+
+    /*
+    |--------------------------------------------------------------------------
+    | BROWSER SUPPORT CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    if (!window.showSaveFilePicker) {
+
+        Swal.fire({
+
+            icon: 'warning',
+
+            title: 'Browser Not Supported',
+
+            html:
+                'Your browser does not support direct folder selection.' +
+                '<br><br>' +
+                '<strong>Please use Google Chrome or Microsoft Edge.</strong>',
+
+            confirmButtonColor: '#a80000'
+
+        });
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIRMATION POPUP
+    |--------------------------------------------------------------------------
+    */
+
+    const result = await Swal.fire({
+
+        title: 'Create Database Backup?',
+
+        html:
+            '<div style="font-size:14px;line-height:1.7;">' +
+
+            'A complete backup of your organization database ' +
+            'will be created.' +
+
+            '<br><br>' +
+
+            '<strong>You will be asked where you want to save the backup.</strong>' +
+
+            '<br><br>' +
+
+            'You can continue using Storely while the backup is being prepared.' +
+
+            '</div>',
+
+        icon: 'question',
+
+        showCancelButton: true,
+
+        confirmButtonText:
+            '<i class="fa-solid fa-database"></i> Continue',
+
+        cancelButtonText: 'Cancel',
+
+        confirmButtonColor: '#a80000',
+
+        cancelButtonColor: '#64748b',
+
+        reverseButtons: true,
+
+        allowOutsideClick: false
+
+    });
+
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FILE NAME
+    |--------------------------------------------------------------------------
+    */
+
+    const now = new Date();
+
+    const pad = (num) =>
+        String(num).padStart(2, '0');
+
+    const filename =
+        'storely_backup_' +
+
+        now.getFullYear() + '-' +
+
+        pad(now.getMonth() + 1) + '-' +
+
+        pad(now.getDate()) + '_' +
+
+        pad(now.getHours()) + '-' +
+
+        pad(now.getMinutes()) + '-' +
+
+        pad(now.getSeconds()) +
+
+        '.sql';
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ASK USER WHERE TO SAVE
+    |--------------------------------------------------------------------------
+    */
+
+    let fileHandle;
+
+    try {
+
+        fileHandle = await window.showSaveFilePicker({
+
+            suggestedName: filename,
+
+            types: [
+
+                {
+                    description: 'SQL Database Backup',
+
+                    accept: {
+                        'application/sql': ['.sql']
+                    }
+                }
+
+            ]
+
+        });
+
+    } catch (error) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | USER CANCELLED FILE PICKER
+        |--------------------------------------------------------------------------
+        */
+
+        if (error.name === 'AbortError') {
+            return;
+        }
+
+        Swal.fire({
+
+            icon: 'error',
+
+            title: 'Save Location Error',
+
+            text: 'Unable to select the backup location.',
+
+            confirmButtonColor: '#a80000'
+
+        });
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BACKUP STATUS PANEL
+    |--------------------------------------------------------------------------
+    */
+
+    Swal.fire({
+
+        toast: true,
+
+        position: 'bottom-end',
+
+        title: 'Creating Database Backup...',
+
+        html:
+            '<div style="margin-top:8px;">' +
+
+            '<div id="backupStatusText">' +
+            'Connecting to database...' +
+            '</div>' +
+
+            '<div style="' +
+            'margin-top:10px;' +
+            'font-size:12px;' +
+            'color:#64748b;' +
+            '">' +
+
+            'You can continue using Storely.' +
+
+            '</div>' +
+
+            '</div>',
+
+        showConfirmButton: false,
+
+        allowOutsideClick: false,
+
+        allowEscapeKey: false,
+
+        width: '380px'
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | OPEN FILE
+    |--------------------------------------------------------------------------
+    */
+
+    let writable;
+
+    try {
+
+        writable =
+            await fileHandle.createWritable();
+
+    } catch (error) {
+
+        Swal.fire({
+
+            icon: 'error',
+
+            title: 'File Error',
+
+            text:
+                'The selected location could not be opened.',
+
+            confirmButtonColor: '#a80000'
+
+        });
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | START ASYNC BACKUP REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+
+        const response =
+            await fetch('database_backup.php', {
+
+                method: 'GET',
+
+                credentials: 'same-origin',
+
+                cache: 'no-store'
+
+            });
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                'Backup server returned ' +
+                response.status
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STREAM RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        if (!response.body) {
+
+            throw new Error(
+                'Streaming is not supported.'
+            );
+        }
+
+
+        const reader =
+            response.body.getReader();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | WRITE STREAM
+        |--------------------------------------------------------------------------
+        */
+
+        let totalBytes = 0;
+
+        let lastUpdate = Date.now();
+
+
+        while (true) {
+
+            const {
+                done,
+                value
+            } = await reader.read();
+
+
+            if (done) {
+                break;
+            }
+
+
+            if (value) {
+
+                await writable.write(value);
+
+                totalBytes += value.length;
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | STATUS UPDATE
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    Date.now() - lastUpdate > 1000
+                ) {
+
+                    const mb =
+                        (
+                            totalBytes /
+                            1024 /
+                            1024
+                        ).toFixed(1);
+
+
+                    const status =
+                        document.getElementById(
+                            'backupStatusText'
+                        );
+
+
+                    if (status) {
+
+                        status.innerHTML =
+                            'Backup data received: ' +
+                            mb +
+                            ' MB';
+
+                    }
+
+
+                    lastUpdate =
+                        Date.now();
+                }
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSE FILE
+        |--------------------------------------------------------------------------
+        */
+
+        await writable.close();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        Swal.fire({
+
+            toast: true,
+
+            position: 'bottom-end',
+
+            icon: 'success',
+
+            title: 'Backup Completed',
+
+            text:
+                'Database backup saved successfully.',
+
+            showConfirmButton: false,
+
+            timer: 5000,
+
+            timerProgressBar: true
+
+        });
+
+
+    } catch (error) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | ABORT / CLOSE FILE
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+            await writable.abort();
+        } catch (e) {}
+
+
+        console.error(
+            'Database Backup Error:',
+            error
+        );
+
+
+        Swal.fire({
+
+            icon: 'error',
+
+            title: 'Backup Failed',
+
+            html:
+                'The database backup could not be completed.' +
+
+                '<br><br>' +
+
+                '<small>' +
+                'Please try again.' +
+                '</small>',
+
+            confirmButtonColor: '#a80000'
+
+        });
+
+    }
+
+}
+
+</script>
 
     <script>
     function deleteGRN(bill){
