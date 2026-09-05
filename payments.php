@@ -348,7 +348,6 @@ include_once('layouts/header.php');
 ?>
 
 <style>
-
 body{
     background:#f4f7fb;
 }
@@ -384,7 +383,7 @@ body{
 
 .table-responsive{
     border-radius:12px;
-    overflow:hidden;
+    overflow-x:auto;
     border:1px solid #e5e7eb;
 }
 
@@ -468,6 +467,33 @@ body{
     transform: translateY(-1px);
 }
 
+/* ===== RESPONSIVE FIXES FOR MOBILE SCREENS ===== */
+@media (max-width: 768px) {
+    .report-card .panel-body > div:first-child {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .report-card .panel-body > div:first-child > div {
+        width: 100% !important;
+        justify-content: space-between !important;
+    }
+
+    #paymentModal .modal-dialog {
+        margin: 10px;
+        width: auto !important;
+    }
+
+    #paymentModal .modal-body .row > [class*="col-xs-"] {
+        width: 50%;
+        margin-bottom: 8px;
+    }
+    
+    #paymentModal .modal-body .row > .col-xs-8,
+    #paymentModal .modal-body .row > .col-xs-4 {
+        width: 100%;
+    }
+}
 </style>
 
 <div class="row">
