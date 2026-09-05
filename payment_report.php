@@ -135,12 +135,13 @@ tfoot th{ font-size:15px; }
     background: #1d4ed8;
 }
 
-/* ===== FIX FOR DATE BOX TRUNCATION ===== */
+/* ===== RESPONSIVE FIX FOR DATE BOX & FILTER CONTAINER ===== */
 .filter-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap; /* Allows wrapping on small screens */
+    gap: 15px;
     width: 100%;
 }
 .filter-option {
@@ -173,8 +174,26 @@ tfoot th{ font-size:15px; }
     padding: 0 18px;
     white-space: nowrap;
 }
-</style>
 
+/* Media Query for Mobile Views */
+@media (max-width: 768px) {
+    .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filter-option, .date-input-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .date-input-group .form-control {
+        width: 100% !important;
+        flex-grow: 1;
+    }
+    .btn-generate {
+        width: 100%;
+    }
+}
+</style>
 <!-- FILTER CONTROLS -->
 <div class="row">
 <div class="col-md-12">
