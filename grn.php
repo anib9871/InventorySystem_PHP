@@ -363,13 +363,15 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
 <!-- ITEM ENTRY FORM (SECTION 2) -->
 <div class="section-block">
   <div class="flex-row-balanced">
-    <div style="width: 220px;">
-      <label class="form-label-custom">Product <span style="color:red;">*</span></label>
-      <div style="display: flex; align-items: center;">
-        <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose..." readonly style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; border-right: 0 !important;">
-        <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()" style="border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center;">Choose</button>
-      </div>
-    </div>
+   <div style="width: 220px;">
+  <label class="form-label-custom">Product <span style="color:red;">*</span></label>
+  <div style="display: flex; align-items: center;">
+    <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose..." readonly style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; border-right: 0 !important;">
+    <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()" style="border-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center;">Choose</button>
+    <!-- Yeh raha naya button jo product.php par le jayega aur wapas laate waqt data bacha ke rakhega -->
+    <a href="product.php?redirect=grn" class="btn btn-success btn-custom" title="Add New Product" style="border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center; padding: 0 8px;"><i class="fa fa-plus"></i></a>
+  </div>
+</div>
 
         <div style="width: 100px;">
           <label class="form-label-custom">Qty <span style="color:red;">*</span></label>
@@ -663,6 +665,45 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
 
 <!-- JAVASCRIPT LOGIC -->
 <script>
+// Form data ko browser mein temporarily save karne ke liye taaki redirect hone par data na ude
+window.addEventListener('beforeunload', function() {
+    if((items && items.length > 0) || document.querySelector('[name="bill_no"]').value) {
+        let formData = {
+            supplier_id: document.getElementById('supplier_id').value,
+            bill_no: document.querySelector('[name="bill_no"]').value,
+            bill_date: document.getElementById('bill_date').value,
+            items: items,
+            charges: charges
+        };
+        localStorage.setItem('grn_temp_backup', JSON.stringify(formData));
+    }
+});
+
+// Page wapas load hone par data automatically wapas laane ke liye
+document.addEventListener("DOMContentLoaded", function() {
+    let savedData = localStorage.getItem('grn_temp_backup');
+    if(savedData && (!window.items || window.items.length === 0)) {
+        try {
+            let data = JSON.parse(savedData);
+            if(data.supplier_id) document.getElementById('supplier_id').value = data.supplier_id;
+            if(data.bill_no) document.querySelector('[name="bill_no"]').value = data.bill_no;
+            if(data.bill_date) document.getElementById('bill_date').value = data.bill_date;
+            if(data.items && data.items.length > 0) {
+                items = data.items;
+                renderItems();
+            }
+            if(data.charges && data.charges.length > 0) {
+                charges = data.charges;
+                renderCharges();
+            }
+            // Kaam pura hone ke baad temporary backup saaf kar dein
+            localStorage.removeItem('grn_temp_backup');
+        } catch(e) {
+            console.log("Backup load error", e);
+        }
+    }
+});
+
 if(typeof items === 'undefined'){ var items = []; }
 if(typeof charges === 'undefined'){ var charges = []; }
 
