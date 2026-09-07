@@ -361,15 +361,18 @@ $(document).ready(function () {
 
                 var html='';
 
-                $.each(response.items,function(i,item){
-
-                    html += '<tr>';
-                    html += '<td>'+item.name+'</td>';
-                    html += '<td>'+item.quantity+'</td>';
-                    html += '<td>'+Number(item.stock).toFixed(2)+'</td>';
-                    html += '</tr>';
-
-                });
+                $.each(response.items, function(i, item){
+                var stock = Number(item.stock);
+                
+                // Agar stock 0 ya usse kam hai toh row ka background red kar dein
+                var rowStyle = (stock <= 0) ? 'style="background-color: #f8d7da; color: #721c24;"' : '';
+            
+                html += '<tr ' + rowStyle + '>';
+                html += '<td>'+item.name+'</td>';
+                html += '<td>'+item.quantity+'</td>';
+                html += '<td>'+stock.toFixed(2)+'</td>';
+                html += '</tr>';
+            });
 
                 $('#bom_body').html(html);
                 $('#max_qty').text(response.max);
