@@ -2,7 +2,7 @@
 $page_title = 'GRN';
 require_once('includes/load.php');
 
-$products = find_by_sql("SELECT * FROM products WHERE status = 1 ORDER BY name");
+$products = find_by_sql("SELECT * FROM products WHERE is_active = 1 ORDER BY name");
 $suppliers  = find_all('supplier_master');
 
 $gst_list = find_by_sql("
