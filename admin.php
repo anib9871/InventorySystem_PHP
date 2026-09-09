@@ -91,13 +91,14 @@ foreach($top_products as $tp){
 
 /* TODAY REVENUE */
 
+/* TODAY REVENUE (BASED ON PAYMENTS) */
+
 $today_revenue = find_by_sql("
-SELECT COALESCE(SUM(sale_net),0) as total
+SELECT COALESCE(SUM(amount),0) as total
 
-FROM transaction_master
+FROM payments
 
-WHERE transaction_type = 2
-AND DATE(entry_date)=CURDATE()
+WHERE DATE(created_at)=CURDATE()
 ");
 
 $today_revenue = $today_revenue[0]['total'];
