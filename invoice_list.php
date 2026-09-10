@@ -3,7 +3,7 @@ $page_title = 'Invoice List';
 require_once('includes/load.php');
 //page_require_level(2);
 
-/* Fetch All Regular Invoices (Purane + Naye pakke bills) */
+/* Fetch All Old Invoices (Up to ID 20) + New Tax Invoices */
 $invoices = find_by_sql("
   SELECT i.id,
          i.invoice_no,
@@ -14,7 +14,8 @@ $invoices = find_by_sql("
          i.payment_status
   FROM invoice i
   LEFT JOIN customer_master c ON c.id = i.customer_id
-  WHERE i.remarks NOT LIKE 'PROFORMA%' OR i.remarks IS NULL
+  WHERE (i.remarks NOT LIKE 'PROFORMA%' OR i.remarks IS NULL)
+     OR (i.id <= 20) 
   ORDER BY i.id DESC
 ");
 
