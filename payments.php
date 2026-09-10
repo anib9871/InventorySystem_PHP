@@ -9,245 +9,223 @@ $type = $_GET['type'] ?? 'customer';
 
 if(isset($_POST['save_payment'])){
 
-$invoice_id = (int)$_POST['invoice_id'];
-
-$amounts = $_POST['amounts'];
-
-$total_amount = 0;
-
-$remarks = $db->escape($_POST['remarks']);
-
-$payment_date = $_POST['payment_date'];
-
-$formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
-
-foreach ($formats as $format) {
-    $dt = DateTime::createFromFormat($format, $payment_date);
-    if ($dt instanceof DateTime) {
-        $payment_date = $dt->format('Y-m-d');
-        break;
+    $invoice_id = (int)$_POST['invoice_id'];
+    $amounts = $_POST['amounts'];
+    $total_amount = 0;
+    $remarks = $db->escape($_POST['remarks']);
+    $payment_date = $_POST['payment_date'];
+    
+    $formats = ['d/M/Y', 'd-m-Y', 'Y-m-d'];
+    foreach ($formats as $format) {
+        $dt = DateTime::createFromFormat($format, $payment_date);
+        if ($dt instanceof DateTime) {
+            $payment_date = $dt->format('Y-m-d');
+            break;
+        }
     }
-}
+    $payment_date = $db->escape($payment_date);
 
-$payment_date = $db->escape($payment_date);
+    /* FETCH INVOICE */
+    if($type == 'customer'){
+        $invoice_query = $db->query("SELECT * FROM invoice WHERE id='" . $invoice_id . "' LIMIT 1");
+        $invoice = $db->fetch_array($invoice_query);
+    }else{
+        $invoice_query = $db->query("SELECT * FROM supplier_ledger WHERE ledger_id='" . $invoice_id . "' LIMIT 1");
+        $invoice = $db->fetch_array($invoice_query);
+    }
 
-/* FETCH INVOICE */
+    if(!$invoice){
+        $session->msg('d','Record Not Found');
+        redirect('payments.php?type='.$type);
+    }
 
-if($type == 'customer'){
+    /* VALIDATION */
+    foreach($amounts as $amt){
+        $total_amount += round((float)$amt);
+    }
 
-    $invoice = find_by_sql("
-    SELECT *
-    FROM invoice
-    WHERE id='{$invoice_id}'
-    LIMIT 1
-    ");
+    if($total_amount <= 0){
+        $session->msg('d','Invalid Amount');
+        redirect('payments.php');
+    }
 
-}else{
+    /* =========================================================
+       🔥🔥 PROFORMA TO TAX INVOICE CONVERSION LOGIC 🔥🔥
+       ========================================================= */
+    if($type == 'customer' && $invoice['remarks'] == 'PROFORMA'){
+        
+        // 1. Get next sequence number for regular Tax Invoice
+        $fy = find_by_sql("SELECT fy_id, fy_name FROM financial_year_master LIMIT 1");
+        $fy_id = isset($fy[0]['fy_id']) ? $fy[0]['fy_id'] : 1;
 
-    $invoice = find_by_sql("
-    SELECT *
-    FROM supplier_ledger
-    WHERE ledger_id='{$invoice_id}'
-    LIMIT 1
-    ");
+        $seq = find_by_sql("SELECT * FROM sequence_master WHERE sequence_category='invoice' AND fy_id='$fy_id' LIMIT 1");
+        if($seq){
+            $next = $seq[0]['last_no'] + 1;
+            $db->query("UPDATE sequence_master SET last_no = '$next' WHERE sequence_category = 'invoice' AND fy_id = '$fy_id'");
+        }else{
+            $next = 1;
+            $db->query("INSERT INTO sequence_master (sequence_category, fy_id, last_no) VALUES ('invoice', '$fy_id', 1)");
+        }
 
-}
+        $fy_name = substr($fy[0]['fy_name'], 2);
+        $final_invoice_no = $fy_name . "/" . $next;
 
-if(!$invoice){
-    $session->msg('d','Record Not Found');
-    redirect('payments.php?type='.$type);
-}
+        // 2. INSERT A NEW TAX INVOICE RECORD (Safe Query)
+        $esc_terms = $db->escape($invoice['terms_conditions']);
+        $quotation_id = !empty($invoice['quotation_id']) ? (int)$invoice['quotation_id'] : "NULL";
+        $organization_id = !empty($invoice['organization_id']) ? (int)$invoice['organization_id'] : "NULL";
+        $customer_id = (int)$invoice['customer_id'];
 
-$invoice = $invoice[0];
+        $insert_sql = "INSERT INTO invoice ";
+        $insert_sql .= "(invoice_no, invoice_date, customer_id, organization_id, quotation_id, subtotal, gst_total, net_total, paid_amount, due_amount, payment_status, gst_type, remarks, terms_conditions, created_at) ";
+        $insert_sql .= "VALUES (";
+        $insert_sql .= "'" . $final_invoice_no . "', ";
+        $insert_sql .= "'" . $payment_date . "', ";
+        $insert_sql .= $customer_id . ", ";
+        $insert_sql .= $organization_id . ", ";
+        $insert_sql .= $quotation_id . ", ";
+        $insert_sql .= "'" . $invoice['subtotal'] . "', ";
+        $insert_sql .= "'" . $invoice['gst_total'] . "', ";
+        $insert_sql .= "'" . $invoice['net_total'] . "', ";
+        $insert_sql .= "0, ";
+        $insert_sql .= "'" . $invoice['net_total'] . "', ";
+        $insert_sql .= "'Unpaid', ";
+        $insert_sql .= "'" . $invoice['gst_type'] . "', ";
+        $insert_sql .= "'TAX_INVOICE', ";
+        $insert_sql .= "'" . $esc_terms . "', ";
+        $insert_sql .= "NOW()";
+        $insert_sql .= ")";
+        
+        $db->query($insert_sql);
+        $target_invoice_id = $db->insert_id();
 
-/* VALIDATION */
+        // 3. Copy items to the new Tax Invoice
+        $items = find_by_sql("SELECT * FROM invoice_items WHERE invoice_id = '" . $invoice_id . "'");
+        foreach($items as $item){
+            $item_sql = "INSERT INTO invoice_items ";
+            $item_sql .= "(invoice_id, product_id, qty, rate_excl_gst, discount_amount, gst_percent, rate_incl_gst, cgst_amount, sgst_amount, igst_amount, line_total) ";
+            $item_sql .= "VALUES (";
+            $item_sql .= "'" . $target_invoice_id . "', ";
+            $item_sql .= "'" . $item['product_id'] . "', ";
+            $item_sql .= "'" . $item['qty'] . "', ";
+            $item_sql .= "'" . $item['rate_excl_gst'] . "', ";
+            $item_sql .= "'" . $item['discount_amount'] . "', ";
+            $item_sql .= "'" . $item['gst_percent'] . "', ";
+            $item_sql .= "'" . $item['rate_incl_gst'] . "', ";
+            $item_sql .= "'" . $item['cgst_amount'] . "', ";
+            $item_sql .= "'" . $item['sgst_amount'] . "', ";
+            $item_sql .= "'" . $item['igst_amount'] . "', ";
+            $item_sql .= "'" . $item['line_total'] . "'";
+            $item_sql .= ")";
+            $db->query($item_sql);
+        }
 
-foreach($amounts as $amt){
-    $total_amount += round((float)$amt);
-}
+        // 4. Update transaction_master to point to the new Tax Invoice number and change type from 8 to 2
+        $db->query("
+            UPDATE transaction_master 
+            SET bill_indent_no = '" . $final_invoice_no . "', 
+                transaction_type = 2, 
+                comments = 'TAX_INVOICE' 
+            WHERE bill_indent_no = '" . $invoice['invoice_no'] . "'
+        ");
 
-if($total_amount <= 0){
-    $session->msg('d','Invalid Amount');
+        // 5. Shift Old Ledger entries to the New Tax Invoice
+        $db->query("UPDATE ledger_entries SET invoice_id = '" . $target_invoice_id . "' WHERE invoice_id = '" . $invoice_id . "'");
+
+        // 6. CLEAR DUE AMOUNT of old Proforma so it hides from Pending list!
+        $db->query("UPDATE invoice SET payment_status = 'Converted', remarks = 'PROFORMA (Converted)', due_amount = 0 WHERE id = '" . $invoice_id . "'");
+
+        // 7. SWAP IDs: Ab saari payments nayi Tax Invoice par lagengi!
+        $invoice_id = $target_invoice_id;
+        $invoice['paid_amount'] = 0; // Naye invoice par pehle se koi payment nahi hai
+    }
+    /* ========================================================= */
+
+
+    /* CALCULATE NEW BALANCES FOR THE (NEW OR EXISTING) INVOICE */
+    $new_paid = $invoice['paid_amount'] + $total_amount;
+
+    if($type == 'customer'){
+        $new_due = round($invoice['net_total'] - $new_paid, 2);
+    }else{
+        $new_due = round($invoice['bill_amount'] - $new_paid, 2);
+    }
+
+    // Round Off Adjustment
+    if(abs($new_due) <= 0.21){
+        $new_due  = 0;
+        if($type == 'customer'){
+            $new_paid = $invoice['net_total'];
+        } else {
+            $new_paid = $invoice['bill_amount'];
+        }
+    }
+
+    if($new_due <= 0){
+        $new_due = 0;
+        $status = ($type == 'customer') ? 'Paid' : 1;
+    }else{
+        $status = ($type == 'customer') ? 'Partial' : 0;
+    }
+
+    /* INSERT PAYMENTS */
+    foreach($amounts as $mode => $amt){
+        $amt = round((float)$amt);
+        if($amt <= 0) continue;
+
+        if($type == 'customer'){
+            $db->query("
+            INSERT INTO payments
+            (invoice_id, customer_id, payment_mode, amount, reference_no, payment_date, center_id, created_at)
+            VALUES
+            ('" . $invoice_id . "', '" . $invoice['customer_id'] . "', '" . $mode . "', '" . $amt . "', '" . $remarks . "', '" . $payment_date . "', '1', NOW())
+            ");
+        }else{
+            $db->query("
+            INSERT INTO supplier_payment
+            (ledger_id, supplier_id, payment_date, payment_amount, payment_mode, reference_no, created_at, organization_id, center_id)
+            VALUES
+            ('" . $invoice_id . "', '" . $invoice['supplier_id'] . "', '" . $payment_date . "', '" . $amt . "', '" . $mode . "', '" . $remarks . "', NOW(), '1', '1')
+            ");
+        }
+    }
+
+    /* UPDATE INVOICE */
+    if($type == 'customer'){
+        $db->query("
+        UPDATE invoice
+        SET paid_amount='" . $new_paid . "', due_amount='" . $new_due . "', payment_status='" . $status . "'
+        WHERE id='" . $invoice_id . "'
+        ");
+    }else{
+        $db->query("
+        UPDATE supplier_ledger
+        SET paid_amount='" . $new_paid . "', balance_amount='" . $new_due . "', payment_status='" . $status . "'
+        WHERE ledger_id='" . $invoice_id . "'
+        ");
+    }
+
+    /* UPDATE CUSTOMER BALANCE */
+    if($type == 'customer'){
+        $db->query("
+        UPDATE customer_master
+        SET balance = balance - " . $total_amount . "
+        WHERE id='" . $invoice['customer_id'] . "'
+        ");
+    }
+
+    /* LEDGER ENTRY */
+    if($type == 'customer'){
+        $db->query("
+        INSERT INTO ledger_entries
+        (invoice_id, customer_id, account, type, amount, entry_date)
+        VALUES
+        ('" . $invoice_id . "', '" . $invoice['customer_id'] . "', 'PAYMENT RECEIVED', 'CREDIT', '" . $total_amount . "', NOW())
+        ");
+    }
+
+    $session->msg('s','Payment Added Successfully');
     redirect('payments.php');
-}
-
-/* CALCULATE */
-
-$new_paid = $invoice['paid_amount'] + $total_amount;
-
-if($type == 'customer'){
-    $new_due = round($invoice['net_total'] - $new_paid, 2);
-}else{
-    $new_due = round($invoice['bill_amount'] - $new_paid, 2);
-}
-
-// Round Off Adjustment
-if(abs($new_due) <= 0.21){
-    $new_due  = 0;
-    if($type == 'customer'){
-        $new_paid = $invoice['net_total'];
-    } else {
-        $new_paid = $invoice['bill_amount'];
-    }
-}
-
-if($new_due <= 0){
-
-    $new_due = 0;
-
-    if($type == 'customer'){
-        $status = 'Paid';
-    }else{
-        $status = 1;
-    }
-
-}else{
-
-    if($type == 'customer'){
-        $status = 'Partial';
-    }else{
-        $status = 0;
-    }
-
-}
-
-foreach($amounts as $mode => $amt){
-
-    $amt = round((float)$amt);
-
-    if($amt <= 0){
-        continue;
-    }
-
-    if($type == 'customer'){
-
-        $db->query("
-        INSERT INTO payments
-        (
-            invoice_id,
-            customer_id,
-            payment_mode,
-            amount,
-            reference_no,
-            payment_date,
-            center_id,
-            created_at
-        )
-        VALUES
-        (
-            '{$invoice_id}',
-            '{$invoice['customer_id']}',
-            '{$mode}',
-            '{$amt}',
-            '{$remarks}',
-            '{$payment_date}',
-            '1',
-            NOW()
-        )
-        ");
-
-    }else{
-
-        $db->query("
-        INSERT INTO supplier_payment
-        (
-            ledger_id,
-            supplier_id,
-            payment_date,
-            payment_amount,
-            payment_mode,
-            reference_no,
-            created_at,
-            organization_id,
-            center_id
-        )
-        VALUES
-        (
-            '{$invoice_id}',
-            '{$invoice['supplier_id']}',
-            '{$payment_date}',
-            '{$amt}',
-            '{$mode}',
-            '{$remarks}',
-            NOW(),
-            '1',
-            '1'
-        )
-        ");
-
-    }
-
-}
-
-/* UPDATE INVOICE */
-
-if($type == 'customer'){
-
-    $db->query("
-    UPDATE invoice
-    SET
-        paid_amount='{$new_paid}',
-        due_amount='{$new_due}',
-        payment_status='{$status}'
-    WHERE id='{$invoice_id}'
-    ");
-
-}else{
-
-    $db->query("
-    UPDATE supplier_ledger
-    SET
-        paid_amount='{$new_paid}',
-        balance_amount='{$new_due}',
-        payment_status='{$status}'
-    WHERE ledger_id='{$invoice_id}'
-    ");
-
-}
-
-/* UPDATE CUSTOMER BALANCE */
-
-if($type == 'customer'){
-
-    $db->query("
-    UPDATE customer_master
-    SET balance = balance - {$total_amount}
-    WHERE id='{$invoice['customer_id']}'
-    ");
-
-}
-
-/* LEDGER ENTRY */
-
-if($type == 'customer'){
-
-    $db->query("
-    INSERT INTO ledger_entries
-    (
-        invoice_id,
-        customer_id,
-        account,
-        type,
-        amount,
-        entry_date
-    )
-    VALUES
-    (
-        '{$invoice_id}',
-        '{$invoice['customer_id']}',
-        'PAYMENT RECEIVED',
-        'CREDIT',
-        '{$total_amount}',
-        NOW()
-    )
-    ");
-
-}
-
-$session->msg('s','Payment Added Successfully');
-
-redirect('payments.php');
-
 }
 
 /* ================= FETCH INVOICES ================= */
