@@ -82,6 +82,23 @@ if(isset($_POST['save_invoice'])){
 
     try {
 
+        /* 1. CALCULATE TOTAL PAID FIRST */
+        $total_paid = 0;
+        if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
+            foreach($_POST['payment_amount'] as $amt){
+                $total_paid += (float)$amt;
+            }
+        }
+
+        /* 2. SET DOC TYPE AND SEQUENCE CATEGORY */
+        if($total_paid > 0) {
+            $doc_type = 'TAX_INVOICE';
+            $seq_category = 'invoice';
+        } else {
+            $doc_type = 'PROFORMA';
+            $seq_category = 'proforma'; // Aap DB me is nam se entry bana lena ya ye khud bana lega
+        }
+
         /* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
         $fy = find_by_sql("
         SELECT fy_id, fy_name
@@ -94,7 +111,7 @@ if(isset($_POST['save_invoice'])){
         $seq = find_by_sql("
         SELECT *
         FROM sequence_master
-        WHERE sequence_category='invoice'
+        WHERE sequence_category='$seq_category'
         AND fy_id='$fy_id'
         LIMIT 1
         ");
@@ -106,7 +123,7 @@ if(isset($_POST['save_invoice'])){
             $db->query("
             UPDATE sequence_master
             SET last_no = '$next'
-            WHERE sequence_category = 'invoice'
+            WHERE sequence_category = '$seq_category'
             AND fy_id = '$fy_id'
             ");
         }else{
@@ -120,7 +137,7 @@ if(isset($_POST['save_invoice'])){
             )
             VALUES
             (
-                'invoice',
+                '$seq_category',
                 '$fy_id',
                 1
             )
@@ -128,7 +145,13 @@ if(isset($_POST['save_invoice'])){
         }
 
         $fy_name = substr($fy[0]['fy_name'], 2);
-        $inv_no = $fy_name . "/" . $next;
+        
+        // Proforma ke number ke aage PRO/ laga dete hain takki alag dikhe
+        if($doc_type == 'PROFORMA'){
+            $inv_no = "PI/" . $fy_name . "/" . $next;
+        } else {
+            $inv_no = $fy_name . "/" . $next;
+        }
 
         /* CALCULATE TOTAL PAID */
         $total_paid = 0;
@@ -436,6 +459,9 @@ if(isset($_POST['save_invoice'])){
                 </script>";
                 exit;
             }
+            
+           /* SET TRANSACTION TYPE DYNAMICALLY */
+            $txn_type = ($doc_type == 'PROFORMA') ? 8 : 2;
 
             /* TRANSACTION MASTER ENTRY */
             $trans = $db->query("
@@ -493,7 +519,7 @@ if(isset($_POST['save_invoice'])){
             '$discounted_base',
             '$gst_amount',
             '$line_total',
-            2,
+            '$txn_type', 
             1,
             0,
             NULL,
@@ -501,7 +527,7 @@ if(isset($_POST['save_invoice'])){
             0,
             'STORE',
             'CUSTOMER',
-            'Sale Invoice',
+            '$doc_type',
             NOW(),
             '$center_id'
             )
