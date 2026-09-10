@@ -3,7 +3,7 @@ $page_title = 'Proforma List';
 require_once('includes/load.php');
 //page_require_level(2);
 
-/* Fetch ONLY Proforma Invoices */
+/* Fetch ONLY Proforma Invoices (Purane Paid bills yahan nahi dikhenge) */
 $invoices = find_by_sql("
   SELECT i.id,
          i.invoice_no,
@@ -14,7 +14,9 @@ $invoices = find_by_sql("
          i.payment_status
   FROM invoice i
   LEFT JOIN customer_master c ON c.id = i.customer_id
-  WHERE i.remarks LIKE 'PROFORMA%'
+  WHERE i.remarks LIKE 'PROFORMA%' 
+    AND i.payment_status != 'Paid' 
+    AND i.payment_status != 'Partial'
   ORDER BY i.id DESC
 ");
 
