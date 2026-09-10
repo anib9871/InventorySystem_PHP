@@ -24,7 +24,7 @@ $raw_perms = isset($_SESSION['sub_permissions']) ? $_SESSION['sub_permissions'] 
 $sub_perms = array_map('trim', $raw_perms);
 
 $master_perms = ['org_master', 'centers', 'paymode', 'supplier_master', 'customer_master', 'products', 'bom_master', 'user_role', 'users', 'categorie', 'gst_master', 'gst_state', 'shipping_type', 'config_master', 'financial_year', 'sequence_master', 'bank_master', 'print_type', 'terms_cond', 'expense_master', 'categories'];
-$inv_trans_perms = ['manage_grn', 'quotation_list', 'demo_item_list', 'invoice_list', 'manufacture', 'return_master', 'grn', 'quotation', 'invoice', 'demo_item', 'return', 'direct_billing', 'duplicate_print'];
+$inv_trans_perms = ['manage_grn', 'quotation_list', 'demo_item_list', 'invoice_list', 'proforma_list' 'manufacture', 'return_master', 'grn', 'quotation', 'invoice', 'demo_item', 'return', 'direct_billing', 'duplicate_print'];
 $payment_perms = ['supplier_advance', 'payments', 'add_expense', 'supp_advance', 'pay_pendency', 'expense', 'manage_payments', 'payment_report'];
 $report_perms = ['stock_book', 'inventory_report', 'purchase_report', 'ledger_report', 'daily_revenue_report', 'expense_report', 'stock_report', 'sales_report', 'revenue_report', 'business_report'];
 
@@ -107,6 +107,7 @@ $has_report_access = !empty(array_intersect($report_perms, $sub_perms));
         <?php if(in_array('quotation', $sub_perms)): ?><li><a href="quotation_list.php">Quotation</a></li><?php endif; ?>
         <?php if(in_array('demo_item', $sub_perms)): ?><li><a href="demo_item_list.php">Demo Item Detail </a></li><?php endif; ?>
         <?php if(in_array('invoice', $sub_perms) || in_array('duplicate_print', $sub_perms)): ?><li><a href="invoice_list.php">Invoice</a></li><?php endif; ?>
+        <?php if(in_array('proforma', $sub_perms) || in_array('duplicate_print', $sub_perms)): ?><li><a href="proforma_list.php">Proforma Invoice</a></li><?php endif; ?>
         <?php if(in_array('manufacture', $sub_perms)): ?><li><a href="manufacture.php">Manufacture</a></li><?php endif; ?>
         <?php if(in_array('return', $sub_perms)): ?><li><a href="return_master.php">Return</a></li><?php endif; ?>
       </ul>
