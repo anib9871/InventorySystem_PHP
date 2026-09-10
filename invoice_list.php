@@ -3,7 +3,7 @@ $page_title = 'Invoice List';
 require_once('includes/load.php');
 //page_require_level(2);
 
-/* Fetch ONLY Tax Invoices */
+/* Fetch All Regular Invoices (Purane + Naye pakke bills) */
 $invoices = find_by_sql("
   SELECT i.id,
          i.invoice_no,
