@@ -14,7 +14,7 @@ $invoices = find_by_sql("
          i.payment_status
   FROM invoice i
   LEFT JOIN customer_master c ON c.id = i.customer_id
-  WHERE i.remarks = 'TAX_INVOICE'  /* 🔥 SIRF TAX INVOICE DIKHEGA 🔥 */
+  WHERE i.remarks NOT LIKE 'PROFORMA%' OR i.remarks IS NULL
   ORDER BY i.id DESC
 ");
 
