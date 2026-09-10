@@ -3,15 +3,18 @@ $page_title = 'Invoice List';
 require_once('includes/load.php');
 //page_require_level(2);
 
-/* Fetch invoice list */
+/* Fetch ONLY Tax Invoices */
 $invoices = find_by_sql("
   SELECT i.id,
          i.invoice_no,
          i.invoice_date,
          c.customer_name,
-         i.net_total
+         i.net_total,
+         i.remarks AS doc_type, 
+         i.payment_status
   FROM invoice i
   LEFT JOIN customer_master c ON c.id = i.customer_id
+  WHERE i.remarks = 'TAX_INVOICE'  /* 🔥 SIRF TAX INVOICE DIKHEGA 🔥 */
   ORDER BY i.id DESC
 ");
 
@@ -50,9 +53,16 @@ include_once('layouts/header.php');
     Invoice List
 </strong>
 
+<!-- CREATE INVOICE BUTTON -->
 <a href="invoice_create.php"
    class="btn btn-success btn-sm pull-right btn-round">
     <i class="fa fa-plus"></i> Create Invoice
+</a>
+
+<!-- 🔥 NAYA PROFORMA INVOICES BUTTON 🔥 -->
+<a href="proforma_list.php"
+   class="btn btn-warning btn-sm pull-right btn-round" style="margin-right: 10px;">
+    <i class="fa fa-list-alt"></i> Proforma Invoices
 </a>
 
 </div>
