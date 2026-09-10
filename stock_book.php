@@ -394,7 +394,7 @@ body {
 
             SUM(
                 CASE
-                    WHEN t.transaction_type IN (2,3,5,6)
+                    WHEN t.transaction_type IN (2,3,5,6,8)
                     THEN (t.quantity + COALESCE(t.free_qty, 0))
                     ELSE 0
                 END
