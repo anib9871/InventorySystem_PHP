@@ -90,13 +90,13 @@ if(isset($_POST['save_invoice'])){
             }
         }
 
-        /* 2. SET DOC TYPE AND SEQUENCE CATEGORY */
-        if($total_paid > 0) {
-            $doc_type = 'TAX_INVOICE';
+        /* 2. SET DOC TYPE FROM DROPDOWN (MANUAL SELECTION) */
+        $doc_type = isset($_POST['doc_type']) ? $_POST['doc_type'] : 'PROFORMA';
+        
+        if($doc_type == 'TAX_INVOICE') {
             $seq_category = 'invoice';
         } else {
-            $doc_type = 'PROFORMA';
-            $seq_category = 'proforma'; // Aap DB me is nam se entry bana lena ya ye khud bana lega
+            $seq_category = 'proforma'; 
         }
 
         /* ===== GET NEXT INVOICE NUMBER FROM SEQUENCE ===== */
@@ -146,22 +146,13 @@ if(isset($_POST['save_invoice'])){
 
         $fy_name = substr($fy[0]['fy_name'], 2);
         
-        // Proforma ke number ke aage PRO/ laga dete hain takki alag dikhe
+        // Proforma ke number ke aage PI/ laga dete hain takki alag dikhe
         if($doc_type == 'PROFORMA'){
             $inv_no = "PI/" . $fy_name . "/" . $next;
         } else {
             $inv_no = $fy_name . "/" . $next;
         }
 
-        /* CALCULATE TOTAL PAID */
-        $total_paid = 0;
-        if(isset($_POST['payment_amount']) && is_array($_POST['payment_amount'])){
-            foreach($_POST['payment_amount'] as $amt){
-                $total_paid += (float)$amt;
-            }
-        }
-
-        $doc_type = ($total_paid > 0) ? 'TAX_INVOICE' : 'PROFORMA';
         $cust = isset($_POST['customer_id']) ? (int)$_POST['customer_id'] : 0;
 
         if($system != 'inventory'){
@@ -1005,7 +996,16 @@ body {
         <input type="text" name="invoice_date" id="invoice_date" class="form-control" value="<?= date('d/M/Y'); ?>" autocomplete="off">
       </div>
 
-      <div class="col-xs-12 col-sm-6 col-md-3" style="margin-bottom: 4px;">
+      <!-- 🔥 NAYA DOC TYPE DROPDOWN 🔥 -->
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
+        <label class="pos-title-lbl">Doc Type</label>
+        <select name="doc_type" class="form-control">
+          <option value="PROFORMA" selected>Proforma Invoice</option>
+          <option value="TAX_INVOICE">Tax Invoice</option>
+        </select>
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-2" style="margin-bottom: 4px;">
         <label class="pos-title-lbl">Customer</label>
         <div class="input-group">
           <select name="customer_id" id="customer_select" class="form-control">
@@ -1038,7 +1038,7 @@ body {
         </button>
       </div>
 
-      <div class="col-xs-6 col-sm-3 col-md-3" style="margin-bottom: 4px;">
+      <div class="col-xs-6 col-sm-3 col-md-2" style="margin-bottom: 4px;">
         <label class="pos-title-lbl" style="visibility:hidden;">Payment</label>
         <button type="button" class="btn btn-info btn-top-trigger" data-toggle="modal" data-target="#paymentModal" style="background:#0284c7; border-color:#0284c7; color:#fff;">
           <i class="glyphicon glyphicon-credit-card" style="font-size: 11px;"></i> Payment (<span id="btnPaidDisplay">₹0.00</span>)
