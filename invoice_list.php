@@ -111,18 +111,32 @@ foreach($invoices as $inv){
 
 <td>
 
-<!-- Naya Code (Same tab mein open hoga) -->
+<!-- Print Button -->
 <a href="invoice_print.php?id=<?php echo $inv['id']; ?>"
    class="btn btn-danger btn-xs"
    title="Print">
     <i class="fa fa-print"></i>
 </a>
 
+<!-- Edit Button -->
 <a href="invoice_edit.php?id=<?php echo $inv['id']; ?>"
    class="btn btn-info btn-xs"
    title="Edit">
     <i class="fa fa-pencil"></i>
 </a>
+
+<!-- 🔥 Cancel Button (English Alert) 🔥 -->
+<?php if($inv['payment_status'] !== 'Cancelled'): ?>
+    <a href="invoice_cancel.php?id=<?php echo $inv['id']; ?>" 
+       class="btn btn-dark btn-xs" 
+       style="background-color: #333; color: white;" 
+       title="Cancel Invoice"
+       onclick="return confirm('Are you sure you want to cancel this Invoice? This action cannot be undone and stock will be reverted.');">
+        <i class="fa fa-ban"></i>
+    </a>
+<?php else: ?>
+    <span class="label label-default" style="margin-left: 5px;">Cancelled</span>
+<?php endif; ?>
 
 </td>
 </tr>
