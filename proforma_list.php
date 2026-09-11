@@ -189,6 +189,19 @@ include_once('layouts/header.php');
                                     <a href="invoice_edit.php?id=<?php echo $inv['id']; ?>" class="btn btn-info action-btn" title="Edit">
                                         <i class="glyphicon glyphicon-pencil"></i>
                                     </a>
+
+                                    <!-- 🔥 Cancel Button (Naya Code - English Alert) 🔥 -->
+                                    <?php if($inv['payment_status'] !== 'Cancelled' && $inv['payment_status'] !== 'Converted'): ?>
+                                        <a href="proforma_cancel.php?id=<?php echo $inv['id']; ?>" 
+                                           class="btn action-btn" 
+                                           style="background-color: #333; color: white;" 
+                                           title="Cancel Proforma"
+                                           onclick="return confirm('Are you sure you want to cancel this Proforma Invoice?');">
+                                            <i class="glyphicon glyphicon-ban-circle"></i>
+                                        </a>
+                                    <?php elseif($inv['payment_status'] === 'Cancelled'): ?>
+                                        <span class="status-badge" style="background: #e5e7eb; color: #374151; display:inline-block; margin-top:5px; font-size:10px;">Cancelled</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php } ?>
