@@ -21,21 +21,15 @@ if(!$invoice_data) die("Invoice not found");
 $invoice = $invoice_data[0];
 
 /* PROFORMA VS TAX INVOICE TITLE LOGIC */
-$doc_type = strtoupper($invoice['remarks'] ?? '');
-$payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
+$doc_type = strtoupper(trim($invoice['remarks'] ?? ''));
 
-// Agar payment Paid ya Partial ho chuki hai (amount > 0), toh Tax Invoice dikhao
-if ($payment_status === 'paid' || $invoice['paid_amount'] > 0) {
-    $is_proforma = false;
-} else {
-    // Agar payment nahi hui hai, tabhi Proforma check karo
-    $is_proforma = ($doc_type === 'PROFORMA' || ($invoice['paid_amount'] == 0 && $payment_status === 'unpaid'));
-}
-
-if ($is_proforma) {
+// Naya Logic: Ab bill unpaid ho ya paid, jo Doc Type form mein select hua hai wahi print hoga!
+if (strpos($doc_type, 'PROFORMA') !== false) {
+    $is_proforma = true;
     $title_text = 'PROFORMA INVOICE';
     $title_color = '#d97706'; 
 } else {
+    $is_proforma = false;
     $title_text = 'TAX INVOICE';
     $title_color = '#2563eb'; 
 }
