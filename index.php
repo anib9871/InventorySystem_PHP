@@ -217,7 +217,14 @@
       height: auto;
       z-index: 5;
       filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
+    
   }
+
+  /* Sweetalert ko login container se aage laane ke liye */
+.swal2-container {
+    z-index: 999999 !important; 
+}
+  
 
   /* ------------------- LIVE ANIMATIONS ------------------- */
   .anim-character-body {
