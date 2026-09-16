@@ -1,7 +1,17 @@
 <?php
   ob_start();
   require_once('includes/load.php');
-  if($session->isUserLoggedIn(true)) { redirect('home.php', false);}
+
+  /* SUPERADMIN ALREADY LOGIN */
+  if(isset($_SESSION['superadmin_login'])){
+    header("Location: superadmin_dashboard.php");
+    exit();
+  }
+
+  /* NORMAL USER ALREADY LOGIN */
+  if($session->isUserLoggedIn(true)){
+    redirect('home.php', false);
+  }
 ?>
 <?php include_once('layouts/header.php'); ?>
 
@@ -12,13 +22,12 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* 🚫 Lock Screen Page - Absolute No Scroll */
   html, body {
       width: 100vw;
       height: 100vh;
       overflow: hidden !important;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #0f172a; /* Deep Navy Slate */
+      background: #0f172a;
   }
 
   .login-container {
@@ -35,12 +44,16 @@
       background: radial-gradient(circle at 80% 20%, #1a0505 0%, #0f172a 60%, #020617 100%);
   }
 
-  /* Crimson Red & Navy Background Ambient Glows */
+  /* 🔥 YAHAN ADD KIYA HAI SWEETALERT KO AAGE LAANE WALA CSS 🔥 */
+  .swal2-container {
+      z-index: 999999 !important; 
+  }
+
   .bg-glow-1 {
       position: absolute;
       width: 500px;
       height: 500px;
-      background: rgba(168, 0, 0, 0.18); /* Crimson Red Glow */
+      background: rgba(168, 0, 0, 0.18);
       border-radius: 50%;
       filter: blur(120px);
       top: -10%;
@@ -52,7 +65,7 @@
       position: absolute;
       width: 450px;
       height: 450px;
-      background: rgba(19, 28, 42, 0.25); /* Deep Navy Glow */
+      background: rgba(19, 28, 42, 0.25);
       border-radius: 50%;
       filter: blur(120px);
       bottom: -10%;
@@ -60,13 +73,12 @@
       pointer-events: none;
   }
 
-  /* Main Card Glassmorphism Frame with Crimson Divider */
   .main-card-frame {
       position: relative;
       width: 100%;
       max-width: 900px;
-      height: 500px; /* Fixed Height = No Scroll */
-      background: rgba(19, 28, 42, 0.85); /* Deep Navy */
+      height: 500px;
+      background: rgba(19, 28, 42, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-radius: 24px;
@@ -77,7 +89,6 @@
       z-index: 10;
   }
 
-  /* Left Side: Form Section */
   .form-section {
       flex: 1;
       padding: 40px 45px;
@@ -150,7 +161,7 @@
   }
 
   .form-control:focus {
-      border-color: #a80000 !important; /* Crimson Red Focus */
+      border-color: #a80000 !important;
       background: rgba(15, 23, 42, 0.95) !important;
       box-shadow: 0 0 0 4px rgba(168, 0, 0, 0.25) !important;
   }
@@ -159,7 +170,6 @@
       color: #ef4444;
   }
 
-  /* Crimson Red Accent Button */
   .btn-submit {
       width: 100%;
       height: 48px;
@@ -187,11 +197,10 @@
       background: linear-gradient(135deg, #c40000 0%, #8e0000 100%);
   }
 
-  /* Right Side: Live Illustration Section */
   .illustration-section {
       flex: 1.1;
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border-left: 2px solid #a80000; /* Red-Navy Border Line */
+      border-left: 2px solid #a80000;
       position: relative;
       display: flex;
       align-items: flex-end;
@@ -217,16 +226,8 @@
       height: auto;
       z-index: 5;
       filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
-    
   }
 
-  /* Sweetalert ko login container se aage laane ke liye */
-.swal2-container {
-    z-index: 999999 !important; 
-}
-  
-
-  /* ------------------- LIVE ANIMATIONS ------------------- */
   .anim-character-body {
       animation: characterBreathe 3.5s infinite ease-in-out;
       transform-origin: bottom center;
@@ -299,7 +300,7 @@
 
             <?php if(function_exists('display_msg')) { echo display_msg($msg); } ?>
 
-            <form id="loginForm" method="post" action="auth_v2.php">
+            <form id="loginFormV2" method="post" action="auth_v2.php">
 
                 <div class="form-group">
                     <label for="username">Username / Email</label>
@@ -317,51 +318,43 @@
                     </div>
                 </div>
 
-                <button type="submit" id="submitBtn" class="btn-submit">
+                <button type="submit" id="submitBtnV2" class="btn-submit">
                     Log In <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
             </form>
         </div>
 
-        <!-- RIGHT COLUMN: LIVE ANIMATED VECTOR ART (Red + Navy Theme) -->
+        <!-- RIGHT COLUMN: LIVE ANIMATED VECTOR ART -->
         <div class="illustration-section">
             <div class="illustration-backdrop"></div>
 
             <svg class="pos-vector-art" viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-                
                 <path d="M50 220 Q 20 180 60 140 Q 120 100 200 130 Q 280 90 350 150 Q 390 200 350 250 Z" fill="#1e293b" opacity="0.6"/>
 
-                <!-- Live Character Group -->
                 <g class="anim-character-body">
-                    <!-- Crimson Red Jacket with Navy Accents -->
                     <path d="M 240 180 Q 280 150 320 180 L 340 300 L 220 300 Z" fill="#a80000" />
                     <polygon points="270,180 290,180 280,210" fill="#ffffff" />
                     <polygon points="260,180 270,180 275,200" fill="#1e293b" />
                     <polygon points="290,180 300,180 285,200" fill="#1e293b" />
 
-                    <!-- Neck & Head -->
                     <rect x="272" y="160" width="16" height="22" rx="4" fill="#fed7aa" />
                     <path d="M 255 140 C 255 115, 305 115, 305 140 C 305 165, 255 165, 255 140 Z" fill="#fed7aa" />
 
-                    <!-- Hair -->
                     <path d="M 250 135 Q 260 95 295 105 Q 315 115 310 135 Q 295 120 275 125 Z" fill="#0f172a" />
 
-                    <!-- Eyes & Smile -->
                     <g class="anim-eyes">
                         <circle cx="270" cy="138" r="3" fill="#0f172a" />
                         <circle cx="288" cy="138" r="3" fill="#0f172a" />
                     </g>
                     <path d="M 272 150 Q 279 156 286 150" stroke="#0f172a" stroke-width="2" stroke-linecap="round" fill="none" />
 
-                    <!-- Hand -->
                     <g class="anim-hand">
                         <path d="M 240 200 Q 200 195 175 200" stroke="#fed7aa" stroke-width="12" stroke-linecap="round" fill="none" />
                         <circle cx="172" cy="200" r="7" fill="#fed7aa" />
                     </g>
                 </g>
 
-                <!-- Counter Desk & POS Terminal -->
                 <rect x="180" y="240" width="200" height="70" rx="8" fill="#1e293b" />
                 <rect x="175" y="235" width="210" height="12" rx="4" fill="#334155" />
                 <rect x="175" y="247" width="210" height="4" fill="#a80000" />
@@ -370,7 +363,6 @@
                 <rect x="205" y="200" width="45" height="12" rx="2" fill="#1e293b" />
                 <rect x="222" y="185" width="10" height="18" fill="#334155" />
 
-                <!-- POS Screen (Crimson Red Glow) -->
                 <g id="posScreenGroup">
                     <rect x="185" y="125" width="70" height="60" rx="6" fill="#0f172a" transform="rotate(-8 220 155)" />
                     <rect class="anim-pos-screen" x="190" y="130" width="60" height="50" rx="4" fill="#1e293b" stroke="#a80000" stroke-width="1.5" transform="rotate(-8 220 155)" />
@@ -382,7 +374,6 @@
                     
                     <line class="anim-pos-line" x1="190" y1="140" x2="250" y2="140" stroke="#ef4444" stroke-width="2" transform="rotate(-8 220 155)" />
                 </g>
-
             </svg>
         </div>
 
@@ -391,7 +382,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function() {
-    var form = document.getElementById("loginForm");
+    var form = document.getElementById("loginFormV2");
     var usernameInput = document.getElementById("usernameInput");
     var passwordInput = document.getElementById("passwordInput");
     var posScreen = document.getElementById("posScreenGroup");
@@ -416,20 +407,20 @@ window.addEventListener("DOMContentLoaded", function() {
 
     if (form) {
         form.addEventListener("submit", function() {
-            var btn = document.getElementById("submitBtn");
+            var btn = document.getElementById("submitBtnV2");
             btn.innerHTML = 'Authenticating... <i class="fa-solid fa-spinner fa-spin"></i>';
         });
     }
 
-var urlParams = new URLSearchParams(window.location.search);
+    var urlParams = new URLSearchParams(window.location.search);
     var msg = urlParams.get('msg');
 
-    // SweetAlert Reusable Toast Mixin
+    // 🔥 YAHAN TIMEOUT BADHAYA HAI AUR NAYA DESIGN ADD KIYA HAI 🔥
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
-        timer: 6000, // Thoda time badha diya (6 sec) taaki user reason padh sake
+        timer: 6000, 
         timerProgressBar: true,
         didOpen: (toast) => {
             toast.addEventListener('mouseenter', Swal.stopTimer);
@@ -452,6 +443,7 @@ var urlParams = new URLSearchParams(window.location.search);
             html: '<span style="font-size: 13px;"><b>Reason:</b> Security timeout or browser tab was closed. For your protection, please authenticate again.</span>'
         });
     }
+});
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
