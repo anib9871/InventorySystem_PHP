@@ -48,14 +48,13 @@ body {
 }
 
 /* TABLE STYLING & SORT ARROWS FIX */
-/* TABLE STYLING & SORT ARROWS FIX */
 #stockTable th {
     background: #0f172a !important;
     color: #fff !important;
     cursor: pointer;
-    position: sticky; /* Nayi line: Header ko rokne ke liye */
-    top: 0;           /* Nayi line: Top par set karne ke liye */
-    z-index: 10;      /* Nayi line: Data ke upar dikhne ke liye */
+    position: sticky; 
+    top: 0;           
+    z-index: 10;      
     padding-right: 25px !important;
     font-size: 12px;
     white-space: nowrap;
@@ -146,7 +145,7 @@ body {
     background-color: #0f172a !important;
 }
 
-/* GREEN BUTTON MATCHED WITH ORGANIZATION MASTER */
+/* BUTTONS STYLING */
 .btn-generate-report {
     background-color: #00a65a !important;
     border-color: #00a65a !important;
@@ -163,6 +162,24 @@ body {
     border-color: #008d4c !important;
     color: #ffffff !important;
 }
+
+.btn-excel-export {
+    background-color: #107c41 !important; /* Authentic Excel Green */
+    border-color: #107c41 !important;
+    color: #ffffff !important;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 18px;
+    transition: all 0.2s ease;
+}
+
+.btn-excel-export:hover {
+    background-color: #0c5e31 !important;
+    border-color: #0c5e31 !important;
+    color: #ffffff !important;
+}
+
 
 /* SEARCH BAR FLEX LAYOUT (DESKTOP) */
 .search-action-bar {
@@ -186,6 +203,12 @@ body {
         align-items: stretch !important;
         gap: 10px !important;
     }
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
     .search-box {
         max-width: 100% !important; /* Mobile par full width lega */
     }
@@ -197,7 +220,7 @@ body {
         padding: 14px !important;
         border-radius: 8px;
     }
-    .btn-generate-report {
+    .btn-generate-report, .btn-excel-export {
         width: 100% !important;
         margin-top: 0px !important;
         text-align: center !important;
@@ -246,7 +269,8 @@ body {
     .reorder-pencil, 
     .web-link,
     .tooltip,
-    .dataTables_filter {
+    .dataTables_filter,
+    .action-buttons {
         display: none !important;
     }
 
@@ -368,12 +392,20 @@ body {
             <p class="text-muted m-0" style="font-size: 13px;"><?= htmlspecialchars($company_name); ?> - Inventory & Reorder Level Tracking</p>
         </div>
 
-     <!-- SEARCH BAR & GENERATE REPORT BUTTON -->
+     <!-- SEARCH BAR & ACTION BUTTONS -->
         <div class="search-action-bar mb-3 no-print">
             <input type="text" id="stockSearch" class="form-control search-box" placeholder="🔍 Search Product Name...">
-            <button type="button" onclick="window.print();" class="btn btn-generate-report m-0">
-                <i class="fa fa-file-pdf-o mr-1"></i> Generate Report
-            </button>
+            
+            <div class="action-buttons d-flex gap-2" style="gap: 10px;">
+                <!-- NEW EXCEL EXPORT BUTTON -->
+                <button type="button" onclick="exportToExcel('stockTable', 'Stock_Report_<?= date('d-M-Y'); ?>')" class="btn btn-excel-export m-0">
+                    <i class="fa fa-file-excel-o mr-1"></i> Export to Excel
+                </button>
+                
+                <button type="button" onclick="window.print();" class="btn btn-generate-report m-0">
+                    <i class="fa fa-file-pdf-o mr-1"></i> Generate Report
+                </button>
+            </div>
         </div>
 
         <?php
@@ -524,7 +556,7 @@ body {
                             </a>
                         </td>
 
-                        <!-- Website Link (Hidden in PDF) -->
+                        <!-- Website Link (Hidden in PDF and Excel) -->
                         <td class="text-center no-print">
                             <?php if(!empty($row['website_link'])): ?>
                                 <a href="<?= htmlspecialchars($row['website_link']); ?>" target="_blank" class="web-link">
@@ -619,6 +651,32 @@ $(document).ready(function(){
         container: 'body'
     });
 });
+
+// ==========================================
+// EXCEL EXPORT FUNCTION
+// ==========================================
+function exportToExcel(tableID, filename = 'Stock_Report'){
+    // 1. Table ka clone banayenge taaki original table display me disturb na ho
+    let tableSelect = document.getElementById(tableID);
+    let clonedTable = tableSelect.cloneNode(true);
+
+    // 2. Faltu columns aur elements ko remove karenge (e.g. Website link, edit icons)
+    let noPrintElements = clonedTable.querySelectorAll('.no-print, .reorder-pencil');
+    noPrintElements.forEach(el => el.remove());
+
+    // 3. HTML convert karke Blob me set karenge (UTF-8 format ke liye)
+    let tableHTML = clonedTable.outerHTML;
+    let blob = new Blob(['\ufeff', tableHTML], { type: 'application/vnd.ms-excel' });
+    
+    // 4. Download link create karke trigger kar denge
+    let downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = filename + ".xls";
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
 </script>
 
 <?php include_once('layouts/footer.php'); ?>
