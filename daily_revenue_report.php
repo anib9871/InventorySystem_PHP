@@ -39,22 +39,28 @@ foreach ($formats as $format) {
 
 /* ── PDF FILE SAVE AS NAME ── */
 $pdf_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
+
 /* ── SESSION & ROLES ── */
 $role_id       = $_SESSION['role_id'] ?? 0;
 $user_center   = $_SESSION['center_id'] ?? 0;
 $center_filter = $_POST['center_id'] ?? $_GET['center_id'] ?? '';
 
 /* ══════════════════════════════════════════════════════════
-   COMBINED REVENUE & DETAILED TRANSACTION QUERY
+   COMBINED REVENUE, PURCHASE & EXPENSES QUERY
 ══════════════════════════════════════════════════════════ */
 $txn_center_cond = "";
+$exp_center_cond = "";
+
 if ($role_id == 3) {
     $txn_center_cond = " AND t.center_id = '{$user_center}'";
+    $exp_center_cond = " AND e.center_id = '{$user_center}'";
 } elseif ($role_id == 2 && !empty($center_filter)) {
     $txn_center_cond = " AND t.center_id = '{$center_filter}'";
+    $exp_center_cond = " AND e.center_id = '{$center_filter}'";
 }
 
 $sql = "
+/* 1. SALES */
 SELECT 
     DATE(t.entry_date) AS txn_date,
     'Sale' AS txn_type,
@@ -71,6 +77,7 @@ GROUP BY t.bill_indent_no, DATE(t.entry_date), cm.customer_name, i.id
 
 UNION ALL
 
+/* 2. PURCHASES */
 SELECT 
     DATE(t.entry_date) AS txn_date,
     'Purchase' AS txn_type,
@@ -82,9 +89,24 @@ SELECT
 FROM transaction_master t
 LEFT JOIN supplier_master sm ON sm.id = t.supplier_id
 WHERE t.transaction_type = 1 
-  AND t.from_dept = 'SUPPLIER'  /* <-- Exact Filter: Sirf Asli Purchase Aayegi */
+  AND t.from_dept = 'SUPPLIER'
   AND DATE(t.entry_date) BETWEEN '{$from}' AND '{$to}' {$txn_center_cond}
 GROUP BY t.bill_indent_no, DATE(t.entry_date), sm.supplier_name
+
+UNION ALL
+
+/* 3. DIRECT EXPENSES */
+SELECT 
+    e.expense_date AS txn_date,
+    'Expense' AS txn_type,
+    IFNULL(NULLIF(e.reference_no, ''), CONCAT('EXP-', e.id)) AS ref_no,
+    e.id AS doc_id,
+    CONCAT(IFNULL(em.category_name, 'General Expense'), IF(e.description != '', CONCAT(' (', e.description, ')'), '')) AS party_name,
+    0 AS income_amount,
+    e.amount AS expense_amount
+FROM expenses e
+LEFT JOIN expense_master em ON em.id = e.category_id
+WHERE e.expense_date BETWEEN '{$from}' AND '{$to}' {$exp_center_cond}
 
 ORDER BY txn_date DESC, ref_no ASC
 ";
@@ -97,12 +119,12 @@ $grand_expenditure = 0;
 
 if (!empty($detailed_data)) {
     foreach ($detailed_data as $row) {
-        $grand_income += $row['income_amount'];
-        $grand_expenditure += $row['expense_amount'];
+        $grand_income += (float)$row['income_amount'];
+        $grand_expenditure += (float)$row['expense_amount'];
     }
 }
 $net_revenue = $grand_income - $grand_expenditure;
-?> <!-- Yahan PHP tag close karein -->
+?>
 
 <?php if ($is_pdf): ?>
 <!DOCTYPE html>
@@ -180,7 +202,7 @@ $net_revenue = $grand_income - $grand_expenditure;
             <div class="value" style="color:#2563eb;">₹ <?= number_format($grand_income, 2) ?></div>
         </div>
         <div class="summary-card exp">
-            <div class="title">Total Expenditure (Purchase + Courier)</div>
+            <div class="title">Total Expenditure (Purchase + Expenses)</div>
             <div class="value" style="color:#dc2626;">₹ <?= number_format($grand_expenditure, 2) ?></div>
         </div>
         <div class="summary-card net">
@@ -191,23 +213,23 @@ $net_revenue = $grand_income - $grand_expenditure;
         </div>
     </div>
 
-    <!-- 1. Combined Unified Table -->
-    <h4 style="font-size:13px; font-weight:700; color:#334155; text-transform:uppercase; margin-bottom:8px;">Transaction Breakdown</h4>
+    <!-- Unified Transactions Table -->
+    <h4 style="font-size:13px; font-weight:700; color:#334155; text-transform:uppercase; margin-bottom:8px;">Transaction & Expense Breakdown</h4>
     <div class="rpt-tbl-wrap" style="background:#fff; border-radius:8px; padding:10px; box-shadow:0 1px 6px rgba(0,0,0,.07);">
         <?php if (empty($detailed_data)): ?>
-            <p style="color:#94a3b8; text-align:center; padding: 20px;">No transactions found for the selected period.</p>
+            <p style="color:#94a3b8; text-align:center; padding: 20px;">No transactions or expenses found for the selected period.</p>
         <?php else: ?>
             <div style="overflow-x:auto;">
                 <table class="rpt-tbl">
                     <thead>
                         <tr>
                             <th width="10%">Date</th>
-                            <th width="8%" style="text-align:center;">Type</th>
-                            <th width="15%">Invoice / GRN No</th>
-                            <th width="25%">Party Name</th>
-                            <th width="14%" style="text-align:right;">Income / Sales (₹)</th>
-                            <th width="14%" style="text-align:right;">Expenditure / Purchase (₹)</th>
-                            <th width="14%" style="text-align:right;">Net Flow (₹)</th>
+                            <th width="9%" style="text-align:center;">Type</th>
+                            <th width="16%">Ref / Invoice / GRN</th>
+                            <th width="25%">Party / Details</th>
+                            <th width="13%" style="text-align:right;">Income / Sales (₹)</th>
+                            <th width="14%" style="text-align:right;">Expenditure (₹)</th>
+                            <th width="13%" style="text-align:right;">Net Flow (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -219,19 +241,23 @@ $net_revenue = $grand_income - $grand_expenditure;
                             <td style="text-align:center;">
                                 <?php if($dt['txn_type'] == 'Sale'): ?>
                                     <span style="background:#dbeafe; color:#1d4ed8; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">SALE</span>
-                                <?php else: ?>
+                                <?php elseif($dt['txn_type'] == 'Purchase'): ?>
                                     <span style="background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">PURCHASE</span>
+                                <?php else: ?>
+                                    <span style="background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">EXPENSE</span>
                                 <?php endif; ?>
                             </td>
-                           <td>
+                            <td>
                                 <?php if($dt['txn_type'] == 'Sale'): ?>
-                                   <a href="javascript:void(0);" onclick="openDocModal('invoice_print.php?id=<?= $dt['doc_id'] ?>', 'Sale Invoice: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
+                                    <a href="javascript:void(0);" onclick="openDocModal('invoice_print.php?id=<?= $dt['doc_id'] ?>', 'Sale Invoice: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
-                                <?php else: ?>
+                                <?php elseif($dt['txn_type'] == 'Purchase'): ?>
                                     <a href="javascript:void(0);" onclick="openDocModal('print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>', 'Purchase GRN: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
+                                <?php else: ?>
+                                    <span style="font-weight:600; color:#475569;"><?= htmlspecialchars($dt['ref_no']) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td><?= htmlspecialchars($dt['party_name']) ?></td>
@@ -242,7 +268,7 @@ $net_revenue = $grand_income - $grand_expenditure;
                                 <?= $dt['expense_amount'] > 0 ? '₹ ' . number_format($dt['expense_amount'], 2) : '-' ?>
                             </td>
                             <td style="text-align:right; font-weight:700; color:<?= $row_net >= 0 ? '#16a34a' : '#dc2626' ?>;">
-                                <?= $row_net >= 0 ? '₹ ' . number_format($row_net, 2) : '₹ ' . number_format($row_net, 2) ?>
+                                ₹ <?= number_format($row_net, 2) ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -261,7 +287,6 @@ $net_revenue = $grand_income - $grand_expenditure;
             </div>
         <?php endif; ?>
     </div>
-
 </div>
 
 <script>
