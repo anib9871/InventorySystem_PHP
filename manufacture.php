@@ -326,7 +326,7 @@ $history_data = find_by_sql("
                                         <?= (int)$row['quantity']; ?> Pcs
                                     </td>
                                     <td class="text-center">
-                                        <!-- EDIT/REVERSE BUTTON (Triggers Modal) -->
+                                        <!-- REVERSE BUTTON (Triggers Modal) -->
                                         <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editModal<?= $row['bill_indent_no']; ?>" title="Reverse Quantity">
                                             <i class="glyphicon glyphicon-pencil"></i>
                                         </button>
