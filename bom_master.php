@@ -199,7 +199,7 @@ include_once('layouts/header.php');
                         <tr>
                             <th width="45" class="text-center">#</th>
                             <th>Finished Product Name</th>
-                            <th class="text-center" width="120">Action</th>
+                            <th class="text-center" width="150">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,10 +214,17 @@ include_once('layouts/header.php');
                                         <button type="button" class="btn btn-success btn-xs equal-btn" data-toggle="modal" data-target="#viewModal_<?php echo $r['product_id']; ?>" title="View Details">
                                             <i class="glyphicon glyphicon-eye-open"></i>
                                         </button>
+                                        
+                                        <!-- Copy Modal Trigger -->
+                                        <button type="button" class="btn btn-warning btn-xs equal-btn" data-toggle="modal" data-target="#copyModal_<?php echo $r['product_id']; ?>" title="Copy BOM to another product">
+                                            <i class="glyphicon glyphicon-duplicate"></i>
+                                        </button>
+
                                         <!-- Edit Modal Trigger -->
                                         <button type="button" class="btn btn-primary btn-xs equal-btn" data-toggle="modal" data-target="#editModal_<?php echo $r['product_id']; ?>" title="Edit BOM">
                                             <i class="glyphicon glyphicon-pencil"></i>
                                         </button>
+                                        
                                         <!-- Delete Button -->
                                         <button type="button" onclick="confirmDelete(<?php echo $r['product_id']; ?>)" class="btn btn-danger btn-xs equal-btn" title="Delete">
                                             <i class="glyphicon glyphicon-trash"></i>
@@ -259,27 +266,27 @@ include_once('layouts/header.php');
                         <input type="text" list="finished_products_list" class="form-control finished-search" placeholder="Type to select product..." required autocomplete="off">
                     </div>
 
-<div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
-    <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
-    <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
-        <i class="glyphicon glyphicon-plus"></i> Add Item
-    </button>
-</div>
+                    <div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+                        <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
+                        <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+                            <i class="glyphicon glyphicon-plus"></i> Add Item
+                        </button>
+                    </div>
 
-<div class="bom_rows_container">
-    <div class="row bom_row" style="margin-bottom: 6px;">
-        <div class="col-xs-7" style="padding-right: 3px;">
-            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
-            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
-        </div>
-        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
-            <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
-        </div>
-        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
-            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
-        </div>
-    </div>
-</div>
+                    <div class="bom_rows_container">
+                        <div class="row bom_row" style="margin-bottom: 6px;">
+                            <div class="col-xs-7" style="padding-right: 3px;">
+                                <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
+                                <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
+                            </div>
+                            <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+                                <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
+                            </div>
+                            <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+                                <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
                 <div class="modal-footer modal-footer-compact">
@@ -291,26 +298,26 @@ include_once('layouts/header.php');
     </div>
 </div>
 
-<!-- ================= EDIT & VIEW MODALS ================= -->
+<!-- ================= VIEW, EDIT & COPY MODALS ================= -->
 <?php if(!empty($bom_products)): ?>
     <?php foreach($bom_products as $bp): 
         $current_pid = (int)$bp['product_id'];
         $current_pname = $bp['name'];
 
- $items = find_by_sql("
-    SELECT 
-        b.raw_product_id,
-        p.name AS raw_name,
-        p.buy_price,
-        p.buy_type,
-        p.is_bom,
-        g.gst_percent,
-        b.quantity
-    FROM bom b
-    JOIN products p ON p.id = b.raw_product_id
-    LEFT JOIN gst_master g ON g.id = p.gst_id
-    WHERE b.product_id = '{$current_pid}'
-");
+        $items = find_by_sql("
+            SELECT 
+                b.raw_product_id,
+                p.name AS raw_name,
+                p.buy_price,
+                p.buy_type,
+                p.is_bom,
+                g.gst_percent,
+                b.quantity
+            FROM bom b
+            JOIN products p ON p.id = b.raw_product_id
+            LEFT JOIN gst_master g ON g.id = p.gst_id
+            WHERE b.product_id = '{$current_pid}'
+        ");
     ?>
 
     <!-- 1. VIEW MODAL -->
@@ -341,18 +348,18 @@ include_once('layouts/header.php');
                 <div class="modal-body modal-body-compact">
                     <div class="table-responsive" style="border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden;">
                         <table class="table table-bordered table-striped" id="bomDetailsTable_<?php echo $current_pid; ?>">
-                           <thead>
-    <tr>
-        <th width="35" class="text-center">#</th>
-        <th>Raw Material</th>
-        <th class="text-center">Qty</th>
-        <th class="text-right">Unit Price</th>
-        <th class="text-center">GST %</th>
-        <th class="text-center">Current Stock</th>
-        <th class="text-center">Status</th>
-        <th class="text-right">Total Costing</th>
-    </tr>
-</thead>
+                            <thead>
+                                <tr>
+                                    <th width="35" class="text-center">#</th>
+                                    <th>Raw Material</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-right">Unit Price</th>
+                                    <th class="text-center">GST %</th>
+                                    <th class="text-center">Current Stock</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-right">Total Costing</th>
+                                </tr>
+                            </thead>
                             <tbody>
                             <?php
                             $grand_total = 0;
@@ -360,19 +367,19 @@ include_once('layouts/header.php');
 
                             if(!empty($items)){
                                 foreach($items as $x){
-                           $qty = (float)$x['quantity'];
-$gst = (float)$x['gst_percent'];
-$base_price = (float)$x['buy_price'];
+                                    $qty = (float)$x['quantity'];
+                                    $gst = (float)$x['gst_percent'];
+                                    $base_price = (float)$x['buy_price'];
 
-if ((int)$x['is_bom'] === 1 && $base_price <= 0) {
-    $unit_price_inclusive = get_product_calculated_cost((int)$x['raw_product_id']);
-} else {
-    if ($x['buy_type'] == "exclusive") {
-        $unit_price_inclusive = $base_price * (1 + ($gst / 100));
-    } else {
-        $unit_price_inclusive = $base_price;
-    }
-}
+                                    if ((int)$x['is_bom'] === 1 && $base_price <= 0) {
+                                        $unit_price_inclusive = get_product_calculated_cost((int)$x['raw_product_id']);
+                                    } else {
+                                        if ($x['buy_type'] == "exclusive") {
+                                            $unit_price_inclusive = $base_price * (1 + ($gst / 100));
+                                        } else {
+                                            $unit_price_inclusive = $base_price;
+                                        }
+                                    }
 
                                     $line_total = $unit_price_inclusive * $qty;
                                     $grand_total += $line_total;
@@ -430,7 +437,6 @@ if ((int)$x['is_bom'] === 1 && $base_price <= 0) {
                                 }
                             } 
                             ?>
-
                                 <tr>
                                     <td colspan="7" class="text-right" style="background: #f8fafc; font-weight: bold; font-size: 11px;">
                                         Grand Total (Incl GST)
@@ -472,52 +478,113 @@ if ((int)$x['is_bom'] === 1 && $base_price <= 0) {
                             <input type="text" class="form-control" value="<?php echo htmlspecialchars($current_pname); ?>" readonly style="background:#f1f5f9; font-weight:600;">
                         </div>
 
-                     <div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
-    <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
-    <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
-        <i class="glyphicon glyphicon-plus"></i> Add Item
-    </button>
-</div>
+                        <div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+                            <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials Required</label>
+                            <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+                                <i class="glyphicon glyphicon-plus"></i> Add Item
+                            </button>
+                        </div>
 
-<div class="bom_rows_container">
-<?php 
-    if(!empty($items)){
-        foreach($items as $idx => $er){
-?>
-    <div class="row bom_row" style="margin-bottom: 6px;">
-        <div class="col-xs-7" style="padding-right: 3px;">
-            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
-            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." value="<?php echo htmlspecialchars($er['raw_name']); ?>" required autocomplete="off">
-        </div>
-        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
-            <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
-        </div>
-        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
-            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
-        </div>
-    </div>
-<?php 
-        }
-    } else { 
-?>
-    <div class="row bom_row" style="margin-bottom: 6px;">
-        <div class="col-xs-7" style="padding-right: 3px;">
-            <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
-            <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
-        </div>
-        <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
-            <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
-        </div>
-        <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
-            <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
-        </div>
-    </div>
-<?php } ?>
-</div>
+                        <div class="bom_rows_container">
+                        <?php 
+                            if(!empty($items)){
+                                foreach($items as $idx => $er){
+                        ?>
+                            <div class="row bom_row" style="margin-bottom: 6px;">
+                                <div class="col-xs-7" style="padding-right: 3px;">
+                                    <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
+                                    <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." value="<?php echo htmlspecialchars($er['raw_name']); ?>" required autocomplete="off">
+                                </div>
+                                <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+                                    <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
+                                </div>
+                                <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+                                    <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+                                </div>
+                            </div>
+                        <?php 
+                                }
+                            } else { 
+                        ?>
+                            <div class="row bom_row" style="margin-bottom: 6px;">
+                                <div class="col-xs-7" style="padding-right: 3px;">
+                                    <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="">
+                                    <input type="text" list="raw_products_list" class="form-control raw-search" placeholder="Search Raw Material..." required autocomplete="off">
+                                </div>
+                                <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+                                    <input type="number" step="0.01" name="qty[]" class="form-control" placeholder="Qty" required>
+                                </div>
+                                <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+                                    <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        </div>
                     </div>
                     <div class="modal-footer modal-footer-compact">
                         <button type="button" class="btn btn-clear btn-custom" data-dismiss="modal">Cancel</button>
                         <button type="submit" name="save_bom" class="btn btn-primary-custom btn-custom">Update BOM</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. COPY MODAL -->
+    <div class="modal fade" id="copyModal_<?php echo $current_pid; ?>" tabindex="-1" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-compact-form" role="document">
+            <div class="modal-content" style="border-radius: 8px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.18);">
+                <div class="modal-header modal-header-compact" style="background-color: #fef3c7;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" style="color: #b45309;">
+                        <i class="glyphicon glyphicon-duplicate" style="margin-right: 5px;"></i> COPY BOM FROM: <?php echo htmlspecialchars($current_pname); ?>
+                    </h4>
+                </div>
+
+                <form method="post" action="bom_master.php">
+                    <div class="modal-body modal-body-compact">
+                        
+                        <input type="hidden" name="product_id" class="selected_product_id" value="">
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label>Select NEW Target Product <span class="text-danger">*</span></label>
+                            <input type="text" list="finished_products_list" class="form-control finished-search" placeholder="Type to select product to paste into..." required autocomplete="off">
+                            <small class="text-muted" style="font-size: 10px;">Select the product where you want to copy these materials.</small>
+                        </div>
+
+                        <div style="margin-top: 14px; margin-bottom: 8px; display:flex; justify-content:space-between; align-items:center;">
+                            <label style="color: #0f172a; font-size: 11px; margin:0; font-weight:700; text-transform:uppercase;">Raw Materials (Copied)</label>
+                            <button type="button" class="btn btn-xs btn-primary-custom addRowBtn" style="font-size: 11px; padding: 3px 8px; border-radius: 4px;">
+                                <i class="glyphicon glyphicon-plus"></i> Add Item
+                            </button>
+                        </div>
+
+                        <div class="bom_rows_container">
+                        <?php 
+                            if(!empty($items)){
+                                foreach($items as $idx => $er){
+                        ?>
+                            <div class="row bom_row" style="margin-bottom: 6px;">
+                                <div class="col-xs-7" style="padding-right: 3px;">
+                                    <input type="hidden" name="raw_product_id[]" class="raw_id_hidden" value="<?php echo $er['raw_product_id']; ?>">
+                                    <input type="text" list="raw_products_list" class="form-control raw-search" value="<?php echo htmlspecialchars($er['raw_name']); ?>" required autocomplete="off">
+                                </div>
+                                <div class="col-xs-4" style="padding-left: 3px; padding-right: 3px;">
+                                    <input type="number" step="0.01" name="qty[]" value="<?php echo $er['quantity']; ?>" class="form-control" placeholder="Qty" required>
+                                </div>
+                                <div class="col-xs-1" style="padding-left: 0; padding-right: 15px; text-align: center;">
+                                    <button type="button" class="btn btn-danger btn-xs removeRow" style="background:#ef4444; border-radius: 4px; height: 34px; width: 100%;" title="Remove">-</button>
+                                </div>
+                            </div>
+                        <?php 
+                                }
+                            }
+                        ?>
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-compact">
+                        <button type="button" class="btn btn-clear btn-custom" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="save_bom" class="btn btn-warning btn-custom" style="background-color:#f59e0b; border-color:#d97706; color:white;">Save Copied BOM</button>
                     </div>
                 </form>
             </div>
@@ -632,17 +699,18 @@ document.addEventListener("click", function(e){
         }
     }
 });
+
 // Confirm Delete
 function confirmDelete(id) {
     if(typeof Swal !== 'undefined'){
         Swal.fire({
-            title: 'Kya aap sure hain?',
-            text: "Is pure BOM configuration ko delete kar diya jayega!",
+            title: 'Are you sure?',
+            text: "This BOM configuration will be deleted!",
             icon: 'warning',
             showCancelButton: true,
             confirmColor: '#ef4444',
             cancelColor: '#6b7280',
-            confirmButtonText: 'Haan, Delete Karo!',
+            confirmButtonText: 'Yes, Delete it!',
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -650,7 +718,7 @@ function confirmDelete(id) {
             }
         });
     } else {
-        if(confirm("Kya aap is BOM configuration ko delete karna chahte hain?")){
+        if(confirm("Are you sure you want to delete this BOM configuration?")){
             window.location.href = "bom_master.php?delete=" + id;
         }
     }
