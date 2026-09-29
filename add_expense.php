@@ -6,11 +6,27 @@ $center_id = $_SESSION['center_id'] ?? 0;
 $user_id   = $_SESSION['user_id'] ?? 0; 
 $role_id   = $_SESSION['role_id'] ?? 0;
 
+// Helper: Convert Any Incoming Date format to MySQL Y-m-d
+function parse_to_mysql_date($raw_date) {
+    $raw_date = trim($raw_date);
+    if (empty($raw_date)) return date('Y-m-d');
+    
+    $formats = ['d-m-Y', 'd/m/Y', 'Y-m-d', 'd/M/Y'];
+    foreach ($formats as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $raw_date);
+        if ($dt instanceof DateTime) {
+            return $dt->format('Y-m-d');
+        }
+    }
+    $ts = strtotime($raw_date);
+    return ($ts !== false) ? date('Y-m-d', $ts) : date('Y-m-d');
+}
+
 // ==========================================
 // 1. ADD NEW EXPENSE LOGIC
 // ==========================================
 if(isset($_POST['add_expense'])){
-    $expense_date = $db->escape($_POST['expense_date']);
+    $expense_date = parse_to_mysql_date($_POST['expense_date'] ?? '');
     $category_id  = (int)$_POST['category_id'];
     $description  = $db->escape($_POST['description']);
     $amount       = (float)$_POST['amount'];
@@ -33,7 +49,7 @@ if(isset($_POST['add_expense'])){
 // ==========================================
 if(isset($_POST['update_expense'])){
     $id           = (int)$_POST['expense_id'];
-    $expense_date = $db->escape($_POST['expense_date']);
+    $expense_date = parse_to_mysql_date($_POST['expense_date'] ?? '');
     $category_id  = (int)$_POST['category_id'];
     $description  = $db->escape($_POST['description']);
     $amount       = (float)$_POST['amount'];
@@ -59,7 +75,7 @@ if(isset($_POST['update_expense'])){
 }
 
 // ==========================================
-// 3. FETCH DATA FOR EDITING (Agar Table se Edit dabaya ho)
+// 3. FETCH DATA FOR EDITING
 // ==========================================
 $edit_data = [];
 if(isset($_GET['edit'])){
@@ -69,6 +85,11 @@ if(isset($_GET['edit'])){
         $edit_data = $res[0];
     }
 }
+
+// Selected/Default Date in dd-mm-yyyy format
+$current_selected_date = !empty($edit_data['expense_date']) 
+    ? date('d-m-Y', strtotime($edit_data['expense_date'])) 
+    : date('d-m-Y');
 
 // ==========================================
 // 4. FETCH ALL MASTERS AND LIST DATA
@@ -97,6 +118,7 @@ include_once('layouts/header.php');
 #expenseTable thead th{ background:#0f172a; color:#fff; font-weight:600; border-color:#0f172a; font-size:12px; }
 #expenseTable tbody td{ vertical-align:middle; font-size: 12px; }
 #expenseTable tbody tr:hover{ background:#f7fbff; }
+.expense-datepicker { background-color: #fff !important; cursor: pointer; }
 </style>
 
 <div class="row">
@@ -121,7 +143,7 @@ include_once('layouts/header.php');
                     
                     <div class="form-group">
                         <label>Expense Date *</label>
-                        <input type="date" class="form-control" name="expense_date" value="<?= !empty($edit_data) ? $edit_data['expense_date'] : date('Y-m-d') ?>" required>
+                        <input type="text" class="form-control expense-datepicker" name="expense_date" value="<?= $current_selected_date; ?>" autocomplete="off" placeholder="DD-MM-YYYY" required>
                     </div>
 
                     <div class="form-group">
@@ -197,9 +219,9 @@ include_once('layouts/header.php');
                     <table class="table table-bordered table-striped" id="expenseTable">
                         <thead>
                             <tr>
-                                <th width="10%">Date</th>
+                                <th width="12%">Date</th>
                                 <th width="20%">Category</th>
-                                <th width="35%">Description</th>
+                                <th width="33%">Description</th>
                                 <th width="15%" class="text-right">Amount (₹)</th>
                                 <th width="10%" class="text-center">Action</th>
                             </tr>
@@ -210,7 +232,8 @@ include_once('layouts/header.php');
                             <?php else: ?>
                                 <?php $total = 0; foreach($expenses_list as $exp): $total += $exp['amount']; ?>
                                 <tr>
-                                    <td><?= date('d/M/Y', strtotime($exp['expense_date'])); ?></td>
+                                    <!-- Strict dd-mm-yyyy display -->
+                                    <td style="font-weight:600; color:#334155;"><?= date('d-m-Y', strtotime($exp['expense_date'])); ?></td>
                                     <td>
                                         <b style="color: #475569;"><?= htmlspecialchars($exp['category_name'] ?? 'Unknown'); ?></b><br>
                                         <span class="label label-info" style="font-size:9px;"><?= htmlspecialchars($exp['payment_mode']); ?></span>
@@ -223,7 +246,6 @@ include_once('layouts/header.php');
                                     </td>
                                     <td class="text-right"><b style="color: #dc2626;">₹ <?= number_format($exp['amount'], 2); ?></b></td>
                                     <td class="text-center">
-                                        <!-- Edit Button (Redirects to same page with edit id) -->
                                         <a href="add_expense.php?edit=<?= $exp['id']; ?>" class="btn btn-info btn-xs" title="Edit">
                                             <i class="fa fa-pencil"></i>
                                         </a>
@@ -246,7 +268,6 @@ include_once('layouts/header.php');
             </div>
         </div>
     </div>
-
 </div>
 
 <script>
@@ -256,6 +277,17 @@ $('#expenseSearch').on('keyup', function () {
     $('#expenseTable tbody tr').filter(function () {
         $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
     });
+});
+
+// Force Flatpickr to strictly display dd-mm-yyyy regardless of system locale
+$(document).ready(function() {
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr(".expense-datepicker", {
+            dateFormat: "d-m-Y",
+            allowInput: false,
+            disableMobile: true
+        });
+    }
 });
 </script>
 
