@@ -62,7 +62,7 @@ include_once('layouts/header.php');
 
 <div class="row">
     <!-- FORM SECTION (Add / Edit) -->
-    <div class="col-md-5">
+    <div class="col-md-4">
         <div class="panel panel-default">
             <div class="panel-heading" style="background:#0f172a; color:#fff;">
                 <strong>
@@ -74,8 +74,6 @@ include_once('layouts/header.php');
                 </strong>
             </div>
             <div class="panel-body">
-                <!-- Puraana display_msg($msg) HTML Alert hata diya hai taaki sirf SweetAlert aaye -->
-                
                 <?php if(!empty($edit_data)): ?>
                     <!-- EDIT FORM -->
                     <form method="post" action="expense_master.php">
@@ -115,7 +113,7 @@ include_once('layouts/header.php');
     </div>
 
     <!-- TABLE SECTION -->
-    <div class="col-md-7">
+    <div class="col-md-8">
         <div class="panel panel-default">
             <div class="panel-heading"><strong>Expense Categories List</strong></div>
             <div class="panel-body">
@@ -125,20 +123,25 @@ include_once('layouts/header.php');
                             <tr>
                                 <th class="text-center" width="50">#</th>
                                 <th>Category Name</th>
-                                <th class="text-center" width="100">Status</th>
+                                <th class="text-center" width="130">Created Date</th>
+                                <th class="text-center" width="90">Status</th>
                                 <th class="text-center" width="80">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $i=1; foreach($categories as $cat): ?>
+                            <?php $i=1; foreach($categories as $cat): 
+                                // Date formatting to dd-mm-yyyy
+                                $raw_date = $cat['created_at'] ?? $cat['created_date'] ?? $cat['date'] ?? null;
+                                $display_date = (!empty($raw_date) && strtotime($raw_date) !== false) ? date('d-m-Y', strtotime($raw_date)) : '-';
+                            ?>
                             <tr>
                                 <td class="text-center"><?= $i++; ?></td>
                                 <td><b><?= htmlspecialchars($cat['category_name']); ?></b></td>
+                                <td class="text-center" style="font-weight:600; color:#475569;"><?= $display_date; ?></td>
                                 <td class="text-center">
                                     <?= ($cat['status'] == 1) ? '<span class="label label-success">Active</span>' : '<span class="label label-danger">Inactive</span>'; ?>
                                 </td>
                                 <td class="text-center">
-                                    <!-- Edit Button -->
                                     <a href="expense_master.php?edit=<?= $cat['id']; ?>" class="btn btn-info btn-xs" title="Edit">
                                         <i class="fa fa-pencil"></i>
                                     </a>
