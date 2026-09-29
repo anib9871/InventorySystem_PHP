@@ -1,5 +1,7 @@
 <?php
 require_once('includes/load.php');
+// Set Indian Timezone
+date_default_timezone_set('Asia/Kolkata');
 //page_require_level(2);
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
@@ -101,38 +103,49 @@ if(isset($_POST['save_manufacture'])){
 }
 
 /* ===============================
-   EDIT HISTORY RECORD
+   PARTIAL REVERSE RECORD (EDIT HISTORY)
 ================================ */
 if(isset($_POST['edit_history'])){
     global $db;
     $edit_ref_no = $db->escape($_POST['edit_ref_no']);
     $edit_product_id = (int)$_POST['edit_product_id'];
-    $new_qty = (float)$_POST['new_qty'];
+    $rev_qty = (float)$_POST['rev_qty'];
 
-    if($new_qty > 0){
+    // Fetch original quantity
+    $old_data = find_by_sql("SELECT quantity FROM transaction_master WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id} LIMIT 1");
+    $old_qty = (float)$old_data[0]['quantity'];
+
+    if($rev_qty > 0 && $rev_qty <= $old_qty){
         $db->query("START TRANSACTION");
 
-        // 1. Update Finished Goods Quantity
-        $db->query("UPDATE transaction_master SET quantity = {$new_qty} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id}");
+        $new_qty = $old_qty - $rev_qty;
 
-        // 2. Fetch BOM and Update Raw Material Quantities accordingly
-        $bom_items = find_by_sql("SELECT raw_product_id, quantity FROM bom WHERE product_id = {$edit_product_id}");
-        
-        if($bom_items){
-            foreach($bom_items as $b){
-                $raw_id   = (int)$b['raw_product_id'];
-                $per_unit = (float)$b['quantity'];
-                $total_rm = $per_unit * $new_qty;
+        if($new_qty == 0) {
+            // Completely reverse (Delete the transaction)
+            $db->query("DELETE FROM transaction_master WHERE bill_indent_no = '{$edit_ref_no}'");
+        } else {
+            // Update Finished Goods Quantity to the new remaining amount
+            $db->query("UPDATE transaction_master SET quantity = {$new_qty} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id}");
 
-                // Update the raw material entry linked to this same Reference Number
-                $db->query("UPDATE transaction_master SET quantity = {$total_rm} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$raw_id}");
+            // Fetch BOM and Update Raw Material Quantities accordingly
+            $bom_items = find_by_sql("SELECT raw_product_id, quantity FROM bom WHERE product_id = {$edit_product_id}");
+            
+            if($bom_items){
+                foreach($bom_items as $b){
+                    $raw_id   = (int)$b['raw_product_id'];
+                    $per_unit = (float)$b['quantity'];
+                    $total_rm = $per_unit * $new_qty;
+
+                    // Update the raw material entry linked to this same Reference Number
+                    $db->query("UPDATE transaction_master SET quantity = {$total_rm} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$raw_id}");
+                }
             }
         }
         
         $db->query("COMMIT");
-        $_SESSION['mfg_success'] = "Record updated successfully. Stock adjusted automatically.";
+        $_SESSION['mfg_success'] = "Quantity reversed successfully. Stock adjusted automatically.";
     } else {
-        $_SESSION['mfg_error'] = "Invalid quantity.";
+        $_SESSION['mfg_error'] = "Invalid quantity. Cannot reverse more than original amount.";
     }
     
     redirect('manufacture.php', false);
@@ -276,7 +289,6 @@ $history_data = find_by_sql("
         <div class="panel panel-default">
             <div class="panel-heading history-header">
                 <strong><i class="fa fa-history"></i> Recent Manufacturing History</strong>
-                <!-- SEARCH BOX ADDED HERE -->
                 <input type="text" id="historySearch" class="form-control history-search-box" placeholder="🔍 Search History...">
             </div>
             <div class="panel-body">
@@ -299,7 +311,8 @@ $history_data = find_by_sql("
                         <?php else: ?>
                             <?php foreach($history_data as $row): ?>
                                 <tr>
-                                    <td><?= date("d-m-Y H:i", strtotime($row['entry_date'])); ?></td>
+                                    <!-- Indian Date Time format with AM/PM -->
+                                    <td><?= date("d-m-Y h:i A", strtotime($row['entry_date'])); ?></td>
                                     <td><strong><?= htmlspecialchars($row['bill_indent_no']); ?></strong></td>
                                     <td><?= htmlspecialchars($row['product_name']); ?></td>
                                     <td>
@@ -313,8 +326,8 @@ $history_data = find_by_sql("
                                         <?= (int)$row['quantity']; ?> Pcs
                                     </td>
                                     <td class="text-center">
-                                        <!-- EDIT BUTTON (Triggers Modal) -->
-                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editModal<?= $row['bill_indent_no']; ?>" title="Edit Quantity">
+                                        <!-- EDIT/REVERSE BUTTON (Triggers Modal) -->
+                                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editModal<?= $row['bill_indent_no']; ?>" title="Reverse Quantity">
                                             <i class="glyphicon glyphicon-pencil"></i>
                                         </button>
 
@@ -328,29 +341,29 @@ $history_data = find_by_sql("
                                     </td>
                                 </tr>
 
-                                <!-- EDIT MODAL FOR THIS ROW -->
+                                <!-- REVERSE MODAL FOR THIS ROW -->
                                 <div class="modal fade" id="editModal<?= $row['bill_indent_no']; ?>" tabindex="-1" role="dialog">
                                   <div class="modal-dialog" role="document">
                                     <form method="post">
                                     <div class="modal-content">
                                       <div class="modal-header">
-                                        <h4 class="modal-title">Edit Quantity - <?= htmlspecialchars($row['bill_indent_no']); ?></h4>
+                                        <h4 class="modal-title">Reverse Quantity - <?= htmlspecialchars($row['bill_indent_no']); ?></h4>
                                       </div>
                                       <div class="modal-body text-left">
-                                        <p><strong>Device:</strong> <?= htmlspecialchars($row['product_name']); ?></p>
+                                        <p><strong>Device:</strong> <?= htmlspecialchars($row['product_name']); ?> (Current Qty: <?= (int)$row['quantity']; ?>)</p>
                                         
                                         <input type="hidden" name="edit_ref_no" value="<?= htmlspecialchars($row['bill_indent_no']); ?>">
                                         <input type="hidden" name="edit_product_id" value="<?= $row['product_id']; ?>">
                                         
                                         <div class="form-group">
-                                            <label>Modify Quantity (Kam ya Zyada Karein)</label>
-                                            <input type="number" name="new_qty" class="form-control" value="<?= (int)$row['quantity']; ?>" min="1" step="1" required>
+                                            <label>Quantity to Reverse</label>
+                                            <input type="number" name="rev_qty" class="form-control" value="1" min="1" max="<?= (int)$row['quantity']; ?>" step="1" required>
                                         </div>
-                                        <p class="text-muted"><small>Note: Yahan quantity change karne se Finished Goods aur Raw Materials dono ka stock automatically database mein update ho jayega.</small></p>
+                                        <p class="text-muted"><small>Note: Entering a quantity here will reverse that specific amount. The stock for both the finished goods and raw materials will be automatically updated.</small></p>
                                       </div>
                                       <div class="modal-footer">
                                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                                        <button type="submit" name="edit_history" class="btn btn-primary">Update Stock</button>
+                                        <button type="submit" name="edit_history" class="btn btn-danger">Reverse</button>
                                       </div>
                                     </div>
                                     </form>
@@ -376,7 +389,6 @@ $(document).ready(function () {
     $("#historySearch").on("keyup", function() {
         var value = $(this).val().toLowerCase();
         $("#historyTableBody tr").filter(function() {
-            // Hum modal wale div ko filter nahi karenge, sirf table rows ko karenge
             if(!$(this).hasClass('modal')){
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
             }
