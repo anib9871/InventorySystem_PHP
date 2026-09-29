@@ -288,7 +288,7 @@ if (is_array($decoded_addresses) && isset($decoded_addresses[$addr_index])) {
                             <?php echo htmlspecialchars($to_party['address']); ?>
                         </div>
                         
-                        <div><strong>State:</strong> <?php echo htmlspecialchars($to_party['state_name']); ?> (Code: <?php echo htmlspecialchars($to_party['state_code']); ?>)</div>
+                        <div><strong>State:</strong> <?php echo htmlspecialchars($to_party['state_name'] ?? ''); ?> (Code: <?php echo htmlspecialchars($to_party['state_code'] ?? ''); ?>)</div>
                         
                         <?php if(!empty($to_party['contact_no'])): ?>
                             <div style="font-size: 15px; margin-top: 5px;">
