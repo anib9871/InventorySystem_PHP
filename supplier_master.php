@@ -554,11 +554,12 @@ textarea.form-control {
                                   $addr_text = $addr;
                               }
 
-                              if(trim($addr_text) != ''):
-                                  $display = strlen($addr_text) > 55 ? substr($addr_text, 0, 55).'...' : $addr_text;
+                             if(trim($addr_text) != ''):
+                                  // Character limit 100 kar di hai taaki Pincode pura dikhe
+                                  $display = strlen($addr_text) > 100 ? substr($addr_text, 0, 100).'...' : $addr_text;
                       ?>
                           <option value="<?php echo $o['id']; ?>|<?php echo $index; ?>" <?php if(isset($_SESSION['org_id']) && $_SESSION['org_id'] == $o['id'] && $index == 0) echo 'selected'; ?>>
-                              <?php echo $o['mnemonic']; ?> - <?php echo $display; ?>
+                              <?php echo $display; ?>
                           </option>
                       <?php 
                               endif;
