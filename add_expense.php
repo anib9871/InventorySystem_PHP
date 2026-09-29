@@ -6,7 +6,7 @@ $center_id = $_SESSION['center_id'] ?? 0;
 $user_id   = $_SESSION['user_id'] ?? 0; 
 $role_id   = $_SESSION['role_id'] ?? 0;
 
-// Helper: Convert Any Incoming Date format to MySQL Y-m-d
+// Helper: Convert Any Incoming Date to MySQL Y-m-d
 function parse_to_mysql_date($raw_date) {
     $raw_date = trim($raw_date);
     if (empty($raw_date)) return date('Y-m-d');
@@ -114,11 +114,16 @@ $expenses_list = find_by_sql("
 include_once('layouts/header.php'); 
 ?>
 
+<!-- Flatpickr CSS Direct Load -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <style>
 #expenseTable thead th{ background:#0f172a; color:#fff; font-weight:600; border-color:#0f172a; font-size:12px; }
 #expenseTable tbody td{ vertical-align:middle; font-size: 12px; }
 #expenseTable tbody tr:hover{ background:#f7fbff; }
 .expense-datepicker { background-color: #fff !important; cursor: pointer; }
+.date-input-group { position: relative; }
+.date-input-group i { position: absolute; right: 12px; top: 10px; color: #64748b; pointer-events: none; }
 </style>
 
 <div class="row">
@@ -143,7 +148,10 @@ include_once('layouts/header.php');
                     
                     <div class="form-group">
                         <label>Expense Date *</label>
-                        <input type="text" class="form-control expense-datepicker" name="expense_date" value="<?= $current_selected_date; ?>" autocomplete="off" placeholder="DD-MM-YYYY" required>
+                        <div class="date-input-group">
+                            <input type="text" id="expense_date_input" class="form-control expense-datepicker" name="expense_date" value="<?= $current_selected_date; ?>" autocomplete="off" placeholder="DD-MM-YYYY" required readonly>
+                            <i class="fa fa-calendar"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -232,7 +240,6 @@ include_once('layouts/header.php');
                             <?php else: ?>
                                 <?php $total = 0; foreach($expenses_list as $exp): $total += $exp['amount']; ?>
                                 <tr>
-                                    <!-- Strict dd-mm-yyyy display -->
                                     <td style="font-weight:600; color:#334155;"><?= date('d-m-Y', strtotime($exp['expense_date'])); ?></td>
                                     <td>
                                         <b style="color: #475569;"><?= htmlspecialchars($exp['category_name'] ?? 'Unknown'); ?></b><br>
@@ -270,25 +277,26 @@ include_once('layouts/header.php');
     </div>
 </div>
 
+<?php include_once('layouts/footer.php'); ?>
+
+<!-- Flatpickr JS direct initialization -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-// Search script for the table
-$('#expenseSearch').on('keyup', function () {
-    var value = $(this).val().toLowerCase();
-    $('#expenseTable tbody tr').filter(function () {
-        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+$(document).ready(function() {
+    // 1. Search Filter
+    $('#expenseSearch').on('keyup', function () {
+        var value = $(this).val().toLowerCase();
+        $('#expenseTable tbody tr').filter(function () {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // 2. Initialize Calendar Picker (dd-mm-yyyy)
+    flatpickr("#expense_date_input", {
+        dateFormat: "d-m-Y",
+        allowInput: false,
+        disableMobile: true,
+        defaultDate: "<?= $current_selected_date; ?>"
     });
 });
-
-// Force Flatpickr to strictly display dd-mm-yyyy regardless of system locale
-$(document).ready(function() {
-    if (typeof flatpickr !== 'undefined') {
-        flatpickr(".expense-datepicker", {
-            dateFormat: "d-m-Y",
-            allowInput: false,
-            disableMobile: true
-        });
-    }
-});
 </script>
-
-<?php include_once('layouts/footer.php'); ?>
