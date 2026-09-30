@@ -233,6 +233,25 @@ $demo_records = find_by_sql("
     .select2-container--default .select2-selection--single .select2-selection__arrow {
         top: 5px !important;
     }
+/* ================= SELECT2 LEFT ALIGNMENT FIX ================= */
+    
+    /* 1. Selected box ke andar ka text left karne ke liye */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        text-align: left !important;
+        padding-left: 8px !important;
+    }
+
+    /* 2. Dropdown list (jo open hoti hai) ke options left karne ke liye */
+    .select2-results__options,
+    .select2-results__option {
+        text-align: left !important;
+        direction: ltr !important;
+    }
+
+    /* 3. Search box ke andar type hone wala text left karne ke liye */
+    .select2-search--dropdown .select2-search__field {
+        text-align: left !important;
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
