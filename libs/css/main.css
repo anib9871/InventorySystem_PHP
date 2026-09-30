@@ -1222,3 +1222,13 @@ label {
     }
 }
 
+/* ================= DROPDOWN LEFT ALIGNMENT FIX ================= */
+select.form-control, 
+select.form-control option {
+    text-align: left !important;
+    text-align-last: left !important; 
+    direction: ltr !important;
+    padding-left: 12px !important;
+}
+
+
