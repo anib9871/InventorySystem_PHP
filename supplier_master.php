@@ -358,7 +358,7 @@ textarea.form-control {
                         </div>
 
                         <div class="col-md-4 form-group-compact">
-                            <label>Phone / Contact No</label>
+                            <label>Phone (Comma separated for multiple)</label>
                             <input type="text" name="phone" class="form-control"
                                    value="<?php echo $edit ? $edit['phone'] : ''; ?>"
                                    placeholder="Phone number...">
