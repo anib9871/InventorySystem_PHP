@@ -666,7 +666,12 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
 <!-- JAVASCRIPT LOGIC -->
 <script>
 // Form data ko browser mein temporarily save karne ke liye taaki redirect hone par data na ude
+let isSubmittingForm = false; // Flag to check if we are saving the GRN
+
+// Form data ko browser mein temporarily save karne ke liye
 window.addEventListener('beforeunload', function() {
+    if(isSubmittingForm) return; // Skip saving if the user is submitting the form
+
     if((items && items.length > 0) || document.querySelector('[name="bill_no"]').value) {
         let formData = {
             supplier_id: document.getElementById('supplier_id').value,
@@ -1151,7 +1156,7 @@ document.getElementById("grnForm").addEventListener("submit", function(e){
     return false;
   }
 
-  if(warningMessages.length > 0){
+if(warningMessages.length > 0){
     e.preventDefault();
     Swal.fire({
       title: 'Continue?',
@@ -1159,9 +1164,15 @@ document.getElementById("grnForm").addEventListener("submit", function(e){
       icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Continue', cancelButtonText: 'Cancel'
     }).then((result) => {
       if(result.isConfirmed){
+        isSubmittingForm = true; // <-- YEH ADD KIYA
+        localStorage.removeItem('grn_temp_backup'); // <-- YEH ADD KIYA
         document.getElementById("grnForm").submit();
       }
     });
+  } else {
+    // Agar koi warning nahi hai aur form normally submit ho raha hai
+    isSubmittingForm = true; // <-- YEH ADD KIYA
+    localStorage.removeItem('grn_temp_backup'); // <-- YEH ADD KIYA
   }
 });
 
