@@ -306,16 +306,12 @@ include_once('layouts/header.php');
 
 <?php if(isset($_GET['created'])){ ?>
 <script>
-localStorage.removeItem('grn_temp_backup');
-sessionStorage.removeItem('grn_temp_backup');
 Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Created Successfully', showConfirmButton: false, timer: 1800 });
 </script>
 <?php } ?>
 
 <?php if(isset($_GET['updated'])){ ?>
 <script>
-localStorage.removeItem('grn_temp_backup');
-sessionStorage.removeItem('grn_temp_backup');
 Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully', showConfirmButton: false, timer: 1800 });
 </script>
 <?php } ?>
@@ -667,52 +663,6 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
 
 <!-- JAVASCRIPT LOGIC -->
 <script>
-// Form data ko browser mein temporarily save karne ke liye taaki redirect hone par data na ude
-let isSubmittingForm = false; // Flag to check if we are saving the GRN
-
-// Form data ko browser mein temporarily save karne ke liye
-window.addEventListener('beforeunload', function() {
-    if(isSubmittingForm) return; // Skip saving if the user is submitting the form
-
-    if((items && items.length > 0) || document.querySelector('[name="bill_no"]').value) {
-        let formData = {
-            supplier_id: document.getElementById('supplier_id').value,
-            bill_no: document.querySelector('[name="bill_no"]').value,
-            bill_date: document.getElementById('bill_date').value,
-            items: items,
-            charges: charges
-        };
-        sessionStorage.setItem('grn_temp_backup', JSON.stringify(formData));
-    }
-});
-
-// Page wapas load hone par data automatically wapas laane ke liye
-document.addEventListener("DOMContentLoaded", function() {
-    // Check both sessionStorage and localStorage just to clean up old bugs
-    let savedData = sessionStorage.getItem('grn_temp_backup') || localStorage.getItem('grn_temp_backup');
-    if(savedData && (!window.items || window.items.length === 0)) {
-        try {
-            let data = JSON.parse(savedData);
-            if(data.supplier_id) document.getElementById('supplier_id').value = data.supplier_id;
-            if(data.bill_no) document.querySelector('[name="bill_no"]').value = data.bill_no;
-            if(data.bill_date) document.getElementById('bill_date').value = data.bill_date;
-            if(data.items && data.items.length > 0) {
-                items = data.items;
-                renderItems();
-            }
-            if(data.charges && data.charges.length > 0) {
-                charges = data.charges;
-                renderCharges();
-            }
-            // Kaam pura hone ke baad temporary backup saaf kar dein
-            sessionStorage.removeItem('grn_temp_backup');
-            localStorage.removeItem('grn_temp_backup');
-        } catch(e) {
-            console.log("Backup load error", e);
-        }
-    }
-});
-
 if(typeof items === 'undefined'){ var items = []; }
 if(typeof charges === 'undefined'){ var charges = []; }
 
@@ -1168,11 +1118,7 @@ document.getElementById("grnForm").addEventListener("submit", function(e){
       icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Continue', cancelButtonText: 'Cancel'
     }).then((result) => {
       if(result.isConfirmed){
-        isSubmittingForm = true; 
-        sessionStorage.removeItem('grn_temp_backup');
-        localStorage.removeItem('grn_temp_backup');
-
-        // IMPORTANT FIX: JS .submit() bypasses the submit button, so we send it manually for PHP
+        
         let hidden = document.createElement("input");
         hidden.type = "hidden";
         hidden.name = "<?php echo $edit_mode ? 'update_grn' : 'save_grn'; ?>";
@@ -1182,11 +1128,6 @@ document.getElementById("grnForm").addEventListener("submit", function(e){
         document.getElementById("grnForm").submit();
       }
     });
-  } else {
-    // Agar koi warning nahi hai aur form normally submit ho raha hai
-    isSubmittingForm = true; 
-    sessionStorage.removeItem('grn_temp_backup');
-    localStorage.removeItem('grn_temp_backup'); 
   }
 });
 
