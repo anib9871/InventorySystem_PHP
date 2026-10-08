@@ -306,12 +306,16 @@ include_once('layouts/header.php');
 
 <?php if(isset($_GET['created'])){ ?>
 <script>
+localStorage.removeItem('grn_temp_backup');
+sessionStorage.removeItem('grn_temp_backup');
 Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Created Successfully', showConfirmButton: false, timer: 1800 });
 </script>
 <?php } ?>
 
 <?php if(isset($_GET['updated'])){ ?>
 <script>
+localStorage.removeItem('grn_temp_backup');
+sessionStorage.removeItem('grn_temp_backup');
 Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully', showConfirmButton: false, timer: 1800 });
 </script>
 <?php } ?>
@@ -368,7 +372,6 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
   <div style="display: flex; align-items: center;">
     <input type="text" id="product_name" class="form-control grn-input-custom" placeholder="Click Choose..." readonly style="border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; border-right: 0 !important;">
     <button type="button" class="btn btn-primary btn-custom" onclick="openProductModal()" style="border-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center;">Choose</button>
-    <!-- Yeh raha naya button jo product.php par le jayega aur wapas laate waqt data bacha ke rakhega -->
     <a href="product.php?redirect=grn" class="btn btn-success btn-custom" title="Add New Product" style="border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; height: 32px !important; display: inline-flex; align-items: center; padding: 0 8px;"><i class="fa fa-plus"></i></a>
   </div>
 </div>
@@ -383,7 +386,6 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
           <input id="free_qty" type="number" class="form-control grn-input-custom" placeholder="0">
         </div>
 
-<!-- Line ~390 ke aas-pass change karein -->
 <div class="grn-btn-group">
   <button type="button" onclick="addItem()" class="btn btn-success grn-btn-custom"><i class="fa fa-plus"></i> Add Item</button>
   <button type="button" onclick="cancelEditItem()" class="btn btn-danger grn-btn-custom">Cancel</button>
@@ -539,9 +541,9 @@ Swal.fire({ icon: 'success', title: 'Success', text: 'GRN Updated Successfully',
           <!-- SUBMIT BUTTON -->
           <div style="margin-top:10px; text-align:right;">
             <?php if($edit_mode){ ?>
-              <button name="update_grn" class="btn btn-primary btn-custom" style="padding:0 24px !important; font-size:13px !important;">Update GRN</button>
+              <button name="update_grn" type="submit" class="btn btn-primary btn-custom" style="padding:0 24px !important; font-size:13px !important;">Update GRN</button>
             <?php } else { ?>
-              <button name="save_grn" class="btn btn-success btn-custom" style="padding:0 24px !important; font-size:13px !important;">Create GRN</button>
+              <button name="save_grn" type="submit" class="btn btn-success btn-custom" style="padding:0 24px !important; font-size:13px !important;">Create GRN</button>
             <?php } ?>
           </div>
 
@@ -680,13 +682,14 @@ window.addEventListener('beforeunload', function() {
             items: items,
             charges: charges
         };
-        localStorage.setItem('grn_temp_backup', JSON.stringify(formData));
+        sessionStorage.setItem('grn_temp_backup', JSON.stringify(formData));
     }
 });
 
 // Page wapas load hone par data automatically wapas laane ke liye
 document.addEventListener("DOMContentLoaded", function() {
-    let savedData = localStorage.getItem('grn_temp_backup');
+    // Check both sessionStorage and localStorage just to clean up old bugs
+    let savedData = sessionStorage.getItem('grn_temp_backup') || localStorage.getItem('grn_temp_backup');
     if(savedData && (!window.items || window.items.length === 0)) {
         try {
             let data = JSON.parse(savedData);
@@ -702,6 +705,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 renderCharges();
             }
             // Kaam pura hone ke baad temporary backup saaf kar dein
+            sessionStorage.removeItem('grn_temp_backup');
             localStorage.removeItem('grn_temp_backup');
         } catch(e) {
             console.log("Backup load error", e);
@@ -1156,7 +1160,7 @@ document.getElementById("grnForm").addEventListener("submit", function(e){
     return false;
   }
 
-if(warningMessages.length > 0){
+  if(warningMessages.length > 0){
     e.preventDefault();
     Swal.fire({
       title: 'Continue?',
@@ -1164,15 +1168,25 @@ if(warningMessages.length > 0){
       icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Continue', cancelButtonText: 'Cancel'
     }).then((result) => {
       if(result.isConfirmed){
-        isSubmittingForm = true; // <-- YEH ADD KIYA
-        localStorage.removeItem('grn_temp_backup'); // <-- YEH ADD KIYA
+        isSubmittingForm = true; 
+        sessionStorage.removeItem('grn_temp_backup');
+        localStorage.removeItem('grn_temp_backup');
+
+        // IMPORTANT FIX: JS .submit() bypasses the submit button, so we send it manually for PHP
+        let hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.name = "<?php echo $edit_mode ? 'update_grn' : 'save_grn'; ?>";
+        hidden.value = "1";
+        document.getElementById("grnForm").appendChild(hidden);
+
         document.getElementById("grnForm").submit();
       }
     });
   } else {
     // Agar koi warning nahi hai aur form normally submit ho raha hai
-    isSubmittingForm = true; // <-- YEH ADD KIYA
-    localStorage.removeItem('grn_temp_backup'); // <-- YEH ADD KIYA
+    isSubmittingForm = true; 
+    sessionStorage.removeItem('grn_temp_backup');
+    localStorage.removeItem('grn_temp_backup'); 
   }
 });
 
@@ -1321,25 +1335,20 @@ if(useAdvance){
   });
 }
 
-// 1. फिलहाल एडिट हो रहे charge के इंडेक्स को ट्रैक करने के लिए वैरिएबल
 let editingChargeIndex = null;
 
-// 2. Edit Button Function (अब यह डेटा तुरंत डिलीट नहीं करेगा)
 function editCharge(index){
-  editingChargeIndex = index; // ट्रैक करें कि कौन सा आइटम एडिट हो रहा है
+  editingChargeIndex = index;
   let c = charges[index];
   
-  // Modal के Inputs में पुराना डेटा भरें
   document.getElementById("modal_charge_type").value = c.shipping_type_id;
   document.getElementById("modal_charge_amount").value = c.amount;
   document.getElementById("modal_charge_gst_id").value = c.gst_id || "";
   document.getElementById("modal_charge_gst_type").value = c.gst_type ? c.gst_type.toUpperCase() : "EXCLUSIVE";
 
-  // Pop-up Modal Open करें
   $('#shippingModal').modal('show');
 }
 
-// 3. Modal Save Function (नया ऐड करेगा या पुराने को अपडेट करेगा)
 function saveShippingModal(){
   let amountVal = document.getElementById("modal_charge_amount").value;
   let typeVal = document.getElementById("modal_charge_type").value;
@@ -1380,10 +1389,9 @@ function saveShippingModal(){
     total: total 
   };
 
-  // अगर एडिट हो रहा था तो पुरानी जगह रिप्लेस करें, वरना नया आइटम ऐड करें
   if (editingChargeIndex !== null) {
     charges[editingChargeIndex] = updatedCharge;
-    editingChargeIndex = null; // रीसेट करें
+    editingChargeIndex = null;
   } else {
     charges.push(updatedCharge);
   }
@@ -1393,7 +1401,6 @@ function saveShippingModal(){
   $('#shippingModal').modal('hide');
 }
 
-// 4. Modal Inuts Reset करने का हेल्पर फंक्शन
 function resetShippingModalInputs(){
   document.getElementById("modal_charge_type").value = "";
   document.getElementById("modal_charge_amount").value = "";
@@ -1402,7 +1409,6 @@ function resetShippingModalInputs(){
   editingChargeIndex = null;
 }
 
-// 5. जब भी Modal Cancel या Close (X) हो, तो ट्रैकर रीसेट कर दें
 $('#shippingModal').on('hidden.bs.modal', function () {
   resetShippingModalInputs();
 });
