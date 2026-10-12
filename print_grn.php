@@ -532,15 +532,15 @@ table.data-table tr:nth-child(even):not(.summary-row) {
                 $decoded_addrs = json_decode($clean_address, true);
                 
                 if(is_array($decoded_addrs) && count($decoded_addrs) > 0) {
-                    // Extract ONLY the first address array index [0]
-                    $first_addr = $decoded_addrs[0]; 
+                    // Extract the second address array index [1] if it exists, else fallback to [0]
+                    $selected_addr = isset($decoded_addrs[1]) ? $decoded_addrs[1] : $decoded_addrs[0]; 
                     
-                    if(is_array($first_addr) && !empty($first_addr['text'])) {
-                        $state_str = !empty($first_addr['state_name']) ? ", " . $first_addr['state_name'] : "";
-                        $code_str  = !empty($first_addr['state_code']) ? " (Code: " . $first_addr['state_code'] . ")" : "";
-                        echo $first_addr['text'] . $state_str . $code_str; 
-                    } elseif (is_string($first_addr)) {
-                        echo $first_addr; 
+                    if(is_array($selected_addr) && !empty($selected_addr['text'])) {
+                        $state_str = !empty($selected_addr['state_name']) ? ", " . $selected_addr['state_name'] : "";
+                        $code_str  = !empty($selected_addr['state_code']) ? " (Code: " . $selected_addr['state_code'] . ")" : "";
+                        echo $selected_addr['text'] . $state_str . $code_str; 
+                    } elseif (is_string($selected_addr)) {
+                        echo $selected_addr; 
                     }
                 } else {
                     echo $raw_address;
