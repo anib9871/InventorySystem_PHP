@@ -532,17 +532,16 @@ table.data-table tr:nth-child(even):not(.summary-row) {
                 $decoded_addrs = json_decode($clean_address, true);
                 
                 if(is_array($decoded_addrs) && count($decoded_addrs) > 0) {
-                    $display_arr = [];
-                    foreach($decoded_addrs as $da) {
-                        if(is_array($da) && !empty($da['text'])) {
-                            $state_str = !empty($da['state_name']) ? ", " . $da['state_name'] : "";
-                            $code_str  = !empty($da['state_code']) ? " (Code: " . $da['state_code'] . ")" : "";
-                            $display_arr[] = $da['text'] . $state_str . $code_str; 
-                        } elseif (is_string($da)) {
-                            $display_arr[] = $da; 
-                        }
+                    // Extract ONLY the first address array index [0]
+                    $first_addr = $decoded_addrs[0]; 
+                    
+                    if(is_array($first_addr) && !empty($first_addr['text'])) {
+                        $state_str = !empty($first_addr['state_name']) ? ", " . $first_addr['state_name'] : "";
+                        $code_str  = !empty($first_addr['state_code']) ? " (Code: " . $first_addr['state_code'] . ")" : "";
+                        echo $first_addr['text'] . $state_str . $code_str; 
+                    } elseif (is_string($first_addr)) {
+                        echo $first_addr; 
                     }
-                    echo implode('<br>', $display_arr);
                 } else {
                     echo $raw_address;
                 }
