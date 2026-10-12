@@ -526,9 +526,17 @@ table.data-table tr:nth-child(even):not(.summary-row) {
         <div class="org-brand">
             <h1 class="org-title"><?= strtoupper($org_master['org_name']); ?></h1>
             <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
-                <?= $org['address'] ?? ''; ?><br>
+                <?php 
+                $raw_address = $org['address'] ?? '';
+                $decoded_address = json_decode($raw_address, true);
+                
+                if (is_array($decoded_address) && count($decoded_address) > 0) {
+                    echo $decoded_address[0]['text'] . ", " . $decoded_address[0]['state_name'] . " (Code: " . $decoded_address[0]['state_code'] . ")";
+                } else {
+                    echo $raw_address;
+                }
+                ?><br>
                 <?php if(!empty($org['gst_no'])){ ?>
-                    <b>GSTIN:</b> <?= $org['gst_no']; ?> | 
                 <?php } ?>
                 <?php if(!empty($org['phone'])){ ?>
                     <b>Phone:</b> <?= $org['phone']; ?>
