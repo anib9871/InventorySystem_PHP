@@ -528,15 +528,27 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
                 <?php 
                 $raw_address = $org['address'] ?? '';
-                $decoded_address = json_decode($raw_address, true);
+                $clean_address = html_entity_decode(stripslashes($raw_address));
+                $decoded_addrs = json_decode($clean_address, true);
                 
-                if (is_array($decoded_address) && count($decoded_address) > 0) {
-                    echo $decoded_address[0]['text'] . ", " . $decoded_address[0]['state_name'] . " (Code: " . $decoded_address[0]['state_code'] . ")";
+                if(is_array($decoded_addrs) && count($decoded_addrs) > 0) {
+                    $display_arr = [];
+                    foreach($decoded_addrs as $da) {
+                        if(is_array($da) && !empty($da['text'])) {
+                            $state_str = !empty($da['state_name']) ? ", " . $da['state_name'] : "";
+                            $code_str  = !empty($da['state_code']) ? " (Code: " . $da['state_code'] . ")" : "";
+                            $display_arr[] = $da['text'] . $state_str . $code_str; 
+                        } elseif (is_string($da)) {
+                            $display_arr[] = $da; 
+                        }
+                    }
+                    echo implode('<br>', $display_arr);
                 } else {
                     echo $raw_address;
                 }
                 ?><br>
                 <?php if(!empty($org['gst_no'])){ ?>
+                    <b>GSTIN:</b> <?= $org['gst_no']; ?> | 
                 <?php } ?>
                 <?php if(!empty($org['phone'])){ ?>
                     <b>Phone:</b> <?= $org['phone']; ?>
@@ -673,8 +685,8 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             <thead>
                 <tr>
                     <th class="center">Date</th>
-                    <th>Mode</th>
-                    <th>Reference</th>
+                    <th class="center">Mode</th>
+                    <th class="center">Reference</th>
                     <th class="right">Amount</th>
                 </tr>
             </thead>
@@ -682,8 +694,8 @@ table.data-table tr:nth-child(even):not(.summary-row) {
                 <?php foreach($payments as $p): ?>
                 <tr>
                     <td class="center"><?= date('d-m-Y', strtotime($p['payment_date'])); ?></td>
-                    <td><?= $p['payment_mode']; ?></td>
-                    <td><?= $p['reference_no']; ?></td>
+                    <td class="center"><?= $p['payment_mode']; ?></td>
+                    <td class="center"><?= $p['reference_no']; ?></td>
                     <td class="right bold"><?= number_format($p['payment_amount'], 2); ?></td>
                 </tr>
                 <?php endforeach; ?>
