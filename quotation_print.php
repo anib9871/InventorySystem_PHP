@@ -741,6 +741,7 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             <?php if($bank){ ?>
                 <div style="font-size: 11px; line-height: 1.4;">
                     <b>Bank:</b> <?= $bank['bank_name'] ?><br>
+                    <b>Branch:</b> <?= $bank['branch'] ?? 'N/A' ?><br> <!-- Added Branch -->
                     <b>A/C Name:</b> <?= $bank['account_name'] ?><br>
                     <b>A/C No:</b> <?= $bank['account_number'] ?><br>
                     <b>IFSC Code:</b> <?= $bank['ifsc_code'] ?>
