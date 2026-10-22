@@ -313,13 +313,6 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE ii.invoice_id = '{$invoice_id}'
     ");
 
-    // /* FETCH PAYMENTS */
-    // $payment_records = find_by_sql("
-    //     SELECT payment_mode, amount, reference_no, payment_date 
-    //     FROM payments 
-    //     WHERE invoice_id = '{$invoice_id}' AND amount > 0
-    // ");
-
     $org_name_upper = strtoupper($org_master['org_name']);
     $cust_name_upper = strtoupper($invoice['customer_name']);
     $inv_date_formatted = date("d/M/Y", strtotime($invoice['invoice_date']));
@@ -604,9 +597,23 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $subject = ($is_proforma ? "Proforma Invoice #" : "Tax Invoice #") . $invoice['invoice_no'] . " from " . $org_name_upper;
     $body = "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your " . ($is_proforma ? "Proforma Invoice" : "Tax Invoice") . ".<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
+    // NEW LOGIC: Comma-separated emails to array
+    $to_array = [];
+    $email_list = explode(',', $to_email);
+    foreach ($email_list as $mail) {
+        $mail = trim($mail);
+        if (!empty($mail) && filter_var($mail, FILTER_VALIDATE_EMAIL)) {
+            $to_array[] = ["email" => $mail, "name" => $customer_name];
+        }
+    }
+
+    if (empty($to_array)) {
+        return "No valid email addresses provided.";
+    }
+
     $data = [
         "sender" => ["name" => $org_name_upper, "email" => $senderEmail],
-        "to" => [["email" => $to_email, "name" => $customer_name]],
+        "to" => $to_array,
         "subject" => $subject,
         "htmlContent" => $body,
         "attachment" => [
@@ -929,9 +936,23 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $subject = "Quotation #" . $quotation['quotation_no'] . " from " . $org_name_upper;
     $body = "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your Quotation.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
+    // NEW LOGIC: Comma-separated emails to array
+    $to_array = [];
+    $email_list = explode(',', $to_email);
+    foreach ($email_list as $mail) {
+        $mail = trim($mail);
+        if (!empty($mail) && filter_var($mail, FILTER_VALIDATE_EMAIL)) {
+            $to_array[] = ["email" => $mail, "name" => $customer_name];
+        }
+    }
+
+    if (empty($to_array)) {
+        return "No valid email addresses provided.";
+    }
+
     $data = [
         "sender" => ["name" => $org_name_upper, "email" => $senderEmail],
-        "to" => [["email" => $to_email, "name" => $customer_name]],
+        "to" => $to_array,
         "subject" => $subject,
         "htmlContent" => $body,
         "attachment" => [
@@ -964,3 +985,4 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         return "HTTP Code: {$httpCode} | Brevo Msg: {$response}";
     }
 }
+?>
