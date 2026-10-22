@@ -300,7 +300,7 @@ try{
     <script>
     alert('$msg');
     window.location.href='quotation_list.php';
-    </script>
+    </script>  
     ";
 
     exit;
