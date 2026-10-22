@@ -403,12 +403,13 @@ textarea.form-control {
                                placeholder="Contact number...">
                     </div>
 
-                    <div class="col-md-4 form-group-compact">
-                        <label>Email Address</label>
-                        <input type="email" id="email" name="email" class="form-control"
-                               value="<?php echo $edit ? $edit['email'] : ''; ?>"
-                               placeholder="Email address...">
-                    </div>
+                  <div class="col-md-4 form-group-compact">
+                      <label>Email Address (Comma Separated)</label>
+                      <!-- Changed type to 'email' with 'multiple' attribute or just use 'text' -->
+                      <input type="text" id="email" name="email" class="form-control"
+                             value="<?php echo $edit ? $edit['email'] : ''; ?>"
+                             placeholder="email1@test.com, email2@test.com">
+                  </div>
                 </div>
 
                 <!-- Row 2: Address, State, State Code, GST No -->
