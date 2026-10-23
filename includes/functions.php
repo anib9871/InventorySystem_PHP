@@ -985,4 +985,4 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         return "HTTP Code: {$httpCode} | Brevo Msg: {$response}";
     }
 }
-?>
+?> 
