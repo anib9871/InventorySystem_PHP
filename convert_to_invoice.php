@@ -5,7 +5,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if($id <= 0) die("Invalid Quotation ID");
 
 /* Fetch Quotation */
-$q_data = find_by_sql("SELECT * FROM quotation_master WHERE id = $id");
+$q_data = find_by_sql("SELECT * FROM quotation_master WHERE id = $id"); 
 if(!$q_data) die("Quotation not found");
 $quotation = $q_data[0];
 
