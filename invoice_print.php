@@ -63,10 +63,11 @@ if (isset($_POST['send_email_btn'])) {
                 if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
                     $sent = send_invoice_email($id, $client_email, $client_name);
                     if ($sent === true || $sent == 1) {
-                        $sent_emails[] = htmlspecialchars($client_email);
-                    } else {
-                        $failed_emails[] = htmlspecialchars($client_email);
-                    }
+                                $sent_emails[] = htmlspecialchars($client_email);
+                            } else {
+                                // Yahan humne $sent (asli error reason) ko add kar diya
+                                $failed_emails[] = htmlspecialchars($client_email) . " - Reason: " . $sent;
+                            }
                 } else {
                     $invalid_emails[] = htmlspecialchars($client_email); // Galat email ko alag track karega
                 }
