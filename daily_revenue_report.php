@@ -38,7 +38,7 @@ foreach ($formats as $format) {
     }
 }
 
-/* ── FILE SAVE AS NAME ── */
+/* ── FILE SAVE AS NAME & EXCEL HEADERS ── */
 $file_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 
 if ($is_excel) {
@@ -204,7 +204,7 @@ $net_revenue = $grand_income - $grand_expenditure;
             <a href="?pdf=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-pdf-btn">&#8659; PDF</a>
             <a href="?excel=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-excel-btn">&#8659; Excel</a>
 
-            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Search table data..." class="form-control" style="width:200px; margin-left:auto;">
+            <input type="text" id="searchInput" onkeyup="filterColumns()" placeholder="🔍 Global Search..." class="form-control" style="width:160px; margin-left:auto;">
         </form>
     </div>
     <?php endif; ?>
@@ -245,6 +245,24 @@ $net_revenue = $grand_income - $grand_expenditure;
                             <th width="14%" style="text-align:right;">Expenditure (₹)</th>
                             <th width="13%" style="text-align:right;">Net Flow (₹)</th>
                         </tr>
+                        <?php if (!$is_pdf && !$is_excel): ?>
+                        <tr class="no-print" style="background:#f8fafc;">
+                            <th><input type="text" id="colDate" onkeyup="filterColumns()" placeholder="🔍 Date..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
+                            <th>
+                                <select id="colType" onchange="filterColumns()" style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; cursor:pointer; outline:none;">
+                                    <option value="">All</option>
+                                    <option value="SALE">Sale</option>
+                                    <option value="PURCHASE">Purchase</option>
+                                    <option value="EXPENSE">Expense</option>
+                                </select>
+                            </th>
+                            <th><input type="text" id="colRef" onkeyup="filterColumns()" placeholder="🔍 Ref / Invoice..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
+                            <th><input type="text" id="colParty" onkeyup="filterColumns()" placeholder="🔍 Party Name..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                        <?php endif; ?>
                     </thead>
                     <tbody>
                         <?php foreach ($detailed_data as $dt): 
@@ -262,11 +280,11 @@ $net_revenue = $grand_income - $grand_expenditure;
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if($dt['txn_type'] == 'Sale'): ?>
+                                <?php if($dt['txn_type'] == 'Sale' && !$is_pdf && !$is_excel): ?>
                                     <a href="javascript:void(0);" onclick="openDocModal('invoice_print.php?id=<?= $dt['doc_id'] ?>', 'Sale Invoice: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
-                                <?php elseif($dt['txn_type'] == 'Purchase'): ?>
+                                <?php elseif($dt['txn_type'] == 'Purchase' && !$is_pdf && !$is_excel): ?>
                                     <a href="javascript:void(0);" onclick="openDocModal('print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>', 'Purchase GRN: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
@@ -311,25 +329,40 @@ flatpickr(".purchase-datepicker", {
     disableMobile: true
 });
 
-// Live Table Filter Logic
-function filterTable() {
-    var input, filter, table, tr, td, i, txtValue;
-    input = document.getElementById("searchInput");
-    filter = input.value.toUpperCase();
-    table = document.querySelector(".rpt-tbl");
-    tr = table.getElementsByTagName("tr");
+// Naya Multi-Filter Logic (Global Search + Column Filters)
+function filterColumns() {
+    var inputGlobal = document.getElementById("searchInput") ? document.getElementById("searchInput").value.toUpperCase() : "";
+    var inputDate = document.getElementById("colDate") ? document.getElementById("colDate").value.toUpperCase() : "";
+    var inputType = document.getElementById("colType") ? document.getElementById("colType").value.toUpperCase() : "";
+    var inputRef = document.getElementById("colRef") ? document.getElementById("colRef").value.toUpperCase() : "";
+    var inputParty = document.getElementById("colParty") ? document.getElementById("colParty").value.toUpperCase() : "";
+    
+    var table = document.querySelector(".rpt-tbl");
+    var tr = table.getElementsByTagName("tr");
 
-    for (i = 1; i < tr.length - 1; i++) { // Skip header and footer
-        tr[i].style.display = "none";
-        td = tr[i].getElementsByTagName("td");
+    for (var i = 2; i < tr.length - 1; i++) { // Skip standard header, filter header, and footer
+        var tdDate = tr[i].getElementsByTagName("td")[0];
+        var tdType = tr[i].getElementsByTagName("td")[1];
+        var tdRef = tr[i].getElementsByTagName("td")[2];
+        var tdParty = tr[i].getElementsByTagName("td")[3];
         
-        for (var j = 0; j < td.length; j++) {
-            if (td[j]) {
-                txtValue = td[j].textContent || td[j].innerText;
-                if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                    tr[i].style.display = "";
-                    break;
-                }
+        if (tdDate && tdType && tdRef && tdParty) {
+            var txtDate = (tdDate.textContent || tdDate.innerText).toUpperCase();
+            var txtType = (tdType.textContent || tdType.innerText).toUpperCase().trim();
+            var txtRef = (tdRef.textContent || tdRef.innerText).toUpperCase();
+            var txtParty = (tdParty.textContent || tdParty.innerText).toUpperCase();
+            var rowText = tr[i].innerText.toUpperCase();
+            
+            var matchGlobal = inputGlobal === "" || rowText.indexOf(inputGlobal) > -1;
+            var matchDate = inputDate === "" || txtDate.indexOf(inputDate) > -1;
+            var matchType = inputType === "" || txtType === inputType; 
+            var matchRef = inputRef === "" || txtRef.indexOf(inputRef) > -1;
+            var matchParty = inputParty === "" || txtParty.indexOf(inputParty) > -1;
+
+            if (matchGlobal && matchDate && matchType && matchRef && matchParty) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
             }
         }
     }
