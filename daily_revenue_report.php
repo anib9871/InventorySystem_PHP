@@ -313,6 +313,11 @@ flatpickr(".purchase-datepicker", {
     disableMobile: true
 });
 
+// Fix for openDocModal error
+function openDocModal(url, title) {
+    window.open(url, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+}
+
 // Global Search Filter
 function filterTable() {
     var input = document.getElementById("searchInput");
