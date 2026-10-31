@@ -7,9 +7,8 @@ $org_id   = $_SESSION['org_id'] ?? 0;
 $org_data = find_by_sql("SELECT org_name FROM organization_master WHERE id = '{$org_id}'");
 $org_name = !empty($org_data) ? $org_data[0]['org_name'] : 'Company Name';
 
-/* ── PDF & EXCEL MODE ── */
+/* ── PDF MODE ── */
 $is_pdf = isset($_GET['pdf']);
-$is_excel = isset($_GET['excel']);
 
 /* ── DATE FILTER FIX ── */
 $today = date('Y-m-d');
@@ -38,16 +37,8 @@ foreach ($formats as $format) {
     }
 }
 
-/* ── FILE SAVE AS NAME & EXCEL HEADERS ── */
-$file_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
-
-if ($is_excel) {
-    $excel_filename = "Revenue_Report_" . date('d-M-Y', strtotime($from)) . "_to_" . date('d-M-Y', strtotime($to)) . ".xls";
-    header("Content-Type: application/vnd.ms-excel");
-    header("Content-Disposition: attachment; filename=\"$excel_filename\"");
-    header("Pragma: no-cache");
-    header("Expires: 0");
-}
+/* ── PDF FILE SAVE AS NAME ── */
+$pdf_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
 
 /* ── SESSION & ROLES ── */
 $role_id       = $_SESSION['role_id'] ?? 0;
@@ -135,15 +126,15 @@ if (!empty($detailed_data)) {
 $net_revenue = $grand_income - $grand_expenditure;
 ?>
 
-<?php if ($is_pdf || $is_excel): ?>
+<?php if ($is_pdf): ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title><?= $file_save_title ?></title>
+    <title><?= $pdf_save_title ?></title>
 <?php else: ?>
 <?php include_once('layouts/header.php'); ?>
-<script>document.title = "<?= $file_save_title ?>";</script>
+<script>document.title = "<?= $pdf_save_title ?>";</script>
 <?php endif; ?>
 <style>
 .rpt * { box-sizing: border-box; }
@@ -154,7 +145,6 @@ $net_revenue = $grand_income - $grand_expenditure;
 .rpt-filter .form-control { height: 27px; font-size: 11px; padding: 3px 7px; }
 .rpt-filter .btn { font-size: 11px; padding: 3px 10px; height: 27px; }
 .rpt-pdf-btn { background: #dc3545; color: #fff !important; padding: 4px 11px; border-radius: 4px; font-size: 11px; text-decoration: none; }
-.rpt-excel-btn { background: #107c41; color: #fff !important; padding: 4px 11px; border-radius: 4px; font-size: 11px; text-decoration: none; }
 .rpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
 .rpt-tbl th, .rpt-tbl td { border: 1px solid #e2e8f0; padding: 6px 10px; }
 .rpt-tbl th { background: #f1f5f9; font-weight: 700; text-transform: uppercase; }
@@ -193,18 +183,14 @@ $net_revenue = $grand_income - $grand_expenditure;
         <p><?= date('d M Y', strtotime($from)) ?> &mdash; <?= date('d M Y', strtotime($to)) ?></p>
     </div>
 
-    <!-- Filter Form & Action Buttons -->
-    <?php if (!$is_pdf && !$is_excel): ?>
+    <!-- Filter Form -->
+    <?php if (!$is_pdf): ?>
     <div class="rpt-filter no-print">
         <form method="post" class="mobile-wrap-form" style="margin:0; width:100%; display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
             <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
             <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
-            <button type="submit" name="generate_report" value="1" class="btn btn-primary"><i class="fa fa-file-text-o"></i> Generate</button>
-            
-            <a href="?pdf=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-pdf-btn">&#8659; PDF</a>
-            <a href="?excel=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-excel-btn">&#8659; Excel</a>
-
-            <input type="text" id="searchInput" onkeyup="filterColumns()" placeholder="🔍 Global Search..." class="form-control" style="width:160px; margin-left:auto;">
+            <button type="submit" name="generate_report" value="1" class="btn btn-primary"><i class="fa fa-file-text-o"></i> Generate Report</button>
+            <a href="?pdf=1&from=<?= $from ?>&to=<?= $to ?>" target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
         </form>
     </div>
     <?php endif; ?>
@@ -245,24 +231,6 @@ $net_revenue = $grand_income - $grand_expenditure;
                             <th width="14%" style="text-align:right;">Expenditure (₹)</th>
                             <th width="13%" style="text-align:right;">Net Flow (₹)</th>
                         </tr>
-                        <?php if (!$is_pdf && !$is_excel): ?>
-                        <tr class="no-print" style="background:#f8fafc;">
-                            <th><input type="text" id="colDate" onkeyup="filterColumns()" placeholder="🔍 Date..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
-                            <th>
-                                <select id="colType" onchange="filterColumns()" style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; cursor:pointer; outline:none;">
-                                    <option value="">All</option>
-                                    <option value="SALE">Sale</option>
-                                    <option value="PURCHASE">Purchase</option>
-                                    <option value="EXPENSE">Expense</option>
-                                </select>
-                            </th>
-                            <th><input type="text" id="colRef" onkeyup="filterColumns()" placeholder="🔍 Ref / Invoice..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
-                            <th><input type="text" id="colParty" onkeyup="filterColumns()" placeholder="🔍 Party Name..." style="width:100%; padding:3px; font-size:10px; border:1px solid #cbd5e1; border-radius:3px; outline:none;"></th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                        <?php endif; ?>
                     </thead>
                     <tbody>
                         <?php foreach ($detailed_data as $dt): 
@@ -280,11 +248,11 @@ $net_revenue = $grand_income - $grand_expenditure;
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if($dt['txn_type'] == 'Sale' && !$is_pdf && !$is_excel): ?>
+                                <?php if($dt['txn_type'] == 'Sale'): ?>
                                     <a href="javascript:void(0);" onclick="openDocModal('invoice_print.php?id=<?= $dt['doc_id'] ?>', 'Sale Invoice: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#2563eb; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
-                                <?php elseif($dt['txn_type'] == 'Purchase' && !$is_pdf && !$is_excel): ?>
+                                <?php elseif($dt['txn_type'] == 'Purchase'): ?>
                                     <a href="javascript:void(0);" onclick="openDocModal('print_grn.php?bill=<?= urlencode($dt['ref_no']) ?>', 'Purchase GRN: <?= htmlspecialchars($dt['ref_no']) ?>')" style="color:#dc2626; text-decoration:underline; font-weight:bold;">
                                         <?= htmlspecialchars($dt['ref_no']) ?>
                                     </a>
@@ -321,57 +289,16 @@ $net_revenue = $grand_income - $grand_expenditure;
     </div>
 </div>
 
-<?php if (!$is_pdf && !$is_excel): ?>
 <script>
 flatpickr(".purchase-datepicker", {
     dateFormat: "d/M/Y",
     allowInput: false,
     disableMobile: true
 });
-
-// Naya Multi-Filter Logic (Global Search + Column Filters)
-function filterColumns() {
-    var inputGlobal = document.getElementById("searchInput") ? document.getElementById("searchInput").value.toUpperCase() : "";
-    var inputDate = document.getElementById("colDate") ? document.getElementById("colDate").value.toUpperCase() : "";
-    var inputType = document.getElementById("colType") ? document.getElementById("colType").value.toUpperCase() : "";
-    var inputRef = document.getElementById("colRef") ? document.getElementById("colRef").value.toUpperCase() : "";
-    var inputParty = document.getElementById("colParty") ? document.getElementById("colParty").value.toUpperCase() : "";
-    
-    var table = document.querySelector(".rpt-tbl");
-    var tr = table.getElementsByTagName("tr");
-
-    for (var i = 2; i < tr.length - 1; i++) { // Skip standard header, filter header, and footer
-        var tdDate = tr[i].getElementsByTagName("td")[0];
-        var tdType = tr[i].getElementsByTagName("td")[1];
-        var tdRef = tr[i].getElementsByTagName("td")[2];
-        var tdParty = tr[i].getElementsByTagName("td")[3];
-        
-        if (tdDate && tdType && tdRef && tdParty) {
-            var txtDate = (tdDate.textContent || tdDate.innerText).toUpperCase();
-            var txtType = (tdType.textContent || tdType.innerText).toUpperCase().trim();
-            var txtRef = (tdRef.textContent || tdRef.innerText).toUpperCase();
-            var txtParty = (tdParty.textContent || tdParty.innerText).toUpperCase();
-            var rowText = tr[i].innerText.toUpperCase();
-            
-            var matchGlobal = inputGlobal === "" || rowText.indexOf(inputGlobal) > -1;
-            var matchDate = inputDate === "" || txtDate.indexOf(inputDate) > -1;
-            var matchType = inputType === "" || txtType === inputType; 
-            var matchRef = inputRef === "" || txtRef.indexOf(inputRef) > -1;
-            var matchParty = inputParty === "" || txtParty.indexOf(inputParty) > -1;
-
-            if (matchGlobal && matchDate && matchType && matchRef && matchParty) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
-}
 </script>
-<?php endif; ?>
 
 <?php if ($is_pdf): ?>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 1000); };</script>
 <?php endif; ?>
 
-<?php if (!$is_pdf && !$is_excel) include_once('layouts/footer.php'); ?>
+<?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
