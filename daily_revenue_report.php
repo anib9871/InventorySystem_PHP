@@ -7,8 +7,9 @@ $org_id   = $_SESSION['org_id'] ?? 0;
 $org_data = find_by_sql("SELECT org_name FROM organization_master WHERE id = '{$org_id}'");
 $org_name = !empty($org_data) ? $org_data[0]['org_name'] : 'Company Name';
 
-/* ── PDF MODE ── */
+/* ── PDF & EXCEL MODE ── */
 $is_pdf = isset($_GET['pdf']);
+$is_excel = isset($_GET['excel']);
 
 /* ── DATE FILTER FIX ── */
 $today = date('Y-m-d');
@@ -37,8 +38,16 @@ foreach ($formats as $format) {
     }
 }
 
-/* ── PDF FILE SAVE AS NAME ── */
-$pdf_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
+/* ── FILE SAVE AS NAME ── */
+$file_save_title = htmlspecialchars($org_name) . " - Daily Revenue Report (" . date('d-M-Y', strtotime($from)) . " to " . date('d-M-Y', strtotime($to)) . ")";
+
+if ($is_excel) {
+    $excel_filename = "Revenue_Report_" . date('d-M-Y', strtotime($from)) . "_to_" . date('d-M-Y', strtotime($to)) . ".xls";
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=\"$excel_filename\"");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+}
 
 /* ── SESSION & ROLES ── */
 $role_id       = $_SESSION['role_id'] ?? 0;
@@ -126,15 +135,15 @@ if (!empty($detailed_data)) {
 $net_revenue = $grand_income - $grand_expenditure;
 ?>
 
-<?php if ($is_pdf): ?>
+<?php if ($is_pdf || $is_excel): ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title><?= $pdf_save_title ?></title>
+    <title><?= $file_save_title ?></title>
 <?php else: ?>
 <?php include_once('layouts/header.php'); ?>
-<script>document.title = "<?= $pdf_save_title ?>";</script>
+<script>document.title = "<?= $file_save_title ?>";</script>
 <?php endif; ?>
 <style>
 .rpt * { box-sizing: border-box; }
@@ -145,6 +154,7 @@ $net_revenue = $grand_income - $grand_expenditure;
 .rpt-filter .form-control { height: 27px; font-size: 11px; padding: 3px 7px; }
 .rpt-filter .btn { font-size: 11px; padding: 3px 10px; height: 27px; }
 .rpt-pdf-btn { background: #dc3545; color: #fff !important; padding: 4px 11px; border-radius: 4px; font-size: 11px; text-decoration: none; }
+.rpt-excel-btn { background: #107c41; color: #fff !important; padding: 4px 11px; border-radius: 4px; font-size: 11px; text-decoration: none; }
 .rpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
 .rpt-tbl th, .rpt-tbl td { border: 1px solid #e2e8f0; padding: 6px 10px; }
 .rpt-tbl th { background: #f1f5f9; font-weight: 700; text-transform: uppercase; }
@@ -183,14 +193,18 @@ $net_revenue = $grand_income - $grand_expenditure;
         <p><?= date('d M Y', strtotime($from)) ?> &mdash; <?= date('d M Y', strtotime($to)) ?></p>
     </div>
 
-    <!-- Filter Form -->
-    <?php if (!$is_pdf): ?>
+    <!-- Filter Form & Action Buttons -->
+    <?php if (!$is_pdf && !$is_excel): ?>
     <div class="rpt-filter no-print">
         <form method="post" class="mobile-wrap-form" style="margin:0; width:100%; display:flex; align-items:center; gap:6px; flex-wrap:nowrap;">
             <input type="text" name="from" value="<?= date('d/M/Y', strtotime($from)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
             <input type="text" name="to" value="<?= date('d/M/Y', strtotime($to)) ?>" class="form-control purchase-datepicker" style="width:135px;" autocomplete="off" required>
-            <button type="submit" name="generate_report" value="1" class="btn btn-primary"><i class="fa fa-file-text-o"></i> Generate Report</button>
-            <a href="?pdf=1&from=<?= $from ?>&to=<?= $to ?>" target="_blank" class="rpt-pdf-btn">&#8659; Download PDF</a>
+            <button type="submit" name="generate_report" value="1" class="btn btn-primary"><i class="fa fa-file-text-o"></i> Generate</button>
+            
+            <a href="?pdf=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-pdf-btn">&#8659; PDF</a>
+            <a href="?excel=1&from=<?= $from ?>&to=<?= $to ?>&center_id=<?= $center_filter ?>" target="_blank" class="rpt-excel-btn">&#8659; Excel</a>
+
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Search table data..." class="form-control" style="width:200px; margin-left:auto;">
         </form>
     </div>
     <?php endif; ?>
@@ -289,16 +303,42 @@ $net_revenue = $grand_income - $grand_expenditure;
     </div>
 </div>
 
+<?php if (!$is_pdf && !$is_excel): ?>
 <script>
 flatpickr(".purchase-datepicker", {
     dateFormat: "d/M/Y",
     allowInput: false,
     disableMobile: true
 });
+
+// Live Table Filter Logic
+function filterTable() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("searchInput");
+    filter = input.value.toUpperCase();
+    table = document.querySelector(".rpt-tbl");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 1; i < tr.length - 1; i++) { // Skip header and footer
+        tr[i].style.display = "none";
+        td = tr[i].getElementsByTagName("td");
+        
+        for (var j = 0; j < td.length; j++) {
+            if (td[j]) {
+                txtValue = td[j].textContent || td[j].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                    break;
+                }
+            }
+        }
+    }
+}
 </script>
+<?php endif; ?>
 
 <?php if ($is_pdf): ?>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 1000); };</script>
 <?php endif; ?>
 
-<?php if (!$is_pdf) include_once('layouts/footer.php'); ?>
+<?php if (!$is_pdf && !$is_excel) include_once('layouts/footer.php'); ?>
