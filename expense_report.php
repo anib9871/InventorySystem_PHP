@@ -174,11 +174,12 @@ if (!empty($expense_data)) {
                     <thead>
                         <tr>
                             <th width="5%" onclick="sortTable(0)"># <span class="sort-icon">&#8693;</span></th>
-                            <th width="12%" onclick="sortTable(1)">Date <span class="sort-icon">&#8693;</span></th>
-                            <th width="20%" onclick="sortTable(2)">Category <span class="sort-icon">&#8693;</span></th>
-                            <th width="35%" onclick="sortTable(3)">Description / Note <span class="sort-icon">&#8693;</span></th>
-                            <th width="13%" style="text-align:center;" onclick="sortTable(4)">Payment Mode <span class="sort-icon">&#8693;</span></th>
-                            <th width="15%" style="text-align:right;" onclick="sortTable(5)">Amount (₹) <span class="sort-icon">&#8693;</span></th>
+                            <th width="10%" onclick="sortTable(1)">Date <span class="sort-icon">&#8693;</span></th>
+                            <th width="15%" onclick="sortTable(2)">Category <span class="sort-icon">&#8693;</span></th>
+                            <th width="15%" onclick="sortTable(3)">Ref No <span class="sort-icon">&#8693;</span></th>
+                            <th width="25%" onclick="sortTable(4)">Description / Note <span class="sort-icon">&#8693;</span></th>
+                            <th width="15%" style="text-align:center;" onclick="sortTable(5)">Payment Mode <span class="sort-icon">&#8693;</span></th>
+                            <th width="15%" style="text-align:right;" onclick="sortTable(6)">Amount (₹) <span class="sort-icon">&#8693;</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -187,11 +188,11 @@ if (!empty($expense_data)) {
                             <td><?= $i++; ?></td>
                             <td><?= date('d/M/Y', strtotime($exp['expense_date'])) ?></td>
                             <td><b><?= htmlspecialchars($exp['category_name'] ?? 'Unknown Category') ?></b></td>
+                            <td style="font-weight:600; color:#475569;">
+                                <?= !empty($exp['reference_no']) ? htmlspecialchars($exp['reference_no']) : '-' ?>
+                            </td>
                             <td>
                                 <?= htmlspecialchars($exp['description']) ?>
-                                <?php if(!empty($exp['reference_no'])): ?>
-                                    <br><span style="color:#64748b; font-size:10px;">Ref: <?= htmlspecialchars($exp['reference_no']) ?></span>
-                                <?php endif; ?>
                             </td>
                             <td style="text-align:center;">
                                 <span style="background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700;">
@@ -206,7 +207,7 @@ if (!empty($expense_data)) {
                     </tbody>
                     <tfoot>
                         <tr style="background:#e2e8f0; font-weight:700;">
-                            <td colspan="5" style="text-align:right;">GRAND TOTAL</td>
+                            <td colspan="6" style="text-align:right;">GRAND TOTAL</td>
                             <td style="text-align:right; color:#dc2626; font-size:13px;">
                                 ₹ <?= number_format($grand_total, 2) ?>
                             </td>
