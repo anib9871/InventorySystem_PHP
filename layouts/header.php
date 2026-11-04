@@ -1,4 +1,7 @@
 <?php
+// Sabse upar yeh timezone set kar dein taaki hamesha IST (Indian Standard Time) aaye
+date_default_timezone_set('Asia/Kolkata');
+
 require_once('includes/load.php');
 
 $user = [];
