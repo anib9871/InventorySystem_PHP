@@ -300,10 +300,12 @@ label {
                 <div class="form-group form-group-compact">
                     <label>Sequence Category</label>
                     <select name="sequence_category" class="form-control" required autofocus>
-                        <option value="">Select Category</option>
-                        <option value="invoice">Invoice</option>
-                        <option value="quotation">Quotation</option>
-                    </select>
+                    <option value="">Select Category</option>
+                    <option value="invoice">Invoice</option>
+                    <option value="quotation">Quotation</option>
+                    <option value="proforma">Proforma</option>
+                    <option value="po">Purchase Order (PO)</option>
+                </select>
                 </div>
 
                 <div class="form-group form-group-compact">
@@ -409,13 +411,13 @@ document.getElementById("seqSearch").addEventListener("keyup", function() {
 // Delete Confirmation
 function confirmDelete(id) {
     Swal.fire({
-        title: 'Are You Sure?',
-        text: "This sequence will be deleted!",
+        title: 'Kya aap sure hain?',
+        text: "Is sequence ko delete kar diya jayega!",
         icon: 'warning',
         showCancelButton: true,
         confirmColor: '#ef4444',
         cancelColor: '#6b7280',
-        confirmButtonText: 'Yes, Delete It!',
+        confirmButtonText: 'Haan, Delete Karo!',
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
