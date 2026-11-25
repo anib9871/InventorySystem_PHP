@@ -384,26 +384,47 @@ include_once('layouts/header.php');
                                     $line_total = $unit_price_inclusive * $qty;
                                     $grand_total += $line_total;
 
-                                    $stock_data = find_by_sql("
-                                        SELECT
-                                            SUM(CASE WHEN transaction_type IN (1, 4) THEN quantity ELSE 0 END) AS total_in,
-                                            SUM(CASE WHEN transaction_type IN (2, 3, 5, 6) THEN quantity ELSE 0 END) AS total_out,
-                                            COALESCE((
-                                                SELECT SUM(d.qty)
-                                                FROM demo_item_detail d
-                                                WHERE d.product_id = '{$x['raw_product_id']}'
-                                                AND d.status = 1
-                                            ), 0) AS demo_hold_qty
-                                        FROM transaction_master
-                                        WHERE product_id = '{$x['raw_product_id']}'
-                                    ");
+                                    
+$stock_data = find_by_sql("
+    SELECT
+        COALESCE(SUM(
+            CASE
+                WHEN transaction_type IN (1, 4)
+                THEN COALESCE(quantity, 0) + COALESCE(free_qty, 0)
+                ELSE 0
+            END
+        ), 0) AS total_in,
 
-                                    $current_stock = 0;
-                                    if(!empty($stock_data)){
-                                        $physical_stock = (float)$stock_data[0]['total_in'] - (float)$stock_data[0]['total_out'];
-                                        $demo_hold_qty  = (float)$stock_data[0]['demo_hold_qty'];
-                                        $current_stock  = $physical_stock - $demo_hold_qty;
-                                    }
+        COALESCE(SUM(
+            CASE
+                WHEN transaction_type IN (2, 3, 5, 6)
+                THEN COALESCE(quantity, 0) + COALESCE(free_qty, 0)
+                ELSE 0
+            END
+        ), 0) AS total_out,
+
+        COALESCE((
+            SELECT SUM(d.qty)
+            FROM demo_item_detail d
+            WHERE d.product_id = '{$x['raw_product_id']}'
+            AND d.status = 1
+        ), 0) AS demo_hold_qty
+
+    FROM transaction_master
+    WHERE product_id = '{$x['raw_product_id']}'
+");
+
+$current_stock = 0;
+
+if (!empty($stock_data)) {
+    $physical_stock = (float)$stock_data[0]['total_in']
+                    - (float)$stock_data[0]['total_out'];
+
+    $demo_hold_qty = (float)$stock_data[0]['demo_hold_qty'];
+
+    $current_stock = $physical_stock - $demo_hold_qty;
+}
+
 
                                     $product_info = find_by_id('products', $x['raw_product_id']);
                                     $reorder_level = isset($product_info['reorder_level']) ? (float)$product_info['reorder_level'] : 0;
