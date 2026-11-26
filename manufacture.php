@@ -14,8 +14,10 @@ if(isset($_POST['save_manufacture'])){
     global $db;
     $product_id = (int)$_POST['product_id'];
     $qty        = (float)$_POST['qty'];
+    $free_qty   = (float)($_POST['free_qty'] ?? 0);
+    $total_mfg_units = $qty + $free_qty; // Raw material will be consumed for total manufactured units
 
-    if($product_id <= 0 || $qty <= 0){
+    if($product_id <= 0 || $qty <= 0 || $free_qty < 0){
         $_SESSION['mfg_error'] = "Please select device and enter valid quantity";
         redirect('manufacture.php', false);
         exit;
@@ -41,16 +43,16 @@ if(isset($_POST['save_manufacture'])){
     foreach($bom_items as $b){
         $raw_id  = (int)$b['raw_product_id'];
         $per_unit = (float)$b['quantity'];
-        $total_required = $per_unit * $qty;
+        $total_required = $per_unit * $total_mfg_units;
         $product_data = find_by_id('products', $raw_id);
         $gst_id = (int)$product_data['gst_id'];
 
-        /* ===== Transaction Based Stock Check ===== */
+        /* ===== Transaction Based Stock Check (Including Free Qty) ===== */
         $stock_data = find_by_sql("
             SELECT
-            IFNULL(SUM(CASE WHEN transaction_type IN (1,4) THEN quantity ELSE 0 END),0)
+            IFNULL(SUM(CASE WHEN transaction_type IN (1,4) THEN (quantity + IFNULL(free_qty,0)) ELSE 0 END),0)
             -
-            IFNULL(SUM(CASE WHEN transaction_type IN (2, 3, 5, 6) THEN quantity ELSE 0 END),0)
+            IFNULL(SUM(CASE WHEN transaction_type IN (2, 3, 5, 6) THEN (quantity + IFNULL(free_qty,0)) ELSE 0 END),0)
             AS current_stock
             FROM transaction_master
             WHERE product_id = {$raw_id}
@@ -69,9 +71,9 @@ if(isset($_POST['save_manufacture'])){
         /* ===== Deduct Raw Material ===== */
         if(!$db->query("
             INSERT INTO transaction_master
-            (product_id, bill_indent_no, entry_date, quantity, gst_id, transaction_type, comments, created_at)
+            (product_id, bill_indent_no, entry_date, quantity, free_qty, gst_id, transaction_type, comments, created_at)
             VALUES
-            ({$raw_id}, '{$ref_no}', NOW(), {$total_required}, {$gst_id}, 6, 'Manufacture Raw Material', NOW())
+            ({$raw_id}, '{$ref_no}', NOW(), {$total_required}, 0, {$gst_id}, 6, 'Manufacture Raw Material', NOW())
         ")){
             $db->query("ROLLBACK");
             $_SESSION['mfg_error'] = "Raw material deduction failed";
@@ -80,15 +82,15 @@ if(isset($_POST['save_manufacture'])){
         }
     }
 
-    /* ===== Add Finished Goods ===== */
+    /* ===== Add Finished Goods (With Free Qty) ===== */
     $fg_data = find_by_id('products', $product_id);
     $fg_gst_id = (int)$fg_data['gst_id'];
 
     if(!$db->query("
         INSERT INTO transaction_master
-        (product_id, bill_indent_no, entry_date, quantity, gst_id, transaction_type, comments, created_at)
+        (product_id, bill_indent_no, entry_date, quantity, free_qty, gst_id, transaction_type, comments, created_at)
         VALUES
-        ({$product_id}, '{$ref_no}', NOW(), {$qty}, {$fg_gst_id}, 1, 'Manufactured Finished Goods', NOW())
+        ({$product_id}, '{$ref_no}', NOW(), {$qty}, {$free_qty}, {$fg_gst_id}, 1, 'Manufactured Finished Goods', NOW())
     ")){
         $db->query("ROLLBACK");
         $_SESSION['mfg_error'] = "Finished goods insert failed";
@@ -110,22 +112,26 @@ if(isset($_POST['edit_history'])){
     $edit_ref_no = $db->escape($_POST['edit_ref_no']);
     $edit_product_id = (int)$_POST['edit_product_id'];
     $rev_qty = (float)$_POST['rev_qty'];
+    $rev_free_qty = (float)($_POST['rev_free_qty'] ?? 0);
 
-    // Fetch original quantity
-    $old_data = find_by_sql("SELECT quantity FROM transaction_master WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id} LIMIT 1");
+    // Fetch original quantity & free_qty
+    $old_data = find_by_sql("SELECT quantity, IFNULL(free_qty,0) AS free_qty FROM transaction_master WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id} LIMIT 1");
     $old_qty = (float)$old_data[0]['quantity'];
+    $old_free_qty = (float)$old_data[0]['free_qty'];
 
-    if($rev_qty > 0 && $rev_qty <= $old_qty){
+    if(($rev_qty > 0 || $rev_free_qty > 0) && $rev_qty <= $old_qty && $rev_free_qty <= $old_free_qty){
         $db->query("START TRANSACTION");
 
         $new_qty = $old_qty - $rev_qty;
+        $new_free_qty = $old_free_qty - $rev_free_qty;
+        $new_total_units = $new_qty + $new_free_qty;
 
-        if($new_qty == 0) {
+        if($new_total_units == 0) {
             // Completely reverse (Delete the transaction)
             $db->query("DELETE FROM transaction_master WHERE bill_indent_no = '{$edit_ref_no}'");
         } else {
-            // Update Finished Goods Quantity to the new remaining amount
-            $db->query("UPDATE transaction_master SET quantity = {$new_qty} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id}");
+            // Update Finished Goods Quantity & Free Qty
+            $db->query("UPDATE transaction_master SET quantity = {$new_qty}, free_qty = {$new_free_qty} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$edit_product_id}");
 
             // Fetch BOM and Update Raw Material Quantities accordingly
             $bom_items = find_by_sql("SELECT raw_product_id, quantity FROM bom WHERE product_id = {$edit_product_id}");
@@ -134,9 +140,8 @@ if(isset($_POST['edit_history'])){
                 foreach($bom_items as $b){
                     $raw_id   = (int)$b['raw_product_id'];
                     $per_unit = (float)$b['quantity'];
-                    $total_rm = $per_unit * $new_qty;
+                    $total_rm = $per_unit * $new_total_units;
 
-                    // Update the raw material entry linked to this same Reference Number
                     $db->query("UPDATE transaction_master SET quantity = {$total_rm} WHERE bill_indent_no = '{$edit_ref_no}' AND product_id = {$raw_id}");
                 }
             }
@@ -178,7 +183,7 @@ if(isset($_POST['delete_history'])){
    FETCH HISTORY (For Table Display)
 ================================ */
 $history_data = find_by_sql("
-    SELECT tm.entry_date, tm.bill_indent_no, p.id AS product_id, p.name AS product_name, tm.quantity, tm.transaction_type, tm.comments 
+    SELECT tm.entry_date, tm.bill_indent_no, p.id AS product_id, p.name AS product_name, tm.quantity, IFNULL(tm.free_qty,0) AS free_qty, tm.transaction_type, tm.comments 
     FROM transaction_master tm
     JOIN products p ON tm.product_id = p.id
     WHERE p.is_bom = 1 AND tm.transaction_type IN (1, 5) 
@@ -199,6 +204,7 @@ $history_data = find_by_sql("
 .btn-round{ border-radius:30px; padding:8px 24px; font-weight:600; }
 .badge-mfg { background-color: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
 .badge-rev { background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+.badge-free { background-color: #0284c7; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px; }
 
 /* Search Box Styling */
 .history-header {
@@ -237,14 +243,22 @@ $history_data = find_by_sql("
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>Quantity</label>
-                        <input type="number" name="qty" class="form-control" min="1" value="1" step="1" required>
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <input type="number" name="qty" class="form-control" min="1" value="1" step="1" required>
+                            </div>
+                        </div>
+                        <div class="col-xs-6">
+                            <div class="form-group">
+                                <label>Free Qty</label>
+                                <input type="number" name="free_qty" class="form-control" min="0" value="0" step="1">
+                            </div>
+                        </div>
                     </div>
 
-                    <br>
-
-                    <button type="submit" name="save_manufacture" class="btn btn-success btn-round">
+                    <button type="submit" name="save_manufacture" class="btn btn-success btn-round" style="margin-top:6px;">
                         Manufacture
                     </button>
                 </form>
@@ -324,6 +338,9 @@ $history_data = find_by_sql("
                                     </td>
                                     <td style="font-weight:bold; font-size:14px;">
                                         <?= (int)$row['quantity']; ?> Pcs
+                                        <?php if((float)$row['free_qty'] > 0): ?>
+                                            <span class="badge-free">+ <?= (int)$row['free_qty']; ?> Free</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-center">
                                         <!-- REVERSE BUTTON (Triggers Modal) -->
@@ -350,16 +367,26 @@ $history_data = find_by_sql("
                                         <h4 class="modal-title">Reverse Quantity - <?= htmlspecialchars($row['bill_indent_no']); ?></h4>
                                       </div>
                                       <div class="modal-body text-left">
-                                        <p><strong>Device:</strong> <?= htmlspecialchars($row['product_name']); ?> (Current Qty: <?= (int)$row['quantity']; ?>)</p>
+                                        <p><strong>Device:</strong> <?= htmlspecialchars($row['product_name']); ?> (Current: <?= (int)$row['quantity']; ?> Qty, <?= (int)$row['free_qty']; ?> Free)</p>
                                         
                                         <input type="hidden" name="edit_ref_no" value="<?= htmlspecialchars($row['bill_indent_no']); ?>">
                                         <input type="hidden" name="edit_product_id" value="<?= $row['product_id']; ?>">
                                         
-                                        <div class="form-group">
-                                            <label>Quantity to Reverse</label>
-                                            <input type="number" name="rev_qty" class="form-control" value="1" min="1" max="<?= (int)$row['quantity']; ?>" step="1" required>
+                                        <div class="row">
+                                            <div class="col-xs-6">
+                                                <div class="form-group">
+                                                    <label>Quantity to Reverse</label>
+                                                    <input type="number" name="rev_qty" class="form-control" value="0" min="0" max="<?= (int)$row['quantity']; ?>" step="1" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-xs-6">
+                                                <div class="form-group">
+                                                    <label>Free Qty to Reverse</label>
+                                                    <input type="number" name="rev_free_qty" class="form-control" value="0" min="0" max="<?= (int)$row['free_qty']; ?>" step="1" required>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p class="text-muted"><small>Note: Entering a quantity here will reverse that specific amount. The stock for both the finished goods and raw materials will be automatically updated.</small></p>
+                                        <p class="text-muted"><small>Note: Entering quantities here will reverse those specific amounts. Stock for both finished goods and raw materials will be updated automatically.</small></p>
                                       </div>
                                       <div class="modal-footer">
                                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
