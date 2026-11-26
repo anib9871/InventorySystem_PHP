@@ -32,18 +32,25 @@ if(!$bom){
 $max = PHP_INT_MAX;
 
 foreach($bom as $b){
+    $raw_id = (int)$b['raw_product_id'];
 
-$stock = find_by_sql("
+    $stock = find_by_sql("
         SELECT
-        IFNULL(SUM(CASE WHEN transaction_type IN (1, 4) THEN quantity ELSE 0 END),0)
-        -
-        IFNULL(SUM(CASE WHEN transaction_type IN (2, 3, 5, 6) THEN quantity ELSE 0 END),0)
-        AS stock
+            IFNULL(SUM(CASE WHEN transaction_type IN (1, 4) THEN (quantity + COALESCE(free_qty, 0)) ELSE 0 END), 0)
+            -
+            IFNULL(SUM(CASE WHEN transaction_type IN (2, 3, 5, 6, 8) THEN (quantity + COALESCE(free_qty, 0)) ELSE 0 END), 0)
+            -
+            COALESCE((
+                SELECT SUM(d.qty)
+                FROM demo_item_detail d
+                WHERE d.product_id = {$raw_id} AND d.status = 1
+            ), 0)
+            AS stock
         FROM transaction_master
-        WHERE product_id=".$b['raw_product_id']
-    );
+        WHERE product_id = {$raw_id}
+    ");
 
-    $current_stock = (float)$stock[0]['stock'];
+    $current_stock = max(0, (float)$stock[0]['stock']);
 
     $possible = 0;
 
