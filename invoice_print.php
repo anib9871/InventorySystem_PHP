@@ -23,7 +23,6 @@ $invoice = $invoice_data[0];
 /* PROFORMA VS TAX INVOICE TITLE LOGIC */
 $doc_type = strtoupper(trim($invoice['remarks'] ?? ''));
 
-// Naya Logic: Ab bill unpaid ho ya paid, jo Doc Type form mein select hua hai wahi print hoga!
 if (strpos($doc_type, 'PROFORMA') !== false) {
     $is_proforma = true;
     $title_text = 'PROFORMA INVOICE';
@@ -50,7 +49,6 @@ if (isset($_POST['send_email_btn'])) {
     $client_name  = $invoice['customer_name'];
 
     if (!empty($raw_emails)) {
-        // Comma se split karke multiple emails ki array banao
         $emails = array_map('trim', explode(',', $raw_emails));
         
         $sent_emails = [];
@@ -59,22 +57,19 @@ if (isset($_POST['send_email_btn'])) {
 
         foreach ($emails as $client_email) {
             if (!empty($client_email)) {
-                // Check if email format is valid
                 if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
                     $sent = send_invoice_email($id, $client_email, $client_name);
                     if ($sent === true || $sent == 1) {
-                                $sent_emails[] = htmlspecialchars($client_email);
-                            } else {
-                                // Yahan humne $sent (asli error reason) ko add kar diya
-                                $failed_emails[] = htmlspecialchars($client_email) . " - Reason: " . $sent;
-                            }
+                        $sent_emails[] = htmlspecialchars($client_email);
+                    } else {
+                        $failed_emails[] = htmlspecialchars($client_email) . " - Reason: " . $sent;
+                    }
                 } else {
-                    $invalid_emails[] = htmlspecialchars($client_email); // Galat email ko alag track karega
+                    $invalid_emails[] = htmlspecialchars($client_email);
                 }
             }
         }
 
-        // Status Message Create Karo
         $msg_parts = [];
         if (!empty($sent_emails)) $msg_parts[] = "✔ Sent: " . implode(', ', $sent_emails);
         if (!empty($invalid_emails)) $msg_parts[] = "✖ Invalid (Ignored): " . implode(', ', $invalid_emails);
@@ -101,10 +96,9 @@ $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 /* Organization */
 $org = find_by_sql("SELECT * FROM organization_master WHERE id=".$invoice['organization_id'])[0];
 
-// JSON Address ko plain text me badalne ka naya logic
 $raw_org_address = $org['address'] ?? '';
 $decoded_org_addr = json_decode($raw_org_address, true);
-$final_org_address = $raw_org_address; // Default fallback
+$final_org_address = $raw_org_address;
 
 if (is_array($decoded_org_addr)) {
     if (isset($decoded_org_addr[0]['text'])) {
@@ -323,48 +317,15 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     animation: fadeInSlide 0.3s ease-in-out;
 }
 
-.toast-success {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-}
-
-.toast-error {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-}
-
-.toast-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: bold;
-}
-
-.toast-success .toast-icon {
-    background-color: #10b981;
-    color: #ffffff;
-}
-
-.toast-error .toast-icon {
-    background-color: #ef4444;
-    color: #ffffff;
-}
+.toast-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.toast-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.toast-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: bold; }
+.toast-success .toast-icon { background-color: #10b981; color: #ffffff; }
+.toast-error .toast-icon { background-color: #ef4444; color: #ffffff; }
 
 @keyframes fadeInSlide {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @page { size: A4; margin: 6mm 8mm; }
@@ -399,7 +360,7 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
- <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
+        <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
             <input type="text" name="target_email" 
                    style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
                    value="<?= htmlspecialchars($invoice['customer_email'] ?? '') ?>" 
@@ -420,14 +381,14 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
 
 <div class="wrapper">
 
-<!-- HEADER SECTION -->
+    <!-- HEADER SECTION -->
     <div class="header-grid">
         <div class="org-brand">
             <h1 class="org-title"><?= strtoupper($org_master['org_name']) ?></h1>
             <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
                 <?= nl2br(htmlspecialchars($final_org_address)) ?><br>
                 <?php if($gst_enabled == "Yes"): ?>
-                    <b>GSTIN:</b> <?= $org['gst_no'] ?> | 
+                    <b>GSTIN:</b> <?= !empty(trim($org['gst_no'] ?? '')) ? htmlspecialchars($org['gst_no']) : 'NA' ?> | 
                 <?php endif; ?>
                 <b>Phone:</b> <?= $org['phone'] ?>
             </div>
@@ -455,7 +416,8 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
         <div style="color: var(--text-main); font-size: 11px; line-height: 1.3;">
             <?= $invoice['address'] ?><br>
             <?php if($gst_enabled == "Yes"): ?>
-                <b>GSTIN:</b> <?= $invoice['gst_no'] ?> | 
+                <b>GSTIN:</b> <?= !empty(trim($invoice['gst_no'] ?? '')) ? htmlspecialchars($invoice['gst_no']) : 'NA' ?>
+                <?php if(!empty($invoice['contact_no'])): ?> | <?php endif; ?>
             <?php endif; ?>
             <?php if(!empty($invoice['contact_no'])): ?>
                 <b>Phone:</b> <?= $invoice['contact_no'] ?>
@@ -698,23 +660,23 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
     <?php endif; ?>
 
    <!-- FOOTER INFO -->
-<div class="footer-grid">
-    <div class="footer-card">
-        <div class="footer-card-title">Bank Details</div>
-        <?php if($bank){ ?>
-            <div style="font-size: 11px; line-height: 1.4;">
-                <b>Bank:</b> <?= htmlspecialchars($bank['bank_name'] ?? '') ?><br>
-                <?php if(!empty($bank['branch'])): ?>
-                    <b>Branch:</b> <?= htmlspecialchars($bank['branch']) ?><br>
-                <?php endif; ?>
-                <b>A/C Name:</b> <?= htmlspecialchars($bank['account_name'] ?? '') ?><br>
-                <b>A/C No:</b> <?= htmlspecialchars($bank['account_number'] ?? '') ?><br>
-                <b>IFSC Code:</b> <?= htmlspecialchars($bank['ifsc_code'] ?? '') ?>
-            </div>
-        <?php } else { ?>
-            <div style="color: var(--text-muted); font-size: 11px;">No bank details available.</div>
-        <?php } ?>
-    </div>
+    <div class="footer-grid">
+        <div class="footer-card">
+            <div class="footer-card-title">Bank Details</div>
+            <?php if($bank){ ?>
+                <div style="font-size: 11px; line-height: 1.4;">
+                    <b>Bank:</b> <?= htmlspecialchars($bank['bank_name'] ?? '') ?><br>
+                    <?php if(!empty($bank['branch'])): ?>
+                        <b>Branch:</b> <?= htmlspecialchars($bank['branch']) ?><br>
+                    <?php endif; ?>
+                    <b>A/C Name:</b> <?= htmlspecialchars($bank['account_name'] ?? '') ?><br>
+                    <b>A/C No:</b> <?= htmlspecialchars($bank['account_number'] ?? '') ?><br>
+                    <b>IFSC Code:</b> <?= htmlspecialchars($bank['ifsc_code'] ?? '') ?>
+                </div>
+            <?php } else { ?>
+                <div style="color: var(--text-muted); font-size: 11px;">No bank details available.</div>
+            <?php } ?>
+        </div>
 
         <div class="footer-card center" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div class="footer-card-title">Authorized Signatory</div>
@@ -738,7 +700,6 @@ table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafaf
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 3 seconds baad alert gayab ho jayega automatically
     setTimeout(function() {
         var alertBox = document.getElementById("customToastAlert");
         if (alertBox) {
