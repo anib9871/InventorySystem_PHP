@@ -19,6 +19,7 @@ WHERE i.id = $id
 
 if(!$invoice_data) die("Quotation not found");
 $quotation = $invoice_data[0];
+
 /* ================= MANUAL EMAIL SEND HANDLER ================= */
 $email_msg = "";
 $email_status = "";
@@ -35,7 +36,6 @@ if (isset($_POST['send_email_btn'])) {
 
         foreach ($emails as $client_email) {
             if (!empty($client_email)) {
-                // Email format check
                 if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
                     $sent = send_quotation_email($id, $client_email, $client_name);
                     if ($sent === true || $sent == 1) {
@@ -44,12 +44,11 @@ if (isset($_POST['send_email_btn'])) {
                         $failed_emails[] = htmlspecialchars($client_email);
                     }
                 } else {
-                    $invalid_emails[] = htmlspecialchars($client_email); // Galat email pakad liya
+                    $invalid_emails[] = htmlspecialchars($client_email);
                 }
             }
         }
 
-        // Alert Message Generate
         $msg_parts = [];
         if (!empty($sent_emails)) $msg_parts[] = "✔ Sent: " . implode(', ', $sent_emails);
         if (!empty($invalid_emails)) $msg_parts[] = "✖ Invalid (Ignored): " . implode(', ', $invalid_emails);
@@ -62,7 +61,6 @@ if (isset($_POST['send_email_btn'])) {
         $email_status = "error";
     }
 }
-
 
 /* MASTER ORG NAME */
 $org_master = find_by_sql("
@@ -77,10 +75,9 @@ $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 /* Organization */
 $org = find_by_sql("SELECT * FROM organization_master WHERE id=".$quotation['organization_id'])[0];
 
-// JSON Address ko plain text me badalne ka naya logic
 $raw_org_address = $org['address'];
 $decoded_org_addr = json_decode($raw_org_address, true);
-$final_org_address = $raw_org_address; // Default fallback
+$final_org_address = $raw_org_address;
 
 if (is_array($decoded_org_addr)) {
     if (isset($decoded_org_addr[0]['text'])) {
@@ -91,9 +88,8 @@ if (is_array($decoded_org_addr)) {
 }
 
 /* ================= TAX MODE DETECT ================= */
-
-$org_state  = substr($org['gst_no'], 0, 2);
-$cust_state = substr($quotation['gst_no'], 0, 2);
+$org_state  = substr($org['gst_no'] ?? '', 0, 2);
+$cust_state = substr($quotation['gst_no'] ?? '', 0, 2);
 
 $tax_mode = ($org_state == $cust_state) ? 'CGST_SGST' : 'IGST';
 
@@ -109,43 +105,42 @@ LEFT JOIN products p ON p.id = ii.product_id
 WHERE ii.quotation_id = $id
 ");
 
-/* ================= NUMBER TO WORDS ================= */
-
-function numberToWords($num){
+/* ================= NUMBER TO WORDS (FIXED - NO TRAILING ZERO) ================= */
+function convertGroup($num) {
     $ones = array(
-        0=>"",1=>"One",2=>"Two",3=>"Three",4=>"Four",5=>"Five",
-        6=>"Six",7=>"Seven",8=>"Eight",9=>"Nine",10=>"Ten",
-        11=>"Eleven",12=>"Twelve",13=>"Thirteen",14=>"Fourteen",
-        15=>"Fifteen",16=>"Sixteen",17=>"Seventeen",
-        18=>"Eighteen",19=>"Nineteen"
+        0 => "", 1 => "One", 2 => "Two", 3 => "Three", 4 => "Four", 5 => "Five",
+        6 => "Six", 7 => "Seven", 8 => "Eight", 9 => "Nine", 10 => "Ten",
+        11 => "Eleven", 12 => "Twelve", 13 => "Thirteen", 14 => "Fourteen",
+        15 => "Fifteen", 16 => "Sixteen", 17 => "Seventeen", 18 => "Eighteen", 19 => "Nineteen"
     );
     $tens = array(
-        0=>"",2=>"Twenty",3=>"Thirty",4=>"Forty",
-        5=>"Fifty",6=>"Sixty",7=>"Seventy",
-        8=>"Eighty",9=>"Ninety"
+        0 => "", 2 => "Twenty", 3 => "Thirty", 4 => "Forty",
+        5 => "Fifty", 6 => "Sixty", 7 => "Seventy", 8 => "Eighty", 9 => "Ninety"
     );
 
-    if($num==0) return "Zero";
+    if ($num == 0) return "";
+    if ($num < 20) return $ones[$num];
+    if ($num < 100) return trim($tens[intval($num / 10)] . " " . $ones[$num % 10]);
+    if ($num < 1000) return trim($ones[intval($num / 100)] . " Hundred " . convertGroup($num % 100));
+    if ($num < 100000) return trim(convertGroup(intval($num / 1000)) . " Thousand " . convertGroup($num % 1000));
+    if ($num < 10000000) return trim(convertGroup(intval($num / 100000)) . " Lakh " . convertGroup($num % 100000));
+    return trim(convertGroup(intval($num / 10000000)) . " Crore " . convertGroup($num % 10000000));
+}
 
-    if($num<20) return $ones[$num];
+function numberToWords($amount) {
+    $amount = round($amount, 2);
+    $rupees = intval($amount);
+    $paise = intval(round(($amount - $rupees) * 100));
 
-    if($num<100){
-        return $tens[intval($num/10)]." ".$ones[$num%10];
+    if ($rupees == 0 && $paise == 0) return "Zero";
+    $rupeesInWords = ($rupees > 0) ? convertGroup($rupees) : "Zero";
+    $result = $rupeesInWords;
+
+    if ($paise > 0) {
+        $result .= " and " . convertGroup($paise) . " Paise";
     }
 
-    if($num<1000){
-        return $ones[intval($num/100)]." Hundred ".numberToWords($num%100);
-    }
-
-    if($num<100000){
-        return numberToWords(intval($num/1000))." Thousand ".numberToWords($num%1000);
-    }
-
-    if($num<10000000){
-        return numberToWords(intval($num/100000))." Lakh ".numberToWords($num%100000);
-    }
-
-    return numberToWords(intval($num/10000000))." Crore ".numberToWords($num%10000000);
+    return trim($result);
 }
 ?>
 
@@ -155,7 +150,6 @@ function numberToWords($num){
 <meta charset="UTF-8">
 <title><?= htmlspecialchars($quotation['customer_name']) ?>_Quotation_<?= htmlspecialchars($quotation['quotation_no']) ?></title>
 <style>
-/* ===== GLOBAL RESET & VARIABLES ===== */
 :root {
   --primary-color: #2563eb;
   --primary-dark: #1d4ed8;
@@ -166,9 +160,7 @@ function numberToWords($num){
   --table-header-bg: #f8fafc;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -180,7 +172,6 @@ body {
   color: var(--text-main);
 }
 
-/* ===== ACTION BAR (NO PRINT) ===== */
 .no-print-bar {
   max-width: 850px;
   margin: 15px auto;
@@ -206,23 +197,10 @@ body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
+.btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.btn-primary { background: var(--primary-color); color: #ffffff; border-color: var(--primary-color); }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
 
-.btn-primary {
-  background: var(--primary-color);
-  color: #ffffff;
-  border-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-}
-
-/* ===== MAIN WRAPPER ===== */
 .wrapper {
   width: 100%;
   max-width: 850px;
@@ -235,18 +213,14 @@ body {
   overflow: hidden;
 }
 
-/* Decorative Header Bar */
 .wrapper::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 5px;
   background: var(--primary-color);
 }
 
-/* ===== HEADER & META ===== */
 .header-grid {
   display: flex;
   justify-content: space-between;
@@ -255,213 +229,48 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
-.org-brand {
-  flex: 1;
-}
+.org-brand { flex: 1; }
+.org-title { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; margin: 0 0 4px 0; }
+.invoice-badge-box { text-align: right; }
+.invoice-title { font-size: 20px; font-weight: 800; color: var(--primary-color); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0; }
 
-.org-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
-  margin: 0 0 4px 0;
-}
+.meta-info-table { width: auto; margin-left: auto; border-collapse: collapse; }
+.meta-info-table td { padding: 1px 0 1px 10px; font-size: 11px; }
+.meta-label { color: var(--text-muted); font-weight: 500; text-align: right; }
+.meta-value { font-weight: 600; color: var(--text-main); text-align: right; }
 
-.invoice-badge-box {
-  text-align: right;
-}
+.info-card { background: var(--primary-light); border: 1px solid #dbeafe; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+.card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary-color); margin-bottom: 2px; }
+.customer-name { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
 
-.invoice-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--primary-color);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 4px 0;
-}
-
-.meta-info-table {
-  width: auto;
-  margin-left: auto;
-  border-collapse: collapse;
-}
-
-.meta-info-table td {
-  padding: 1px 0 1px 10px;
-  font-size: 11px;
-}
-
-.meta-label {
-  color: var(--text-muted);
-  font-weight: 500;
-  text-align: right;
-}
-
-.meta-value {
-  font-weight: 600;
-  color: var(--text-main);
-  text-align: right;
-}
-
-/* ===== CUSTOMER CARD ===== */
-.info-card {
-  background: var(--primary-light);
-  border: 1px solid #dbeafe;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-}
-
-.card-title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--primary-color);
-  margin-bottom: 2px;
-}
-
-.customer-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 2px;
-}
-
-/* ===== TABLES ===== */
-table.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 10px;
-}
-
-table.data-table th {
-  background: var(--table-header-bg);
-  color: var(--text-muted);
-  font-weight: 600;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 6px 8px;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-table.data-table td {
-  padding: 5px 8px;
-  border-bottom: 1px solid var(--border-color);
-  vertical-align: middle;
-  font-size: 11px;
-}
-
-table.data-table tr:nth-child(even):not(.summary-row) {
-  background-color: #fafafa;
-}
+table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+table.data-table th { background: var(--table-header-bg); color: var(--text-muted); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+table.data-table td { padding: 5px 8px; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 11px; }
+table.data-table tr:nth-child(even):not(.summary-row) { background-color: #fafafa; }
 
 .right { text-align: right; }
 .center { text-align: center; }
 .bold { font-weight: 600; }
 
-/* Table Summary Section */
-.summary-row td {
-  border-bottom: none;
-  padding: 3px 8px;
-}
+.summary-row td { border-bottom: none; padding: 3px 8px; }
+.summary-row.grand-total td { border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--primary-light); font-size: 12px; color: var(--primary-dark); }
 
-.summary-row.grand-total td {
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  background: var(--primary-light);
-  font-size: 12px;
-  color: var(--primary-dark);
-}
+.amount-words-box { background: #f8fafc; border: 1px dashed var(--border-color); border-radius: 5px; padding: 6px 10px; margin-bottom: 10px; font-size: 11px; }
 
-/* Amount in words bar */
-.amount-words-box {
-  background: #f8fafc;
-  border: 1px dashed var(--border-color);
-  border-radius: 5px;
-  padding: 6px 10px;
-  margin-bottom: 10px;
-  font-size: 11px;
-}
+.footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.footer-card { border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; }
+.footer-card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px; border-bottom: 1px solid var(--border-color); padding-bottom: 2px; }
+.terms-box { white-space: pre-line; font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+.signature-space { height: 28px; }
 
-/* ===== DUAL FOOTER SECTION ===== */
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.footer-card {
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.footer-card-title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 2px;
-}
-
-.terms-box {
-  white-space: pre-line;
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1.3;
-}
-
-.signature-space {
-  height: 28px;
-}
-
-/* ===== PRINT STYLES ===== */
-@page {
-  size: A4;
-  margin: 6mm 8mm; /* Compact margins to fit exactly 1 page */
-}
-
+@page { size: A4; margin: 6mm 8mm; }
 @media print {
-  html, body {
-    height: 100%;
-    background: #ffffff;
-    color: #000000;
-  }
-
-  .no-print-bar {
-    display: none !important;
-  }
-
-  .wrapper {
-    box-shadow: none;
-    padding: 0;
-    max-width: 100%;
-    border-radius: 0;
-    margin: 0;
-  }
-
-  table.data-table th {
-    background: #f1f5f9 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .info-card, .summary-row.grand-total td {
-    background: #f8fafc !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .wrapper::before {
-    display: none;
-  }
+  html, body { height: 100%; background: #ffffff; color: #000000; }
+  .no-print-bar { display: none !important; }
+  .wrapper { box-shadow: none; padding: 0; max-width: 100%; border-radius: 0; margin: 0; }
+  table.data-table th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .info-card, .summary-row.grand-total td { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrapper::before { display: none; }
 }
 </style>
 </head>
@@ -476,12 +285,11 @@ table.data-table tr:nth-child(even):not(.summary-row) {
     </div>
 
     <div style="display: flex; gap: 8px; align-items: center;">
-        <!-- EMAIL FORM -->
         <form method="post" style="display: flex; gap: 6px; align-items: center; margin: 0;">
             <input type="text" name="target_email" 
-       style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
-       value="<?= htmlspecialchars($quotation['customer_email'] ?? '') ?>" 
-       placeholder="Emails (comma separated)" title="Use comma to separate multiple emails" required>
+                   style="height: 31px; padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; width: 200px;" 
+                   value="<?= htmlspecialchars($quotation['customer_email'] ?? '') ?>" 
+                   placeholder="Emails (comma separated)" title="Use comma to separate multiple emails" required>
             <button type="submit" name="send_email_btn" class="btn" style="background: #059669; color: #fff; border-color: #059669;">📧 Send Email</button>
         </form>
 
@@ -495,16 +303,17 @@ table.data-table tr:nth-child(even):not(.summary-row) {
         <?= $email_msg ?>
     </div>
 <?php endif; ?>
+
 <div class="wrapper">
 
-<!-- HEADER SECTION -->
+    <!-- HEADER SECTION -->
     <div class="header-grid">
         <div class="org-brand">
             <h1 class="org-title"><?= strtoupper($org_master['org_name']) ?></h1>
             <div style="color: var(--text-muted); font-size: 11px; line-height: 1.3;">
                 <?= htmlspecialchars($final_org_address) ?><br>
                 <?php if($gst_enabled == "Yes"): ?>
-                    <b>GSTIN:</b> <?= $org['gst_no'] ?> | 
+                    <b>GSTIN:</b> <?= !empty(trim($org['gst_no'] ?? '')) ? htmlspecialchars($org['gst_no']) : 'NA' ?> | 
                 <?php endif; ?>
                 <b>Phone:</b> <?= $org['phone'] ?>
             </div>
@@ -532,7 +341,8 @@ table.data-table tr:nth-child(even):not(.summary-row) {
         <div style="color: var(--text-main); font-size: 11px; line-height: 1.3;">
             <?= $quotation['address'] ?><br>
             <?php if($gst_enabled == "Yes"): ?>
-                <b>GSTIN:</b> <?= $quotation['gst_no'] ?> | 
+                <b>GSTIN:</b> <?= !empty(trim($quotation['gst_no'] ?? '')) ? htmlspecialchars($quotation['gst_no']) : 'NA' ?>
+                <?php if(!empty($quotation['contact_no'])): ?> | <?php endif; ?>
             <?php endif; ?>
             <?php if(!empty($quotation['contact_no'])): ?>
                 <b>Phone:</b> <?= $quotation['contact_no'] ?>
@@ -621,7 +431,7 @@ table.data-table tr:nth-child(even):not(.summary-row) {
     <!-- AMOUNT IN WORDS -->
     <div class="amount-words-box">
         <span class="bold" style="color: var(--text-muted);">Amount in Words:</span> 
-        <span class="bold"><?= numberToWords(round($quotation['net_total'])) ?> Only</span>
+        <span class="bold"><?= numberToWords($quotation['net_total']) ?> Only</span>
     </div>
 
     <?php if($gst_enabled == "Yes"): ?>
@@ -741,7 +551,7 @@ table.data-table tr:nth-child(even):not(.summary-row) {
             <?php if($bank){ ?>
                 <div style="font-size: 11px; line-height: 1.4;">
                     <b>Bank:</b> <?= $bank['bank_name'] ?><br>
-                    <b>Branch:</b> <?= $bank['branch'] ?? 'N/A' ?><br> <!-- Added Branch -->
+                    <b>Branch:</b> <?= $bank['branch'] ?? 'N/A' ?><br>
                     <b>A/C Name:</b> <?= $bank['account_name'] ?><br>
                     <b>A/C No:</b> <?= $bank['account_number'] ?><br>
                     <b>IFSC Code:</b> <?= $bank['ifsc_code'] ?>
