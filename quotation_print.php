@@ -36,15 +36,13 @@ if (isset($_POST['send_email_btn'])) {
 
         foreach ($emails as $client_email) {
             if (!empty($client_email)) {
-                if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+               if (filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
                     $sent = send_quotation_email($id, $client_email, $client_name);
                     if ($sent === true || $sent == 1) {
                         $sent_emails[] = htmlspecialchars($client_email);
                     } else {
-                        // Yahan $sent add kiya hai taaki asli Brevo/Dompdf error reason dikhe
                         $failed_emails[] = htmlspecialchars($client_email) . " - Reason: " . htmlspecialchars($sent);
                     }
-                }
                 } else {
                     $invalid_emails[] = htmlspecialchars($client_email);
                 }
