@@ -242,40 +242,26 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     if (empty($invoice_data)) return "Invoice ID {$invoice_id} not found!";
     $invoice = $invoice_data[0];
 
-/* 1. PEHLE PAYMENTS FETCH KARO */
+    /* 1. PEHLE PAYMENTS FETCH KARO */
     $payment_records = find_by_sql("
         SELECT payment_mode, amount, reference_no, payment_date 
         FROM payments 
         WHERE invoice_id = '{$invoice_id}' AND amount > 0
     ");
 
-    $total_paid_dynamically = 0;
-    if(!empty($payment_records)){
-        foreach($payment_records as $pr){
-            $total_paid_dynamically += (float)$pr['amount'];
-        }
-    }
+    /* 2. PROFORMA VS TAX INVOICE TITLE LOGIC FOR EMAIL (Synced with invoice_print.php) */
+    $doc_type = strtoupper(trim($invoice['remarks'] ?? ''));
 
-    /* 2. PROFORMA VS TAX INVOICE TITLE LOGIC FOR EMAIL */
-    $doc_type = strtoupper($invoice['remarks'] ?? '');
-    $payment_status = strtolower(trim($invoice['payment_status'] ?? ''));
-    $db_paid_amount = (float)($invoice['paid_amount'] ?? 0);
-
-    // Agar payment DB me update ho gayi hai YA actual payment table me entry hai
-    if ($payment_status === 'paid' || $payment_status === 'partial' || $db_paid_amount > 0 || $total_paid_dynamically > 0) {
-        $is_proforma = false; // Payment aa gayi, toh TAX INVOICE banega
-    } else {
-        // Payment bilkul zero hai, toh check karo remarks me PROFORMA likha hai kya
-        $is_proforma = ($doc_type === 'PROFORMA' || ($db_paid_amount == 0 && $total_paid_dynamically == 0));
-    }
-
-    if ($is_proforma) {
+    if (strpos($doc_type, 'PROFORMA') !== false) {
+        $is_proforma = true;
         $title_text = 'PROFORMA INVOICE';
         $title_color = '#d97706'; // Amber / Orange
     } else {
+        $is_proforma = false;
         $title_text = 'TAX INVOICE';
         $title_color = '#2563eb'; // Blue
     }
+
     $org_master = find_by_sql("
         SELECT org_name 
         FROM master_inventory.master_organization 
@@ -283,7 +269,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     ");
     $org_master = $org_master ? $org_master[0] : ['org_name' => ''];
 
-  $org_data = find_by_sql("SELECT * FROM organization_master WHERE id = '{$invoice['organization_id']}' LIMIT 1");
+    $org_data = find_by_sql("SELECT * FROM organization_master WHERE id = '{$invoice['organization_id']}' LIMIT 1");
     $org = $org_data ? $org_data[0] : ['address' => '', 'gst_no' => '', 'phone' => ''];
 
     // JSON Address decode logic for Email PDF
@@ -313,10 +299,12 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         WHERE ii.invoice_id = '{$invoice_id}'
     ");
 
-    $org_name_upper = strtoupper($org_master['org_name']);
-    $cust_name_upper = strtoupper($invoice['customer_name']);
+    $org_name_upper     = strtoupper($org_master['org_name']);
+    $cust_name_upper    = strtoupper($invoice['customer_name']);
     $inv_date_formatted = date("d/M/Y", strtotime($invoice['invoice_date']));
-    $net_total_words = numberToWords($invoice['net_total']);
+    $net_total_words    = numberToWords($invoice['net_total']);
+    $org_gst_display    = !empty(trim($org['gst_no'] ?? '')) ? htmlspecialchars($org['gst_no']) : 'NA';
+    $cust_gst_display   = !empty(trim($invoice['gst_no'] ?? '')) ? htmlspecialchars($invoice['gst_no']) : 'NA';
 
     $html = '
     <html>
@@ -344,7 +332,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
         .footer-title { font-size: 7.5px; font-weight: bold; color: #64748b; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; margin-bottom: 2px; padding-bottom: 1px; }
         .terms-box { border: 1px solid #e2e8f0; padding: 3px 5px; border-radius: 4px; font-size: 7px; line-height: 1.1; color: #475569; margin-top: 4px; }
         .pay-box-green { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; }
-        .pay-box-orange { background: #fffbebfb; border: 1px solid #fef3c7; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; color: #b45309; font-size: 8px; }
+        .pay-box-orange { background: #fffbeb; border: 1px solid #fef3c7; padding: 4px 6px; border-radius: 4px; margin-bottom: 5px; color: #b45309; font-size: 8px; }
     </style>
     </head>
     <body>
@@ -354,14 +342,14 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 <td width="60%">
                     <div class="org-title">' . $org_name_upper . '</div>
                     <div style="color: #64748b; font-size: 8.5px;">
-    ' . nl2br(htmlspecialchars($final_org_address)) . '<br>
-    <b>GSTIN:</b> ' . htmlspecialchars($org['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
-</div>
+                        ' . nl2br(htmlspecialchars($final_org_address)) . '<br>
+                        <b>GSTIN:</b> ' . $org_gst_display . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
+                    </div>
                 </td>
                 <td width="40%" style="vertical-align: top;">
                     <div class="inv-title">' . $title_text . '</div>
                     <table class="meta-table">
-                        <tr><td style="color:#64748b;">Invoice No:</td><td class="bold">' . htmlspecialchars($invoice['invoice_no']) . '</td></tr>
+                        <tr><td style="color:#64748b;">' . ($is_proforma ? 'Proforma No:' : 'Invoice No:') . '</td><td class="bold">' . htmlspecialchars($invoice['invoice_no']) . '</td></tr>
                         <tr><td style="color:#64748b;">Date:</td><td class="bold">' . $inv_date_formatted . '</td></tr>
                     </table>
                 </td>
@@ -373,7 +361,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
             <div class="customer-name">' . $cust_name_upper . '</div>
             <div style="font-size: 8.5px; line-height: 1.15;">
                 ' . nl2br(htmlspecialchars($invoice['address'] ?? '')) . '<br>
-                <b>GSTIN:</b> ' . htmlspecialchars($invoice['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($invoice['contact_no'] ?? '') . '
+                <b>GSTIN:</b> ' . $cust_gst_display . (!empty($invoice['contact_no']) ? ' | <b>Phone:</b> ' . htmlspecialchars($invoice['contact_no']) : '') . '
             </div>
         </div>
 
@@ -487,7 +475,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                 </tbody>
             </table>
         </div>';
-    } else {
+    } elseif ($is_proforma) {
         $html .= '
         <div class="pay-box-orange">
             <b>PROFORMA INVOICE / ESTIMATE</b> | Pending Balance: <b>₹ ' . number_format($balance, 2) . '</b>
@@ -539,12 +527,9 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
                     <div class="footer-title">Bank Details</div>';
              if ($bank) {
                         $html .= '<b>Bank:</b> ' . htmlspecialchars($bank['bank_name']) . '<br>';
-                        
-                        // Branch print karne ka logic
                         if (!empty($bank['branch'])) {
                             $html .= '<b>Branch:</b> ' . htmlspecialchars($bank['branch']) . '<br>';
                         }
-
                         $html .= '<b>A/C Name:</b> ' . htmlspecialchars($bank['account_name']) . '<br>
                                   <b>A/C No:</b> ' . htmlspecialchars($bank['account_number']) . '<br>
                                   <b>IFSC Code:</b> ' . htmlspecialchars($bank['ifsc_code']);
@@ -582,7 +567,7 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $pdf_base64 = base64_encode($dompdf->output());
 
     // =========================================================
-    // BREVO API CREDENTIALS (टेस्टिंग के लिए यहाँ सीधे Key डालें)
+    // BREVO API CREDENTIALS
     // =========================================================
     $apiKey      = $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? getenv('BREVO_API_KEY') ?? 'YOUR_BREVO_API_KEY_HERE';
     $senderEmail = $_ENV['BREVO_SENDER_EMAIL'] ?? $_SERVER['BREVO_SENDER_EMAIL'] ?? getenv('BREVO_SENDER_EMAIL') ?? 'your-email@domain.com';
@@ -597,7 +582,6 @@ function send_invoice_email($invoice_id, $to_email, $customer_name) {
     $subject = ($is_proforma ? "Proforma Invoice #" : "Tax Invoice #") . $invoice['invoice_no'] . " from " . $org_name_upper;
     $body = "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your " . ($is_proforma ? "Proforma Invoice" : "Tax Invoice") . ".<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
-    // NEW LOGIC: Comma-separated emails to array
     $to_array = [];
     $email_list = explode(',', $to_email);
     foreach ($email_list as $mail) {
@@ -707,10 +691,12 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         WHERE qi.quotation_id = '{$quotation_id}'
     ");
 
-    $org_name_upper = strtoupper($org_master['org_name']);
-    $cust_name_upper = strtoupper($quotation['customer_name']);
+    $org_name_upper      = strtoupper($org_master['org_name']);
+    $cust_name_upper     = strtoupper($quotation['customer_name']);
     $quot_date_formatted = date("d/M/Y", strtotime($quotation['quotation_date']));
-    $net_total_words = numberToWords($quotation['net_total']);
+    $net_total_words     = numberToWords($quotation['net_total']);
+    $org_gst_display     = !empty(trim($org['gst_no'] ?? '')) ? htmlspecialchars($org['gst_no']) : 'NA';
+    $cust_gst_display    = !empty(trim($quotation['gst_no'] ?? '')) ? htmlspecialchars($quotation['gst_no']) : 'NA';
 
     $html = '
     <html>
@@ -747,7 +733,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
                     <div class="org-title">' . $org_name_upper . '</div>
                     <div style="color: #64748b; font-size: 8.5px;">
                         ' . nl2br(htmlspecialchars($final_org_address)) . '<br>
-                        <b>GSTIN:</b> ' . htmlspecialchars($org['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
+                        <b>GSTIN:</b> ' . $org_gst_display . ' | <b>Phone:</b> ' . htmlspecialchars($org['phone'] ?? '') . '
                     </div>
                 </td>
                 <td width="40%" style="vertical-align: top;">
@@ -765,7 +751,7 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
             <div class="customer-name">' . $cust_name_upper . '</div>
             <div style="font-size: 8.5px; line-height: 1.15;">
                 ' . nl2br(htmlspecialchars($quotation['address'] ?? '')) . '<br>
-                <b>GSTIN:</b> ' . htmlspecialchars($quotation['gst_no'] ?? '') . ' | <b>Phone:</b> ' . htmlspecialchars($quotation['contact_no'] ?? '') . '
+                <b>GSTIN:</b> ' . $cust_gst_display . (!empty($quotation['contact_no']) ? ' | <b>Phone:</b> ' . htmlspecialchars($quotation['contact_no']) : '') . '
             </div>
         </div>
 
@@ -936,7 +922,6 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
     $subject = "Quotation #" . $quotation['quotation_no'] . " from " . $org_name_upper;
     $body = "Dear <b>" . htmlspecialchars($customer_name) . "</b>,<br><br>Please find attached your Quotation.<br><br>Regards,<br><b>Team " . htmlspecialchars($org_name_upper) . "</b>";
 
-    // NEW LOGIC: Comma-separated emails to array
     $to_array = [];
     $email_list = explode(',', $to_email);
     foreach ($email_list as $mail) {
@@ -985,4 +970,4 @@ function send_quotation_email($quotation_id, $to_email, $customer_name) {
         return "HTTP Code: {$httpCode} | Brevo Msg: {$response}";
     }
 }
-?> 
+?>
