@@ -41,8 +41,10 @@ if (isset($_POST['send_email_btn'])) {
                     if ($sent === true || $sent == 1) {
                         $sent_emails[] = htmlspecialchars($client_email);
                     } else {
-                        $failed_emails[] = htmlspecialchars($client_email);
+                        // Yahan $sent add kiya hai taaki asli Brevo/Dompdf error reason dikhe
+                        $failed_emails[] = htmlspecialchars($client_email) . " - Reason: " . htmlspecialchars($sent);
                     }
+                }
                 } else {
                     $invalid_emails[] = htmlspecialchars($client_email);
                 }
